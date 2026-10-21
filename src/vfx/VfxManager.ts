@@ -252,7 +252,7 @@ export class VfxManager {
     const label = new Text({
       text,
       style: {
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "Exo 2, sans-serif",
         fontSize: 18,
         fontWeight: "800",
         fill: color,

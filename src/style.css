@@ -1,6 +1,7 @@
-@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Spectral:wght@600;700&display=swap");
+@import "./fonts.css";
 
 :root {
+  --font: "Exo 2", system-ui, sans-serif;
   --bg: #0c0f0c;
   --panel: rgba(18, 24, 18, 0.82);
   --panel-border: rgba(120, 150, 90, 0.35);
@@ -31,7 +32,7 @@ body,
   overflow: hidden;
   background: var(--bg);
   color: var(--text);
-  font-family: "Manrope", system-ui, sans-serif;
+  font-family: var(--font);
 }
 
 #game-root {
@@ -187,7 +188,7 @@ body,
 }
 
 .hero-meta .hero-name {
-  font-family: "Spectral", Georgia, serif;
+  font-family: var(--font);
   font-size: 1.2rem;
   font-weight: 700;
 }
@@ -207,10 +208,10 @@ body,
 }
 
 .skill-btn {
-  width: 64px;
-  height: 64px;
-  border-radius: 10px;
-  border: 1px solid var(--panel-border);
+  width: 83px;
+  height: 83px;
+  border-radius: 1px;
+  border: 2px solid var(--panel-border);
   background: linear-gradient(180deg, rgba(40, 48, 36, 0.95), rgba(18, 22, 16, 0.95));
   color: var(--text);
   cursor: pointer;
@@ -220,6 +221,7 @@ body,
   font: inherit;
   padding: 4px;
   overflow: hidden;
+  transform: none;
 }
 
 .skill-btn.has-art {
@@ -232,11 +234,11 @@ body,
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 9px;
+  border-radius: 0;
 }
 
 .skill-btn .glyph {
-  font-size: 1.45rem;
+  font-size: 1.85rem;
   line-height: 1;
 }
 
@@ -253,12 +255,17 @@ body,
   border-color: rgba(155, 123, 184, 0.45);
 }
 
-.skill-btn.selected {
-  outline: 2px solid var(--accent);
-  transform: translateY(-2px);
+.skill-btn:hover:not(:disabled) {
+  border-color: var(--accent-dim);
 }
 
-.skill-btn:disabled {
+.skill-btn.selected,
+.skill-btn.selected:hover {
+  border-color: var(--accent);
+  box-shadow: inset 0 0 0 1px rgba(196, 163, 90, 0.55);
+}
+
+.skill-btn.locked {
   opacity: 0.35;
   cursor: not-allowed;
 }
@@ -267,11 +274,81 @@ body,
   position: absolute;
   inset: 0;
   background: rgba(0, 0, 0, 0.55);
-  border-radius: 10px;
+  border-radius: 0;
   display: grid;
   place-items: center;
+  font-size: 1.85rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.85);
+}
+
+.skill-tooltip {
+  position: absolute;
+  z-index: 30;
+  min-width: 200px;
+  max-width: 260px;
+  padding: 10px 12px 11px;
+  background: linear-gradient(180deg, rgba(22, 28, 20, 0.97), rgba(12, 16, 12, 0.97));
+  border: 1px solid var(--accent-dim);
+  border-radius: 2px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  color: var(--text);
+}
+
+.skill-tooltip[hidden] {
+  display: none;
+}
+
+.skill-tooltip .tt-name {
+  font-family: var(--font);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+
+.skill-tooltip .tt-desc {
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+}
+
+.skill-tooltip .tt-stats {
+  display: grid;
+  gap: 3px;
+  font-size: 0.78rem;
+}
+
+.skill-tooltip .tt-stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.skill-tooltip .tt-stat span {
+  color: var(--muted);
+}
+
+.skill-tooltip .tt-stat b {
   font-weight: 800;
   color: var(--text);
+}
+
+.skill-tooltip.school-ice {
+  border-color: rgba(126, 200, 232, 0.5);
+}
+.skill-tooltip.school-fire {
+  border-color: rgba(255, 122, 61, 0.5);
+}
+.skill-tooltip.school-iron {
+  border-color: rgba(201, 184, 150, 0.5);
+}
+.skill-tooltip.school-stealth {
+  border-color: rgba(155, 123, 184, 0.5);
 }
 
 .hint {
@@ -334,7 +411,7 @@ body,
 }
 
 .bestiary-head h2 {
-  font-family: "Spectral", Georgia, serif;
+  font-family: var(--font);
   font-size: 1.4rem;
   font-weight: 700;
   color: var(--accent);

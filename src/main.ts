@@ -9,6 +9,13 @@ async function boot(): Promise<void> {
   const mount = document.getElementById("game-root");
   if (!mount) throw new Error("game-root not found");
 
+  await Promise.all([
+    document.fonts.load("500 16px \"Exo 2\""),
+    document.fonts.load("600 16px \"Exo 2\""),
+    document.fonts.load("700 16px \"Exo 2\""),
+    document.fonts.load("800 16px \"Exo 2\""),
+  ]);
+
   const app = new Application();
   await app.init({
     resizeTo: window,

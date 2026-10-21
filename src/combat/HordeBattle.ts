@@ -136,7 +136,7 @@ export class HordeBattle {
 
   private idleHint(): string {
     const reach = WEAPON_REACH[this.weapon];
-    return `${WEAPON_LABEL[this.weapon]} достаёт ${reach} ${this.rowsWord(reach)} снизу. Клик по подсвеченному врагу задаёт цель автоатаки.`;
+    return `${WEAPON_LABEL[this.weapon]} достаёт ${reach} ${this.rowsWord(reach)} снизу. Клик по врагу в дальности задаёт цель автоатаки.`;
   }
 
   private rowsWord(n: number): string {
@@ -179,7 +179,7 @@ export class HordeBattle {
       const label = new Text({
         text: String(this.distanceOf(row)),
         style: {
-          fontFamily: "Manrope, sans-serif",
+          fontFamily: "Exo 2, sans-serif",
           fontSize: 13,
           fontWeight: "800",
           fill: 0x7a6840,
@@ -403,7 +403,6 @@ export class HordeBattle {
       return;
     }
     this.hero.preferredTargetId = u.id;
-    this.hud.showToast(`Цель автоатаки: ${u.name}`);
   }
 
   private unitAtLocal(x: number, y: number): Unit | null {
@@ -454,19 +453,6 @@ export class HordeBattle {
 
   private drawWeaponRange(): void {
     this.rangeGfx.clear();
-    const size = CELL - 10;
-    for (const pos of this.cellsInReach(WEAPON_REACH[this.weapon])) {
-      const c = this.cellCenter(pos);
-      this.rangeGfx.roundRect(c.x - size / 2, c.y - size / 2, size, size, 6).fill({
-        color: 0xc4a35a,
-        alpha: 0.1,
-      });
-      this.rangeGfx.roundRect(c.x - size / 2, c.y - size / 2, size, size, 6).stroke({
-        color: 0xc4a35a,
-        width: 2,
-        alpha: 0.7,
-      });
-    }
   }
 
   private drawAbilityTelegraph(def: AbilityDef): void {
@@ -691,7 +677,6 @@ export class HordeBattle {
       a.u.view.position.set(a.to.x, a.to.y);
     }
     this.drop = null;
-    this.hud.showToast("Шеренга опустилась");
     this.maybeStartDrop();
   }
 

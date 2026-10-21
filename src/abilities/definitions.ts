@@ -53,7 +53,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   },
   flame_cone: {
     id: "flame_cone",
-    name: "Конус огня",
+    name: "Дыхание дракона",
     school: "fire",
     glyph: "🌋",
     description: "Веер пламени от кастера к врагам",
@@ -65,10 +65,10 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   },
   stun_strike: {
     id: "stun_strike",
-    name: "Оглушающий удар",
+    name: "Бросок молота",
     school: "iron",
     glyph: "⚔",
-    description: "Ближний удар с оглушением",
+    description: "Бросок молота с оглушением",
     cooldown: 5,
     damage: 45,
     targetMode: "enemy",

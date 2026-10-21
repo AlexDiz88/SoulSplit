@@ -48,6 +48,7 @@ export class Unit {
   private portrait: Sprite | null = null;
   private hpBarBg: Graphics;
   private hpBarFg: Graphics;
+  private hpText: Text;
   private nameText: Text;
   private statusText: Text;
   private subText: Text;
@@ -84,10 +85,21 @@ export class Unit {
     this.cdBarFg.eventMode = "none";
     this.hpBarBg = new Graphics();
     this.hpBarFg = new Graphics();
+    this.hpText = new Text({
+      text: "",
+      style: {
+        fontFamily: "Exo 2, sans-serif",
+        fontSize: 11,
+        fontWeight: "800",
+        fill: 0xe8e2d4,
+        stroke: { color: 0x0c0f0c, width: 3 },
+      },
+    });
+    this.hpText.anchor.set(0.5);
     this.nameText = new Text({
       text: init.short,
       style: {
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "Exo 2, sans-serif",
         fontSize: 13,
         fontWeight: "800",
         fill: 0x111111,
@@ -97,7 +109,7 @@ export class Unit {
     this.statusText = new Text({
       text: "",
       style: {
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "Exo 2, sans-serif",
         fontSize: 10,
         fontWeight: "700",
         fill: 0xe8e2d4,
@@ -107,7 +119,7 @@ export class Unit {
     this.subText = new Text({
       text: init.subtitle ?? "",
       style: {
-        fontFamily: "Manrope, sans-serif",
+        fontFamily: "Exo 2, sans-serif",
         fontSize: 12,
         fontWeight: "700",
         fill: 0xc4a35a,
@@ -121,6 +133,7 @@ export class Unit {
       this.flashGfx,
       this.hpBarBg,
       this.hpBarFg,
+      this.hpText,
       this.nameText,
       this.subText,
       this.statusText,
@@ -183,8 +196,9 @@ export class Unit {
     const color = this.team === "player" ? SCHOOL_COLOR[this.school] : 0x6a3a3a;
     const body = this.team === "player" ? 0x2a3324 : 0x3a2424;
     const half = this.half;
-    const barW = this.cardSize - 20;
-    const barY = half - 16;
+    const barW = this.cardSize - 6;
+    const barH = 12;
+    const barY = half - barH - 1;
     this.frame.clear();
     this.frame.roundRect(-half, -half, this.cardSize, this.cardSize, 7).fill({ color: body, alpha: 0.95 });
     this.frame.roundRect(-half, -half, this.cardSize, this.cardSize, 7).stroke({ color, width: 3 });
@@ -201,11 +215,13 @@ export class Unit {
       this.subText.visible = false;
     }
 
-    this.hpBarBg.clear().roundRect(-barW / 2, barY, barW, 7, 3).fill({ color: 0x1a2018, alpha: 0.9 });
+    this.hpBarBg.clear().roundRect(-barW / 2, barY, barW, barH, 2).fill({ color: 0x1a2018, alpha: 0.9 });
     const ratio = Math.max(0, this.hp / this.stats.maxHp);
-    this.hpBarFg.clear().roundRect(-barW / 2, barY, barW * ratio, 7, 3).fill({
+    this.hpBarFg.clear().roundRect(-barW / 2, barY, Math.max(0, barW * ratio), barH, 2).fill({
       color: ratio > 0.35 ? 0x5a9e5a : 0xc45a4a,
     });
+    this.hpText.text = `${Math.ceil(this.hp)}/${this.stats.maxHp}`;
+    this.hpText.position.set(0, barY + barH / 2);
 
     const icons = this.statuses.map((s) => {
       switch (s.kind) {

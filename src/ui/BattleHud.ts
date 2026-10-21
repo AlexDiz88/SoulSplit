@@ -37,19 +37,61 @@ export function createBattleHud(
 
   let toastTimer = 0;
 
+  const tooltip = document.createElement("div");
+  tooltip.id = "skill-tooltip";
+  tooltip.className = "skill-tooltip";
+  tooltip.hidden = true;
+  document.getElementById("hud")!.appendChild(tooltip);
+
+  const hideTooltip = (): void => {
+    tooltip.hidden = true;
+  };
+
+  const showTooltip = (btn: HTMLElement, id: AbilityId): void => {
+    const def = ABILITIES[id];
+    const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
+    const damageLabel =
+      def.damage > 0
+        ? def.targetMode === "enemy_blast"
+          ? `${def.damage} / рядом ${Math.round(def.damage * 0.55)}`
+          : String(def.damage)
+        : "—";
+
+    tooltip.className = `skill-tooltip school-${def.school}`;
+    tooltip.innerHTML = `
+      <div class="tt-name">${def.name}</div>
+      <div class="tt-desc">${def.description}</div>
+      <div class="tt-stats">
+        <div class="tt-stat"><span>Урон</span><b>${damageLabel}</b></div>
+        <div class="tt-stat"><span>Кулдаун</span><b>${def.cooldown.toFixed(1)} с</b></div>
+        <div class="tt-stat"><span>Радиус</span><b>${reachLabel}</b></div>
+      </div>
+    `;
+    tooltip.hidden = false;
+
+    const rect = btn.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
+    const top = rect.top - tipRect.height - 10;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+  };
+
   const renderSkills = (unit: Unit | null, selectedAbility: AbilityId | null): void => {
     skillBar.innerHTML = "";
+    hideTooltip();
     if (!unit) return;
     for (const id of unit.abilities) {
       const def = ABILITIES[id];
       const cd = unit.abilityCd[id] ?? 0;
       const iconUrl = ABILITY_ICON_URLS[id];
-      const reachLabel = def.reach <= 0 ? "на себя" : `радиус ${def.reach}`;
       const btn = document.createElement("button");
+      const locked = !unit.alive || cd > 0.05;
       btn.type = "button";
-      btn.className = `skill-btn school-${def.school}${selectedAbility === id ? " selected" : ""}${iconUrl ? " has-art" : ""}`;
-      btn.disabled = !unit.alive || cd > 0.05;
-      btn.title = `${def.name} — ${def.description} (${reachLabel})`;
+      btn.dataset.ability = id;
+      btn.className = `skill-btn school-${def.school}${selectedAbility === id ? " selected" : ""}${iconUrl ? " has-art" : ""}${locked ? " locked" : ""}`;
+      btn.setAttribute("aria-disabled", locked ? "true" : "false");
       btn.innerHTML = iconUrl
         ? `<img class="skill-icon" src="${iconUrl}" alt="${def.name}" />`
         : `<span class="glyph">${def.glyph}</span>`;
@@ -60,6 +102,10 @@ export function createBattleHud(
         btn.appendChild(overlay);
       }
       btn.addEventListener("click", () => onSelectAbility(id));
+      btn.addEventListener("mouseenter", () => showTooltip(btn, id));
+      btn.addEventListener("mouseleave", hideTooltip);
+      btn.addEventListener("focus", () => showTooltip(btn, id));
+      btn.addEventListener("blur", hideTooltip);
       skillBar.appendChild(btn);
     }
   };
@@ -75,7 +121,9 @@ export function createBattleHud(
       if (!btn) return;
       const cd = unit.abilityCd[id] ?? 0;
       const onCd = cd > 0.05;
-      btn.disabled = !unit.alive || onCd;
+      const locked = !unit.alive || onCd;
+      btn.setAttribute("aria-disabled", locked ? "true" : "false");
+      btn.classList.toggle("locked", locked);
       btn.classList.toggle("selected", selectedAbility === id);
       let overlay = btn.querySelector(".cd-overlay");
       if (onCd) {
