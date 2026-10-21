@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Тёмный рубеж</title>
+  </head>
+  <body>
+    <div id="app">
+      <div id="game-root"></div>
+      <div id="hud">
+        <header class="hud-top">
+          <button type="button" id="btn-menu" class="menu-btn" title="Меню" aria-label="Меню" aria-expanded="false" aria-controls="side-menu">
+            <span></span><span></span><span></span>
+          </button>
+          <div class="controls">
+            <button type="button" id="btn-pause" class="ctrl-btn" title="Пробел — пауза">❚❚</button>
+            <button type="button" id="btn-speed" class="ctrl-btn" title="Скорость">×1</button>
+          </div>
+        </header>
+
+        <nav id="side-menu" class="side-menu" hidden>
+          <button type="button" id="btn-bestiary" class="menu-item">Бестиарий</button>
+        </nav>
+
+        <div id="bestiary" class="bestiary-overlay" hidden>
+          <div class="bestiary-window" role="dialog" aria-labelledby="bestiary-title">
+            <div class="bestiary-head">
+              <h2 id="bestiary-title">Бестиарий</h2>
+              <button type="button" id="bestiary-close" class="ctrl-btn">Закрыть</button>
+            </div>
+            <div class="bestiary-body">
+              <div id="bestiary-list" class="bestiary-list"></div>
+              <aside id="bestiary-detail" class="bestiary-detail">Наведите на врага, чтобы увидеть характеристики.</aside>
+            </div>
+          </div>
+        </div>
+
+        <footer class="hud-bottom">
+          <div class="hero-meta" id="hero-meta">
+            <div class="hero-name">Выберите героя</div>
+            <div class="hero-schools">—</div>
+            <div class="weapon-bar" id="weapon-bar" hidden></div>
+          </div>
+          <div class="skill-bar" id="skill-bar"></div>
+        </footer>
+
+        <div class="hint" id="hint">Клик по способности, затем по цели. Пробел — пауза.</div>
+        <div class="toast" id="toast" hidden></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
