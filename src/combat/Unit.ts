@@ -226,7 +226,7 @@ export class Unit {
     this.statusText.text = icons.join("");
     this.statusText.position.set(0, -this.half - 14);
     this.drawAttackCharge();
-    this.view.alpha = this.alive ? 1 : 0.25;
+    if (!this.alive) this.view.visible = false;
   }
 
   private drawAttackCharge(): void {
@@ -317,6 +317,6 @@ export class Unit {
   }
 
   setHidden(hidden: boolean): void {
-    this.view.visible = !hidden;
+    this.view.visible = this.alive && !hidden;
   }
 }

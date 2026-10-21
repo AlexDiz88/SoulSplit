@@ -98,8 +98,7 @@ export class HordeBattle {
   };
 
   private readonly onPauseClick = (): void => {
-    this.paused = !this.paused;
-    this.hud.setPause(this.paused);
+    this.applyPause(!this.paused);
     this.hud.setHint(this.paused ? "Пауза. Пробел — продолжить." : this.idleHint());
   };
 
@@ -313,6 +312,10 @@ export class HordeBattle {
   }
 
   selectAbility(id: AbilityId): void {
+    if (this.paused) {
+      this.hud.showToast("На паузе способности недоступны");
+      return;
+    }
     if (!this.hero.alive || this.casting) return;
     if ((this.hero.abilityCd[id] ?? 0) > 0) {
       this.hud.showToast("Способность на перезарядке");
@@ -343,6 +346,10 @@ export class HordeBattle {
       return;
     }
     if (!this.selectedAbility) return;
+    if (this.paused) {
+      this.hud.showToast("На паузе способности недоступны");
+      return;
+    }
     const cell = this.cellAtLocal(localX, localY);
     if (!cell) return;
     const def = ABILITIES[this.selectedAbility];
@@ -372,6 +379,10 @@ export class HordeBattle {
       return;
     }
     if (this.selectedAbility) {
+      if (this.paused) {
+        this.hud.showToast("На паузе способности недоступны");
+        return;
+      }
       const def = ABILITIES[this.selectedAbility];
       if (this.distanceOf(u.pos.row) > def.reach) {
         this.hud.showToast("Цель вне радиуса способности");
@@ -477,7 +488,7 @@ export class HordeBattle {
   }
 
   private async performCast(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
-    if (this.casting || this.destroyed) return;
+    if (this.casting || this.destroyed || this.paused) return;
     if (def.targetMode === "enemy" && (!clicked || clicked.team !== "enemy")) {
       this.hud.showToast("Нужна цель-враг");
       return;
@@ -732,26 +743,31 @@ export class HordeBattle {
 
   private drawMark(): void {
     this.mark.clear();
-    const pref = this.livingEnemies().find((u) => u.id === this.hero.preferredTargetId);
-    if (!pref) return;
-    if (this.distanceOf(pref.pos.row) > WEAPON_REACH[this.weapon]) return;
-    const x = pref.view.x;
-    const y = pref.view.y;
-    const r = pref.cardSize / 2 + 8;
-    this.mark.circle(x, y, r).stroke({ color: 0xc45a4a, width: 3, alpha: 0.95 });
+    const target = this.findAutoTarget(this.hero);
+    if (!target) return;
+    const r = target.cardSize / 2 + 8;
+    this.mark.circle(target.view.x, target.view.y, r).stroke({ color: 0xc45a4a, width: 3, alpha: 0.95 });
+  }
+
+  private applyPause(paused: boolean): void {
+    this.paused = paused;
+    if (paused && this.selectedAbility) {
+      this.selectedAbility = null;
+      this.clearAbilityTelegraph();
+    }
+    this.hud.setPause(paused);
+    this.hud.syncSkills(this.hero, this.selectedAbility);
   }
 
   private checkEnd(): void {
     if (this.paused && !this.hero.alive) return;
     const enemies = this.livingEnemies().length > 0;
     if (!enemies) {
-      this.paused = true;
-      this.hud.setPause(true);
+      this.applyPause(true);
       this.hud.showToast("Победа!");
       this.hud.setHint("Враги повержены.");
     } else if (!this.hero.alive) {
-      this.paused = true;
-      this.hud.setPause(true);
+      this.applyPause(true);
       this.hud.showToast("Поражение");
       this.hud.setHint("Айра пала.");
     }

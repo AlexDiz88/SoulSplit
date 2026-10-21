@@ -174,12 +174,16 @@ body,
   left: 0;
   right: 0;
   bottom: 0;
-  display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 16px;
-  align-items: end;
-  padding: 16px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  padding: 12px 20px 18px;
   background: linear-gradient(0deg, rgba(8, 12, 8, 0.95), rgba(8, 12, 8, 0.55), transparent);
+}
+
+.hero-meta {
+  max-width: 280px;
 }
 
 .hero-meta .hero-name {
@@ -195,9 +199,10 @@ body,
 }
 
 .skill-bar {
+  align-self: center;
   display: flex;
   gap: 8px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   justify-content: center;
 }
 

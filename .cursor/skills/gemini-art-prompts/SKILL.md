@@ -1,13 +1,13 @@
 ---
 name: gemini-art-prompts
 description: >-
-  Writes ready-to-paste Gemini image prompts for Тёмный Рубеж using the locked
+  Writes ready-to-paste Gemini image prompts for Project13 using the locked
   Style Bible. Use when the user asks for art prompts, Gemini prompts, unit
   portraits, ability icons, character cards, enemy portraits, or visual asset
   generation text.
 ---
 
-# Gemini Art Prompts — Тёмный Рубеж
+# Gemini Art Prompts — Project13
 
 ## When to use
 
@@ -39,7 +39,17 @@ User wants prompts for Gemini (or similar) to generate game art. Always follow t
 
 ## Setting (always weave into the prompt)
 
+### Character sheets / environments
+
 Medieval fantasy mixed with steampunk: magic and technology coexist, **magic predominates**. Light brass/gear/lens accents allowed; magic stays primary.
+
+### Ability icons (LOCKED)
+
+**Magic-only visual.** Do **not** weave steampunk, brass, gears, cogs, lenses, valves, or machinery into ability-icon prompts unless the user **explicitly** asks for a tech/steampunk ability. Use:
+
+```
+Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+```
 
 ## Stylization direction (LOCKED — match enemy portrait canon)
 
@@ -62,11 +72,13 @@ Style lock — ENEMY/UNIT PORTRAIT CANON (must match the look of attached master
 
 For hero `portrait` use the same rendering language, but framing may be bust/chest-up (even tighter on the face).
 
-### Ability icon Style Lock
+### Ability icon Style Lock (KEEP — same visual language as unit portraits: hard toon + white sticker outline)
 
 ```
-Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading, noticeable WHITE sticker outer outline, single centered magical symbol, RICH school-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow.
+Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, bold clean dark internal outlines PLUS a noticeable WHITE sticker outer outline around the silhouette, single centered magical symbol/effect, RICH school-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
 ```
+
+**Ability icon defaults (LOCKED):** always **3×3 contact sheet**; always the Style Lock above; same ability concept × 9 composition variants; **no gears / brass / steampunk props**.
 
 ## Creative Freedom Lock (DEFAULT for `portrait` / `unit_card` / enemies / bestiary)
 
@@ -131,7 +143,7 @@ Framing per panel: WAIST-UP / torso mid-portrait like enemy_portrait_example.jpg
 ### ability_icon
 
 ```
-Framing per panel: one clear magical effect centered and large, white sticker outline, hard toon-shaded form, flat solid dark backdrop, no character, no text.
+Framing per panel: one clear magical effect centered and large, white sticker outline, hard toon-shaded form, flat solid dark backdrop, no character, no text, no gears, no brass gadgets, no steampunk props.
 ```
 
 ### environment
@@ -142,7 +154,9 @@ Framing per panel: stylized medieval-fantasy + steampunk arena backdrop for a to
 
 ## Output format (CRITICAL)
 
-Reply with **only** one prompt:
+Reply with **only** one prompt.
+
+### Character sheets (`portrait` / `unit_card` / enemies / bestiary)
 
 ```
 {Style lock}
@@ -155,7 +169,7 @@ Setting: medieval fantasy mixed with steampunk; magic and technology coexist, ma
 
 Subject / theme: {user theme / faction / mood — high-level only; do NOT list nine fixed designs}
 
-{Creative freedom lock — character sheets only}
+{Creative freedom lock}
 
 {Diversity lock}
 
@@ -164,10 +178,32 @@ Panel brief: freely invent NINE unique subjects within the theme — any mix of 
 Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny distant characters, naturalistic wildlife illustration, soft painterly fur, timid mild cartoon realism, missing white sticker outline, extreme chibi, neon glow, candy oversaturation, washed-out colors, muddy grey-brown palette, overly desaturated, soft anime shading without outlines, unstructured smoke background, grey-green fog wash, airbrushed smoky backdrop without structure, busy photo landscape, ornate frames, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same face repeated across panels, identical characters across panels, near-duplicate characters, recycled outfit templates, same weapon in every panel, same backdrop formula repeated, character overflowing panel edges, limbs or weapons crossing gutters, clipped silhouette cut by border, elements spilling into neighboring cells, {extras}
 ```
 
+### Ability icons (`ability_icon`)
+
+Keep **3×3** grid + Style Lock. No Creative Freedom Lock for inventing different abilities. No steampunk/gears.
+
+```
+{Ability icon Style Lock}
+
+Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+
+{ability_icon Layout — 3x3}
+
+{ability_icon Framing}
+
+Subject / theme: {one ability name/concept} — same spell/effect in every panel; school-accent colors; pure magic silhouette.
+
+{Ability Diversity lock}
+
+Panel brief: nine variations of the SAME ability icon — composition, angle, and effect intensity only.
+
+Negatives: {shared negatives} + character, face, hands, different ability concepts across panels, weak muddy silhouette, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork
+```
+
 ### Asset-specific negative extras
 
 - **portrait / unit_card / enemies:** `full-body standing pose, feet visible, character too small in frame, empty flat void background, smoky teal fog behind subject, overflow outside frame, cropped horns/weapons by panel edge`
-- **ability_icon:** `character, face, hands, different ability concepts across panels, weak muddy silhouette`
+- **ability_icon:** `character, face, hands, different ability concepts across panels, weak muddy silhouette, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork`
 - **environment:** `busy unreadable clutter, neon haze, dominating foreground characters, photoreal landscape`
 
 ## Subject writing tips
@@ -177,7 +213,8 @@ Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny dist
 - **Theme only, not cast list:** describe faction/biome/mood (e.g. “desert warrior unit roster”, “swamp cult bestiary”) and optional color accents. Do **not** prescribe nine specific characters, weapons, or backdrops unless the user asked for a fixed roster.
 - Require Gemini to invent pose, clothing, gear, weapons, and matching simplified thematic backdrops freely — still **one unique backdrop per panel**, invented by the model.
 - Unique designs per panel; clear color identity; maximize novelty across regenerations of the same prompt.
-- Light steampunk accents OK; magic primary.
+- Light steampunk accents OK on **characters/environments**; magic primary.
+- **Ability icons:** keep **3×3** + toon/white-outline style; describe only the magical effect; **never** add gears, brass, or steampunk clutter unless the user explicitly requests a tech ability.
 - Tell the user (only inside skill workflow notes, NOT in the reply): for LOCKED enemy portraits, attach `assets/art/approved/enemy_portrait_example.jpg` in Gemini as style reference — but the assistant reply must still be **prompt-only**, so bake “must match enemy_portrait_example.jpg” into the prompt itself.
 - Cross-run uniqueness tip (workflow only, NOT in the reply): Gemini does not remember past generations; if the user wants to avoid repeating prior sheets, they should attach previous contact sheets as “avoid these designs”.
 
