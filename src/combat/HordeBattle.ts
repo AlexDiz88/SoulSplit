@@ -1,7 +1,7 @@
 import { Application, Container, Graphics, Text } from "pixi.js";
 import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitions";
 import { blastCells, GRID_SIZE } from "../abilities/shapes";
-import { PORTRAIT_URLS } from "../art/portraits";
+import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { AbilityDef, AbilityId, GridPos, WeaponKind } from "../types";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
@@ -15,12 +15,19 @@ const PITCH = CELL + GAP;
 const HERO_SIZE = CELL * 2 + GAP;
 const STACK_GAP = 28;
 const DROP_SEC = 0.4;
+const ABILITY_GCD = 1;
 
 interface DropAnim {
   u: Unit;
   x0: number;
   y0: number;
   to: { x: number; y: number };
+}
+
+interface PendingCast {
+  def: AbilityDef;
+  clicked: Unit | null;
+  cell: GridPos | null;
 }
 
 /** Один герой снизу, враги на сетке 4×4. Ближний ряд зачищен — остальные опускаются. */
@@ -43,6 +50,8 @@ export class HordeBattle {
 
   private destroyed = false;
   private hero!: Unit;
+  private gcdRemaining = 0;
+  private pendingCast: PendingCast | null = null;
   private gridOrigin = { x: 0, y: 0 };
   private heroAnchor = { x: 0, y: 0 };
   private baseBoardX = 0;
@@ -94,7 +103,25 @@ export class HordeBattle {
   };
 
   private readonly onPointer = (ev: PointerEvent): void => {
+    if (ev.button === 2) {
+      ev.preventDefault();
+      this.cancelAbilityTargeting();
+      return;
+    }
+    if (ev.button !== 0) return;
     this.onCanvasPointer(ev);
+  };
+
+  private readonly onContextMenu = (ev: MouseEvent): void => {
+    ev.preventDefault();
+  };
+
+  private readonly onDocPointer = (ev: PointerEvent): void => {
+    if (ev.button !== 2) return;
+    ev.preventDefault();
+    // ПКМ вне канваса тоже сбрасывает выбор цели.
+    if (ev.target === this.app.canvas) return;
+    this.cancelAbilityTargeting();
   };
 
   private readonly onPauseClick = (): void => {
@@ -116,10 +143,17 @@ export class HordeBattle {
     document.getElementById("btn-pause")?.removeEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.removeEventListener("click", this.onSpeedClick);
     window.removeEventListener("keydown", this.onKey);
+    window.removeEventListener("keyup", this.onKeyUp);
+    document.removeEventListener("contextmenu", this.onContextMenu);
+    document.removeEventListener("pointerdown", this.onDocPointer);
     this.root.destroy({ children: true });
   }
 
   private readonly onKey = (ev: KeyboardEvent): void => {
+    if (ev.key === "Alt" || ev.code === "AltLeft" || ev.code === "AltRight") {
+      ev.preventDefault();
+      return;
+    }
     if (ev.code !== "Space") return;
     const target = ev.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
@@ -128,10 +162,29 @@ export class HordeBattle {
     this.onPauseClick();
   };
 
+  private readonly onKeyUp = (ev: KeyboardEvent): void => {
+    if (ev.key === "Alt" || ev.code === "AltLeft" || ev.code === "AltRight") {
+      ev.preventDefault();
+    }
+  };
+
   private bindHud(): void {
     document.getElementById("btn-pause")?.addEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.addEventListener("click", this.onSpeedClick);
     window.addEventListener("keydown", this.onKey);
+    window.addEventListener("keyup", this.onKeyUp);
+    document.addEventListener("contextmenu", this.onContextMenu);
+    document.addEventListener("pointerdown", this.onDocPointer);
+  }
+
+  /** Сброс выбора способности, требующей цель (ПКМ). */
+  cancelAbilityTargeting(): void {
+    if (!this.selectedAbility && !this.pendingCast) return;
+    this.selectedAbility = null;
+    this.pendingCast = null;
+    this.clearAbilityTelegraph();
+    this.refreshSkillBar();
+    this.hud.setHint(this.idleHint());
   }
 
   private idleHint(): string {
@@ -248,7 +301,7 @@ export class HordeBattle {
       pos: { col: 1, row: 0 },
       stats: { maxHp: 2000, atk: 26, autoAttackCd: 1.2, range: "melee", reach: 1 },
       abilities: ALL_ABILITY_IDS,
-      portraitUrl: PORTRAIT_URLS.aira,
+      portraitUrl: pickRandomHeroPortraitUrl(),
       cardSize: HERO_SIZE,
     });
     this.unitsLayer.addChild(this.hero.view);
@@ -286,12 +339,24 @@ export class HordeBattle {
     );
   }
 
+  private skillBarState(): { selectedAbility: AbilityId | null; gcdRemaining: number; gcdDuration: number } {
+    return {
+      selectedAbility: this.selectedAbility,
+      gcdRemaining: this.gcdRemaining,
+      gcdDuration: ABILITY_GCD,
+    };
+  }
+
+  private refreshSkillBar(rebuild = false): void {
+    if (rebuild) this.hud.renderSkills(this.hero, this.skillBarState());
+    else this.hud.syncSkills(this.hero, this.skillBarState());
+  }
+
   selectHero(id: string | null): void {
     if (id !== this.hero.id) return;
     this.selectedAbility = null;
     this.clearAbilityTelegraph();
-    this.hero.setSelected(true);
-    this.hud.renderSkills(this.hero, null);
+    this.refreshSkillBar(true);
     this.refreshHeroMeta();
     this.hud.setHint(this.idleHint());
   }
@@ -316,22 +381,27 @@ export class HordeBattle {
       this.hud.showToast("На паузе способности недоступны");
       return;
     }
-    if (!this.hero.alive || this.casting) return;
+    if (!this.hero.alive) return;
+    if (this.gcdRemaining > 0) {
+      this.hud.showToast("Глобальная перезарядка");
+      return;
+    }
     if ((this.hero.abilityCd[id] ?? 0) > 0) {
       this.hud.showToast("Способность на перезарядке");
       return;
     }
+    this.pendingCast = null;
     const def = ABILITIES[id];
     if (def.reach <= 0) {
       void this.performCast(def, this.hero, null);
       return;
     }
     this.selectedAbility = id;
-    this.hud.renderSkills(this.hero, id);
+    this.refreshSkillBar();
     this.hud.setHint(
       def.targetMode === "cone"
-        ? `${def.name}: конус, радиус ${def.reach}. Кликните по подсвеченной клетке.`
-        : `${def.name}: радиус ${def.reach}. Кликните по цели в подсветке.`,
+        ? `${def.name}: конус, радиус ${def.reach}. ЛКМ — клетка, ПКМ — отмена.`
+        : `${def.name}: радиус ${def.reach}. ЛКМ — цель, ПКМ — отмена.`,
     );
     this.drawAbilityTelegraph(def);
   }
@@ -474,16 +544,31 @@ export class HordeBattle {
   }
 
   private async performCast(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
-    if (this.casting || this.destroyed || this.paused) return;
+    if (this.destroyed || this.paused) return;
     if (def.targetMode === "enemy" && (!clicked || clicked.team !== "enemy")) {
       this.hud.showToast("Нужна цель-враг");
       return;
     }
+    if (this.casting) {
+      // Не глотаем клик во время VFX предыдущего каста — ставим в очередь.
+      this.pendingCast = { def, clicked, cell };
+      this.selectedAbility = null;
+      this.clearAbilityTelegraph();
+      this.refreshSkillBar();
+      this.hud.setHint(`Ожидание: ${def.name}…`);
+      return;
+    }
+    if (this.gcdRemaining > 0) {
+      this.hud.showToast("Глобальная перезарядка");
+      return;
+    }
     this.casting = true;
+    this.gcdRemaining = ABILITY_GCD;
+    this.pendingCast = null;
     this.selectedAbility = null;
     this.clearAbilityTelegraph();
     this.hero.abilityCd[def.id] = def.cooldown;
-    this.hud.renderSkills(this.hero, null);
+    this.refreshSkillBar();
     this.hud.setHint(`Каст: ${def.name}…`);
     try {
       await this.resolveAbility(def, clicked, cell);
@@ -492,11 +577,24 @@ export class HordeBattle {
         this.hero.setHidden(false);
         this.hero.view.position.set(this.heroAnchor.x, this.heroAnchor.y);
         this.casting = false;
-        this.hud.renderSkills(this.hero, null);
+        this.refreshSkillBar();
         this.hud.setHint(this.hero.alive ? "Способность применена" : "Айра пала");
         this.checkEnd();
+        this.tryFlushPendingCast();
       }
     }
+  }
+
+  private tryFlushPendingCast(): void {
+    if (this.destroyed || this.casting || this.paused || !this.pendingCast) return;
+    if (this.gcdRemaining > 0) return;
+    if (!this.hero.alive) {
+      this.pendingCast = null;
+      return;
+    }
+    const next = this.pendingCast;
+    this.pendingCast = null;
+    void this.performCast(next.def, next.clicked, next.cell);
   }
 
   private async resolveAbility(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
@@ -699,6 +797,7 @@ export class HordeBattle {
 
     if (combatDt <= 0) return;
     this.advanceDrop(combatDt);
+    this.gcdRemaining = Math.max(0, this.gcdRemaining - combatDt);
 
     for (const u of this.units) {
       if (!u.alive) continue;
@@ -722,7 +821,8 @@ export class HordeBattle {
     }
 
     this.maybeStartDrop();
-    this.hud.syncSkills(this.hero, this.selectedAbility);
+    this.tryFlushPendingCast();
+    this.refreshSkillBar();
     this.checkEnd();
   }
 
@@ -740,8 +840,9 @@ export class HordeBattle {
       this.selectedAbility = null;
       this.clearAbilityTelegraph();
     }
+    if (paused) this.pendingCast = null;
     this.hud.setPause(paused);
-    this.hud.syncSkills(this.hero, this.selectedAbility);
+    this.refreshSkillBar();
   }
 
   private checkEnd(): void {

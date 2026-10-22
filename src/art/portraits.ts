@@ -1,13 +1,19 @@
-import femaleFrostPortraitUrl from "../../assets/art/portraits/female_frost_01.png";
 import goblinSpearUrl from "../../assets/art/enemies/goblin_spear.png";
 import huntressUrl from "../../assets/art/enemies/huntress.png";
 import skeletonGuardUrl from "../../assets/art/enemies/skeleton_guard.png";
 import skeletonMageUrl from "../../assets/art/enemies/skeleton_mage.png";
 import { Assets, type Texture } from "pixi.js";
 
-/** URL портретов для юнитов. */
+/** Все портреты героя с префиксом hero_ — подхватываются автоматически. */
+const heroPortraitModules = import.meta.glob<{ default: string }>(
+  "../../assets/art/portraits/hero_*.{png,jpg,jpeg,webp}",
+  { eager: true },
+);
+
+const HERO_PORTRAIT_URLS = Object.values(heroPortraitModules).map((m) => m.default);
+
+/** URL портретов врагов (герой — через pickRandomHeroPortraitUrl). */
 export const PORTRAIT_URLS = {
-  aira: femaleFrostPortraitUrl,
   goblin_spear: goblinSpearUrl,
   skeleton_guard: skeletonGuardUrl,
   huntress: huntressUrl,
@@ -20,19 +26,31 @@ const PORTRAIT_TEXTURE_DATA = {
   scaleMode: "linear" as const,
 };
 
+/** Случайный портрет героя из папки portraits (файлы hero_*). */
+export function pickRandomHeroPortraitUrl(): string {
+  if (HERO_PORTRAIT_URLS.length === 0) {
+    throw new Error('Нет портретов героя: добавьте файлы hero_* в assets/art/portraits');
+  }
+  const index = Math.floor(Math.random() * HERO_PORTRAIT_URLS.length);
+  return HERO_PORTRAIT_URLS[index]!;
+}
+
 export async function preloadPortraits(): Promise<void> {
-  const urls = Object.entries(PORTRAIT_URLS);
-  if (urls.length === 0) return;
+  const entries: [string, string][] = [
+    ...Object.entries(PORTRAIT_URLS),
+    ...HERO_PORTRAIT_URLS.map((src, i) => [`hero_${i}`, src] as [string, string]),
+  ];
+  if (entries.length === 0) return;
 
   await Assets.load(
-    urls.map(([id, src]) => ({
+    entries.map(([id, src]) => ({
       alias: [`portrait:${id}`, src],
       src,
       data: PORTRAIT_TEXTURE_DATA,
     })),
   );
 
-  for (const [, src] of urls) {
+  for (const [, src] of entries) {
     sharpenPortraitTexture(Assets.get<Texture>(src));
   }
 }

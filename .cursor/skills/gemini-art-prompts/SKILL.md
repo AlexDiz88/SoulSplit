@@ -53,29 +53,31 @@ Setting: medieval fantasy dark-magic game world; pure magical effect only — no
 
 ## Stylization direction (LOCKED — match enemy portrait canon)
 
-Locked look = `enemy_portrait_example.jpg`:
+Locked look = `enemy_portrait_example.jpg` (thin white sticker stroke + fine clean dark linework):
 
 - Hard cel-shade / toon with clear light-shadow planes
-- Bold dark internal outlines + **noticeable white sticker outer outline**
+- **Clean fine dark internal outlines** (crisp comic ink, NOT chunky fat black strokes)
+- **THIN white sticker outer outline** — hairline / fine (~2–3px relative to panel), even width, tight to the silhouette; MUST stay thin even when no reference image is attached
 - **Waist-up / torso mid-portrait** — head and upper body LARGE in frame (weapons readable at chest/shoulder)
 - Expressive stylized faces (NOT photoreal, NOT extreme chibi)
 - Rich readable local color and strong contrast
 - **Simplified thematic background per panel** matching the unit (cave, dungeon, forest, fire, swamp, castle, crypt…) — stylized graphic environment, secondary to the character
 - NOT tiny full-body stickers on empty panels
 - NOT grey-green unstructured smoke wash
+- NOT thick / heavy / chunky white borders
 
 ## Style Lock (always include for portrait / unit_card / enemies / bestiary)
 
 ```
-Style lock — ENEMY/UNIT PORTRAIT CANON (must match the look of attached master reference enemy_portrait_example.jpg): stylized 2D dark-fantasy game character PORTRAITS, hard toon/cel shading with clear flat light-shadow planes, bold clean dark internal outlines PLUS a noticeable WHITE sticker outer outline around the silhouette, waist-up / torso mid-shot framing with LARGE readable head and upper body (NOT full-body, NOT tiny distant figures), exaggerated graphic features (NOT photoreal, NOT extreme chibi), above-average graphic costume/creature detail, RICH clear local colors with strong contrast, each panel has its own simplified stylized thematic environment backdrop matching the character (cave, dungeon, forest, fire, swamp, crypt, etc.) kept secondary and graphic — entire character silhouette, white outline, weapons, horns, wings and props FULLY INSIDE each panel with a small safe margin (no overflow past borders, no crossing gutters) — no muddy grey-green smoke wash, no photoreal landscape, no neon glow, no candy oversaturation, no 3D render, no soft anime shading without outlines, no text, no watermark, no UI. Match line weight, white outline language, cel shading, waist-up framing scale, and portrait punch of enemy_portrait_example.jpg; only the character designs change.
+Style lock — ENEMY/UNIT PORTRAIT CANON (must match the look of attached master reference enemy_portrait_example.jpg): stylized 2D dark-fantasy game character PORTRAITS, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, not fat chunky strokes) PLUS a THIN even WHITE sticker outer outline around the silhouette — hairline/fine weight roughly 2–3px relative to each panel, tight to the edge, NEVER a thick heavy white border or fat marker stroke — waist-up / torso mid-shot framing with LARGE readable head and upper body (NOT full-body, NOT tiny distant figures), exaggerated graphic features (NOT photoreal, NOT extreme chibi), above-average graphic costume/creature detail, RICH clear local colors with strong contrast, each panel has its own simplified stylized thematic environment backdrop matching the character (cave, dungeon, forest, fire, swamp, crypt, etc.) kept secondary and graphic — entire character silhouette, thin white outline, weapons, horns, wings and props FULLY INSIDE each panel with a small safe margin (no overflow past borders, no crossing gutters) — no muddy grey-green smoke wash, no photoreal landscape, no neon glow, no candy oversaturation, no 3D render, no soft anime shading without outlines, no text, no watermark, no UI. Match THIN white outline weight, fine dark line language, cel shading, waist-up framing scale, and portrait punch of enemy_portrait_example.jpg; only the character designs change.
 ```
 
 For hero `portrait` use the same rendering language, but framing may be bust/chest-up (even tighter on the face).
 
-### Ability icon Style Lock (KEEP — same visual language as unit portraits: hard toon + white sticker outline)
+### Ability icon Style Lock (KEEP — same visual language as unit portraits: hard toon + thin white sticker outline)
 
 ```
-Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, bold clean dark internal outlines PLUS a noticeable WHITE sticker outer outline around the silhouette, single centered magical symbol/effect, RICH school-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
+Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines PLUS a THIN even WHITE sticker outer outline around the silhouette (hairline/fine ~2–3px relative to panel, NEVER thick chunky white border), single centered magical symbol/effect, RICH school-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
 ```
 
 **Ability icon defaults (LOCKED):** always **3×3 contact sheet**; always the Style Lock above; same ability concept × 9 composition variants; **no gears / brass / steampunk props**.
@@ -137,13 +139,13 @@ Framing per panel: bust/chest-up hero portrait, shoulders visible, head large in
 ### unit_card / enemies / bestiary (LOCKED framing)
 
 ```
-Framing per panel: WAIST-UP / torso mid-portrait like enemy_portrait_example.jpg — head and chest large in frame, weapon or key prop visible near shoulders/torso, bold white sticker outline, simplified stylized thematic environment backdrop matching that enemy (NOT full-body, NOT empty flat panel, NOT smoke wash). CRITICAL containment: the ENTIRE character silhouette, white outline, weapons, horns, wings, and props must stay FULLY INSIDE the panel rectangle — no overflow past edges, no clipping through gutters, no elements crossing into neighboring cells; leave a small safe margin inside each panel border.
+Framing per panel: WAIST-UP / torso mid-portrait like enemy_portrait_example.jpg — head and chest large in frame, weapon or key prop visible near shoulders/torso, THIN white sticker outline (fine, not thick), simplified stylized thematic environment backdrop matching that enemy (NOT full-body, NOT empty flat panel, NOT smoke wash). CRITICAL containment: the ENTIRE character silhouette, thin white outline, weapons, horns, wings, and props must stay FULLY INSIDE the panel rectangle — no overflow past edges, no clipping through gutters, no elements crossing into neighboring cells; leave a small safe margin inside each panel border.
 ```
 
 ### ability_icon
 
 ```
-Framing per panel: one clear magical effect centered and large, white sticker outline, hard toon-shaded form, flat solid dark backdrop, no character, no text, no gears, no brass gadgets, no steampunk props.
+Framing per panel: one clear magical effect centered and large, THIN white sticker outline (fine ~2–3px, not chunky), hard toon-shaded form, flat solid dark backdrop, no character, no text, no gears, no brass gadgets, no steampunk props.
 ```
 
 ### environment
@@ -175,7 +177,7 @@ Subject / theme: {user theme / faction / mood — high-level only; do NOT list n
 
 Panel brief: freely invent NINE unique subjects within the theme — any mix of roles is fine as long as all nine feel distinct and game-ready; do not prescribe fixed face/gear/backdrop lists.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny distant characters, naturalistic wildlife illustration, soft painterly fur, timid mild cartoon realism, missing white sticker outline, extreme chibi, neon glow, candy oversaturation, washed-out colors, muddy grey-brown palette, overly desaturated, soft anime shading without outlines, unstructured smoke background, grey-green fog wash, airbrushed smoky backdrop without structure, busy photo landscape, ornate frames, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same face repeated across panels, identical characters across panels, near-duplicate characters, recycled outfit templates, same weapon in every panel, same backdrop formula repeated, character overflowing panel edges, limbs or weapons crossing gutters, clipped silhouette cut by border, elements spilling into neighboring cells, {extras}
+Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny distant characters, naturalistic wildlife illustration, soft painterly fur, timid mild cartoon realism, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat marker outer outline, oversized white stroke, extreme chibi, neon glow, candy oversaturation, washed-out colors, muddy grey-brown palette, overly desaturated, soft anime shading without outlines, unstructured smoke background, grey-green fog wash, airbrushed smoky backdrop without structure, busy photo landscape, ornate frames, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same face repeated across panels, identical characters across panels, near-duplicate characters, recycled outfit templates, same weapon in every panel, same backdrop formula repeated, character overflowing panel edges, limbs or weapons crossing gutters, clipped silhouette cut by border, elements spilling into neighboring cells, {extras}
 ```
 
 ### Ability icons (`ability_icon`)
@@ -202,8 +204,8 @@ Negatives: {shared negatives} + character, face, hands, different ability concep
 
 ### Asset-specific negative extras
 
-- **portrait / unit_card / enemies:** `full-body standing pose, feet visible, character too small in frame, empty flat void background, smoky teal fog behind subject, overflow outside frame, cropped horns/weapons by panel edge`
-- **ability_icon:** `character, face, hands, different ability concepts across panels, weak muddy silhouette, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork`
+- **portrait / unit_card / enemies:** `full-body standing pose, feet visible, character too small in frame, empty flat void background, smoky teal fog behind subject, overflow outside frame, cropped horns/weapons by panel edge, thick white outline, heavy white border, chunky sticker stroke`
+- **ability_icon:** `character, face, hands, different ability concepts across panels, weak muddy silhouette, thick white outline, heavy white border, chunky sticker stroke, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork`
 - **environment:** `busy unreadable clutter, neon haze, dominating foreground characters, photoreal landscape`
 
 ## Subject writing tips

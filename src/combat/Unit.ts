@@ -1,10 +1,11 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import { SCHOOL_COLOR } from "../abilities/definitions";
 import { sharpenPortraitTexture } from "../art/portraits";
 import type { AbilityId, GridPos, School, StatusEffect, Team, UnitStats } from "../types";
 
 const CARD = 112;
 const PORTRAIT_PAD = 3;
+const FRAME_RADIUS = 1;
+const FRAME_COLOR = 0xffffff;
 
 export interface UnitInit {
   id: string;
@@ -52,7 +53,6 @@ export class Unit {
   private nameText: Text;
   private statusText: Text;
   private subText: Text;
-  private selectRing: Graphics;
   private flashGfx: Graphics;
   private cdBarBg: Graphics;
   private cdBarFg: Graphics;
@@ -76,7 +76,6 @@ export class Unit {
 
     this.view.eventMode = "none";
 
-    this.selectRing = new Graphics();
     this.frame = new Graphics();
     this.flashGfx = new Graphics();
     this.cdBarBg = new Graphics();
@@ -128,7 +127,6 @@ export class Unit {
     this.subText.anchor.set(0.5);
 
     this.view.addChild(
-      this.selectRing,
       this.frame,
       this.flashGfx,
       this.hpBarBg,
@@ -160,14 +158,16 @@ export class Unit {
     sprite.roundPixels = true;
 
     // Скругление без stencil-mask: маска через alpha часто мылит края
-    const mask = new Graphics().roundRect(-size / 2, -size / 2, size, size, 6).fill(0xffffff);
+    const mask = new Graphics()
+      .roundRect(-size / 2, -size / 2, size, size, FRAME_RADIUS)
+      .fill(0xffffff);
     sprite.mask = mask;
     mask.eventMode = "none";
 
     this.portrait = sprite;
-    // selectRing, frame, portrait(+mask), flash, bars, texts
-    this.view.addChildAt(mask, 2);
-    this.view.addChildAt(sprite, 3);
+    // frame, portrait(+mask), flash, bars, texts
+    this.view.addChildAt(mask, 1);
+    this.view.addChildAt(sprite, 2);
     this.nameText.visible = false;
   }
 
@@ -179,32 +179,21 @@ export class Unit {
     return this.cardSize / 2;
   }
 
-  setSelected(on: boolean): void {
-    this.selectRing.clear();
-    if (on) {
-      this.selectRing
-        .roundRect(-this.half - 6, -this.half - 6, this.cardSize + 12, this.cardSize + 12, 8)
-        .stroke({
-          color: 0xc4a35a,
-          width: 3,
-          alpha: 0.95,
-        });
-    }
-  }
-
   redraw(): void {
-    const color = this.team === "player" ? SCHOOL_COLOR[this.school] : 0x6a3a3a;
-    const body = this.team === "player" ? 0x2a3324 : 0x3a2424;
     const half = this.half;
     const barW = this.cardSize - 6;
     const barH = 12;
     const barY = half - barH - 1;
     this.frame.clear();
-    this.frame.roundRect(-half, -half, this.cardSize, this.cardSize, 7).fill({ color: body, alpha: 0.95 });
-    this.frame.roundRect(-half, -half, this.cardSize, this.cardSize, 7).stroke({ color, width: 3 });
+    this.frame
+      .roundRect(-half, -half, this.cardSize, this.cardSize, FRAME_RADIUS)
+      .fill({ color: 0x1a2018, alpha: 0.95 });
+    this.frame
+      .roundRect(-half, -half, this.cardSize, this.cardSize, FRAME_RADIUS)
+      .stroke({ color: FRAME_COLOR, width: 2 });
 
     if (!this.portrait) {
-      this.frame.roundRect(-22, -28, 44, 20, 4).fill({ color, alpha: 0.85 });
+      this.frame.roundRect(-22, -28, 44, 20, FRAME_RADIUS).fill({ color: 0x3a4534, alpha: 0.85 });
       this.nameText.position.set(0, -18);
       this.nameText.text = this.short;
       this.nameText.visible = true;
@@ -328,7 +317,10 @@ export class Unit {
   }
 
   flash(color: number): void {
-    this.flashGfx.clear().roundRect(-this.half, -this.half, this.cardSize, this.cardSize, 7).fill({ color, alpha: 0.55 });
+    this.flashGfx
+      .clear()
+      .roundRect(-this.half, -this.half, this.cardSize, this.cardSize, FRAME_RADIUS)
+      .fill({ color, alpha: 0.55 });
     window.setTimeout(() => this.flashGfx.clear(), 80);
   }
 

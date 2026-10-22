@@ -5,9 +5,17 @@ import { WEAPON_LABEL, WEAPON_ORDER, WEAPON_REACH } from "../combat/weapons";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId, WeaponKind } from "../types";
 
+export interface SkillBarState {
+  selectedAbility: AbilityId | null;
+  /** Оставшееся время ГКД в секундах. */
+  gcdRemaining: number;
+  /** Длительность ГКД (для визуала). */
+  gcdDuration: number;
+}
+
 export interface BattleHudApi {
-  renderSkills(unit: Unit | null, selectedAbility: AbilityId | null): void;
-  syncSkills(unit: Unit, selectedAbility: AbilityId | null): void;
+  renderSkills(unit: Unit | null, state: SkillBarState): void;
+  syncSkills(unit: Unit, state: SkillBarState): void;
   setHeroMeta(unit: Unit | null, extra?: string): void;
   setHint(text: string): void;
   showToast(text: string): void;
@@ -78,29 +86,63 @@ export function createBattleHud(
     tooltip.style.top = `${Math.max(8, top)}px`;
   };
 
-  const renderSkills = (unit: Unit | null, selectedAbility: AbilityId | null): void => {
+  const applySkillVisual = (
+    btn: HTMLButtonElement,
+    unit: Unit,
+    id: AbilityId,
+    state: SkillBarState,
+  ): void => {
+    const cd = unit.abilityCd[id] ?? 0;
+    const onCd = cd > 0.05;
+    const onGcd = state.gcdRemaining > 0.02;
+    const locked = !unit.alive || onCd || onGcd;
+    btn.setAttribute("aria-disabled", locked ? "true" : "false");
+    btn.classList.toggle("locked", locked);
+    btn.classList.toggle("selected", state.selectedAbility === id);
+    btn.classList.toggle("on-gcd", onGcd);
+
+    let gcdOverlay = btn.querySelector<HTMLElement>(".gcd-overlay");
+    if (onGcd) {
+      if (!gcdOverlay) {
+        gcdOverlay = document.createElement("span");
+        gcdOverlay.className = "gcd-overlay";
+        btn.appendChild(gcdOverlay);
+      }
+      const ratio =
+        state.gcdDuration > 0 ? Math.min(1, state.gcdRemaining / state.gcdDuration) : 0;
+      gcdOverlay.style.setProperty("--gcd", String(ratio));
+    } else {
+      gcdOverlay?.remove();
+    }
+
+    let overlay = btn.querySelector<HTMLElement>(".cd-overlay");
+    if (onCd) {
+      if (!overlay) {
+        overlay = document.createElement("span");
+        overlay.className = "cd-overlay";
+        btn.appendChild(overlay);
+      }
+      overlay.textContent = String(Math.ceil(cd));
+    } else {
+      overlay?.remove();
+    }
+  };
+
+  const renderSkills = (unit: Unit | null, state: SkillBarState): void => {
     skillBar.innerHTML = "";
     hideTooltip();
     if (!unit) return;
     for (const id of unit.abilities) {
       const def = ABILITIES[id];
-      const cd = unit.abilityCd[id] ?? 0;
       const iconUrl = ABILITY_ICON_URLS[id];
       const btn = document.createElement("button");
-      const locked = !unit.alive || cd > 0.05;
       btn.type = "button";
       btn.dataset.ability = id;
-      btn.className = `skill-btn school-${def.school}${selectedAbility === id ? " selected" : ""}${iconUrl ? " has-art" : ""}${locked ? " locked" : ""}`;
-      btn.setAttribute("aria-disabled", locked ? "true" : "false");
+      btn.className = `skill-btn school-${def.school}${iconUrl ? " has-art" : ""}`;
       btn.innerHTML = iconUrl
-        ? `<img class="skill-icon" src="${iconUrl}" alt="${def.name}" />`
+        ? `<img class="skill-icon" src="${iconUrl}" alt="${def.name}" draggable="false" />`
         : `<span class="glyph">${def.glyph}</span>`;
-      if (cd > 0.05) {
-        const overlay = document.createElement("span");
-        overlay.className = "cd-overlay";
-        overlay.textContent = String(Math.ceil(cd));
-        btn.appendChild(overlay);
-      }
+      applySkillVisual(btn, unit, id, state);
       btn.addEventListener("click", () => onSelectAbility(id));
       btn.addEventListener("mouseenter", () => showTooltip(btn, id));
       btn.addEventListener("mouseleave", hideTooltip);
@@ -110,32 +152,16 @@ export function createBattleHud(
     }
   };
 
-  const syncSkills = (unit: Unit, selectedAbility: AbilityId | null): void => {
+  const syncSkills = (unit: Unit, state: SkillBarState): void => {
     const buttons = [...skillBar.querySelectorAll<HTMLButtonElement>("button.skill-btn")];
     if (buttons.length !== unit.abilities.length) {
-      renderSkills(unit, selectedAbility);
+      renderSkills(unit, state);
       return;
     }
     unit.abilities.forEach((id, index) => {
       const btn = buttons[index];
       if (!btn) return;
-      const cd = unit.abilityCd[id] ?? 0;
-      const onCd = cd > 0.05;
-      const locked = !unit.alive || onCd;
-      btn.setAttribute("aria-disabled", locked ? "true" : "false");
-      btn.classList.toggle("locked", locked);
-      btn.classList.toggle("selected", selectedAbility === id);
-      let overlay = btn.querySelector(".cd-overlay");
-      if (onCd) {
-        if (!overlay) {
-          overlay = document.createElement("span");
-          overlay.className = "cd-overlay";
-          btn.appendChild(overlay);
-        }
-        overlay.textContent = String(Math.ceil(cd));
-      } else {
-        overlay?.remove();
-      }
+      applySkillVisual(btn, unit, id, state);
     });
   };
 
