@@ -274,9 +274,9 @@ textarea,
 
 .skill-bar {
   align-self: center;
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(5, 83px);
   gap: 8px;
-  flex-wrap: nowrap;
   justify-content: center;
 }
 
@@ -297,6 +297,31 @@ textarea,
   transform: none;
   user-select: none;
   -webkit-user-drag: none;
+  -webkit-touch-callout: none;
+  touch-action: manipulation;
+}
+
+.skill-btn.empty {
+  opacity: 0.28;
+  cursor: default;
+  background: linear-gradient(180deg, rgba(28, 34, 26, 0.7), rgba(12, 16, 12, 0.75));
+}
+
+.skill-hotkey {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  z-index: 4;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: rgba(232, 224, 200, 0.7);
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 2px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  user-select: none;
 }
 
 .skill-btn.has-art {
@@ -304,6 +329,13 @@ textarea,
   background: transparent;
   border: none;
   border-radius: 50%;
+  overflow: visible;
+}
+
+.skill-btn.has-art .skill-hotkey {
+  top: -2px;
+  left: -1px;
+  color: rgba(245, 238, 220, 0.78);
 }
 
 .skill-btn.has-art:hover:not(:disabled):not(.selected),
@@ -1042,10 +1074,10 @@ textarea,
 
   .skill-bar {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 2.4vw;
-    width: 78vw;
-    max-width: 78vw;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 1.8vw 2vw;
+    width: 92vw;
+    max-width: 92vw;
     margin-inline: auto;
   }
 
@@ -1053,6 +1085,10 @@ textarea,
     width: 100%;
     height: auto;
     aspect-ratio: 1;
+  }
+
+  .skill-hotkey {
+    display: none;
   }
 
   .battle-banner {
@@ -1205,14 +1241,18 @@ textarea,
 
   .skill-bar {
     display: grid;
-    grid-template-columns: repeat(4, 10.5vh);
-    gap: 1.2vh 1.4vh;
+    grid-template-columns: repeat(5, 9.2vh);
+    gap: 1vh 1.2vh;
     width: auto;
   }
 
   .skill-btn {
-    width: 10.5vh;
-    height: 10.5vh;
+    width: 9.2vh;
+    height: 9.2vh;
+  }
+
+  .skill-hotkey {
+    display: none;
   }
 
   .battle-start-btn {

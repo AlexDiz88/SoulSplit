@@ -156,102 +156,100 @@ export async function playIceArrowVfx(
   const flakes: { g: Graphics; life: number; max: number; rot: number; vr: number }[] = [];
 
   const ang = Math.atan2(to.y - from.y, to.x - from.x);
-  const duration = 0.52;
-  const arc = 48;
+  const dist = Math.hypot(to.x - from.x, to.y - from.y);
+  const duration = Math.max(0.16, dist / 920);
 
-  await tweens.to(duration, (t) => {
-    const x = lerp(from.x, to.x, t);
-    const y = lerp(from.y, to.y, t) - Math.sin(Math.PI * t) * arc;
-    // касательная для поворота
-    const t2 = Math.min(1, t + 0.02);
-    const x2 = lerp(from.x, to.x, t2);
-    const y2 = lerp(from.y, to.y, t2) - Math.sin(Math.PI * t2) * arc;
-    const dir = Math.atan2(y2 - y, x2 - x);
+  await tweens.to(
+    duration,
+    (t) => {
+      const x = lerp(from.x, to.x, t);
+      const y = lerp(from.y, to.y, t);
+      const dir = ang;
 
-    bolt.position.set(x, y);
-    bolt.rotation = dir;
-    boltHalo.position.set(x, y);
-    boltHalo.rotation = dir;
-    boltHalo.alpha = 0.35 + Math.sin(t * 30) * 0.1;
-    boltGlow.position.set(x, y);
-    boltGlow.rotation = dir;
-    boltGlow.alpha = 0.4 + Math.sin(t * 40) * 0.1;
-    boltGlow.scale.set(0.5 + Math.sin(t * 20) * 0.06, 0.24);
+      bolt.position.set(x, y);
+      bolt.rotation = dir;
+      boltHalo.position.set(x, y);
+      boltHalo.rotation = dir;
+      boltHalo.alpha = 0.35 + Math.sin(t * 30) * 0.1;
+      boltGlow.position.set(x, y);
+      boltGlow.rotation = dir;
+      boltGlow.alpha = 0.4 + Math.sin(t * 40) * 0.1;
+      boltGlow.scale.set(0.5 + Math.sin(t * 20) * 0.06, 0.24);
 
-    chargeGlow.alpha = (1 - t) * 0.35;
-    chargeGlow.scale.set(0.75 * (1 - t * 0.5));
+      chargeGlow.alpha = (1 - t) * 0.35;
+      chargeGlow.scale.set(0.75 * (1 - t * 0.5));
 
-    // иней-след
-    if (Math.random() < 0.85) {
-      const mist = new Sprite(TEX.frostMist());
-      mist.anchor.set(0.5);
-      mist.position.set(x - Math.cos(dir) * 10 + (Math.random() - 0.5) * 8, y - Math.sin(dir) * 10);
-      mist.scale.set(0.25 + Math.random() * 0.2);
-      mist.alpha = 0.55;
-      mist.blendMode = "add";
-      crisp.addChild(mist);
-      trail.push({
-        s: mist,
-        life: 0,
-        max: 0.35 + Math.random() * 0.2,
-        vx: (Math.random() - 0.5) * 20,
-        vy: 15 + Math.random() * 25,
-      });
-    }
+      // иней-след
+      if (Math.random() < 0.85) {
+        const mist = new Sprite(TEX.frostMist());
+        mist.anchor.set(0.5);
+        mist.position.set(x - Math.cos(dir) * 10 + (Math.random() - 0.5) * 8, y - Math.sin(dir) * 10);
+        mist.scale.set(0.25 + Math.random() * 0.2);
+        mist.alpha = 0.55;
+        mist.blendMode = "add";
+        crisp.addChild(mist);
+        trail.push({
+          s: mist,
+          life: 0,
+          max: 0.35 + Math.random() * 0.2,
+          vx: (Math.random() - 0.5) * 20,
+          vy: 15 + Math.random() * 25,
+        });
+      }
 
-    // снежинки
-    if (Math.random() < 0.35) {
-      const fg = new Graphics();
-      drawSnowflake(fg, 4 + Math.random() * 5, 0xd8f4ff, 0.9);
-      fg.position.set(x + (Math.random() - 0.5) * 16, y + (Math.random() - 0.5) * 16);
-      crisp.addChild(fg);
-      flakes.push({
-        g: fg,
-        life: 0,
-        max: 0.45 + Math.random() * 0.25,
-        rot: Math.random() * Math.PI,
-        vr: (Math.random() - 0.5) * 6,
-      });
-    }
+      // снежинки
+      if (Math.random() < 0.35) {
+        const fg = new Graphics();
+        drawSnowflake(fg, 4 + Math.random() * 5, 0xd8f4ff, 0.9);
+        fg.position.set(x + (Math.random() - 0.5) * 16, y + (Math.random() - 0.5) * 16);
+        crisp.addChild(fg);
+        flakes.push({
+          g: fg,
+          life: 0,
+          max: 0.45 + Math.random() * 0.25,
+          rot: Math.random() * Math.PI,
+          vr: (Math.random() - 0.5) * 6,
+        });
+      }
 
-    // осколки-искры вдоль пути
-    if (Math.random() < 0.5) {
-      const shard = new Graphics();
-      const sl = 3 + Math.random() * 6;
-      shard
-        .moveTo(0, 0)
-        .lineTo(sl, Math.random() * 2 - 1)
-        .lineTo(sl * 0.4, 2)
-        .fill({ color: 0xb8e8ff, alpha: 0.9 });
-      shard.position.set(x, y);
-      shard.rotation = dir + Math.PI + (Math.random() - 0.5) * 0.8;
-      crisp.addChild(shard);
-      trail.push({
-        s: shard,
-        life: 0,
-        max: 0.25,
-        vx: -Math.cos(dir) * 40 + (Math.random() - 0.5) * 30,
-        vy: -Math.sin(dir) * 40 + (Math.random() - 0.5) * 30,
-      });
-    }
+      // осколки-искры вдоль пути
+      if (Math.random() < 0.5) {
+        const shard = new Graphics();
+        const sl = 3 + Math.random() * 6;
+        shard
+          .moveTo(0, 0)
+          .lineTo(sl, Math.random() * 2 - 1)
+          .lineTo(sl * 0.4, 2)
+          .fill({ color: 0xb8e8ff, alpha: 0.9 });
+        shard.position.set(x, y);
+        shard.rotation = dir + Math.PI + (Math.random() - 0.5) * 0.8;
+        crisp.addChild(shard);
+        trail.push({
+          s: shard,
+          life: 0,
+          max: 0.25,
+          vx: -Math.cos(dir) * 40 + (Math.random() - 0.5) * 30,
+          vy: -Math.sin(dir) * 40 + (Math.random() - 0.5) * 30,
+        });
+      }
 
-    for (const bit of trail) {
-      bit.life += 1 / 60;
-      const k = bit.life / bit.max;
-      bit.s.x += bit.vx * (1 / 60);
-      bit.s.y += bit.vy * (1 / 60);
-      bit.s.alpha = Math.max(0, 1 - k);
-      if (bit.s instanceof Sprite) bit.s.scale.set(0.2 + (1 - k) * 0.15);
-    }
-    for (const f of flakes) {
-      f.life += 1 / 60;
-      f.g.rotation = f.rot + f.vr * f.life;
-      f.g.y += 20 * (1 / 60);
-      f.g.alpha = Math.max(0, 1 - f.life / f.max);
-    }
-  });
-
-  void ang;
+      for (const bit of trail) {
+        bit.life += 1 / 60;
+        const k = bit.life / bit.max;
+        bit.s.x += bit.vx * (1 / 60);
+        bit.s.y += bit.vy * (1 / 60);
+        bit.s.alpha = Math.max(0, 1 - k);
+        if (bit.s instanceof Sprite) bit.s.scale.set(0.2 + (1 - k) * 0.15);
+      }
+      for (const f of flakes) {
+        f.life += 1 / 60;
+        f.g.rotation = f.rot + f.vr * f.life;
+        f.g.y += 20 * (1 / 60);
+        f.g.alpha = Math.max(0, 1 - f.life / f.max);
+      }
+    },
+    { ease: (t) => t },
+  );
   bolt.destroy({ children: true });
   boltGlow.destroy();
   boltHalo.destroy();

@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitions";
-import { blastCells, GRID_SIZE } from "../abilities/shapes";
+import { dragonBreathCells, GRID_SIZE } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { AbilityDef, AbilityId, GridPos, WeaponKind } from "../types";
@@ -10,7 +10,7 @@ import { CELL, GAP } from "./board";
 import { rollEncounter } from "./enemies";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
-import type { BattleHudApi } from "../ui/BattleHud";
+import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
 
 const PITCH = CELL + GAP;
 const HERO_SIZE = CELL * 2 + GAP;
@@ -61,6 +61,8 @@ export class HordeBattle {
   private baseBoardY = 0;
   private rangeGfx = new Graphics();
   private abilityGfx: Graphics | null = null;
+  private hoverGfx: Graphics | null = null;
+  private hoverCell: GridPos | null = null;
   private mark = new Graphics();
   private drop: { elapsed: number; anim: DropAnim[] } | null = null;
   private readonly hud: BattleHudApi;
@@ -99,6 +101,8 @@ export class HordeBattle {
     this.selectHero(this.hero.id);
     this.bindHud();
     this.app.canvas.addEventListener("pointerdown", this.onPointer);
+    this.app.canvas.addEventListener("pointermove", this.onPointerMove);
+    this.app.canvas.addEventListener("pointerleave", this.onPointerLeave);
     this.app.ticker.add(this.onTick);
     window.addEventListener("resize", this.onResize);
   }
@@ -121,6 +125,22 @@ export class HordeBattle {
     if (ev.button !== 0) return;
     this.onCanvasPointer(ev);
   };
+
+  private readonly onPointerMove = (ev: PointerEvent): void => {
+    this.updateAbilityHover(ev);
+  };
+
+  private readonly onPointerLeave = (): void => {
+    this.clearHoverTelegraph();
+  };
+
+  private pointerLocal(ev: PointerEvent): { x: number; y: number } {
+    const bounds = this.app.canvas.getBoundingClientRect();
+    return {
+      x: (ev.clientX - bounds.left - this.board.x) / this.board.scale.x,
+      y: (ev.clientY - bounds.top - this.board.y) / this.board.scale.y,
+    };
+  }
 
   private readonly onContextMenu = (ev: MouseEvent): void => {
     ev.preventDefault();
@@ -159,6 +179,8 @@ export class HordeBattle {
     this.destroyed = true;
     this.app.ticker.remove(this.onTick);
     this.app.canvas.removeEventListener("pointerdown", this.onPointer);
+    this.app.canvas.removeEventListener("pointermove", this.onPointerMove);
+    this.app.canvas.removeEventListener("pointerleave", this.onPointerLeave);
     window.removeEventListener("resize", this.onResize);
     document.getElementById("btn-pause")?.removeEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.removeEventListener("click", this.onSpeedClick);
@@ -174,12 +196,26 @@ export class HordeBattle {
       ev.preventDefault();
       return;
     }
-    if (ev.code !== "Space") return;
     const target = ev.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-    ev.preventDefault();
     if (ev.repeat) return;
-    this.onPauseClick();
+
+    if (ev.code === "Space") {
+      ev.preventDefault();
+      this.onPauseClick();
+      return;
+    }
+
+    const slot = (SKILL_HOTKEY_CODES as readonly string[]).indexOf(ev.code);
+    if (slot < 0) return;
+    if (!document.getElementById("grimoire")?.hidden) return;
+    if (!document.getElementById("bestiary")?.hidden) return;
+    if (!document.getElementById("side-menu")?.hidden) return;
+
+    const id = this.hero?.abilities[slot];
+    if (!id) return;
+    ev.preventDefault();
+    this.selectAbility(id);
   };
 
   private readonly onKeyUp = (ev: KeyboardEvent): void => {
@@ -453,17 +489,15 @@ export class HordeBattle {
     this.selectedAbility = id;
     this.refreshSkillBar();
     this.hud.setHint(
-      def.targetMode === "cone"
-        ? `${def.name}: конус, радиус ${def.reach}. ЛКМ — клетка, ПКМ — отмена.`
-        : `${def.name}: радиус ${def.reach}. ЛКМ — цель, ПКМ — отмена.`,
+      def.targetMode === "zone"
+        ? `${def.name}: зона, ряд ${def.reach}. ЛКМ - клетка, ПКМ - отмена.`
+        : `${def.name}: радиус ${def.reach}. ЛКМ - цель, ПКМ - отмена.`,
     );
     this.drawAbilityTelegraph(def);
   }
 
   private onCanvasPointer(ev: PointerEvent): void {
-    const bounds = this.app.canvas.getBoundingClientRect();
-    const localX = (ev.clientX - bounds.left - this.board.x) / this.board.scale.x;
-    const localY = (ev.clientY - bounds.top - this.board.y) / this.board.scale.y;
+    const { x: localX, y: localY } = this.pointerLocal(ev);
     const hit = this.unitAtLocal(localX, localY);
     if (hit) {
       this.onUnitClick(hit);
@@ -481,15 +515,7 @@ export class HordeBattle {
       this.hud.showToast("Клетка вне радиуса");
       return;
     }
-    if (def.targetMode === "cone") {
-      if (!this.coneCells(def.reach).some((c) => c.col === cell.col && c.row === cell.row)) {
-        this.hud.showToast("Вне конуса");
-        return;
-      }
-      void this.performCast(def, null, cell);
-      return;
-    }
-    if (def.targetMode === "enemy_blast") {
+    if (def.targetMode === "zone" || def.targetMode === "enemy_blast" || def.targetMode === "cone") {
       void this.performCast(def, this.unitAtCell(cell), cell);
       return;
     }
@@ -511,13 +537,6 @@ export class HordeBattle {
       if (this.distanceOf(u.pos.row) > def.reach) {
         this.hud.showToast("Цель вне радиуса способности");
         return;
-      }
-      if (def.targetMode === "cone") {
-        const inside = this.coneCells(def.reach).some((c) => c.col === u.pos.col && c.row === u.pos.row);
-        if (!inside) {
-          this.hud.showToast("Вне конуса");
-          return;
-        }
       }
       void this.performCast(def, u, u.pos);
       return;
@@ -553,19 +572,6 @@ export class HordeBattle {
     );
   }
 
-  private coneCells(reach: number): GridPos[] {
-    const cells: GridPos[] = [];
-    const mid = (GRID_SIZE - 1) / 2;
-    for (let row = 0; row < GRID_SIZE; row++) {
-      const dist = this.distanceOf(row);
-      if (dist > reach) continue;
-      for (let col = 0; col < GRID_SIZE; col++) {
-        if (Math.abs(col - mid) <= dist - 0.5) cells.push({ col, row });
-      }
-    }
-    return cells;
-  }
-
   private cellsInReach(reach: number): GridPos[] {
     const cells: GridPos[] = [];
     for (let row = 0; row < GRID_SIZE; row++) {
@@ -581,20 +587,76 @@ export class HordeBattle {
 
   private drawAbilityTelegraph(def: AbilityDef): void {
     this.clearAbilityTelegraph();
-    const cells = def.targetMode === "cone" ? this.coneCells(def.reach) : this.cellsInReach(def.reach);
+    const cells = this.cellsInReach(def.reach);
     this.abilityGfx = this.vfx.highlightCells(
       cells.map((pos) => {
         const c = this.cellCenter(pos);
         return { x: c.x, y: c.y, size: CELL - 8 };
       }),
       SCHOOL_COLOR[def.school],
+      { fillAlpha: 0.08, strokeAlpha: 0.32, strokeWidth: 1.5 },
     );
     this.telegraphLayer.addChild(this.abilityGfx);
+  }
+
+  private updateAbilityHover(ev: PointerEvent): void {
+    if (this.destroyed || !this.selectedAbility || this.paused || this.casting) {
+      this.clearHoverTelegraph();
+      return;
+    }
+    const def = ABILITIES[this.selectedAbility];
+    if (def.targetMode !== "zone") {
+      this.clearHoverTelegraph();
+      return;
+    }
+    const local = this.pointerLocal(ev);
+    const unit = this.unitAtLocal(local.x, local.y);
+    let cell: GridPos | null = null;
+    if (unit && unit.team === "enemy" && this.distanceOf(unit.pos.row) <= def.reach) {
+      cell = unit.pos;
+    } else {
+      cell = this.cellAtLocal(local.x, local.y);
+      if (cell && this.distanceOf(cell.row) > def.reach) cell = null;
+    }
+    if (!cell) {
+      this.clearHoverTelegraph();
+      return;
+    }
+    if (this.hoverCell && this.hoverCell.col === cell.col && this.hoverCell.row === cell.row) return;
+    this.drawHoverImpact(def, cell);
+  }
+
+  private drawHoverImpact(def: AbilityDef, cell: GridPos): void {
+    this.hoverGfx?.destroy();
+    this.hoverGfx = null;
+    this.hoverCell = cell;
+    const hits =
+      def.id === "flame_cone" ? dragonBreathCells(cell).map((h) => h.pos) : [cell];
+    const centers = hits.map((pos) => {
+      const c = this.cellCenter(pos);
+      return { x: c.x, y: c.y, size: CELL - 6 };
+    });
+    this.hoverGfx =
+      def.id === "flame_cone"
+        ? this.vfx.highlightHeatCells(centers)
+        : this.vfx.highlightCells(centers, 0xffe08a, {
+            fillAlpha: 0.34,
+            strokeAlpha: 0.95,
+            strokeWidth: 2.5,
+          });
+    this.telegraphLayer.addChild(this.hoverGfx);
+  }
+
+  private clearHoverTelegraph(): void {
+    this.hoverGfx?.destroy();
+    this.hoverGfx = null;
+    this.hoverCell = null;
   }
 
   private clearAbilityTelegraph(): void {
     this.abilityGfx?.destroy();
     this.abilityGfx = null;
+    this.clearHoverTelegraph();
   }
 
   private async performCast(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
@@ -672,24 +734,26 @@ export class HordeBattle {
         break;
       }
       case "fireball": {
-        const aim = clicked?.pos ?? cell;
-        if (!aim) return;
-        const primary = clicked ?? this.unitAtCell(aim);
-        const cells = blastCells(aim);
-        const to = this.cellCenter(aim);
-        const centers = cells.map((p) => this.cellCenter(p));
-        await this.vfx.fireball(from, to, centers, () => {
-          for (const u of this.unitsOnCells(cells)) {
-            this.dealAbilityDamage(caster, u, u.id === primary?.id ? def.damage : def.damage * 0.55);
-          }
+        if (!clicked) return;
+        const to = clicked.center;
+        await this.vfx.fireball(from, to, [to], () => {
+          this.dealAbilityDamage(caster, clicked, def.damage);
+          clicked.addStatus({ id: "burn", kind: "burn", remaining: 4, potency: 8 });
+          this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
         });
         break;
       }
       case "flame_cone": {
-        const cells = this.coneCells(def.reach);
-        const centers = cells.map((p) => this.cellCenter(p));
-        await this.vfx.flameCone(from, centers);
-        for (const u of this.unitsOnCells(cells)) this.dealAbilityDamage(caster, u, def.damage);
+        const aim = cell ?? clicked?.pos;
+        if (!aim) return;
+        const hits = dragonBreathCells(aim);
+        const centers = hits.map((h) => this.cellCenter(h.pos));
+        await this.vfx.flameCone(from, centers, CELL);
+        for (const hit of hits) {
+          const u = this.unitAtCell(hit.pos);
+          if (!u) continue;
+          this.dealAbilityDamage(caster, u, hit.full ? def.damage : def.damage * 0.55);
+        }
         break;
       }
       case "stun_strike": {
@@ -744,12 +808,6 @@ export class HordeBattle {
       default:
         break;
     }
-  }
-
-  private unitsOnCells(cells: GridPos[]): Unit[] {
-    return this.units.filter(
-      (u) => u.team === "enemy" && u.alive && cells.some((c) => c.col === u.pos.col && c.row === u.pos.row),
-    );
   }
 
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number): void {

@@ -151,7 +151,7 @@ export class VfxManager {
     for (const s of shards) s.g.destroy();
   }
 
-  /** Премиум: огненный шар по дуге + AoE взрыв */
+  /** Премиум: огненный шар по прямой + взрыв */
   async fireball(
     from: { x: number; y: number },
     to: { x: number; y: number },
@@ -170,9 +170,18 @@ export class VfxManager {
   }
 
   /** Премиум: telegraph → турбулентный конус → угли/дым → ожоги */
-  async flameCone(origin: { x: number; y: number }, targets: { x: number; y: number }[]): Promise<void> {
-    await playFlameConeVfx(this.layer, this.tweens, origin, targets, (amp, dur) =>
-      this.screenShake(amp, dur),
+  async flameCone(
+    origin: { x: number; y: number },
+    targets: { x: number; y: number }[],
+    cellSize = 124,
+  ): Promise<void> {
+    await playFlameConeVfx(
+      this.layer,
+      this.tweens,
+      origin,
+      targets,
+      (amp, dur) => this.screenShake(amp, dur),
+      cellSize,
     );
   }
 
@@ -274,19 +283,67 @@ export class VfxManager {
   highlightCells(
     cells: { x: number; y: number; size: number }[],
     color: number,
+    opts?: { fillAlpha?: number; strokeAlpha?: number; strokeWidth?: number },
   ): Graphics {
+    const fillAlpha = opts?.fillAlpha ?? 0.28;
+    const strokeAlpha = opts?.strokeAlpha ?? 0.85;
+    const strokeWidth = opts?.strokeWidth ?? 2;
     const g = new Graphics();
     g.eventMode = "none";
     for (const c of cells) {
       g.roundRect(c.x - c.size / 2, c.y - c.size / 2, c.size, c.size, 6).fill({
         color,
-        alpha: 0.28,
+        alpha: fillAlpha,
       });
       g.roundRect(c.x - c.size / 2, c.y - c.size / 2, c.size, c.size, 6).stroke({
         color,
-        width: 2,
-        alpha: 0.85,
+        width: strokeWidth,
+        alpha: strokeAlpha,
       });
+    }
+    return g;
+  }
+
+  /** Раскалённый пол клеток (превью зоны урона, напр. Дыхание дракона). */
+  highlightHeatCells(cells: { x: number; y: number; size: number }[]): Graphics {
+    const g = new Graphics();
+    g.eventMode = "none";
+    for (const c of cells) {
+      const half = c.size / 2;
+      g.roundRect(c.x - half, c.y - half, c.size, c.size, 10).fill({
+        color: 0x3a0a04,
+        alpha: 0.28,
+      });
+      g.roundRect(c.x - half + 3, c.y - half + 3, c.size - 6, c.size - 6, 8).fill({
+        color: 0xff4010,
+        alpha: 0.22,
+      });
+      g.ellipse(c.x, c.y + half * 0.18, half * 0.78, half * 0.52).fill({
+        color: 0xffaa40,
+        alpha: 0.2,
+      });
+      g.roundRect(c.x - half, c.y - half, c.size, c.size, 10).stroke({
+        color: 0xffb048,
+        width: 2.2,
+        alpha: 0.75,
+      });
+      g.roundRect(c.x - half + 5, c.y - half + 5, c.size - 10, c.size - 10, 7).stroke({
+        color: 0xff6020,
+        width: 1.2,
+        alpha: 0.35,
+      });
+      const inset = half * 0.78;
+      for (const [sx, sy] of [
+        [-1, -1],
+        [1, -1],
+        [-1, 1],
+        [1, 1],
+      ] as const) {
+        g.circle(c.x + sx * inset, c.y + sy * inset, 2.5).fill({
+          color: 0xffcc66,
+          alpha: 0.4,
+        });
+      }
     }
     return g;
   }

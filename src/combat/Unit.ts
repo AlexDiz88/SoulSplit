@@ -220,6 +220,8 @@ export class Unit {
           return "🛡";
         case "bleed":
           return "🩸";
+        case "burn":
+          return "🔥";
         case "atk_buff":
           return "⬆";
         case "slow":
@@ -313,17 +315,17 @@ export class Unit {
   }
 
   tickStatuses(dt: number): number {
-    let bleedDmg = 0;
+    let dotDmg = 0;
     for (const s of this.statuses) {
       s.remaining -= dt;
-      if (s.kind === "bleed") bleedDmg += s.potency * dt;
+      if (s.kind === "bleed" || s.kind === "burn") dotDmg += s.potency * dt;
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
-    if (bleedDmg > 0) {
-      this.applyDamage(bleedDmg);
+    if (dotDmg > 0) {
+      this.applyDamage(dotDmg);
     }
     this.redraw();
-    return bleedDmg;
+    return dotDmg;
   }
 
   flash(color: number): void {

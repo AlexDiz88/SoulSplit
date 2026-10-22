@@ -47,6 +47,64 @@ function drawFlameTongue(
 }
 
 /**
+ * Раскалённый пол клетки: заливка плитки + кайма + угольки по углам.
+ * Вместо маленьких "UI-квадратов" внутри ячейки.
+ */
+function drawHeatFloor(
+  g: Graphics,
+  x: number,
+  y: number,
+  cellSize: number,
+  intensity: number,
+  pulse: number,
+): void {
+  if (intensity <= 0.01) return;
+  const half = cellSize * 0.5 - 3;
+  const a = Math.min(1, intensity);
+
+  // тёмный жар по всей плите
+  g.roundRect(x - half, y - half, half * 2, half * 2, 10).fill({
+    color: 0x3a0a04,
+    alpha: (0.22 + pulse * 0.08) * a,
+  });
+  // оранжевая заливка пола
+  g.roundRect(x - half + 3, y - half + 3, half * 2 - 6, half * 2 - 6, 8).fill({
+    color: 0xff4010,
+    alpha: (0.16 + pulse * 0.14) * a,
+  });
+  // пятно жара ближе к земле
+  g.ellipse(x, y + half * 0.18, half * 0.78, half * 0.52).fill({
+    color: 0xffaa40,
+    alpha: (0.12 + pulse * 0.18) * a,
+  });
+  // кайма по краю клетки
+  g.roundRect(x - half, y - half, half * 2, half * 2, 10).stroke({
+    color: 0xffb048,
+    width: 2.2,
+    alpha: (0.45 + pulse * 0.4) * a,
+  });
+  // внутренний тонкий контур
+  g.roundRect(x - half + 5, y - half + 5, half * 2 - 10, half * 2 - 10, 7).stroke({
+    color: 0xff6020,
+    width: 1.2,
+    alpha: (0.25 + pulse * 0.2) * a,
+  });
+  // угольки в углах
+  const inset = half * 0.78;
+  for (const [sx, sy] of [
+    [-1, -1],
+    [1, -1],
+    [-1, 1],
+    [1, 1],
+  ] as const) {
+    g.circle(x + sx * inset, y + sy * inset, 2 + pulse * 1.5).fill({
+      color: 0xffcc66,
+      alpha: 0.35 * a * (0.5 + pulse * 0.5),
+    });
+  }
+}
+
+/**
  * Премиум «Конус огня»: telegraph → дыхание пламени → угли/дым → ожоги клеток.
  */
 export async function playFlameConeVfx(
@@ -55,6 +113,7 @@ export async function playFlameConeVfx(
   origin: Pt,
   targets: Pt[],
   screenShake?: (amp: number, dur: number) => void,
+  cellSize = 124,
 ): Promise<void> {
   if (!targets.length) return;
 
@@ -99,13 +158,16 @@ export async function playFlameConeVfx(
   maxA += 0.12;
   maxDist += 36;
 
-  // ——— Telegraph: раскалённый контур клеток ———
+  // ——— Telegraph: раскалённый пол задетых клеток + веер ———
   const telegraph = new Graphics();
   crisp.addChild(telegraph);
+  const floorLayer = new Container();
+  // под языками пламени, чтобы жар читался как пол клетки
+  root.addChildAt(floorLayer, 0);
   const cellMarks: Graphics[] = [];
   for (let i = 0; i < targets.length; i++) {
     const m = new Graphics();
-    crisp.addChild(m);
+    floorLayer.addChild(m);
     cellMarks.push(m);
   }
 
@@ -118,24 +180,16 @@ export async function playFlameConeVfx(
     const r = maxDist * (0.35 + t * 0.65);
     telegraph.moveTo(origin.x, origin.y);
     telegraph.arc(origin.x, origin.y, r, a0, a1);
-    telegraph.closePath().fill({ color: 0xff4020, alpha: 0.12 * t });
+    telegraph.closePath().fill({ color: 0xff4020, alpha: 0.1 * t });
     telegraph.moveTo(origin.x, origin.y);
     telegraph.arc(origin.x, origin.y, r, a0, a1);
-    telegraph.stroke({ color: 0xffaa44, width: 2, alpha: 0.55 * t });
+    telegraph.stroke({ color: 0xffaa44, width: 2, alpha: 0.5 * t });
 
     targets.forEach((p, i) => {
       const m = cellMarks[i]!;
       m.clear();
-      const pulse = 0.5 + Math.sin(t * 20 + i) * 0.5;
-      m.roundRect(p.x - 28, p.y - 28, 56, 56, 6).fill({
-        color: 0xff6020,
-        alpha: 0.12 + pulse * 0.12 * t,
-      });
-      m.roundRect(p.x - 28, p.y - 28, 56, 56, 6).stroke({
-        color: 0xffaa40,
-        width: 2,
-        alpha: 0.4 + pulse * 0.4 * t,
-      });
+      const pulse = 0.55 + Math.sin(t * 14 + i * 1.7) * 0.45;
+      drawHeatFloor(m, p.x, p.y, cellSize, t, pulse);
     });
   });
 
@@ -321,21 +375,29 @@ export async function playFlameConeVfx(
       s.s.scale.set(0.35 + (s.life / s.max) * 0.5);
     }
 
-    // пульсация меток клеток
+    // жар пола нарастает, когда фронт пламени доходит до клетки
     targets.forEach((p, i) => {
       const m = cellMarks[i]!;
-      const heat = Math.max(0, 1 - Math.abs(Math.hypot(p.x - origin.x, p.y - origin.y) - reach) / 80);
+      const dist = Math.hypot(p.x - origin.x, p.y - origin.y);
+      const wave = Math.max(0, 1 - Math.abs(dist - reach) / 90);
+      const engulfed = reach >= dist - cellSize * 0.35 ? 1 : 0;
+      const heat = Math.max(wave, engulfed * 0.85) * t;
+      const pulse = 0.5 + Math.sin(rawT * 18 + i) * 0.5;
       m.clear();
-      m.roundRect(p.x - 28, p.y - 28, 56, 56, 6).fill({
-        color: 0xff3010,
-        alpha: 0.08 + heat * 0.25 * t,
-      });
+      drawHeatFloor(m, p.x, p.y, cellSize, 0.35 + heat * 0.75, pulse);
     });
   });
 
   screenShake?.(12, 0.2);
 
-  // ——— Вспышки попаданий + ожоги ———
+  // убираем предупреждающий жар: дальше остаётся выжженный пол
+  for (const m of cellMarks) {
+    m.clear();
+    m.alpha = 0;
+  }
+
+  // ——— Вспышки попаданий + выжженный пол клетки ———
+  const halfCell = cellSize * 0.5 - 3;
   const impacts: Promise<void>[] = targets.map(async (p, idx) => {
     await tweens.wait(idx * 0.02);
     const flash = new Sprite(TEX.fireCore());
@@ -348,28 +410,40 @@ export async function playFlameConeVfx(
     crisp.addChild(ring);
 
     const scorch = new Graphics();
-    crisp.addChildAt(scorch, 0);
+    floorLayer.addChildAt(scorch, 0);
 
     await tweens.to(0.45, (t) => {
-      flash.scale.set(0.4 + t * 1.8);
-      flash.alpha = (1 - t) * 0.9;
+      flash.scale.set(0.55 + t * 1.6);
+      flash.alpha = (1 - t) * 0.85;
       ring.clear();
-      ring.circle(p.x, p.y, 10 + t * 36).stroke({
+      ring.roundRect(
+        p.x - halfCell * (0.7 + t * 0.35),
+        p.y - halfCell * (0.7 + t * 0.35),
+        halfCell * 2 * (0.7 + t * 0.35),
+        halfCell * 2 * (0.7 + t * 0.35),
+        10,
+      ).stroke({
         color: 0xffcc66,
-        width: 3 * (1 - t),
-        alpha: (1 - t) * 0.8,
+        width: 3.5 * (1 - t),
+        alpha: (1 - t) * 0.85,
       });
       scorch.clear();
-      scorch.ellipse(p.x, p.y + 4, 22 + t * 10, 12 + t * 4).fill({
-        color: 0x1a0804,
-        alpha: 0.35 * (1 - t * 0.3),
+      // выжженная плитка
+      scorch.roundRect(p.x - halfCell, p.y - halfCell, halfCell * 2, halfCell * 2, 10).fill({
+        color: 0x140804,
+        alpha: 0.4 * (1 - t * 0.25),
       });
-      // угольные крапины
-      for (let i = 0; i < 5; i++) {
+      scorch.ellipse(p.x, p.y + halfCell * 0.12, halfCell * 0.7, halfCell * 0.42).fill({
+        color: 0x2a1008,
+        alpha: 0.45 * (1 - t * 0.3),
+      });
+      // угольные крапины по плите
+      for (let i = 0; i < 7; i++) {
         const a = noise1(idx * 10 + i) * Math.PI * 2;
-        scorch.circle(p.x + Math.cos(a) * 12 * t, p.y + Math.sin(a) * 8 * t, 1.5).fill({
-          color: 0x2a1008,
-          alpha: 0.5 * (1 - t),
+        const rr = (0.25 + noise1(idx + i * 3) * 0.55) * halfCell * t;
+        scorch.circle(p.x + Math.cos(a) * rr, p.y + Math.sin(a) * rr * 0.85, 1.5 + noise1(i) * 1.2).fill({
+          color: 0x1a0c06,
+          alpha: 0.55 * (1 - t * 0.4),
         });
       }
     });
@@ -406,6 +480,7 @@ export async function playFlameConeVfx(
   coneGlow.destroy();
   telegraph.destroy();
   for (const m of cellMarks) m.destroy();
+  floorLayer.destroy({ children: true });
   for (const e of embers) e.s.destroy();
   for (const s of smokes) s.s.destroy();
   glowLayer.filters = null;

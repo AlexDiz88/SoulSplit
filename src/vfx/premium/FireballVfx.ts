@@ -9,7 +9,7 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-/** Премиум огненный шар: заряд → шар по дуге → взрыв AoE + ожоги. */
+/** Премиум огненный шар: заряд → шар по прямой → взрыв + ожоги. */
 export async function playFireballVfx(
   layer: Container,
   tweens: TweenManager,
@@ -54,61 +54,65 @@ export async function playFireballVfx(
 
   type Ember = { s: Sprite; life: number; max: number; vx: number; vy: number };
   const embers: Ember[] = [];
-  const arc = 78;
-  const dur = 0.55;
+  const dist = Math.hypot(to.x - from.x, to.y - from.y);
+  const dur = Math.max(0.16, dist / 880);
 
-  await tweens.to(dur, (t) => {
-    const x = lerp(from.x, to.x, t);
-    const y = lerp(from.y, to.y, t) - Math.sin(Math.PI * t) * arc;
-    const pulse = 1 + Math.sin(t * 28) * 0.08;
-    ball.position.set(x, y);
-    ballGlow.position.set(x, y);
-    ballGlow.scale.set((0.55 + t * 0.25) * pulse);
-    ballGlow.alpha = 0.7;
-    core.scale.set(0.55 * pulse);
-    core.rotation = t * 8;
+  await tweens.to(
+    dur,
+    (t) => {
+      const x = lerp(from.x, to.x, t);
+      const y = lerp(from.y, to.y, t);
+      const pulse = 1 + Math.sin(t * 28) * 0.08;
+      ball.position.set(x, y);
+      ballGlow.position.set(x, y);
+      ballGlow.scale.set((0.55 + t * 0.25) * pulse);
+      ballGlow.alpha = 0.7;
+      core.scale.set(0.55 * pulse);
+      core.rotation = t * 8;
 
-    shell.clear();
-    // хаотичная «пламенная» оболочка
-    const spikes = 10;
-    for (let i = 0; i < spikes; i++) {
-      const a = (Math.PI * 2 * i) / spikes + t * 6;
-      const r = (12 + Math.sin(t * 20 + i * 2) * 5) * pulse;
-      const r2 = r * (0.55 + (i % 3) * 0.12);
-      shell
-        .moveTo(Math.cos(a) * r2 * 0.3, Math.sin(a) * r2 * 0.3)
-        .lineTo(Math.cos(a) * r, Math.sin(a) * r)
-        .lineTo(Math.cos(a + 0.25) * r2, Math.sin(a + 0.25) * r2)
-        .fill({ color: i % 2 ? 0xff6a20 : 0xffa040, alpha: 0.75 });
-    }
-    shell.circle(0, 0, 8 * pulse).fill({ color: 0xffe080, alpha: 0.9 });
-    shell.circle(0, 0, 4 * pulse).fill({ color: 0xffffff, alpha: 0.85 });
+      shell.clear();
+      // хаотичная "пламенная" оболочка
+      const spikes = 10;
+      for (let i = 0; i < spikes; i++) {
+        const a = (Math.PI * 2 * i) / spikes + t * 6;
+        const r = (12 + Math.sin(t * 20 + i * 2) * 5) * pulse;
+        const r2 = r * (0.55 + (i % 3) * 0.12);
+        shell
+          .moveTo(Math.cos(a) * r2 * 0.3, Math.sin(a) * r2 * 0.3)
+          .lineTo(Math.cos(a) * r, Math.sin(a) * r)
+          .lineTo(Math.cos(a + 0.25) * r2, Math.sin(a + 0.25) * r2)
+          .fill({ color: i % 2 ? 0xff6a20 : 0xffa040, alpha: 0.75 });
+      }
+      shell.circle(0, 0, 8 * pulse).fill({ color: 0xffe080, alpha: 0.9 });
+      shell.circle(0, 0, 4 * pulse).fill({ color: 0xffffff, alpha: 0.85 });
 
-    charge.alpha = (1 - t) * 0.4;
+      charge.alpha = (1 - t) * 0.4;
 
-    if (Math.random() < 0.65) {
-      const s = new Sprite(TEX.ember());
-      s.anchor.set(0.5);
-      s.blendMode = "add";
-      s.position.set(x + (Math.random() - 0.5) * 10, y + (Math.random() - 0.5) * 10);
-      s.scale.set(0.15 + Math.random() * 0.2);
-      crisp.addChild(s);
-      embers.push({
-        s,
-        life: 0,
-        max: 0.35 + Math.random() * 0.25,
-        vx: (Math.random() - 0.5) * 60,
-        vy: 20 + Math.random() * 40,
-      });
-    }
-    const dt = 1 / 60;
-    for (const e of embers) {
-      e.life += dt;
-      e.s.x += e.vx * dt;
-      e.s.y += e.vy * dt;
-      e.s.alpha = Math.max(0, 1 - e.life / e.max);
-    }
-  });
+      if (Math.random() < 0.65) {
+        const s = new Sprite(TEX.ember());
+        s.anchor.set(0.5);
+        s.blendMode = "add";
+        s.position.set(x + (Math.random() - 0.5) * 10, y + (Math.random() - 0.5) * 10);
+        s.scale.set(0.15 + Math.random() * 0.2);
+        crisp.addChild(s);
+        embers.push({
+          s,
+          life: 0,
+          max: 0.35 + Math.random() * 0.25,
+          vx: (Math.random() - 0.5) * 60,
+          vy: 20 + Math.random() * 40,
+        });
+      }
+      const dt = 1 / 60;
+      for (const e of embers) {
+        e.life += dt;
+        e.s.x += e.vx * dt;
+        e.s.y += e.vy * dt;
+        e.s.alpha = Math.max(0, 1 - e.life / e.max);
+      }
+    },
+    { ease: (t) => t },
+  );
 
   ball.destroy({ children: true });
   ballGlow.destroy();

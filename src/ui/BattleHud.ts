@@ -5,6 +5,29 @@ import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
 
+/** Число ячеек панели способностей (2 ряда по 5). */
+export const SKILL_BAR_SLOTS = 10;
+
+/** Подписи горячих клавиш по слотам: 1-5, затем Q W E R T. */
+export const SKILL_HOTKEY_LABELS = ["1", "2", "3", "4", "5", "Q", "W", "E", "R", "T"] as const;
+
+/** KeyboardEvent.code для слотов панели. */
+export const SKILL_HOTKEY_CODES = [
+  "Digit1",
+  "Digit2",
+  "Digit3",
+  "Digit4",
+  "Digit5",
+  "KeyQ",
+  "KeyW",
+  "KeyE",
+  "KeyR",
+  "KeyT",
+] as const;
+
+const LONG_PRESS_MS = 450;
+const HOVER_TOOLTIP_MQ = "(hover: hover) and (pointer: fine)";
+
 export interface SkillBarState {
   selectedAbility: AbilityId | null;
   /** Оставшееся время ГКД в секундах. */
@@ -70,10 +93,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
     const damageLabel =
       def.damage > 0
-        ? def.targetMode === "enemy_blast"
-          ? `${def.damage} / рядом ${Math.round(def.damage * 0.55)}`
+        ? def.targetMode === "zone"
+          ? `${def.damage} / выше ${Math.round(def.damage * 0.55)}`
           : String(def.damage)
-        : "—";
+        : "-";
 
     tooltip.className = `skill-tooltip school-${def.school}`;
     tooltip.innerHTML = `
@@ -94,6 +117,78 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     const top = rect.top - tipRect.height - 10;
     tooltip.style.left = `${left}px`;
     tooltip.style.top = `${Math.max(8, top)}px`;
+  };
+
+  const canHoverTooltip = (): boolean => window.matchMedia(HOVER_TOOLTIP_MQ).matches;
+
+  const bindSkillTooltip = (btn: HTMLButtonElement, id: AbilityId): void => {
+    let longPressTimer = 0;
+    let longPressActive = false;
+    let suppressClick = false;
+
+    const clearLongPress = (): void => {
+      window.clearTimeout(longPressTimer);
+      longPressTimer = 0;
+    };
+
+    btn.addEventListener("click", (ev) => {
+      if (suppressClick) {
+        ev.preventDefault();
+        suppressClick = false;
+        return;
+      }
+      onSelectAbility(id);
+    });
+
+    // Десктоп: тултип по наведению / фокусу. На таче hover/focus часто срабатывают от короткого тапа.
+    btn.addEventListener("mouseenter", () => {
+      if (!canHoverTooltip()) return;
+      showTooltip(btn, id);
+    });
+    btn.addEventListener("mouseleave", () => {
+      if (!canHoverTooltip()) return;
+      hideTooltip();
+    });
+    btn.addEventListener("focus", () => {
+      if (!canHoverTooltip()) return;
+      showTooltip(btn, id);
+    });
+    btn.addEventListener("blur", () => {
+      if (!canHoverTooltip()) return;
+      hideTooltip();
+    });
+
+    btn.addEventListener("pointerdown", (ev) => {
+      if (ev.pointerType !== "touch") return;
+      clearLongPress();
+      longPressActive = false;
+      suppressClick = false;
+      longPressTimer = window.setTimeout(() => {
+        longPressActive = true;
+        suppressClick = true;
+        showTooltip(btn, id);
+      }, LONG_PRESS_MS);
+    });
+
+    const endTouchPress = (ev: PointerEvent): void => {
+      if (ev.pointerType !== "touch") return;
+      clearLongPress();
+      if (longPressActive) {
+        hideTooltip();
+        longPressActive = false;
+      }
+    };
+
+    btn.addEventListener("pointerup", endTouchPress);
+    btn.addEventListener("pointercancel", endTouchPress);
+    btn.addEventListener("pointerleave", (ev) => {
+      if (ev.pointerType !== "touch") return;
+      clearLongPress();
+      if (longPressActive) {
+        hideTooltip();
+        longPressActive = false;
+      }
+    });
   };
 
   const applySkillVisual = (
@@ -144,37 +239,67 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     skillBar.innerHTML = "";
     hideTooltip();
     if (!unit) return;
-    for (const id of unit.abilities) {
-      const def = ABILITIES[id];
-      const iconUrl = ABILITY_ICON_URLS[id];
+
+    for (let slot = 0; slot < SKILL_BAR_SLOTS; slot++) {
+      const id = unit.abilities[slot];
+      const hotkey = SKILL_HOTKEY_LABELS[slot] ?? "";
       const btn = document.createElement("button");
       btn.type = "button";
+      btn.className = "skill-btn";
+      btn.dataset.slot = String(slot);
+
+      const hotkeyEl = document.createElement("span");
+      hotkeyEl.className = "skill-hotkey";
+      hotkeyEl.textContent = hotkey;
+      hotkeyEl.setAttribute("aria-hidden", "true");
+
+      if (!id) {
+        btn.classList.add("empty");
+        btn.disabled = true;
+        btn.setAttribute("aria-label", `Пустой слот ${hotkey}`);
+        btn.appendChild(hotkeyEl);
+        skillBar.appendChild(btn);
+        continue;
+      }
+
+      const def = ABILITIES[id];
+      const iconUrl = ABILITY_ICON_URLS[id];
       btn.dataset.ability = id;
       btn.className = `skill-btn school-${def.school}${iconUrl ? " has-art" : ""}`;
+      btn.setAttribute("aria-label", `${def.name}, клавиша ${hotkey}`);
       btn.innerHTML = iconUrl
-        ? `<img class="skill-icon" src="${iconUrl}" alt="${def.name}" draggable="false" />`
+        ? `<img class="skill-icon" src="${iconUrl}" alt="" draggable="false" />`
         : `<span class="glyph">${def.glyph}</span>`;
+      btn.appendChild(hotkeyEl);
       applySkillVisual(btn, unit, id, state);
-      btn.addEventListener("click", () => onSelectAbility(id));
-      btn.addEventListener("mouseenter", () => showTooltip(btn, id));
-      btn.addEventListener("mouseleave", hideTooltip);
-      btn.addEventListener("focus", () => showTooltip(btn, id));
-      btn.addEventListener("blur", hideTooltip);
+      bindSkillTooltip(btn, id);
       skillBar.appendChild(btn);
     }
   };
 
   const syncSkills = (unit: Unit, state: SkillBarState): void => {
     const buttons = [...skillBar.querySelectorAll<HTMLButtonElement>("button.skill-btn")];
-    if (buttons.length !== unit.abilities.length) {
+    if (buttons.length !== SKILL_BAR_SLOTS) {
       renderSkills(unit, state);
       return;
     }
-    unit.abilities.forEach((id, index) => {
-      const btn = buttons[index];
+    for (let slot = 0; slot < SKILL_BAR_SLOTS; slot++) {
+      const btn = buttons[slot];
+      const id = unit.abilities[slot];
       if (!btn) return;
+      if (!id) {
+        if (!btn.classList.contains("empty") || btn.dataset.ability) {
+          renderSkills(unit, state);
+          return;
+        }
+        continue;
+      }
+      if (btn.dataset.ability !== id || btn.classList.contains("empty")) {
+        renderSkills(unit, state);
+        return;
+      }
       applySkillVisual(btn, unit, id, state);
-    });
+    }
   };
 
   const closeMenu = (): void => {

@@ -12,7 +12,7 @@ export type AbilityId =
   | "slash"
   | "shadow_strike";
 
-export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast";
+export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone";
 
 export interface GridPos {
   col: number;
@@ -21,7 +21,7 @@ export interface GridPos {
 
 export interface StatusEffect {
   id: string;
-  kind: "stun" | "shield" | "bleed" | "atk_buff" | "slow" | "invuln";
+  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "slow" | "invuln";
   remaining: number;
   potency: number;
 }
