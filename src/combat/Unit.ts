@@ -224,6 +224,8 @@ export class Unit {
           return "⬆";
         case "slow":
           return "❄";
+        case "invuln":
+          return "◈";
         default:
           return "";
       }
@@ -251,6 +253,7 @@ export class Unit {
 
   applyDamage(raw: number): { dealt: number; absorbed: number } {
     if (!this.alive) return { dealt: 0, absorbed: 0 };
+    if (this.hasStatus("invuln")) return { dealt: 0, absorbed: raw };
     let dmg = raw;
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
@@ -290,6 +293,13 @@ export class Unit {
 
   hasStatus(kind: StatusEffect["kind"]): boolean {
     return this.statuses.some((s) => s.kind === kind);
+  }
+
+  clearStatus(kind: StatusEffect["kind"]): void {
+    const next = this.statuses.filter((s) => s.kind !== kind);
+    if (next.length === this.statuses.length) return;
+    this.statuses = next;
+    this.redraw();
   }
 
   atkMultiplier(): number {

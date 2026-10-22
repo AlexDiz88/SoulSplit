@@ -21,7 +21,7 @@ export interface GridPos {
 
 export interface StatusEffect {
   id: string;
-  kind: "stun" | "shield" | "bleed" | "atk_buff" | "slow";
+  kind: "stun" | "shield" | "bleed" | "atk_buff" | "slow" | "invuln";
   remaining: number;
   potency: number;
 }

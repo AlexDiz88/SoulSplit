@@ -104,7 +104,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     name: "Теневой удар",
     school: "stealth",
     glyph: "👤",
-    description: "Рывок из тени к выбранному врагу",
+    description: "Удар из тени: урон и неуязвимость на время каста",
     cooldown: 7.5,
     damage: 55,
     targetMode: "enemy",

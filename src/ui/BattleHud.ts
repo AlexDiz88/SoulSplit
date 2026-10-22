@@ -13,6 +13,8 @@ export interface SkillBarState {
   gcdDuration: number;
 }
 
+export type BattleBannerMode = "start" | "pause" | "hidden";
+
 export interface BattleHudApi {
   renderSkills(unit: Unit | null, state: SkillBarState): void;
   syncSkills(unit: Unit, state: SkillBarState): void;
@@ -20,14 +22,19 @@ export interface BattleHudApi {
   showToast(text: string): void;
   setPause(paused: boolean): void;
   setSpeed(mult: number): void;
+  setBattleBanner(mode: BattleBannerMode): void;
+  setBattleBannerPosition(x: number, y: number): void;
+  onStart(handler: () => void): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
   const skillBar = document.getElementById("skill-bar")!;
-  const hint = document.getElementById("hint")!;
   const toast = document.getElementById("toast")!;
   const btnPause = document.getElementById("btn-pause")!;
   const btnSpeed = document.getElementById("btn-speed")!;
+  const btnStart = document.getElementById("btn-start")!;
+  const pauseLabel = document.getElementById("battle-pause-label")!;
+  const battleBanner = document.getElementById("battle-banner")!;
   const menuBtn = document.getElementById("btn-menu")!;
   const sideMenu = document.getElementById("side-menu")!;
   const bestiaryBtn = document.getElementById("btn-bestiary")!;
@@ -37,6 +44,16 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const bestiaryClose = document.getElementById("bestiary-close")!;
 
   let toastTimer = 0;
+  let startHandler: (() => void) | null = null;
+
+  const setBattleBanner = (mode: BattleBannerMode): void => {
+    btnStart.hidden = mode !== "start";
+    pauseLabel.hidden = mode !== "pause";
+    battleBanner.hidden = mode === "hidden";
+  };
+
+  setBattleBanner("start");
+  btnStart.addEventListener("click", () => startHandler?.());
 
   const tooltip = document.createElement("div");
   tooltip.id = "skill-tooltip";
@@ -88,9 +105,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     const cd = unit.abilityCd[id] ?? 0;
     const onCd = cd > 0.05;
     const onGcd = state.gcdRemaining > 0.02;
-    const locked = !unit.alive || onCd || onGcd;
-    btn.setAttribute("aria-disabled", locked ? "true" : "false");
-    btn.classList.toggle("locked", locked);
+    const unavailable = !unit.alive || onCd || onGcd;
+    btn.setAttribute("aria-disabled", unavailable ? "true" : "false");
+    // opacity.locked только для мёртвого героя - иначе цифра CD тоже тускнеет
+    btn.classList.toggle("locked", !unit.alive);
+    btn.classList.toggle("on-cd", onCd);
     btn.classList.toggle("selected", state.selectedAbility === id);
     btn.classList.toggle("on-gcd", onGcd);
 
@@ -251,7 +270,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     syncSkills,
 
     setHint(text: string) {
-      hint.textContent = text;
+      void text;
     },
 
     showToast(text: string) {
@@ -266,12 +285,23 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     setPause(paused: boolean) {
       btnPause.textContent = paused ? "▶" : "❚❚";
       btnPause.classList.toggle("active", paused);
-      btnPause.title = paused ? "Пробел — продолжить" : "Пробел — пауза";
+      btnPause.title = paused ? "Пробел - продолжить" : "Пробел - пауза";
     },
 
     setSpeed(mult: number) {
       btnSpeed.textContent = `×${mult}`;
       btnSpeed.classList.toggle("active", mult > 1);
+    },
+
+    setBattleBanner,
+
+    setBattleBannerPosition(x: number, y: number) {
+      battleBanner.style.left = `${x}px`;
+      battleBanner.style.top = `${y}px`;
+    },
+
+    onStart(handler: () => void) {
+      startHandler = handler;
     },
   };
 }

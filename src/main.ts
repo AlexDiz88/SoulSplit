@@ -19,13 +19,15 @@ async function boot(): Promise<void> {
 
   const app = new Application();
   await app.init({
-    resizeTo: window,
+    resizeTo: mount,
     background: "#0c0f0c",
     antialias: true,
     resolution: Math.min(window.devicePixelRatio || 1, 2),
     autoDensity: true,
   });
   mount.appendChild(app.canvas);
+  app.canvas.style.width = "100%";
+  app.canvas.style.height = "100%";
 
   await Promise.all([preloadPortraits(), preloadBackgrounds()]);
 

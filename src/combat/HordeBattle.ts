@@ -50,6 +50,8 @@ export class HordeBattle {
   weapon: WeaponKind = "melee";
 
   private destroyed = false;
+  private started = false;
+  private ended = false;
   private hero!: Unit;
   private gcdRemaining = 0;
   private pendingCast: PendingCast | null = null;
@@ -92,6 +94,7 @@ export class HordeBattle {
     this.layout();
     this.hud.setPause(false);
     this.hud.setSpeed(1);
+    this.hud.setBattleBanner("start");
     this.setWeapon("melee");
     this.selectHero(this.hero.id);
     this.bindHud();
@@ -131,9 +134,19 @@ export class HordeBattle {
     this.cancelAbilityTargeting();
   };
 
+  private readonly onStartClick = (): void => {
+    if (this.destroyed || this.started || this.ended) return;
+    this.started = true;
+    this.paused = false;
+    this.hud.setPause(false);
+    this.syncBattleBanner();
+    this.hud.setHint(this.idleHint());
+  };
+
   private readonly onPauseClick = (): void => {
+    if (!this.started || this.ended) return;
     this.applyPause(!this.paused);
-    this.hud.setHint(this.paused ? "Пауза. Пробел — продолжить." : this.idleHint());
+    this.hud.setHint(this.paused ? "Пауза. Пробел - продолжить." : this.idleHint());
   };
 
   private readonly onSpeedClick = (): void => {
@@ -176,6 +189,7 @@ export class HordeBattle {
   };
 
   private bindHud(): void {
+    this.hud.onStart(this.onStartClick);
     document.getElementById("btn-pause")?.addEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.addEventListener("click", this.onSpeedClick);
     window.addEventListener("keydown", this.onKey);
@@ -274,15 +288,42 @@ export class HordeBattle {
     const gridW = GRID_SIZE * PITCH - GAP;
     const gridH = GRID_SIZE * PITCH - GAP;
     const totalH = gridH + STACK_GAP + HERO_SIZE;
-    const topInset = 78;
-    const bottomInset = 168;
-    const scale = Math.min(1, (w - 120) / (gridW + 48), (h - topInset - bottomInset) / (totalH + 36));
+    const portrait = w <= 520 && h > w;
+    const phoneLandscape = h <= 450 && w > h && w <= 960;
+    const side = portrait ? 4 : phoneLandscape ? 48 : 120;
+    const topInset = portrait ? 48 : phoneLandscape ? 36 : 78;
+    const bottomInset = portrait
+      ? Math.round(Math.min(h * 0.26, 220))
+      : phoneLandscape
+        ? Math.round(Math.min(h * 0.34, 140))
+        : 168;
+    const pad = portrait || phoneLandscape ? 6 : 28;
+    const scale = Math.min(1, (w - side * 2) / (gridW + pad), (h - topInset - bottomInset) / (totalH + 20));
     this.baseBoardX = w / 2;
     this.baseBoardY = topInset + (h - topInset - bottomInset) / 2;
     this.board.position.set(this.baseBoardX, this.baseBoardY);
     this.board.scale.set(Math.floor(scale * 100) / 100);
     this.placeAll();
     this.drawWeaponRange();
+    this.syncBannerPosition();
+  }
+
+  private syncBannerPosition(): void {
+    const scale = this.board.scale.x;
+    const gridTop = this.baseBoardY + this.gridOrigin.y * scale;
+    this.hud.setBattleBannerPosition(this.baseBoardX, gridTop - 12);
+  }
+
+  private syncBattleBanner(): void {
+    if (!this.started) {
+      this.hud.setBattleBanner("start");
+      return;
+    }
+    if (this.paused && !this.ended) {
+      this.hud.setBattleBanner("pause");
+      return;
+    }
+    this.hud.setBattleBanner("hidden");
   }
 
   /** Cover-скейл фона под размер окна. */
@@ -357,6 +398,11 @@ export class HordeBattle {
   private refreshSkillBar(rebuild = false): void {
     if (rebuild) this.hud.renderSkills(this.hero, this.skillBarState());
     else this.hud.syncSkills(this.hero, this.skillBarState());
+    this.syncCanvasCursor();
+  }
+
+  private syncCanvasCursor(): void {
+    this.app.canvas.style.cursor = "var(--cur-default)";
   }
 
   selectHero(id: string | null): void {
@@ -381,6 +427,10 @@ export class HordeBattle {
   }
 
   selectAbility(id: AbilityId): void {
+    if (!this.started) {
+      this.hud.showToast("Сначала нажми Старт");
+      return;
+    }
     if (this.paused) {
       this.hud.showToast("На паузе способности недоступны");
       return;
@@ -548,7 +598,7 @@ export class HordeBattle {
   }
 
   private async performCast(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
-    if (this.destroyed || this.paused) return;
+    if (this.destroyed || !this.started || this.paused) return;
     if (def.targetMode === "enemy" && (!clicked || clicked.team !== "enemy")) {
       this.hud.showToast("Нужна цель-враг");
       return;
@@ -678,12 +728,17 @@ export class HordeBattle {
       }
       case "shadow_strike": {
         if (!clicked) return;
+        caster.addStatus({ id: "invuln", kind: "invuln", remaining: 99, potency: 1 });
         caster.setHidden(true);
-        await this.vfx.shadowDash(from, clicked.center, () => {
-          this.dealAbilityDamage(caster, clicked, def.damage);
-        });
-        caster.setHidden(false);
-        caster.view.position.set(from.x, from.y);
+        try {
+          await this.vfx.shadowDash(from, clicked.center, () => {
+            this.dealAbilityDamage(caster, clicked, def.damage);
+          });
+        } finally {
+          caster.clearStatus("invuln");
+          caster.setHidden(false);
+          caster.view.position.set(from.x, from.y);
+        }
         break;
       }
       default:
@@ -793,7 +848,7 @@ export class HordeBattle {
 
   private update(rawDt: number): void {
     const tweenDt = rawDt * this.timeScale;
-    const combatDt = this.paused ? 0 : rawDt * this.timeScale;
+    const combatDt = !this.started || this.paused ? 0 : rawDt * this.timeScale;
     this.tweens.update(tweenDt);
     this.board.position.set(this.baseBoardX, this.baseBoardY);
     this.vfx.update(rawDt);
@@ -846,17 +901,21 @@ export class HordeBattle {
     }
     if (paused) this.pendingCast = null;
     this.hud.setPause(paused);
+    this.syncBattleBanner();
     this.refreshSkillBar();
   }
 
   private checkEnd(): void {
+    if (this.ended || !this.started) return;
     if (this.paused && !this.hero.alive) return;
     const enemies = this.livingEnemies().length > 0;
     if (!enemies) {
+      this.ended = true;
       this.applyPause(true);
       this.hud.showToast("Победа!");
       this.hud.setHint("Враги повержены.");
     } else if (!this.hero.alive) {
+      this.ended = true;
       this.applyPause(true);
       this.hud.showToast("Поражение");
       this.hud.setHint("Айра пала.");

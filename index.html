@@ -15,7 +15,7 @@
             <span></span><span></span><span></span>
           </button>
           <div class="controls">
-            <button type="button" id="btn-pause" class="ctrl-btn" title="Пробел — пауза">❚❚</button>
+            <button type="button" id="btn-pause" class="ctrl-btn" title="Пробел - пауза">❚❚</button>
             <button type="button" id="btn-speed" class="ctrl-btn" title="Скорость">×1</button>
           </div>
         </header>
@@ -57,7 +57,11 @@
           <div class="skill-bar" id="skill-bar"></div>
         </footer>
 
-        <div class="hint" id="hint">Клик по способности, затем по цели. Пробел — пауза.</div>
+        <div id="battle-banner" class="battle-banner" aria-live="polite">
+          <button type="button" id="btn-start" class="battle-start-btn">Старт</button>
+          <div id="battle-pause-label" class="battle-pause-label" hidden>Пауза</div>
+        </div>
+
         <div class="toast" id="toast" hidden></div>
       </div>
     </div>
