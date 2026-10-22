@@ -346,14 +346,6 @@ export class HordeBattle {
     });
   }
 
-  private refreshHeroMeta(): void {
-    const reach = WEAPON_REACH[this.weapon];
-    this.hud.setHeroMeta(
-      this.hero,
-      `${WEAPON_LABEL[this.weapon]} · дальность ${reach} · автоатака ${this.hero.stats.autoAttackCd.toFixed(1)}с`,
-    );
-  }
-
   private skillBarState(): { selectedAbility: AbilityId | null; gcdRemaining: number; gcdDuration: number } {
     return {
       selectedAbility: this.selectedAbility,
@@ -372,7 +364,6 @@ export class HordeBattle {
     this.selectedAbility = null;
     this.clearAbilityTelegraph();
     this.refreshSkillBar(true);
-    this.refreshHeroMeta();
     this.hud.setHint(this.idleHint());
   }
 
@@ -380,8 +371,6 @@ export class HordeBattle {
     this.weapon = kind;
     this.hero.stats.reach = WEAPON_REACH[kind];
     this.hero.stats.range = kind === "bow" || kind === "staff" ? "ranged" : "melee";
-    this.hud.setWeapons(kind);
-    this.refreshHeroMeta();
     const pref = this.livingEnemies().find((u) => u.id === this.hero.preferredTargetId);
     if (pref && this.distanceOf(pref.pos.row) > WEAPON_REACH[kind]) {
       this.hero.preferredTargetId = null;

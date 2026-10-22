@@ -15,7 +15,6 @@ export interface AbilityCard {
   description: string;
   cooldown: string;
   mana: string;
-  autocast: string;
   application: string;
   zoneLabel: string;
   effect: string;
@@ -180,7 +179,6 @@ function parseCard(path: string, raw: string): AbilityCard {
     description: text("Описание"),
     cooldown: text("Кулдаун"),
     mana: text("Затраты по мане"),
-    autocast: text("Автокаст"),
     application: text("Тип применения"),
     zoneLabel: text("Зона применения"),
     effect: text("Тип эффекта"),

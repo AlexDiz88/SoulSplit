@@ -1,10 +1,9 @@
-import { ABILITIES, SCHOOL_LABEL } from "../abilities/definitions";
+import { ABILITIES } from "../abilities/definitions";
 import { mountGrimoire } from "./grimoire";
 import { ABILITY_ICON_URLS } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
-import { WEAPON_LABEL, WEAPON_ORDER, WEAPON_REACH } from "../combat/weapons";
 import type { Unit } from "../combat/Unit";
-import type { AbilityId, WeaponKind } from "../types";
+import type { AbilityId } from "../types";
 
 export interface SkillBarState {
   selectedAbility: AbilityId | null;
@@ -17,25 +16,18 @@ export interface SkillBarState {
 export interface BattleHudApi {
   renderSkills(unit: Unit | null, state: SkillBarState): void;
   syncSkills(unit: Unit, state: SkillBarState): void;
-  setHeroMeta(unit: Unit | null, extra?: string): void;
   setHint(text: string): void;
   showToast(text: string): void;
   setPause(paused: boolean): void;
   setSpeed(mult: number): void;
-  setWeapons(active: WeaponKind | null): void;
 }
 
-export function createBattleHud(
-  onSelectAbility: (id: AbilityId) => void,
-  onSelectWeapon: (kind: WeaponKind) => void,
-): BattleHudApi {
+export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
   const skillBar = document.getElementById("skill-bar")!;
-  const heroMeta = document.getElementById("hero-meta")!;
   const hint = document.getElementById("hint")!;
   const toast = document.getElementById("toast")!;
   const btnPause = document.getElementById("btn-pause")!;
   const btnSpeed = document.getElementById("btn-speed")!;
-  const weaponBar = document.getElementById("weapon-bar")!;
   const menuBtn = document.getElementById("btn-menu")!;
   const sideMenu = document.getElementById("side-menu")!;
   const bestiaryBtn = document.getElementById("btn-bestiary")!;
@@ -258,18 +250,6 @@ export function createBattleHud(
     renderSkills,
     syncSkills,
 
-    setHeroMeta(unit: Unit | null, extra?: string) {
-      const name = heroMeta.querySelector(".hero-name")!;
-      const schools = heroMeta.querySelector(".hero-schools")!;
-      if (!unit) {
-        name.textContent = "Выберите героя";
-        schools.textContent = "—";
-        return;
-      }
-      name.textContent = unit.name;
-      schools.textContent = extra ?? `Школа: ${SCHOOL_LABEL[unit.school]} · автоатака ${unit.stats.autoAttackCd.toFixed(1)}с`;
-    },
-
     setHint(text: string) {
       hint.textContent = text;
     },
@@ -292,25 +272,6 @@ export function createBattleHud(
     setSpeed(mult: number) {
       btnSpeed.textContent = `×${mult}`;
       btnSpeed.classList.toggle("active", mult > 1);
-    },
-
-    setWeapons(active: WeaponKind | null) {
-      weaponBar.hidden = active === null;
-      if (active === null) return;
-      if (!weaponBar.childElementCount) {
-        for (const kind of WEAPON_ORDER) {
-          const btn = document.createElement("button");
-          btn.type = "button";
-          btn.className = "weapon-btn";
-          btn.dataset.weapon = kind;
-          btn.textContent = `${WEAPON_LABEL[kind]} ${WEAPON_REACH[kind]}`;
-          btn.addEventListener("click", () => onSelectWeapon(kind));
-          weaponBar.appendChild(btn);
-        }
-      }
-      for (const btn of weaponBar.querySelectorAll("button")) {
-        btn.classList.toggle("active", btn.dataset.weapon === active);
-      }
     },
   };
 }

@@ -4,7 +4,7 @@ import { preloadBackgrounds } from "./art/backgrounds";
 import { preloadPortraits } from "./art/portraits";
 import { HordeBattle } from "./combat/HordeBattle";
 import { createBattleHud } from "./ui/BattleHud";
-import type { AbilityId, WeaponKind } from "./types";
+import type { AbilityId } from "./types";
 
 async function boot(): Promise<void> {
   const mount = document.getElementById("game-root");
@@ -30,10 +30,7 @@ async function boot(): Promise<void> {
   await Promise.all([preloadPortraits(), preloadBackgrounds()]);
 
   let battle!: HordeBattle;
-  const hud = createBattleHud(
-    (abilityId: AbilityId) => battle.selectAbility(abilityId),
-    (weapon: WeaponKind) => battle.setWeapon(weapon),
-  );
+  const hud = createBattleHud((abilityId: AbilityId) => battle.selectAbility(abilityId));
   battle = new HordeBattle(app, hud);
 }
 

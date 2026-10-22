@@ -142,35 +142,6 @@ body,
   color: var(--accent);
 }
 
-.weapon-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-  margin-top: 8px;
-}
-
-.weapon-bar[hidden] {
-  display: none;
-}
-
-.weapon-btn {
-  padding: 4px 8px;
-  border-radius: 6px;
-  border: 1px solid var(--panel-border);
-  background: rgba(18, 24, 18, 0.92);
-  color: var(--text);
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.weapon-btn:hover,
-.weapon-btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-
 .hud-bottom {
   position: absolute;
   left: 0;
@@ -182,22 +153,6 @@ body,
   gap: 10px;
   padding: 12px 20px 18px;
   background: linear-gradient(0deg, rgba(8, 12, 8, 0.95), rgba(8, 12, 8, 0.55), transparent);
-}
-
-.hero-meta {
-  max-width: 280px;
-}
-
-.hero-meta .hero-name {
-  font-family: var(--font);
-  font-size: 1.2rem;
-  font-weight: 700;
-}
-
-.hero-meta .hero-schools {
-  color: var(--muted);
-  font-size: 0.8rem;
-  margin-top: 2px;
 }
 
 .skill-bar {

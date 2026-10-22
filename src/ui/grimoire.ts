@@ -85,11 +85,10 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       head,
       description,
       stats,
-      block("Автокаст", card.autocast),
       block("Зона", card.zoneLabel),
       numberBlock(card.numbers),
-      block("Дополнительно", card.extra),
     );
+    if (card.extra) detail.append(block("Дополнительно", card.extra));
     if (card.zone) detail.append(zoneBlock(card.zone));
   };
 
