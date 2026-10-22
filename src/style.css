@@ -228,7 +228,36 @@ body,
 
 .skill-btn.has-art {
   padding: 0;
-  background: #121610;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+}
+
+.skill-btn.has-art:hover:not(:disabled):not(.selected),
+.skill-btn.has-art.school-ice:not(.selected),
+.skill-btn.has-art.school-fire:not(.selected),
+.skill-btn.has-art.school-iron:not(.selected),
+.skill-btn.has-art.school-stealth:not(.selected) {
+  border: none;
+  box-shadow: none;
+}
+
+@keyframes skill-select-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 2px color-mix(in srgb, var(--skill-glow, var(--accent)) 88%, white),
+      0 0 10px 1px color-mix(in srgb, var(--skill-glow, var(--accent)) 55%, transparent),
+      0 0 22px 4px color-mix(in srgb, var(--skill-glow, var(--accent)) 28%, transparent),
+      0 5px 16px rgba(0, 0, 0, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 3px color-mix(in srgb, var(--skill-glow, var(--accent)) 100%, white 35%),
+      0 0 16px 3px color-mix(in srgb, var(--skill-glow, var(--accent)) 72%, transparent),
+      0 0 36px 8px color-mix(in srgb, var(--skill-glow, var(--accent)) 38%, transparent),
+      0 8px 20px rgba(0, 0, 0, 0.4);
+  }
 }
 
 .skill-btn .skill-icon {
@@ -236,10 +265,15 @@ body,
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 0;
+  border-radius: 50%;
   pointer-events: none;
   user-select: none;
   -webkit-user-drag: none;
+}
+
+.skill-btn.has-art .gcd-overlay,
+.skill-btn.has-art .cd-overlay {
+  border-radius: 50%;
 }
 
 .skill-btn .glyph {
@@ -266,8 +300,33 @@ body,
 
 .skill-btn.selected,
 .skill-btn.selected:hover {
+  --skill-glow: var(--accent);
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px rgba(196, 163, 90, 0.55);
+  z-index: 2;
+  animation: skill-select-pulse 1.8s ease-in-out infinite;
+}
+
+.skill-btn.selected.school-ice {
+  --skill-glow: var(--ice);
+  border-color: var(--ice);
+}
+.skill-btn.selected.school-fire {
+  --skill-glow: var(--fire);
+  border-color: var(--fire);
+}
+.skill-btn.selected.school-iron {
+  --skill-glow: var(--iron);
+  border-color: var(--iron);
+}
+.skill-btn.selected.school-stealth {
+  --skill-glow: var(--shadow);
+  border-color: var(--shadow);
+}
+
+.skill-btn.has-art.selected,
+.skill-btn.has-art.selected:hover {
+  border: none;
+  overflow: visible;
 }
 
 .skill-btn.locked {
