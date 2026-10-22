@@ -9,7 +9,7 @@ export type AbilityId =
   | "flame_cone"
   | "stun_strike"
   | "battle_cry"
-  | "slash"
+  | "sever_artery"
   | "shadow_strike";
 
 /** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток. */
@@ -38,16 +38,36 @@ export interface UnitStats {
   reach?: number;
 }
 
+/** Числовые эффекты способности. Описания и бой читают отсюда, не из хардкода в тексте. */
+export interface AbilityEffects {
+  slowDuration?: number;
+  /** Прибавка к множителю интервала автоатаки (0.35 → ×1.35). */
+  slowPotency?: number;
+  shieldAmount?: number;
+  shieldDuration?: number;
+  burnPerSec?: number;
+  burnDuration?: number;
+  bleedPerSec?: number;
+  bleedDuration?: number;
+  stunDuration?: number;
+  atkBuffDuration?: number;
+  /** Прибавка к урону атаки (0.35 → +35% / ×1.35). */
+  atkBuffPotency?: number;
+  /** Доля урона вторичных клеток зоны от damage (0.55 → 55%). */
+  zoneSecondaryRatio?: number;
+  invulnerableDuringCast?: boolean;
+}
+
 export interface AbilityDef {
   id: AbilityId;
   name: string;
   school: School;
   glyph: string;
-  description: string;
   cooldown: number;
   damage: number;
   targetMode: TargetMode;
   range: "melee" | "ranged" | "any";
   /** 0 — на себя. Иначе ряды от героя: 1 ближний … 4 дальний. */
   reach: number;
+  effects?: AbilityEffects;
 }

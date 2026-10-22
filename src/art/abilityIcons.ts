@@ -5,7 +5,7 @@ import frostShieldIconUrl from "../../assets/art/skills/frost_shield.png";
 import frostboltIconUrl from "../../assets/art/skills/frostbolt.png";
 import hammerThrowIconUrl from "../../assets/art/skills/hammer_throw.png";
 import emptySkillIconUrl from "../../assets/art/skills/no_image.png";
-import rendIconUrl from "../../assets/art/skills/rend.png";
+import severArteryIconUrl from "../../assets/art/skills/sever_artery.png";
 import shadowStrikeIconUrl from "../../assets/art/skills/shadow_strike.png";
 import type { AbilityId } from "../types";
 
@@ -20,6 +20,6 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   flame_cone: dragonBreathIconUrl,
   stun_strike: hammerThrowIconUrl,
   battle_cry: battleCryIconUrl,
-  slash: rendIconUrl,
+  sever_artery: severArteryIconUrl,
   shadow_strike: shadowStrikeIconUrl,
 };

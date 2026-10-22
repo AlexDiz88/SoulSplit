@@ -3,10 +3,12 @@ name: art-round-skill
 description: >-
   Writes ready-to-paste Gemini prompts for Soul Split round medallion ability
   icons (circular frame, thick black ink, jagged school-colored aura, painterly
-  fill). Use when the user invokes /art-round-skill or art-round-skill with
-  ability name and school (e.g. /art-round-skill дыхание дракона, огонь), or
-  asks for round/circular/medallion skill icons — not the thin white sticker
-  ability-icon canon from gemini-art-prompts.
+  fill). Before drafting, fully reads the ability catalog card (INDEX + full
+  design/abilities markdown) so the subject matches description, application
+  type, zone, and effect. Use when the user invokes /art-round-skill or
+  art-round-skill with ability name and school (e.g. /art-round-skill дыхание
+  дракона, огонь), or asks for round/circular/medallion skill icons - not the
+  thin white sticker ability-icon canon from gemini-art-prompts.
 disable-model-invocation: true
 ---
 
@@ -38,9 +40,9 @@ Parse rules:
 
 1. Strip leading `/art-round-skill` or `art-round-skill` (with or without slash).
 2. Split the remainder on the **first comma**.
-3. **Param 1** = ability name / concept (may be Russian; translate into English for the Gemini prompt subject).
-4. **Param 2** = school (element / magic school). Trim whitespace. Map to school accent colors below.
-5. If school is missing or unknown — ask once for school; do not invent a school.
+3. **Param 1** = ability name / lookup key (may be Russian). Resolve against the catalog before writing Subject English.
+4. **Param 2** = school (element / magic school). Trim whitespace. Map to school accent colors below; prefer card `school` if they conflict.
+5. If school is missing or unknown - ask once for school; do not invent a school.
 
 ## School → accent colors
 
@@ -59,11 +61,38 @@ Use these for jagged outer aura, effect core, and medallion accents (rich, not n
 
 If the user names a school not in the table, derive a close non-neon accent pair and state it in the Subject line.
 
-## Before writing prompts
+## Before writing prompts (CRITICAL - research first)
 
-1. Prefer attaching [`assets/art/approved/ability_icon_round_example.png`](../../../assets/art/approved/ability_icon_round_example.png) as style reference in Gemini.
-2. Parse invocation → ability name + school → accent colors.
-3. Output path after approval: `assets/art/skills/{ability_id}.png` (crop one panel from the sheet).
+Do **not** draft the Gemini prompt until ability data is fully read. Guessing from the name alone causes mismatches (wrong shape, wrong effect, invented props).
+
+1. Parse invocation → ability name + school → accent colors (table below).
+2. Open [`design/abilities/INDEX.md`](../../../design/abilities/INDEX.md). Find the row by **название** and **школа** / `school_id`. Note `id`, `тип`, and `крючок`.
+3. If no INDEX match: search `design/abilities/**/*.md` by frontmatter `name` / heading / Russian aliases. If still missing - ask once; do **not** invent a card or visual from the name alone.
+4. Read the matched card **in full** (`design/abilities/{school_id}/{id}.md`):
+   - frontmatter: `id`, `icon`, `name`, `school`, `school_id`
+   - body: **Описание**, **Тип применения**, **Зона применения**, **Тип эффекта**, **Числа**, **Доп** (if any)
+   - for `зона`: the whole `## Зона` block (anchor, pattern, damage tiers) - use only as **visual metaphor** (direction, spread, focus), never draw a grid / UI / numbers
+5. If the card `icon:` already points at a real file under `assets/art/skills/` (not `no_image.png`), glance at it so the new prompt stays consistent with an approved look when regenerating.
+6. Optionally cross-check combat wiring in `src/abilities/definitions.ts` / `src/abilities/catalog.ts` only if the card is ambiguous; **design card wins** for what the icon should depict.
+7. Prefer attaching [`assets/art/approved/ability_icon_round_example.png`](../../../assets/art/approved/ability_icon_round_example.png) as style reference in Gemini.
+8. Output path after approval: `assets/art/skills/{icon from card, or id with underscores}.png` (crop one panel from the sheet).
+
+### Ground the Subject from the card (do not invent)
+
+Build the English Subject from researched facts only:
+
+| Card field | Use in Subject |
+|------------|----------------|
+| name / Описание | primary magical silhouette and action verb |
+| Тип эффекта | damage → strike / blast / projectile; shield / buff → protective form; DoT / debuff → lingering mark / curse motif; stun / control → binding / impact freeze |
+| Тип применения | `цель` → focused single-target symbol; `зона` → cone / area / directional burst matching the zone metaphor; `на себя` → self-aura / personal ward; `все враги` → wide / omnidirectional pulse |
+| Зона (if any) | direction and shape only (e.g. forward cone upward from source, ring around anchor) - no grid cells, no letters X/A/B |
+| Школа + accents | jagged aura + effect colors from the school table |
+| Числа / Доп | intensity and secondary motifs only if they are **visible magic** (burn embers, ice shards, blood drops). Ignore cooldown, mana, and raw numbers |
+
+**Forbidden inventions:** characters, faces, hands, enemies, heroes, UI, damage digits, school logos as text, steampunk props, or a different spell than the card (e.g. do not draw a fireball for a breath cone, or a weapon swing for a pure self-buff).
+
+If the user name disagrees with the catalog card, **trust the catalog** and still depict that ability; school accents come from param 2 only when they match the card's school - if param 2 conflicts with the card, prefer the card's `school` / `school_id` for colors.
 
 ## Hard rules
 
@@ -76,6 +105,7 @@ If the user names a school not in the table, derive a close non-neon accent pair
 - **Magic-only visual.** No steampunk, brass, gears, cogs, lenses, valves, or machinery unless the user **explicitly** asks for a tech ability.
 - Do **not** use the thin white sticker outline from unit/portrait canon.
 - Do **not** invent a competing slant that drifts from `ability_icon_round_example.png`.
+- Do **not** write the prompt before completing the research steps above.
 
 ## Locked look (match round example)
 
@@ -131,22 +161,24 @@ Setting: medieval fantasy dark-magic game world; pure magical effect only — no
 
 {Framing Lock}
 
-Subject / theme: {ability name from param 1, in English} — same spell/effect in every panel; school {school from param 2} with accents {mapped colors} for jagged ring aura and effect; pure magic silhouette inside the medallion.
+Subject / theme: {English name from card} - {1 short clause from Описание + Тип эффекта + visual metaphor from Тип применения / Зона}; same spell/effect in every panel; school {card school} with accents {mapped colors} for jagged ring aura and effect; pure magic silhouette inside the medallion.
 
 {Diversity Lock}
 
 Panel brief: nine variations of the SAME round medallion ability icon — composition, angle, and effect intensity only.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, soft airbrush anime, missing circular frame, square icon without medallion ring, thin white sticker outline, thick white outline, heavy white border, chunky white sticker stroke, flat solid empty void background, busy photo landscape, ornate baroque frames, character, face, hands, different ability concepts across panels, weak muddy silhouette, neon candy glow, washed-out colors, muddy grey-brown palette, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, aura clipped by panel edge, medallion crossing gutters
+Negatives: photorealistic, semi-realistic, 3d, cgi, soft airbrush anime, missing circular frame, square icon without medallion ring, thin white sticker outline, thick white outline, heavy white border, chunky white sticker stroke, flat solid empty void background, busy photo landscape, ornate baroque frames, character, face, hands, different ability concepts across panels, wrong spell concept, mismatched ability effect, weak muddy silhouette, neon candy glow, washed-out colors, muddy grey-brown palette, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork, text, watermark, UI, grid, damage numbers, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, aura clipped by panel edge, medallion crossing gutters
 ```
 
 ## Subject writing tips
 
-- Param 1 → English magical effect name in Subject; param 2 → school accents from the table.
+- Research the catalog card first (INDEX + full `.md`). Param 1 is only a lookup key; the Subject must match the card, not a free reinterpretation of the name.
+- Translate the card’s magical action into a clear English silhouette (projectile, cone breath, shield dome, hammer of light, shadow slash mark, etc.).
 - Keep **one** ability across all nine panels.
 - Put school accent colors on both the jagged outer aura and the central effect.
-- After the user picks a panel: crop to square PNG → `assets/art/skills/{ability_id}.png` and wire via `src/art/abilityIcons.ts` if needed.
-- Workflow note (NOT in the reply): attach `ability_icon_round_example.png` in Gemini as style reference; bake “must match ability_icon_round_example.png” into the prompt itself.
+- Prefer verbs and nouns from **Описание** / **Тип эффекта**; skip mana, cooldown, and numeric values in the prompt.
+- After the user picks a panel: crop to square PNG → `assets/art/skills/{icon from card}.png` and wire via `src/art/abilityIcons.ts` if needed.
+- Workflow note (NOT in the reply): attach `ability_icon_round_example.png` in Gemini as style reference; bake "must match ability_icon_round_example.png" into the prompt itself.
 
 ## After user approves / corrects style
 

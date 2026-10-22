@@ -1,4 +1,4 @@
-import { ABILITIES } from "../abilities/definitions";
+import { ABILITIES, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountGrimoire } from "./grimoire";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
@@ -94,14 +94,14 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     const damageLabel =
       def.damage > 0
         ? def.targetMode === "zone"
-          ? `${def.damage} / выше ${Math.round(def.damage * 0.55)}`
+          ? `${def.damage} / выше ${zoneSecondaryDamage(def)}`
           : String(def.damage)
         : "-";
 
     tooltip.className = `skill-tooltip school-${def.school}`;
     tooltip.innerHTML = `
       <div class="tt-name">${def.name}</div>
-      <div class="tt-desc">${def.description}</div>
+      <div class="tt-desc">${describeAbility(def)}</div>
       <div class="tt-stats">
         <div class="tt-stat"><span>Урон</span><b>${damageLabel}</b></div>
         <div class="tt-stat"><span>Кулдаун</span><b>${def.cooldown.toFixed(1)} с</b></div>

@@ -516,7 +516,7 @@ textarea,
 
 .skill-tooltip .tt-name {
   font-family: var(--font);
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 700;
   color: var(--accent);
   margin-bottom: 4px;
@@ -524,7 +524,7 @@ textarea,
 
 .skill-tooltip .tt-desc {
   color: var(--muted);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   line-height: 1.4;
   margin-bottom: 8px;
 }
@@ -532,7 +532,7 @@ textarea,
 .skill-tooltip .tt-stats {
   display: grid;
   gap: 3px;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
 }
 
 .skill-tooltip .tt-stat {

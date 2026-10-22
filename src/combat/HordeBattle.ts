@@ -737,11 +737,13 @@ export class HordeBattle {
         const aim = this.aimCell(cell, clicked);
         if (!aim) return;
         const to = this.cellCenter(aim);
+        const slowDur = def.effects?.slowDuration ?? 3;
+        const slowPot = def.effects?.slowPotency ?? 0.35;
         await this.vfx.iceArrow(from, to, () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
           this.dealAbilityDamage(caster, hit, def.damage);
-          hit.addStatus({ id: "slow", kind: "slow", remaining: 3, potency: 0.35 });
+          hit.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
         });
         break;
       }
@@ -751,7 +753,9 @@ export class HordeBattle {
           caster.center.y,
           caster.cardSize * 0.58,
         );
-        caster.addStatus({ id: "shield", kind: "shield", remaining: 6, potency: 55 });
+        const shieldAmt = def.effects?.shieldAmount ?? 55;
+        const shieldDur = def.effects?.shieldDuration ?? 6;
+        caster.addStatus({ id: "shield", kind: "shield", remaining: shieldDur, potency: shieldAmt });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ЩИТ", 0x7ec8e8);
         break;
       }
@@ -759,11 +763,13 @@ export class HordeBattle {
         const aim = this.aimCell(cell, clicked);
         if (!aim) return;
         const to = this.cellCenter(aim);
+        const burnDur = def.effects?.burnDuration ?? 4;
+        const burnPot = def.effects?.burnPerSec ?? 8;
         await this.vfx.fireball(from, to, [to], () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
           this.dealAbilityDamage(caster, hit, def.damage);
-          hit.addStatus({ id: "burn", kind: "burn", remaining: 4, potency: 8 });
+          hit.addStatus({ id: "burn", kind: "burn", remaining: burnDur, potency: burnPot });
           this.vfx.floatingText(hit.center.x, hit.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
         });
         break;
@@ -773,11 +779,12 @@ export class HordeBattle {
         if (!aim) return;
         const hits = dragonBreathCells(aim);
         const centers = hits.map((h) => this.cellCenter(h.pos));
+        const secondaryRatio = def.effects?.zoneSecondaryRatio ?? 0.55;
         await this.vfx.flameCone(from, centers, CELL);
         for (const hit of hits) {
           const u = this.unitAtCell(hit.pos);
           if (!u) continue;
-          this.dealAbilityDamage(caster, u, hit.full ? def.damage : def.damage * 0.55);
+          this.dealAbilityDamage(caster, u, hit.full ? def.damage : def.damage * secondaryRatio);
         }
         break;
       }
@@ -786,6 +793,7 @@ export class HordeBattle {
         if (!aim) return;
         const to = this.cellCenter(aim);
         const home = { ...from };
+        const stunDur = def.effects?.stunDuration ?? 2.2;
         await this.vfx.stunStrike(
           from,
           to,
@@ -797,7 +805,7 @@ export class HordeBattle {
             const hit = this.occupantAtImpact(aim, to);
             if (!hit) return;
             this.dealAbilityDamage(caster, hit, def.damage);
-            hit.addStatus({ id: "stun", kind: "stun", remaining: 2.2, potency: 1 });
+            hit.addStatus({ id: "stun", kind: "stun", remaining: stunDur, potency: 1 });
             this.vfx.floatingText(hit.center.x, hit.center.y - 24, "ОГЛУШЕНИЕ", 0xc9b896);
           },
         );
@@ -806,17 +814,21 @@ export class HordeBattle {
       }
       case "battle_cry": {
         await this.vfx.battleCry(from, [caster.center]);
-        caster.addStatus({ id: "atk_buff", kind: "atk_buff", remaining: 5, potency: 0.35 });
+        const buffDur = def.effects?.atkBuffDuration ?? 5;
+        const buffPot = def.effects?.atkBuffPotency ?? 0.35;
+        caster.addStatus({ id: "atk_buff", kind: "atk_buff", remaining: buffDur, potency: buffPot });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "СИЛА", 0xc9b896);
         break;
       }
-      case "slash": {
+      case "sever_artery": {
         if (!clicked || !clicked.alive) return;
         // Мгновенно: урон и кровотечение в кадр каста, VFX только визуал.
+        const bleedDur = def.effects?.bleedDuration ?? 5;
+        const bleedPot = def.effects?.bleedPerSec ?? 12;
         this.dealAbilityDamage(caster, clicked, def.damage);
-        clicked.addStatus({ id: "bleed", kind: "bleed", remaining: 4, potency: 8 });
+        clicked.addStatus({ id: "bleed", kind: "bleed", remaining: bleedDur, potency: bleedPot });
         this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
-        await this.vfx.slash(clicked.center.x, clicked.center.y);
+        await this.vfx.severArtery(clicked.center.x, clicked.center.y);
         break;
       }
       case "shadow_strike": {

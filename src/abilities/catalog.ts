@@ -1,3 +1,9 @@
+import {
+  abilityDefForGrimoireId,
+  abilityNumberLines,
+  describeAbility,
+} from "./definitions";
+
 export interface AbilityZone {
   anchor: string;
   damage: string;
@@ -21,6 +27,18 @@ export interface AbilityCard {
   numbers: string[];
   extra: string;
   zone: AbilityZone | null;
+}
+
+/** Подставляет имя, описание и числа из боевых параметров, если карточка привязана к прототипу. */
+export function presentAbilityCard(card: AbilityCard): AbilityCard {
+  const def = abilityDefForGrimoireId(card.id);
+  if (!def) return card;
+  return {
+    ...card,
+    name: def.name,
+    description: describeAbility(def),
+    numbers: abilityNumberLines(def),
+  };
 }
 
 export interface GrimoireSchool {
@@ -198,7 +216,7 @@ export function loadAbilityCards(): AbilityCard[] {
   const cards: AbilityCard[] = [];
   for (const [path, raw] of Object.entries(rawCards)) {
     if (path.replaceAll("\\", "/").endsWith("/INDEX.md") || typeof raw !== "string") continue;
-    cards.push(parseCard(path, raw));
+    cards.push(presentAbilityCard(parseCard(path, raw)));
   }
   cached = cards;
   return cards;

@@ -3,8 +3,8 @@ import type { TweenManager } from "../../util/tween";
 import { easeOutCubic } from "../../util/tween";
 import { TEX } from "../textures";
 
-/** Премиум порез: серии клинковых дуг + кровь + bleed-метка. */
-export async function playSlashVfx(
+/** Премиум "Вскрыть артерию": серии клинковых дуг + кровь + bleed-метка. */
+export async function playSeverArteryVfx(
   layer: Container,
   tweens: TweenManager,
   x: number,

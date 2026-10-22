@@ -1,0 +1,37 @@
+---
+description: Правила переименования способностей - id, иконка, английское имя
+alwaysApply: true
+---
+
+# Переименование способностей
+
+Когда пользователь меняет русское название способности, **всегда** синхронно обновляй технический id и связанные файлы. Не оставляй старый английский id (`slash` при имени "Вскрыть артерию" - ошибка).
+
+## Что переименовать вместе
+
+1. `AbilityId` в `src/types.ts`
+2. ключ и `id` в `src/abilities/definitions.ts` (+ `ABILITY_BY_GRIMOIRE_ID`, `describeAbility`, `abilityNumberLines`, `ALL_ABILITY_IDS`)
+3. `case` и вызовы в `src/combat/HordeBattle.ts`
+4. ключ в `src/art/abilityIcons.ts`
+5. карточка гримуара: файл `design/abilities/{school}/{id}.md` (kebab-case) и строка в `design/abilities/INDEX.md`
+6. иконка: `assets/art/skills/{snake_case}.png` - переименуй файл или скопируй под новым именем, обнови `icon:` в md
+7. VFX способности, если метод/файл названы по старому id (например `SlashVfx` → `SeverArteryVfx`)
+
+Форматы id:
+
+- код / иконка: `snake_case` (`sever_artery`, `sever_artery.png`)
+- карточка гримуара: `kebab-case` (`sever-artery`)
+
+## Ответ пользователю
+
+После переименования **всегда** явно напиши английские имена:
+
+- id в коде: `sever_artery`
+- файл иконки: `sever_artery.png`
+- карточка: `sever-artery.md`
+
+Чтобы было ясно, как назвать арт в `assets/art/skills/`.
+
+## Не трогать без нужды
+
+Локальные переменные вроде `slash` внутри чужого VFX (дуга анимации) - не id способности. Их не переименовывай ради этого правила.

@@ -7,7 +7,7 @@ import { playFlameConeVfx } from "./premium/FlameConeVfx";
 import { playIceArrowVfx } from "./premium/IceArrowVfx";
 import { playIceShieldVfx } from "./premium/IceShieldVfx";
 import { playShadowStrikeVfx } from "./premium/ShadowStrikeVfx";
-import { playSlashVfx } from "./premium/SlashVfx";
+import { playSeverArteryVfx } from "./premium/SeverArteryVfx";
 import { playStunStrikeVfx } from "./premium/StunStrikeVfx";
 
 export class VfxManager {
@@ -208,12 +208,12 @@ export class VfxManager {
     );
   }
 
-  async slash(
+  async severArtery(
     x: number,
     y: number,
     onHit?: () => void,
   ): Promise<void> {
-    await playSlashVfx(this.layer, this.tweens, x, y, onHit, (amp, dur) => this.screenShake(amp, dur));
+    await playSeverArteryVfx(this.layer, this.tweens, x, y, onHit, (amp, dur) => this.screenShake(amp, dur));
   }
 
   async shadowDash(
