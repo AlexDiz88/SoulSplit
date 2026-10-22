@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local sketches / scratch art (not game assets)
+project-files/assets/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

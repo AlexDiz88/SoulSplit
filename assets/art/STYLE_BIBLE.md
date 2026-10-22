@@ -1,4 +1,4 @@
-# Style Bible — Project13
+# Style Bible — Soul Split
 
 Канон визуала для Gemini и всех ассетов. Менять только осознанно (и тогда обновить skill).
 

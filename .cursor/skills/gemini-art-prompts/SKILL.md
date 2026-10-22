@@ -1,13 +1,13 @@
 ---
 name: gemini-art-prompts
 description: >-
-  Writes ready-to-paste Gemini image prompts for Project13 using the locked
+  Writes ready-to-paste Gemini image prompts for Soul Split using the locked
   Style Bible. Use when the user asks for art prompts, Gemini prompts, unit
   portraits, ability icons, character cards, enemy portraits, or visual asset
   generation text.
 ---
 
-# Gemini Art Prompts — Project13
+# Gemini Art Prompts — Soul Split
 
 ## When to use
 
