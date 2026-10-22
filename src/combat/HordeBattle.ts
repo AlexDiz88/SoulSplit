@@ -1,6 +1,7 @@
-import { Application, Container, Graphics, Text } from "pixi.js";
+import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitions";
 import { blastCells, GRID_SIZE } from "../abilities/shapes";
+import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { AbilityDef, AbilityId, GridPos, WeaponKind } from "../types";
 import { easeInOutQuad, TweenManager } from "../util/tween";
@@ -61,6 +62,7 @@ export class HordeBattle {
   private mark = new Graphics();
   private drop: { elapsed: number; anim: DropAnim[] } | null = null;
   private readonly hud: BattleHudApi;
+  private readonly background: Sprite;
 
   constructor(app: Application, hud: BattleHudApi) {
     this.app = app;
@@ -68,6 +70,11 @@ export class HordeBattle {
     this.vfx = new VfxManager(this.tweens);
     this.vfx.setShakeTarget(this.board);
 
+    this.background = new Sprite(getBackgroundTexture(pickRandomBackgroundUrl()));
+    this.background.anchor.set(0.5);
+    this.background.eventMode = "none";
+
+    this.root.addChild(this.background);
     this.root.addChild(this.board);
     this.board.addChild(this.drawArena());
     this.board.addChild(this.unitsLayer);
@@ -213,9 +220,6 @@ export class HordeBattle {
     };
 
     const c = new Container();
-    const bg = new Graphics();
-    bg.rect(-900, -700, 1800, 1400).fill({ color: 0x0c100c });
-    c.addChild(bg);
 
     const grid = new Graphics();
     for (let col = 0; col < GRID_SIZE; col++) {
@@ -266,6 +270,7 @@ export class HordeBattle {
     this.commitDrop();
     const w = this.app.screen.width;
     const h = this.app.screen.height;
+    this.fitBackground(w, h);
     const gridW = GRID_SIZE * PITCH - GAP;
     const gridH = GRID_SIZE * PITCH - GAP;
     const totalH = gridH + STACK_GAP + HERO_SIZE;
@@ -278,6 +283,16 @@ export class HordeBattle {
     this.board.scale.set(Math.floor(scale * 100) / 100);
     this.placeAll();
     this.drawWeaponRange();
+  }
+
+  /** Cover-скейл фона под размер окна. */
+  private fitBackground(w: number, h: number): void {
+    const tex = this.background.texture;
+    const tw = tex.width || 1;
+    const th = tex.height || 1;
+    const scale = Math.max(w / tw, h / th);
+    this.background.scale.set(scale);
+    this.background.position.set(w / 2, h / 2);
   }
 
   private placeAll(): void {

@@ -1,5 +1,6 @@
 import "./style.css";
 import { Application } from "pixi.js";
+import { preloadBackgrounds } from "./art/backgrounds";
 import { preloadPortraits } from "./art/portraits";
 import { HordeBattle } from "./combat/HordeBattle";
 import { createBattleHud } from "./ui/BattleHud";
@@ -26,7 +27,7 @@ async function boot(): Promise<void> {
   });
   mount.appendChild(app.canvas);
 
-  await preloadPortraits();
+  await Promise.all([preloadPortraits(), preloadBackgrounds()]);
 
   let battle!: HordeBattle;
   const hud = createBattleHud(
