@@ -49,7 +49,8 @@ body,
 
 #hud button,
 #hud .side-menu,
-#hud .bestiary-overlay {
+#hud .bestiary-overlay,
+#hud .grimoire-overlay {
   pointer-events: auto;
 }
 
@@ -578,4 +579,415 @@ body,
 .bestiary-stat b {
   font-weight: 800;
   color: var(--accent);
+}
+
+.grimoire-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  background: rgba(6, 8, 6, 0.72);
+}
+
+.grimoire-overlay[hidden] {
+  display: none;
+}
+
+.grimoire-window {
+  --zone-cell: 42px;
+  width: min(1080px, calc(100vw - 40px));
+  height: min(86vh, 760px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 16px 18px 18px;
+  border: 1px solid var(--panel-border);
+  border-radius: 12px;
+  background: #141a14;
+}
+
+.grimoire-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.grimoire-head h2 {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.grimoire-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 210px 280px minmax(0, 1fr);
+  gap: 12px;
+}
+
+.grimoire-schools,
+.grimoire-list,
+.grimoire-detail {
+  min-height: 0;
+  overflow: auto;
+}
+
+.grimoire-schools,
+.grimoire-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.grimoire-school,
+.grimoire-row {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(8, 12, 8, 0.55);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.grimoire-school {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 42px;
+  padding: 8px 10px 8px 12px;
+  border-left: 3px solid var(--school, var(--panel-border));
+  font-weight: 700;
+}
+
+.grimoire-school b {
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.grimoire-row {
+  display: grid;
+  grid-template-columns: 64px 1fr;
+  gap: 10px;
+  align-items: center;
+  padding: 8px;
+}
+
+.grimoire-row img,
+.grimoire-detail-head img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border-radius: 8px;
+  background: #1a2018;
+}
+
+.grimoire-detail-head img {
+  width: 96px;
+  height: 96px;
+}
+
+.grimoire-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.grimoire-name {
+  font-weight: 800;
+}
+
+.grimoire-type,
+.grimoire-kicker,
+.grimoire-empty,
+.grimoire-block span,
+.zone-caption,
+.zone-meta,
+.zone-index {
+  color: var(--muted);
+}
+
+.grimoire-type,
+.grimoire-kicker {
+  font-size: 0.85rem;
+}
+
+.grimoire-school:hover,
+.grimoire-school.active,
+.grimoire-row:hover,
+.grimoire-row.active,
+.grimoire-school:focus-visible,
+.grimoire-row:focus-visible {
+  border-color: var(--accent);
+}
+
+.grimoire-school.active,
+.grimoire-row.active {
+  background: rgba(196, 163, 90, 0.12);
+}
+
+.grimoire-detail {
+  padding: 12px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(8, 12, 8, 0.65);
+  line-height: 1.45;
+}
+
+.grimoire-detail-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.grimoire-detail-head h3 {
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.grimoire-status {
+  display: inline-block;
+  margin-top: 6px;
+  padding: 1px 8px;
+  border: 1px solid var(--panel-border);
+  border-radius: 99px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grimoire-status.draft {
+  color: var(--accent);
+  border-color: var(--accent-dim);
+}
+
+.grimoire-desc {
+  margin: 12px 0;
+}
+
+.grimoire-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.grimoire-stat,
+.grimoire-block,
+.grimoire-zone {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  background: rgba(12, 16, 12, 0.45);
+}
+
+.grimoire-stat span,
+.grimoire-block span,
+.grimoire-zone > span {
+  display: block;
+  margin-bottom: 2px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.grimoire-stat b {
+  color: var(--accent);
+  font-weight: 800;
+}
+
+.grimoire-block ul,
+.zone-notes {
+  margin: 4px 0 0 18px;
+}
+
+.grimoire-empty {
+  padding: 8px 2px;
+}
+
+.zone-board {
+  display: grid;
+  grid-template-columns: 16px repeat(4, var(--zone-cell));
+  gap: 4px;
+  width: max-content;
+  margin-top: 6px;
+}
+
+.zone-index {
+  display: grid;
+  place-items: center;
+  font-size: 0.68rem;
+}
+
+.zone-cell {
+  display: grid;
+  place-items: center;
+  width: var(--zone-cell);
+  height: var(--zone-cell);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  background: rgba(8, 12, 8, 0.9);
+  color: var(--text);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.zone-cell.hit {
+  border-color: var(--school, var(--accent));
+  background: color-mix(in srgb, var(--school, var(--accent)) 42%, #10140f);
+}
+
+.zone-cell.aim {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.zone-cell.aim-empty {
+  border-style: dashed;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.zone-caption,
+.zone-meta {
+  font-size: 0.75rem;
+}
+
+.zone-caption {
+  margin-top: 6px;
+}
+
+.zone-notes {
+  color: var(--text);
+  font-size: 0.86rem;
+}
+
+/* Realme GT Neo 3, портрет: CSS-окно около 360×804. Только гримуар. */
+@media (max-width: 480px) {
+  .grimoire-overlay {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: 100dvh;
+    place-items: stretch;
+    background: #0c0f0c;
+  }
+
+  .grimoire-window {
+    --zone-cell: 52px;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      calc(12px + env(safe-area-inset-right))
+      calc(12px + env(safe-area-inset-bottom))
+      calc(12px + env(safe-area-inset-left));
+  }
+
+  .grimoire-head h2 {
+    font-size: 1.15rem;
+  }
+
+  .grimoire-back {
+    display: inline-flex;
+    align-items: center;
+    min-width: 76px;
+  }
+
+  .grimoire-back[hidden] {
+    display: none;
+  }
+
+  .grimoire-body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .grimoire-window[data-phone-view="schools"] .grimoire-list,
+  .grimoire-window[data-phone-view="schools"] .grimoire-detail,
+  .grimoire-window[data-phone-view="list"] .grimoire-schools,
+  .grimoire-window[data-phone-view="list"] .grimoire-detail,
+  .grimoire-window[data-phone-view="detail"] .grimoire-schools,
+  .grimoire-window[data-phone-view="detail"] .grimoire-list {
+    display: none;
+  }
+
+  .grimoire-schools,
+  .grimoire-list,
+  .grimoire-detail {
+    flex: 1;
+  }
+
+  .grimoire-school,
+  .grimoire-row {
+    min-height: 52px;
+  }
+
+  .grimoire-close {
+    min-width: 76px;
+  }
+}
+
+/* Realme GT Neo 3, ландшафт: CSS-окно около 804×360. Только гримуар. */
+@media (max-height: 450px) and (min-width: 640px) and (max-width: 960px) {
+  .grimoire-overlay {
+    position: fixed;
+    inset: 0;
+    width: auto;
+    height: 100dvh;
+    place-items: stretch;
+    background: #0c0f0c;
+  }
+
+  .grimoire-window {
+    --zone-cell: 28px;
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    border: 0;
+    border-radius: 0;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+  }
+
+  .grimoire-head {
+    margin-bottom: 8px;
+  }
+
+  .grimoire-head h2 {
+    font-size: 1.05rem;
+  }
+
+  .grimoire-body {
+    grid-template-columns: 148px 190px minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .grimoire-row {
+    grid-template-columns: 44px 1fr;
+  }
+
+  .grimoire-row img {
+    width: 44px;
+    height: 44px;
+  }
+
+  .grimoire-detail-head img {
+    width: 56px;
+    height: 56px;
+  }
 }

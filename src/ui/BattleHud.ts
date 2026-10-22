@@ -1,4 +1,5 @@
 import { ABILITIES, SCHOOL_LABEL } from "../abilities/definitions";
+import { mountGrimoire } from "./grimoire";
 import { ABILITY_ICON_URLS } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import { WEAPON_LABEL, WEAPON_ORDER, WEAPON_REACH } from "../combat/weapons";
@@ -169,6 +170,7 @@ export function createBattleHud(
     sideMenu.hidden = true;
     menuBtn.setAttribute("aria-expanded", "false");
   };
+  const grimoire = mountGrimoire(closeMenu);
 
   const openMenu = (): void => {
     sideMenu.hidden = false;
@@ -241,6 +243,10 @@ export function createBattleHud(
   });
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "Escape") return;
+    if (grimoire.isOpen()) {
+      if (!grimoire.back()) grimoire.close();
+      return;
+    }
     if (!bestiary.hidden) {
       bestiary.hidden = true;
       return;
