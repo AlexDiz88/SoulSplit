@@ -54,6 +54,7 @@ export class Unit {
   private statusText: Text;
   private subText: Text;
   private flashGfx: Graphics;
+  private shieldGfx: Graphics;
   private cdBarBg: Graphics;
   private cdBarFg: Graphics;
 
@@ -78,6 +79,8 @@ export class Unit {
 
     this.frame = new Graphics();
     this.flashGfx = new Graphics();
+    this.shieldGfx = new Graphics();
+    this.shieldGfx.eventMode = "none";
     this.cdBarBg = new Graphics();
     this.cdBarFg = new Graphics();
     this.cdBarBg.eventMode = "none";
@@ -129,6 +132,7 @@ export class Unit {
     this.view.addChild(
       this.frame,
       this.flashGfx,
+      this.shieldGfx,
       this.hpBarBg,
       this.hpBarFg,
       this.hpText,
@@ -234,8 +238,84 @@ export class Unit {
     });
     this.statusText.text = icons.join("");
     this.statusText.position.set(0, -this.half - 14);
+    this.drawShieldAura();
     this.drawAttackCharge();
     if (!this.alive) this.view.visible = false;
+  }
+
+  private drawShieldAura(): void {
+    this.shieldGfx.clear();
+    if (!this.hasStatus("shield")) return;
+    const half = this.half;
+    const w = half * 0.56;
+    const h = half * 1.0;
+    // heater-щит: плоский верх, остриё вниз
+    const outline = [
+      { x: -w * 0.92, y: -h * 0.52 },
+      { x: -w * 0.35, y: -h * 0.58 },
+      { x: w * 0.35, y: -h * 0.58 },
+      { x: w * 0.92, y: -h * 0.52 },
+      { x: w * 1.02, y: -h * 0.12 },
+      { x: w * 0.88, y: h * 0.28 },
+      { x: w * 0.42, y: h * 0.55 },
+      { x: 0, y: h * 0.72 },
+      { x: -w * 0.42, y: h * 0.55 },
+      { x: -w * 0.88, y: h * 0.28 },
+      { x: -w * 1.02, y: -h * 0.12 },
+    ];
+    const trace = (scale: number) => {
+      const p0 = outline[0]!;
+      this.shieldGfx.moveTo(p0.x * scale, p0.y * scale);
+      for (let i = 1; i < outline.length; i++) {
+        const p = outline[i]!;
+        this.shieldGfx.lineTo(p.x * scale, p.y * scale);
+      }
+      return this.shieldGfx.closePath();
+    };
+    trace(1).fill({ color: 0x7ec8e8, alpha: 0.12 });
+    trace(0.78).fill({ color: 0xd0f0ff, alpha: 0.08 });
+    trace(1).stroke({ color: 0xa8e8ff, width: 2.6, alpha: 0.6 });
+    trace(0.88).stroke({ color: 0xffffff, width: 1.2, alpha: 0.3 });
+    // грани
+    this.shieldGfx
+      .moveTo(0, -h * 0.5)
+      .lineTo(w * 0.32, -h * 0.12)
+      .lineTo(0, h * 0.12)
+      .lineTo(-w * 0.32, -h * 0.12)
+      .closePath()
+      .stroke({ color: 0xe8f8ff, width: 1.4, alpha: 0.45 });
+    this.shieldGfx
+      .moveTo(-w * 0.22, h * 0.02)
+      .lineTo(w * 0.22, h * 0.02)
+      .lineTo(0, h * 0.55)
+      .closePath()
+      .stroke({ color: 0x7ec8e8, width: 1.2, alpha: 0.4 });
+    // кристаллики по контуру
+    for (let i = 0; i < outline.length; i++) {
+      if (i % 2 !== 0) continue;
+      const p = outline[i]!;
+      const len = Math.hypot(p.x, p.y) || 1;
+      const nx = p.x / len;
+      const ny = p.y / len;
+      this.shieldGfx
+        .moveTo(p.x + nx * 6, p.y + ny * 6)
+        .lineTo(p.x - ny * 3.2, p.y + nx * 3.2)
+        .lineTo(p.x + ny * 3.2, p.y - nx * 3.2)
+        .closePath()
+        .fill({ color: 0xd0f0ff, alpha: 0.7 });
+    }
+    // снежинки-точки внутри
+    for (let i = 0; i < 5; i++) {
+      const a = -0.6 + i * 0.35;
+      this.shieldGfx.circle(Math.sin(a) * w * 0.35, -h * 0.05 + Math.cos(a) * h * 0.15, 1.5).fill({
+        color: 0xffffff,
+        alpha: 0.55,
+      });
+    }
+    this.shieldGfx.ellipse(0, h * 0.48, w * 0.55, h * 0.12).fill({
+      color: 0xa8d8f0,
+      alpha: 0.14,
+    });
   }
 
   private drawAttackCharge(): void {

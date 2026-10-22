@@ -231,8 +231,8 @@ export class VfxManager {
     );
   }
 
-  async iceShieldAura(x: number, y: number): Promise<void> {
-    await playIceShieldVfx(this.layer, this.tweens, x, y);
+  async iceShieldAura(x: number, y: number, radius?: number): Promise<void> {
+    await playIceShieldVfx(this.layer, this.tweens, x, y, radius);
   }
 
   async autoAttackBolt(

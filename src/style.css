@@ -14,6 +14,7 @@
   --fire: #ff7a3d;
   --iron: #c9b896;
   --shadow: #9b7bb8;
+  --light: #f0e2b0;
   --hp: #5a9e5a;
   --hp-bg: #2a3228;
 
@@ -302,9 +303,13 @@ textarea,
 }
 
 .skill-btn.empty {
-  opacity: 0.28;
   cursor: default;
-  background: linear-gradient(180deg, rgba(28, 34, 26, 0.7), rgba(12, 16, 12, 0.75));
+  opacity: 0.85;
+}
+
+.skill-btn.empty.has-art {
+  background: transparent;
+  border: none;
 }
 
 .skill-hotkey {
@@ -342,7 +347,8 @@ textarea,
 .skill-btn.has-art.school-ice:not(.selected),
 .skill-btn.has-art.school-fire:not(.selected),
 .skill-btn.has-art.school-iron:not(.selected),
-.skill-btn.has-art.school-stealth:not(.selected) {
+.skill-btn.has-art.school-stealth:not(.selected),
+.skill-btn.has-art.school-light:not(.selected) {
   border: none;
   box-shadow: none;
 }
@@ -398,6 +404,9 @@ textarea,
 .skill-btn.school-stealth {
   border-color: rgba(155, 123, 184, 0.45);
 }
+.skill-btn.school-light {
+  border-color: rgba(240, 226, 176, 0.45);
+}
 
 .skill-btn:hover:not(:disabled) {
   border-color: var(--accent-dim);
@@ -426,6 +435,10 @@ textarea,
 .skill-btn.selected.school-stealth {
   --skill-glow: var(--shadow);
   border-color: var(--shadow);
+}
+.skill-btn.selected.school-light {
+  --skill-glow: var(--light);
+  border-color: var(--light);
 }
 
 .skill-btn.has-art.selected,
@@ -489,7 +502,7 @@ textarea,
   min-width: 200px;
   max-width: 260px;
   padding: 10px 12px 11px;
-  background: linear-gradient(180deg, rgba(22, 28, 20, 0.97), rgba(12, 16, 12, 0.97));
+  background: linear-gradient(180deg, rgb(22, 28, 20), rgb(12, 16, 12));
   border: 1px solid var(--accent-dim);
   border-radius: 2px;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
@@ -548,6 +561,9 @@ textarea,
 }
 .skill-tooltip.school-stealth {
   border-color: rgba(155, 123, 184, 0.5);
+}
+.skill-tooltip.school-light {
+  border-color: rgba(240, 226, 176, 0.5);
 }
 
 .battle-banner {

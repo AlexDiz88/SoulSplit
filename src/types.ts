@@ -1,6 +1,6 @@
 export type Team = "player" | "enemy";
 
-export type School = "ice" | "fire" | "iron" | "stealth";
+export type School = "ice" | "fire" | "iron" | "stealth" | "light";
 
 export type AbilityId =
   | "ice_arrow"
@@ -12,7 +12,8 @@ export type AbilityId =
   | "slash"
   | "shadow_strike";
 
-export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone";
+/** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток. */
+export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone" | "cell";
 
 export interface GridPos {
   col: number;

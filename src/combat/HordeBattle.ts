@@ -488,12 +488,22 @@ export class HordeBattle {
     }
     this.selectedAbility = id;
     this.refreshSkillBar();
-    this.hud.setHint(
-      def.targetMode === "zone"
-        ? `${def.name}: зона, ряд ${def.reach}. ЛКМ - клетка, ПКМ - отмена.`
-        : `${def.name}: радиус ${def.reach}. ЛКМ - цель, ПКМ - отмена.`,
-    );
+    this.hud.setHint(this.abilityAimHint(def));
     this.drawAbilityTelegraph(def);
+  }
+
+  private abilityAimHint(def: AbilityDef): string {
+    if (def.targetMode === "zone") {
+      return `${def.name}: зона, ряд ${def.reach}. ЛКМ - клетка, ПКМ - отмена.`;
+    }
+    if (def.targetMode === "cell") {
+      return `${def.name}: клетка, ряд ${def.reach}. ЛКМ - клетка (можно пустая), ПКМ - отмена.`;
+    }
+    return `${def.name}: радиус ${def.reach}. ЛКМ - враг, ПКМ - отмена.`;
+  }
+
+  private isGroundTarget(mode: AbilityDef["targetMode"]): boolean {
+    return mode === "zone" || mode === "cell" || mode === "enemy_blast" || mode === "cone";
   }
 
   private onCanvasPointer(ev: PointerEvent): void {
@@ -515,11 +525,11 @@ export class HordeBattle {
       this.hud.showToast("Клетка вне радиуса");
       return;
     }
-    if (def.targetMode === "zone" || def.targetMode === "enemy_blast" || def.targetMode === "cone") {
+    if (this.isGroundTarget(def.targetMode)) {
       void this.performCast(def, this.unitAtCell(cell), cell);
       return;
     }
-    this.hud.showToast("Нужна цель");
+    this.hud.showToast("Нужна цель-враг");
   }
 
   private onUnitClick(u: Unit): void {
@@ -605,7 +615,7 @@ export class HordeBattle {
       return;
     }
     const def = ABILITIES[this.selectedAbility];
-    if (def.targetMode !== "zone") {
+    if (!this.isGroundTarget(def.targetMode)) {
       this.clearHoverTelegraph();
       return;
     }
@@ -613,7 +623,7 @@ export class HordeBattle {
     const unit = this.unitAtLocal(local.x, local.y);
     let cell: GridPos | null = null;
     if (unit && unit.team === "enemy" && this.distanceOf(unit.pos.row) <= def.reach) {
-      cell = unit.pos;
+      cell = { ...unit.pos };
     } else {
       cell = this.cellAtLocal(local.x, local.y);
       if (cell && this.distanceOf(cell.row) > def.reach) cell = null;
@@ -661,8 +671,12 @@ export class HordeBattle {
 
   private async performCast(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
     if (this.destroyed || !this.started || this.paused) return;
-    if (def.targetMode === "enemy" && (!clicked || clicked.team !== "enemy")) {
+    if (def.targetMode === "enemy" && (!clicked || clicked.team !== "enemy" || !clicked.alive)) {
       this.hud.showToast("Нужна цель-враг");
+      return;
+    }
+    if (this.isGroundTarget(def.targetMode) && !cell && !clicked) {
+      this.hud.showToast("Нужна клетка");
       return;
     }
     if (this.casting) {
@@ -720,31 +734,42 @@ export class HordeBattle {
 
     switch (def.id) {
       case "ice_arrow": {
-        if (!clicked) return;
-        await this.vfx.iceArrow(from, clicked.center, () => {
-          this.dealAbilityDamage(caster, clicked, def.damage);
-          clicked.addStatus({ id: "slow", kind: "slow", remaining: 3, potency: 0.35 });
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const to = this.cellCenter(aim);
+        await this.vfx.iceArrow(from, to, () => {
+          const hit = this.occupantAtImpact(aim, to);
+          if (!hit) return;
+          this.dealAbilityDamage(caster, hit, def.damage);
+          hit.addStatus({ id: "slow", kind: "slow", remaining: 3, potency: 0.35 });
         });
         break;
       }
       case "ice_shield": {
-        await this.vfx.iceShieldAura(caster.center.x, caster.center.y);
+        await this.vfx.iceShieldAura(
+          caster.center.x,
+          caster.center.y,
+          caster.cardSize * 0.58,
+        );
         caster.addStatus({ id: "shield", kind: "shield", remaining: 6, potency: 55 });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ЩИТ", 0x7ec8e8);
         break;
       }
       case "fireball": {
-        if (!clicked) return;
-        const to = clicked.center;
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const to = this.cellCenter(aim);
         await this.vfx.fireball(from, to, [to], () => {
-          this.dealAbilityDamage(caster, clicked, def.damage);
-          clicked.addStatus({ id: "burn", kind: "burn", remaining: 4, potency: 8 });
-          this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
+          const hit = this.occupantAtImpact(aim, to);
+          if (!hit) return;
+          this.dealAbilityDamage(caster, hit, def.damage);
+          hit.addStatus({ id: "burn", kind: "burn", remaining: 4, potency: 8 });
+          this.vfx.floatingText(hit.center.x, hit.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
         });
         break;
       }
       case "flame_cone": {
-        const aim = cell ?? clicked?.pos;
+        const aim = this.aimCell(cell, clicked);
         if (!aim) return;
         const hits = dragonBreathCells(aim);
         const centers = hits.map((h) => this.cellCenter(h.pos));
@@ -757,19 +782,23 @@ export class HordeBattle {
         break;
       }
       case "stun_strike": {
-        if (!clicked) return;
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const to = this.cellCenter(aim);
         const home = { ...from };
         await this.vfx.stunStrike(
           from,
-          clicked.center,
+          to,
           (t) => {
-            caster.view.x = home.x + (clicked.center.x - home.x) * 0.2 * t;
-            caster.view.y = home.y + (clicked.center.y - home.y) * 0.2 * t;
+            caster.view.x = home.x + (to.x - home.x) * 0.2 * t;
+            caster.view.y = home.y + (to.y - home.y) * 0.2 * t;
           },
           () => {
-            this.dealAbilityDamage(caster, clicked, def.damage);
-            clicked.addStatus({ id: "stun", kind: "stun", remaining: 2.2, potency: 1 });
-            this.vfx.floatingText(clicked.center.x, clicked.center.y - 24, "ОГЛУШЕНИЕ", 0xc9b896);
+            const hit = this.occupantAtImpact(aim, to);
+            if (!hit) return;
+            this.dealAbilityDamage(caster, hit, def.damage);
+            hit.addStatus({ id: "stun", kind: "stun", remaining: 2.2, potency: 1 });
+            this.vfx.floatingText(hit.center.x, hit.center.y - 24, "ОГЛУШЕНИЕ", 0xc9b896);
           },
         );
         caster.view.position.set(home.x, home.y);
@@ -782,20 +811,23 @@ export class HordeBattle {
         break;
       }
       case "slash": {
-        if (!clicked) return;
-        await this.vfx.slash(clicked.center.x, clicked.center.y, () => {
-          this.dealAbilityDamage(caster, clicked, def.damage);
-          clicked.addStatus({ id: "bleed", kind: "bleed", remaining: 4, potency: 8 });
-          this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
-        });
+        if (!clicked || !clicked.alive) return;
+        // Мгновенно: урон и кровотечение в кадр каста, VFX только визуал.
+        this.dealAbilityDamage(caster, clicked, def.damage);
+        clicked.addStatus({ id: "bleed", kind: "bleed", remaining: 4, potency: 8 });
+        this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
+        await this.vfx.slash(clicked.center.x, clicked.center.y);
         break;
       }
       case "shadow_strike": {
         if (!clicked) return;
+        const aim = { ...clicked.pos };
+        const to = this.cellCenter(aim);
         caster.addStatus({ id: "invuln", kind: "invuln", remaining: 99, potency: 1 });
         caster.setHidden(true);
         try {
-          await this.vfx.shadowDash(from, clicked.center, () => {
+          await this.vfx.shadowDash(from, to, () => {
+            if (!this.sameEnemyOnCell(clicked, aim, to)) return;
             this.dealAbilityDamage(caster, clicked, def.damage);
           });
         } finally {
@@ -808,6 +840,27 @@ export class HordeBattle {
       default:
         break;
     }
+  }
+
+  private aimCell(cell: GridPos | null, clicked: Unit | null): GridPos | null {
+    if (cell) return { ...cell };
+    if (clicked) return { ...clicked.pos };
+    return null;
+  }
+
+  /** Урон по клетке: кто стоит в момент удара (или промах, если пусто). */
+  private occupantAtImpact(aim: GridPos, impact: { x: number; y: number }): Unit | null {
+    const u = this.unitAtCell(aim);
+    if (u) return u;
+    this.vfx.floatingText(impact.x, impact.y - 10, "ПРОМАХ", 0x9aa3a0);
+    return null;
+  }
+
+  /** Способности с targetMode "enemy": нужна та же цель на клетке прицеливания. */
+  private sameEnemyOnCell(target: Unit, aim: GridPos, impact: { x: number; y: number }): boolean {
+    if (target.alive && target.pos.col === aim.col && target.pos.row === aim.row) return true;
+    this.vfx.floatingText(impact.x, impact.y - 10, "ПРОМАХ", 0x9aa3a0);
+    return false;
   }
 
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number): void {
@@ -864,14 +917,16 @@ export class HordeBattle {
     for (const u of this.units) {
       if (u.team === "enemy" && !u.alive) u.view.visible = false;
     }
+    // Логическую клетку освобождаем сразу: снаряд в старую клетку = промах, даже пока идёт анимация.
     this.drop = {
       elapsed: 0,
-      anim: movers.map((u) => ({
-        u,
-        x0: u.view.x,
-        y0: u.view.y,
-        to: this.cellCenter({ col: u.pos.col, row: u.pos.row + 1 }),
-      })),
+      anim: movers.map((u) => {
+        const next = { col: u.pos.col, row: u.pos.row + 1 };
+        const x0 = u.view.x;
+        const y0 = u.view.y;
+        u.pos = next;
+        return { u, x0, y0, to: this.cellCenter(next) };
+      }),
     };
   }
 
@@ -888,7 +943,6 @@ export class HordeBattle {
     if (t < 1) return;
     for (const a of this.drop.anim) {
       if (!a.u.alive) continue;
-      a.u.pos = { col: a.u.pos.col, row: a.u.pos.row + 1 };
       a.u.view.position.set(a.to.x, a.to.y);
     }
     this.drop = null;
@@ -899,7 +953,7 @@ export class HordeBattle {
     if (!this.drop) return;
     for (const a of this.drop.anim) {
       if (!a.u.alive) continue;
-      a.u.pos = { col: a.u.pos.col, row: a.u.pos.row + 1 };
+      a.u.view.position.set(a.to.x, a.to.y);
     }
     this.drop = null;
   }

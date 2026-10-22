@@ -1,6 +1,6 @@
 import { ABILITIES } from "../abilities/definitions";
 import { mountGrimoire } from "./grimoire";
-import { ABILITY_ICON_URLS } from "../art/abilityIcons";
+import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
@@ -254,9 +254,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       hotkeyEl.setAttribute("aria-hidden", "true");
 
       if (!id) {
-        btn.classList.add("empty");
+        btn.className = "skill-btn empty has-art";
         btn.disabled = true;
         btn.setAttribute("aria-label", `Пустой слот ${hotkey}`);
+        btn.innerHTML = `<img class="skill-icon" src="${EMPTY_SKILL_ICON_URL}" alt="" draggable="false" />`;
         btn.appendChild(hotkeyEl);
         skillBar.appendChild(btn);
         continue;
