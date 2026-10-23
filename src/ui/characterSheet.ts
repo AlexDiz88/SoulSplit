@@ -31,17 +31,9 @@ type GlyphId =
   | "mainhand"
   | "offhand";
 
-type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-
 interface SlotDef {
   label: string;
   glyph: GlyphId;
-}
-
-interface ItemDef {
-  name: string;
-  rarity: Rarity;
-  lines: string[];
 }
 
 export interface CharacterSheetApi {
@@ -64,27 +56,6 @@ const SLOTS: Record<EquipSlotId, SlotDef> = {
   trinket: { label: "Аксессуар", glyph: "trinket" },
   mainhand: { label: "Основная рука", glyph: "mainhand" },
   offhand: { label: "Левая рука", glyph: "offhand" },
-};
-
-const RARITY_LABEL: Record<Rarity, string> = {
-  common: "Обычный",
-  uncommon: "Необычный",
-  rare: "Редкий",
-  epic: "Эпический",
-  legendary: "Легендарный",
-};
-
-/** Временные предметы для оценки вида ячеек, пока нет системы экипировки. */
-const DEMO_ITEMS: Partial<Record<EquipSlotId, ItemDef>> = {
-  head: { name: "Шлем ледяного стража", rarity: "rare", lines: ["+120 к здоровью", "+8 к броне"] },
-  chest: { name: "Кираса северного ветра", rarity: "epic", lines: ["+180 к здоровью", "+10 к броне"] },
-  neck: { name: "Амулет угасшей звезды", rarity: "epic", lines: ["+6% к силе способностей"] },
-  shoulders: { name: "Наплечники северного ветра", rarity: "epic", lines: ["+90 к здоровью", "+3% к уклонению"] },
-  ring1: { name: "Кольцо тихой воды", rarity: "uncommon", lines: ["+2% к шансу крита"] },
-  feet: { name: "Сапоги следопыта", rarity: "uncommon", lines: ["+4% к скорости атаки"] },
-  trinket: { name: "Осколок вечной зимы", rarity: "legendary", lines: ["Ледяные способности -10% к кулдауну"] },
-  mainhand: { name: "Клинок инея", rarity: "legendary", lines: ["+18 к атаке", "Атаки замедляют цель"] },
-  offhand: { name: "Ясеневый щит", rarity: "common", lines: ["+12 к броне", "+5% к блоку"] },
 };
 
 const GLYPHS: Record<GlyphId, string> = {
@@ -146,36 +117,32 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const head = el("header", "cs-head");
   const title = el("h2", "cs-title", "Персонаж");
   title.id = "cs-title";
-  const actions = el("div", "cs-actions");
-  const demoBtn = el("button", "ctrl-btn cs-demo", "Предметы");
-  demoBtn.type = "button";
-  demoBtn.title = "Показать или скрыть демо-предметы";
-  const closeBtn = el("button", "ctrl-btn cs-close", "Закрыть");
+  head.append(title);
+
+  const closeBtn = el("button", "cs-x");
   closeBtn.type = "button";
-  actions.append(demoBtn, closeBtn);
-  head.append(title, actions);
+  closeBtn.setAttribute("aria-label", "Закрыть");
+  closeBtn.innerHTML = '<span aria-hidden="true"></span>';
 
   const body = el("div", "cs-body");
+  const identityHost = el("div", "cs-identity-host");
   const dollWrap = el("div", "cs-doll-wrap");
   const stats = el("aside", "cs-stats");
-  body.append(dollWrap, stats);
+  body.append(identityHost, dollWrap, stats);
 
   const tip = el("div", "cs-tip");
   tip.hidden = true;
 
-  win.append(head, body, tip);
+  win.append(closeBtn, head, body, tip);
   root.append(win);
   hud.append(root);
 
-  let showItems = true;
   let hero: Unit | null = null;
-
-  const items = (): Partial<Record<EquipSlotId, ItemDef>> => (showItems ? DEMO_ITEMS : {});
 
   const render = (): void => {
     tip.hidden = true;
-    demoBtn.classList.toggle("active", showItems);
-    dollWrap.replaceChildren(renderDoll(items()));
+    identityHost.replaceChildren(renderIdentity(hero));
+    dollWrap.replaceChildren(renderDoll());
     stats.replaceChildren(...renderStats(hero));
   };
 
@@ -191,15 +158,9 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const showTip = (slot: HTMLElement): void => {
     const id = slot.dataset.slot as EquipSlotId | undefined;
     if (!id) return;
-    const item = items()[id];
     tip.replaceChildren();
-    tip.dataset.rarity = item?.rarity ?? "";
-    if (item) {
-      tip.append(el("div", "cs-tip-name", item.name), el("div", "cs-tip-meta", `${RARITY_LABEL[item.rarity]} · ${SLOTS[id].label}`));
-      for (const line of item.lines) tip.append(el("div", "cs-tip-line", line));
-    } else {
-      tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
-    }
+    tip.dataset.rarity = "";
+    tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
     const rect = slot.getBoundingClientRect();
@@ -221,10 +182,6 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     if (slot && (!next || !slot.contains(next))) tip.hidden = true;
   });
 
-  demoBtn.addEventListener("click", () => {
-    showItems = !showItems;
-    render();
-  });
   closeBtn.addEventListener("click", close);
   root.addEventListener("click", (ev) => {
     if (ev.target === root) close();
@@ -260,17 +217,36 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   };
 }
 
-function renderDoll(items: Partial<Record<EquipSlotId, ItemDef>>): HTMLElement {
+function renderIdentity(hero: Unit | null): HTMLElement {
+  const plate = el("div", "cs-identity");
+  const portrait = el("div", "cs-identity-portrait");
+  if (hero?.portraitUrl) {
+    const img = document.createElement("img");
+    img.src = hero.portraitUrl;
+    img.alt = hero.name;
+    portrait.append(img);
+  }
+  const copy = el("div", "cs-identity-copy");
+  copy.append(
+    el("h3", "cs-identity-name", hero?.name ?? "Герой"),
+    el("div", "cs-identity-meta", hero ? `Школа: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
+    el("div", "cs-identity-level", "Уровень 1"),
+  );
+  plate.append(portrait, copy);
+  return plate;
+}
+
+function renderDoll(): HTMLElement {
   const doll = el("div", "cs-doll");
   const body = el("div", "cs-doll-body");
   for (const id of BODY_SLOTS) {
-    const slot = slotButton(id, items[id]);
+    const slot = slotButton(id);
     slot.style.gridArea = BODY_AREAS[id];
     body.append(slot);
   }
   const hands = el("div", "cs-doll-hands");
   for (const id of HAND_SLOTS) {
-    const slot = slotButton(id, items[id]);
+    const slot = slotButton(id);
     slot.classList.add("cs-slot-hand");
     hands.append(slot);
   }
@@ -278,12 +254,12 @@ function renderDoll(items: Partial<Record<EquipSlotId, ItemDef>>): HTMLElement {
   return doll;
 }
 
-function slotButton(id: EquipSlotId, item: ItemDef | undefined): HTMLButtonElement {
+function slotButton(id: EquipSlotId): HTMLButtonElement {
   const def = SLOTS[id];
-  const btn = el("button", `cs-slot${item ? ` filled rarity-${item.rarity}` : ""}`);
+  const btn = el("button", "cs-slot");
   btn.type = "button";
   btn.dataset.slot = id;
-  btn.setAttribute("aria-label", item ? `${def.label}: ${item.name}` : `${def.label}: пусто`);
+  btn.setAttribute("aria-label", `${def.label}: пусто`);
   const face = el("span", "cs-slot-face");
   face.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[def.glyph]}</svg>`;
   btn.append(face, el("span", "cs-slot-label", def.label));
@@ -292,25 +268,8 @@ function slotButton(id: EquipSlotId, item: ItemDef | undefined): HTMLButtonEleme
 
 function renderStats(hero: Unit | null): HTMLElement[] {
   const s = hero?.stats;
-  const card = el("div", "cs-hero");
-  const portrait = el("div", "cs-hero-portrait");
-  if (hero?.portraitUrl) {
-    const img = document.createElement("img");
-    img.src = hero.portraitUrl;
-    img.alt = hero.name;
-    portrait.append(img);
-  }
-  const copy = el("div", "cs-hero-copy");
-  copy.append(
-    el("h3", "", hero?.name ?? "Герой"),
-    el("p", "", hero ? `Школа: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
-    el("p", "cs-level", "Уровень 1"),
-  );
-  card.append(portrait, copy);
-
   const reach = s?.reach ?? 1;
   return [
-    card,
     statGroup("Основные", [
       ["Здоровье", s ? String(s.maxHp) : "-"],
       ["Атака", s ? String(s.atk) : "-"],
