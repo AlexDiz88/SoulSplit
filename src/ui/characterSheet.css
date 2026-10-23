@@ -462,7 +462,7 @@
 
 .cs-tip-affix {
   margin-top: 3px;
-  font-size: 0.84rem;
+  font-size: 0.96rem;
   color: #c8d0c4;
 }
 
@@ -476,14 +476,14 @@
 
 .cs-tip-name {
   color: var(--tip-c, var(--text));
-  font-size: 1rem;
+  font-size: 1.12rem;
   font-weight: 800;
 }
 
 .cs-tip-meta {
   margin: 2px 0 6px;
   color: var(--muted);
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -495,7 +495,7 @@
 
 .cs-tip-line {
   color: #8fd49a;
-  font-size: 0.86rem;
+  font-size: 0.98rem;
 }
 
 .cs-doll {

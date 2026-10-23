@@ -198,14 +198,14 @@
 
 .inv-tip-name {
   color: var(--tip-c, var(--text));
-  font-size: 0.95rem;
+  font-size: 1.12rem;
   font-weight: 800;
 }
 
 .inv-tip-meta {
   margin: 2px 0 6px;
   color: var(--muted);
-  font-size: 0.7rem;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -217,12 +217,12 @@
 
 .inv-tip-line {
   color: #8fd49a;
-  font-size: 0.84rem;
+  font-size: 0.98rem;
 }
 
 .inv-tip-affix {
   margin-top: 3px;
-  font-size: 0.82rem;
+  font-size: 0.96rem;
   color: #c8d0c4;
 }
 
