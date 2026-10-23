@@ -4,6 +4,7 @@ import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
+import { formatRolledAffix } from "../items/affixCatalog";
 import { formatStatValue, type StatId } from "../stats/statIds";
 import "./characterSheet.css";
 
@@ -168,7 +169,6 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
       tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
     } else {
       tip.append(...renderItemTip(item));
-      tip.append(el("div", "cs-tip-meta", "ПКМ - снять в сумку"));
     }
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
@@ -343,10 +343,10 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
   const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
   const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
   for (const a of prefixes) {
-    nodes.push(el("div", "cs-tip-affix cs-tip-prefix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+    nodes.push(el("div", "cs-tip-affix cs-tip-prefix", formatRolledAffix(a)));
   }
   for (const a of suffixes) {
-    nodes.push(el("div", "cs-tip-affix cs-tip-suffix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+    nodes.push(el("div", "cs-tip-affix cs-tip-suffix", formatRolledAffix(a)));
   }
   if (!item.affixes.length) {
     nodes.push(el("div", "cs-tip-meta", "Без аффиксов"));

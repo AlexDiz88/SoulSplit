@@ -281,24 +281,6 @@
   filter: brightness(1.08);
 }
 
-.igen-check {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  height: 38px;
-  color: #d6d0c0;
-  font-size: 0.95rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.igen-check input {
-  width: 16px;
-  height: 16px;
-  accent-color: #c9a24a;
-  cursor: pointer;
-}
-
 .igen-card-head {
   display: flex;
   gap: 12px;
@@ -335,6 +317,36 @@
 
 .igen-result {
   margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.igen-add-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #5a6a58;
+  border-radius: 8px;
+  background: #161c16;
+  color: #d6d0c0;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.igen-add-btn:hover:not(:disabled) {
+  border-color: #8a7044;
+  color: #f0e2b0;
+  background: linear-gradient(180deg, #3a3220, #241e14);
+}
+
+.igen-add-btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+  color: #9aa394;
+  border-color: #3a4538;
 }
 
 .igen-card {

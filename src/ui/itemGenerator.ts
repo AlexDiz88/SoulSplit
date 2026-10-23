@@ -1,6 +1,6 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
-import { AFFIX_CATALOG } from "../items/affixCatalog";
+import { AFFIX_CATALOG, formatRolledAffix } from "../items/affixCatalog";
 import { generateItem } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
 import { deniedStatsForSlot, familiesForSlot, isStatAllowedOnSlot } from "../items/slotRules";
@@ -183,12 +183,6 @@ function buildBench(hooks: {
   ilvlInput.max = "100";
   ilvlInput.value = "10";
 
-  const addToInvLabel = el("label", "igen-check");
-  const addToInv = el("input") as HTMLInputElement;
-  addToInv.type = "checkbox";
-  addToInv.checked = true;
-  addToInvLabel.append(addToInv, document.createTextNode("Добавить предмет в инвентарь"));
-
   const genBtn = el("button", "igen-gen-btn", "Сгенерировать");
   genBtn.type = "button";
 
@@ -196,45 +190,60 @@ function buildBench(hooks: {
     field("Слот", slotSelect),
     field("Редкость", raritySelect),
     field("Уровень предмета", ilvlInput),
-    addToInvLabel,
     genBtn,
   );
 
   const result = el("div", "igen-result");
-  const note = el(
-    "p",
-    "igen-note",
-    "Временно: галочка кладёт предмет в инвентарь героя для проверки иконок и дропа.",
-  );
+  let pendingItem: ItemDef | null = null;
+
+  const addBtn = el("button", "igen-add-btn", "Добавить в инвентарь") as HTMLButtonElement;
+  addBtn.type = "button";
+  addBtn.hidden = true;
+  addBtn.disabled = true;
+
+  const resetAddBtn = (): void => {
+    addBtn.textContent = "Добавить в инвентарь";
+    addBtn.disabled = false;
+    addBtn.hidden = false;
+  };
+
+  const markAdded = (): void => {
+    addBtn.textContent = "Добавлено";
+    addBtn.disabled = true;
+  };
 
   genBtn.addEventListener("click", () => {
     const slot = slotSelect.value as EquipSlotId;
     const rarity = raritySelect.value as ItemRarity;
     const itemLevel = Math.max(1, Math.min(100, Number(ilvlInput.value) || 1));
     ilvlInput.value = String(itemLevel);
-    const item = generateItem({
+    pendingItem = generateItem({
       slot,
       rarity,
       itemLevel,
       learnedAspects: ["air", "ice"],
     });
-    result.replaceChildren(renderItemCard(item));
+    result.replaceChildren(renderItemCard(pendingItem), addBtn);
+    resetAddBtn();
+  });
 
-    if (!addToInv.checked) return;
+  addBtn.addEventListener("click", () => {
+    if (!pendingItem || addBtn.disabled) return;
     const hero = hooks.getHero();
     if (!hero) {
       hooks.showToast("Герой ещё не создан");
       return;
     }
-    const idx = addItemToInventory(hero.inventory, item);
+    const idx = addItemToInventory(hero.inventory, pendingItem);
     if (idx < 0) {
       hooks.showToast("Инвентарь полон");
       return;
     }
     hooks.onInventoryChanged();
+    markAdded();
   });
 
-  root.append(controls, note, result);
+  root.append(controls, result);
   return { root };
 }
 
@@ -299,7 +308,7 @@ function renderItemCard(item: ItemDef): HTMLElement {
     card.append(el("div", "igen-card-group", "Prefix"));
     for (const a of prefixes) {
       card.append(
-        el("div", "igen-card-affix prefix", `${a.label}: ${formatStatValue(a.statId, a.value)}`),
+        el("div", "igen-card-affix prefix", formatRolledAffix(a)),
       );
     }
   }
@@ -307,7 +316,7 @@ function renderItemCard(item: ItemDef): HTMLElement {
     card.append(el("div", "igen-card-group", "Suffix"));
     for (const a of suffixes) {
       card.append(
-        el("div", "igen-card-affix suffix", `${a.label}: ${formatStatValue(a.statId, a.value)}`),
+        el("div", "igen-card-affix suffix", formatRolledAffix(a)),
       );
     }
   }

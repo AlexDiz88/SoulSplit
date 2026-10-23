@@ -1,7 +1,7 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Aspect } from "../types";
-import { aspectDamageStat, type AffixFamily, type StatId } from "../stats/statIds";
-import type { AffixDef, AffixTierRange } from "./types";
+import { aspectDamageStat, formatAffixBonus, type AffixFamily, type StatId } from "../stats/statIds";
+import type { AffixDef, AffixTierRange, RolledAffix } from "./types";
 
 function tiers(scales: [number, number, number][]): AffixTierRange[] {
   // scales: [minIlvl, min, max]
@@ -28,99 +28,99 @@ function affix(
 }
 
 const CORE: AffixDef[] = [
-  affix("max_hp", "maxHp", "defense", "+к здоровью", [
+  affix("max_hp", "maxHp", "defense", "здоровья", [
     [1, 20, 40],
     [10, 40, 80],
     [20, 80, 140],
     [30, 120, 200],
   ]),
-  affix("hp_regen", "hpRegen", "resource", "+к регену здоровья", [
+  affix("hp_regen", "hpRegen", "resource", "здоровья/сек", [
     [1, 1, 2],
     [10, 2, 4],
     [20, 3, 6],
   ], 6),
-  affix("phys_dr", "physDamageReduction", "defense", "+% снижения физ. урона", [
+  affix("phys_dr", "physDamageReduction", "defense", "снижения физ. урона", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 5, 9],
     [30, 6, 12],
   ]),
-  affix("magic_res", "magicResist", "defense", "+% сопротивления магии", [
+  affix("magic_res", "magicResist", "defense", "сопротивления магии", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 5, 9],
     [30, 6, 12],
   ]),
-  affix("evasion", "evasion", "defense", "+% уклонения", [
+  affix("evasion", "evasion", "defense", "уклонения", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 4, 8],
     [30, 5, 10],
   ], 8),
-  affix("block", "blockChance", "defense", "+% шанса блока", [
+  affix("block", "blockChance", "defense", "шанса блока", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 4, 8],
   ], 5),
-  affix("parry", "parryChance", "defense", "+% шанса парирования", [
+  affix("parry", "parryChance", "defense", "шанса парирования", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 4, 8],
   ], 5),
 
-  affix("max_mana", "maxMana", "resource", "+к мане", [
+  affix("max_mana", "maxMana", "resource", "маны", [
     [1, 10, 20],
     [10, 20, 35],
     [20, 30, 50],
   ]),
-  affix("mana_regen", "manaRegen", "resource", "+к регену маны", [
+  affix("mana_regen", "manaRegen", "resource", "маны/сек", [
     [1, 1, 2],
     [10, 2, 3],
     [20, 2, 5],
   ]),
-  affix("mana_cost_red", "manaCostReduction", "resource", "+% снижения стоимости маны", [
+  affix("mana_cost_red", "manaCostReduction", "resource", "снижения стоимости маны", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 4, 8],
   ], 7),
 
-  affix("weapon_atk", "weaponAttackBonus", "offense", "+к бонусу атаки оружия", [
+  affix("weapon_atk", "weaponAttackBonus", "offense", "бонуса атаки оружия", [
     [1, 2, 5],
     [10, 4, 9],
     [20, 7, 14],
     [30, 10, 18],
   ]),
-  affix("ability_dmg", "abilityDamage", "offense", "+% урона способностей", [
+  affix("ability_dmg", "abilityDamage", "offense", "урона способностей", [
     [1, 3, 6],
     [10, 5, 10],
     [20, 8, 14],
     [30, 10, 18],
   ]),
-  affix("crit_chance", "critChance", "offense", "+% шанса крита", [
+  affix("crit_chance", "critChance", "offense", "шанса крита", [
     [1, 1, 3],
     [10, 2, 4],
     [20, 3, 6],
     [30, 4, 8],
   ]),
-  affix("crit_dmg", "critDamage", "offense", "+% урона крита", [
+  affix("crit_dmg", "critDamage", "offense", "урона крита", [
     [1, 5, 10],
     [10, 8, 15],
     [20, 10, 20],
     [30, 12, 25],
   ], 8),
 
-  affix("attack_speed", "attackSpeed", "tempo", "+% скорости атаки", [
+  affix("attack_speed", "attackSpeed", "tempo", "скорости атаки", [
     [1, 3, 6],
     [10, 5, 9],
     [20, 7, 12],
     [30, 8, 14],
   ]),
-  affix("cast_speed", "castSpeed", "tempo", "+% скорости каста", [
+  affix("cast_speed", "castSpeed", "tempo", "скорости каста", [
     [1, 3, 6],
     [10, 5, 9],
     [20, 7, 12],
   ]),
-  affix("cdr", "cooldownReduction", "tempo", "+% скорости перезарядки", [
+  affix("cdr", "cooldownReduction", "tempo", "скорости перезарядки", [
     [1, 2, 4],
     [10, 3, 6],
     [20, 4, 8],
@@ -136,7 +136,7 @@ function aspectAffixes(): AffixDef[] {
       `aspect_dmg_${aspect}`,
       aspectDamageStat(aspect),
       "aspect",
-      `+% урона аспекта (${ASPECT_LABEL[aspect]})`,
+      `урона аспекта (${ASPECT_LABEL[aspect]})`,
       [
         [1, 4, 8],
         [10, 6, 12],
@@ -166,4 +166,10 @@ export function rollAffixValue(def: AffixDef, itemLevel: number, rng: () => numb
   const t = pickTier(def, itemLevel);
   if (t.max <= t.min) return t.min;
   return Math.round(t.min + rng() * (t.max - t.min));
+}
+
+/** Текст аффикса на карточке предмета (label берём из каталога, если есть). */
+export function formatRolledAffix(a: RolledAffix): string {
+  const label = AFFIX_BY_ID[a.affixId]?.label ?? a.label;
+  return formatAffixBonus(a.statId, a.value, label);
 }

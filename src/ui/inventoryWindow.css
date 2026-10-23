@@ -234,21 +234,47 @@
   color: #c4b0e0;
 }
 
+/* Призрак вне .inv-bag-root - свои --c-* и тот же каркас, что у .inv-cell.filled. */
 .inv-ghost {
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  --c-common: #c8c2b2;
+  --c-uncommon: #6fcf6a;
+  --c-magic: #4fa3ff;
+  --c-rare: #e8c84a;
+  --c-epic: #b878ff;
   --rar-c: var(--c-common);
+  --cut: 7px;
   position: fixed;
   z-index: 40;
   width: 76px;
   height: 76px;
   margin: -38px 0 0 -38px;
-  display: grid;
-  place-items: center;
-  border: 1px solid color-mix(in srgb, var(--rar-c) 70%, #3a3428);
-  background:
-    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rar-c) 35%, transparent), transparent 72%),
-    #121314;
+  padding: 0;
+  border: 0;
+  background: linear-gradient(155deg, var(--rar-c), color-mix(in srgb, var(--rar-c) 25%, #151515) 50%, var(--rar-c));
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
   pointer-events: none;
+}
+
+.inv-ghost-face {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    var(--slot-bg);
+  clip-path: inherit;
 }
 
 .inv-ghost[hidden] {
@@ -257,13 +283,11 @@
 
 .inv-ghost-glyph {
   color: var(--rar-c);
-  font-size: 1.1rem;
+  font-size: 1.05rem;
   font-weight: 800;
-}
-
-.inv-ghost-icon {
-  width: 82%;
-  height: 82%;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--rar-c) 55%, transparent);
 }
 
 body.inv-dragging,

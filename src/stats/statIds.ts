@@ -166,3 +166,10 @@ export function formatStatValue(id: StatId, value: number): string {
   if (isPercentStat(id)) return `${value}%`;
   return String(value);
 }
+
+/** Строка бонуса на предмете: "+5% уклонения", "+2 маны/сек". */
+export function formatAffixBonus(id: StatId, value: number, label: string): string {
+  const sign = value > 0 ? "+" : "";
+  if (isPercentStat(id)) return `${sign}${value}% ${label}`;
+  return `${sign}${value} ${label}`;
+}

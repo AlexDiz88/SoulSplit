@@ -4,7 +4,7 @@ import { canEquipInSlot } from "../items/equipment";
 import { INVENTORY_COLS, INVENTORY_SIZE } from "../items/inventory";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
-import { formatStatValue } from "../stats/statIds";
+import { formatRolledAffix } from "../items/affixCatalog";
 import "./inventoryWindow.css";
 
 export interface InventoryWindowApi {
@@ -112,7 +112,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       tip.append(el("div", "inv-tip-name", "Пустая ячейка"), el("div", "inv-tip-meta", "Рюкзак"));
     } else {
       tip.append(...renderItemTip(item));
-      tip.append(el("div", "inv-tip-meta", "ПКМ - надеть · перетащить на слот"));
     }
     placeTip(cell);
   };
@@ -213,15 +212,17 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const beginGhost = (item: ItemDef, x: number, y: number): void => {
     ghost.replaceChildren();
     ghost.dataset.rarity = item.rarity;
+    const face = el("span", "inv-ghost-face");
     if (item.icon) {
       const img = el("img", "inv-ghost-icon") as HTMLImageElement;
       img.src = item.icon;
       img.alt = "";
       img.draggable = false;
-      ghost.append(img);
+      face.append(img);
     } else {
-      ghost.append(el("span", "inv-ghost-glyph", SLOT_LABEL[item.slot].slice(0, 1)));
+      face.append(el("span", "inv-ghost-glyph", SLOT_LABEL[item.slot].slice(0, 1)));
     }
+    ghost.append(face);
     ghost.hidden = false;
     ghost.style.left = `${x}px`;
     ghost.style.top = `${y}px`;
@@ -408,10 +409,10 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
   const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
   const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
   for (const a of prefixes) {
-    nodes.push(el("div", "inv-tip-affix inv-tip-prefix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+    nodes.push(el("div", "inv-tip-affix inv-tip-prefix", formatRolledAffix(a)));
   }
   for (const a of suffixes) {
-    nodes.push(el("div", "inv-tip-affix inv-tip-suffix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+    nodes.push(el("div", "inv-tip-affix inv-tip-suffix", formatRolledAffix(a)));
   }
   if (!item.affixes.length) {
     nodes.push(el("div", "inv-tip-meta", "Без аффиксов"));
