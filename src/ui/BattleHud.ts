@@ -41,6 +41,9 @@ export interface SkillBarState {
 
 export type BattleBannerMode = "start" | "pause" | "hidden";
 
+/** Режим оболочки HUD: хаб прячет бойцовые контролы. */
+export type HudShellMode = "hub" | "battle";
+
 export interface BattleHudApi {
   renderSkills(unit: Unit | null, state: SkillBarState): void;
   syncSkills(unit: Unit, state: SkillBarState): void;
@@ -54,6 +57,10 @@ export interface BattleHudApi {
   setHero(hero: Unit): void;
   setCanChangeEquipment(fn: () => boolean): void;
   setOnEquipmentChanged(fn: () => void): void;
+  setShellMode(mode: HudShellMode): void;
+  openCharacter(): void;
+  openInventory(): void;
+  closeOverlays(): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
@@ -507,6 +514,34 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       };
       inventory.setOnEquipmentChanged(notify);
       character.setOnEquipmentChanged(notify);
+    },
+
+    setShellMode(mode: HudShellMode) {
+      const battle = mode === "battle";
+      const controls = document.querySelector(".controls") as HTMLElement | null;
+      if (controls) controls.hidden = !battle;
+      skillBar.hidden = !battle;
+      if (!battle) {
+        setBattleBanner("hidden");
+        renderSkills(null, { selectedAbility: null, gcdRemaining: 0, gcdDuration: 1 });
+      }
+    },
+
+    openCharacter() {
+      character.open();
+    },
+
+    openInventory() {
+      inventory.open();
+    },
+
+    closeOverlays() {
+      character.close();
+      inventory.close();
+      if (itemGenerator.isOpen()) itemGenerator.close();
+      if (grimoire.isOpen()) grimoire.close();
+      bestiary.hidden = true;
+      closeMenu();
     },
   };
 }

@@ -1,9 +1,7 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
-import { ABILITIES, ALL_ABILITY_IDS, ASPECT_COLOR } from "../abilities/definitions";
+import { ABILITIES, ASPECT_COLOR } from "../abilities/definitions";
 import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
-import { pickRandomHeroPortraitUrl } from "../art/portraits";
-import { createEmptyInventory } from "../items/inventory";
 import type { AbilityDef, AbilityId, GridPos, Aspect, WeaponKind } from "../types";
 import {
   abilityCooldown,
@@ -13,14 +11,19 @@ import {
   rollCrit,
   rollWeaponDamage,
 } from "../stats/formulas";
-import { createBaseHeroSheet, getStat } from "../stats/sheet";
+import { getStat } from "../stats/sheet";
+import { hydrateCombatUnit, sheetBaseFromProfile } from "../meta/heroProfile";
+import { cloneInventory } from "../items/inventory";
+import type { EquipmentMap } from "../items/equipment";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
-import { rollEncounter } from "./enemies";
+import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
 import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
+
+export type { BattleConfig, BattleResult, BattleKill } from "./battleTypes";
 
 const PITCH = CELL + GAP;
 const HERO_SIZE = CELL * 2 + GAP;
@@ -97,10 +100,16 @@ export class HordeBattle {
   private tornados: TornadoField[] = [];
   private readonly hud: BattleHudApi;
   private readonly background: Sprite;
+  private readonly config: BattleConfig;
+  private readonly killed: BattleKill[] = [];
+  private readonly killLogged = new Set<string>();
+  private battleElapsed = 0;
+  private completed = false;
 
-  constructor(app: Application, hud: BattleHudApi) {
+  constructor(app: Application, hud: BattleHudApi, config: BattleConfig) {
     this.app = app;
     this.hud = hud;
+    this.config = config;
     this.vfx = new VfxManager(this.tweens);
     this.vfx.setShakeTarget(this.board);
 
@@ -127,7 +136,7 @@ export class HordeBattle {
     this.hud.setPause(false);
     this.hud.setSpeed(1);
     this.hud.setBattleBanner("start");
-    this.setWeapon("melee");
+    this.setWeapon(this.weapon);
     this.selectHero(this.hero.id);
     this.bindHud();
     this.app.canvas.addEventListener("pointerdown", this.onPointer);
@@ -436,34 +445,18 @@ export class HordeBattle {
   }
 
   private spawnCrowd(): void {
-    this.hero = new Unit({
-      id: "aira",
-      name: "Айра",
-      short: "АЙР",
-      team: "player",
-      aspect: "air",
-      pos: { col: 1, row: 0 },
-      stats: {
-        maxHp: 2000,
-        atk: 26,
-        autoAttackCd: 1.2,
-        range: "melee",
-        reach: 1,
-      },
-      abilities: ALL_ABILITY_IDS,
-      portraitUrl: pickRandomHeroPortraitUrl(),
-      cardSize: HERO_SIZE,
-      equipment: {},
-      inventory: createEmptyInventory(),
-      sheet: undefined,
-    });
-    this.hero.rebuildSheetFromEquipment(createBaseHeroSheet());
-    this.weapon = "melee";
+    const heroProfile = this.config.hero;
+    const init = hydrateCombatUnit(heroProfile);
+    init.cardSize = HERO_SIZE;
+    this.hero = new Unit(init);
+    this.hero.rebuildSheetFromEquipment(sheetBaseFromProfile(heroProfile));
+    const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
+    this.weapon = w?.kind ?? "melee";
     this.unitsLayer.addChild(this.hero.view);
     this.units.push(this.hero);
     this.hud.setHero(this.hero);
 
-    rollEncounter().forEach((spawn, index) => {
+    this.config.encounter.forEach((spawn, index) => {
       const kind = spawn.kind;
       const u = new Unit({
         id: `${kind.id}-${index}`,
@@ -473,8 +466,8 @@ export class HordeBattle {
         aspect: kind.aspect,
         pos: { col: spawn.col, row: spawn.row },
         stats: {
-          maxHp: kind.hp,
-          atk: kind.atk,
+          maxHp: spawn.hp,
+          atk: spawn.atk,
           autoAttackCd: kind.cd,
           range: kind.reach <= 2 ? "melee" : "ranged",
           reach: kind.reach,
@@ -485,6 +478,61 @@ export class HordeBattle {
       this.unitsLayer.addChild(u.view);
       this.units.push(u);
     });
+  }
+
+  /** Добровольный выход = поражение без лута. */
+  flee(): void {
+    if (this.destroyed || this.completed) return;
+    this.finish("defeat");
+  }
+
+  private noteKill(u: Unit): void {
+    if (u.team !== "enemy" || this.killLogged.has(u.id)) return;
+    this.killLogged.add(u.id);
+    const kindId = u.id.replace(/-\d+$/, "") || u.id;
+    this.killed.push({ enemyId: u.id, kindId });
+  }
+
+  private cloneGear(): { equipment: EquipmentMap; inventory: ReturnType<typeof cloneInventory> } {
+    const equipment: EquipmentMap = {};
+    for (const [slot, item] of Object.entries(this.hero.equipment)) {
+      if (!item) continue;
+      equipment[slot as keyof EquipmentMap] = structuredClone(item);
+    }
+    return {
+      equipment,
+      inventory: cloneInventory(this.hero.inventory).map((cell) =>
+        cell ? structuredClone(cell) : null,
+      ),
+    };
+  }
+
+  private finish(outcome: BattleResult["outcome"]): void {
+    if (this.completed || this.destroyed) return;
+    this.completed = true;
+    this.ended = true;
+    this.applyPause(true);
+    for (const u of this.units) {
+      if (u.team === "enemy" && !u.alive) this.noteKill(u);
+    }
+    const gear = this.cloneGear();
+    const result: BattleResult = {
+      outcome,
+      zoneId: this.config.zone.id,
+      killed: [...this.killed],
+      survivingEnemyCount: this.livingEnemies().length,
+      durationSec: this.battleElapsed,
+      equipment: gear.equipment,
+      inventory: gear.inventory,
+    };
+    if (outcome === "victory") {
+      this.hud.showToast("Победа!");
+      this.hud.setHint("Враги повержены.");
+    } else {
+      this.hud.showToast("Поражение");
+      this.hud.setHint("Айра пала.");
+    }
+    this.config.onComplete(result);
   }
 
   private skillBarState(): { selectedAbility: AbilityId | null; gcdRemaining: number; gcdDuration: number } {
@@ -1262,7 +1310,10 @@ export class HordeBattle {
     const movers = this.livingEnemies().filter((u) => u.pos.row < GRID_SIZE - 1);
     if (!movers.length) return;
     for (const u of this.units) {
-      if (u.team === "enemy" && !u.alive) u.view.visible = false;
+      if (u.team === "enemy" && !u.alive) {
+        this.noteKill(u);
+        u.view.visible = false;
+      }
     }
     // Логическую клетку освобождаем сразу: снаряд в старую клетку = промах, даже пока идёт анимация.
     this.collapsing = true;
@@ -1343,6 +1394,7 @@ export class HordeBattle {
     this.drawMark();
 
     if (combatDt <= 0) return;
+    this.battleElapsed += combatDt;
     this.updateTornados(combatDt);
     this.gcdRemaining = Math.max(0, this.gcdRemaining - combatDt);
 
@@ -1419,19 +1471,13 @@ export class HordeBattle {
   }
 
   private checkEnd(): void {
-    if (this.ended || !this.started) return;
+    if (this.ended || this.completed || !this.started) return;
     if (this.paused && !this.hero.alive) return;
     const enemies = this.livingEnemies().length > 0;
     if (!enemies) {
-      this.ended = true;
-      this.applyPause(true);
-      this.hud.showToast("Победа!");
-      this.hud.setHint("Враги повержены.");
+      this.finish("victory");
     } else if (!this.hero.alive) {
-      this.ended = true;
-      this.applyPause(true);
-      this.hud.showToast("Поражение");
-      this.hud.setHint("Айра пала.");
+      this.finish("defeat");
     }
   }
 }

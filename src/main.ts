@@ -2,7 +2,7 @@ import "./style.css";
 import { Application } from "pixi.js";
 import { preloadBackgrounds } from "./art/backgrounds";
 import { preloadPortraits } from "./art/portraits";
-import { HordeBattle } from "./combat/HordeBattle";
+import { GameApp } from "./app/GameApp";
 import { createBattleHud } from "./ui/BattleHud";
 import type { AbilityId } from "./types";
 
@@ -31,9 +31,10 @@ async function boot(): Promise<void> {
 
   await Promise.all([preloadPortraits(), preloadBackgrounds()]);
 
-  let battle!: HordeBattle;
-  const hud = createBattleHud((abilityId: AbilityId) => battle.selectAbility(abilityId));
-  battle = new HordeBattle(app, hud);
+  let game!: GameApp;
+  const hud = createBattleHud((abilityId: AbilityId) => game.selectAbility(abilityId));
+  game = new GameApp(app, hud);
+  game.start();
 }
 
 boot().catch((err) => {

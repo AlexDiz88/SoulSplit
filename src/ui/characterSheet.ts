@@ -31,6 +31,7 @@ interface SlotDef {
 
 export interface CharacterSheetApi {
   isOpen(): boolean;
+  open(): void;
   close(): void;
   setHero(hero: Unit): void;
   /** Вызывается при открытии / закрытии (для компаньон-окна инвентаря). */
@@ -235,6 +236,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
   return {
     isOpen: () => !root.hidden,
+    open,
     close,
     setHero(next: Unit) {
       hero = next;
@@ -268,7 +270,7 @@ function renderIdentity(hero: Unit | null): HTMLElement {
   copy.append(
     el("h3", "cs-identity-name", hero?.name ?? "Герой"),
     el("div", "cs-identity-meta", hero ? `Аспект: ${ASPECT_LABEL[hero.aspect]}` : "Нет данных"),
-    el("div", "cs-identity-level", "Уровень 1"),
+    el("div", "cs-identity-level", `Уровень ${hero?.level ?? 1}`),
   );
   plate.append(portrait, copy);
   return plate;

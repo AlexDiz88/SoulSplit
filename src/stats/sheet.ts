@@ -30,10 +30,10 @@ const FLAT_ZERO: StatId[] = [
   "parryChance",
 ];
 
-/** База героя без экипировки (песочница). */
+/** База героя без экипировки (ур. 1, без level-up бонусов). */
 export function createBaseHeroSheet(overrides?: Partial<HeroStatSheet>): HeroStatSheet {
   const sheet = emptySheet();
-  sheet.maxHp = 2000;
+  sheet.maxHp = 300;
   sheet.maxMana = 100;
   sheet.manaRegen = 4;
   sheet.hpRegen = 0;

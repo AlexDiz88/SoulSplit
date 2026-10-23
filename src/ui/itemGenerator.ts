@@ -18,7 +18,6 @@ import {
   STAT_DESC,
   STAT_LABEL,
   capLabelForStat,
-  formatStatValue,
   isAspectDamageStat,
   type AffixFamily,
   type StatId,

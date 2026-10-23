@@ -93,17 +93,51 @@ export interface SpawnedEnemy {
   kind: EnemyKind;
   col: number;
   row: number;
+  /** Уже смасштабированные статы для зоны. */
+  hp: number;
+  atk: number;
 }
 
-/** 3–12 врагов, клетка выбирается только из рядов этого вида. */
-export function rollEncounter(): SpawnedEnemy[] {
-  const count = 3 + Math.floor(Math.random() * 10);
+export interface RollEncounterOptions {
+  pool?: string[];
+  countMin?: number;
+  countMax?: number;
+  itemLevel?: number;
+  rng?: () => number;
+}
+
+export function scaleEnemyStats(
+  kind: EnemyKind,
+  itemLevel: number,
+): { hp: number; atk: number } {
+  const ilvl = Math.max(1, itemLevel);
+  return {
+    hp: Math.round(kind.hp * (0.85 + 0.15 * ilvl)),
+    atk: Math.round(kind.atk * (0.9 + 0.12 * ilvl)),
+  };
+}
+
+function kindsFromPool(pool: string[] | undefined): EnemyKind[] {
+  if (!pool?.length) return ENEMY_KINDS;
+  const set = new Set(pool);
+  const filtered = ENEMY_KINDS.filter((k) => set.has(k.id));
+  return filtered.length ? filtered : ENEMY_KINDS;
+}
+
+/** Случайная пачка; клетка только из рядов вида. */
+export function rollEncounter(opts: RollEncounterOptions = {}): SpawnedEnemy[] {
+  const rng = opts.rng ?? Math.random;
+  const pool = kindsFromPool(opts.pool);
+  const countMin = opts.countMin ?? 3;
+  const countMax = Math.max(countMin, opts.countMax ?? 12);
+  const count = countMin + Math.floor(rng() * (countMax - countMin + 1));
+  const itemLevel = opts.itemLevel ?? 1;
   const taken = new Set<string>();
   const out: SpawnedEnemy[] = [];
   let guard = 0;
   while (out.length < count && guard < 500) {
     guard++;
-    const kind = ENEMY_KINDS[Math.floor(Math.random() * ENEMY_KINDS.length)]!;
+    const kind = pool[Math.floor(rng() * pool.length)]!;
     const open: { col: number; row: number }[] = [];
     for (const dist of kind.spawnRows) {
       const row = GRID_SIZE - dist;
@@ -113,9 +147,10 @@ export function rollEncounter(): SpawnedEnemy[] {
       }
     }
     if (!open.length) continue;
-    const cell = open[Math.floor(Math.random() * open.length)]!;
+    const cell = open[Math.floor(rng() * open.length)]!;
     taken.add(`${cell.col}:${cell.row}`);
-    out.push({ kind, col: cell.col, row: cell.row });
+    const scaled = scaleEnemyStats(kind, itemLevel);
+    out.push({ kind, col: cell.col, row: cell.row, hp: scaled.hp, atk: scaled.atk });
   }
   return out;
 }

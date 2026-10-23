@@ -56,6 +56,8 @@ export interface UnitInit {
   equipment?: EquipmentMap;
   /** Рюкзак 5×5. Только у героя. */
   inventory?: InventoryBag;
+  /** Уровень героя (для UI). У врагов не задаётся. */
+  level?: number;
 }
 
 export class Unit {
@@ -73,9 +75,13 @@ export class Unit {
   mana: number;
   /** Глобальный лист; null у простых врагов. */
   sheet: HeroStatSheet | null;
+  /** База листа без экипа (уровень + levelBonuses). Экип накладывается сверху. */
+  private sheetBase: HeroStatSheet;
   equipment: EquipmentMap;
   /** Рюкзак 5×5 (один предмет = одна ячейка). */
   inventory: InventoryBag;
+  /** Уровень героя; у врагов 0. */
+  level: number;
   autoTimer: number;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
@@ -115,10 +121,12 @@ export class Unit {
     this.pos = { ...init.pos };
     this.equipment = init.equipment ?? {};
     this.inventory = cloneInventory(init.inventory);
+    this.level = init.level ?? (init.team === "player" ? 1 : 0);
+    this.sheetBase = createBaseHeroSheet();
     this.sheet =
       init.sheet === undefined
         ? init.team === "player"
-          ? computeHeroSheet(this.equipment, createBaseHeroSheet())
+          ? computeHeroSheet(this.equipment, this.sheetBase)
           : null
         : init.sheet;
     if (this.sheet) {
@@ -468,8 +476,9 @@ export class Unit {
   }
 
   /** Пересчёт листа из экипировки (после смены предмета). */
-  rebuildSheetFromEquipment(base = createBaseHeroSheet()): void {
-    this.sheet = computeHeroSheet(this.equipment, base);
+  rebuildSheetFromEquipment(base?: HeroStatSheet): void {
+    if (base) this.sheetBase = base;
+    this.sheet = computeHeroSheet(this.equipment, this.sheetBase);
     const maxHp = getStat(this.sheet, "maxHp");
     const ratio = this.stats.maxHp > 0 ? this.hp / this.stats.maxHp : 1;
     this.stats.maxHp = maxHp;
@@ -480,7 +489,8 @@ export class Unit {
   }
 
   /** Синхронизация боевых stats оружия + пересчёт листа. */
-  applyEquipmentChange(base = createBaseHeroSheet()): void {
+  applyEquipmentChange(base?: HeroStatSheet): void {
+    if (base) this.sheetBase = base;
     const w = equippedWeapon(this.equipment)?.weapon;
     if (w) {
       this.stats.atk = w.damageMax;
@@ -488,7 +498,7 @@ export class Unit {
       this.stats.reach = w.reach;
       this.stats.range = w.range;
     }
-    this.rebuildSheetFromEquipment(base);
+    this.rebuildSheetFromEquipment();
   }
 
   equipInventoryItem(invIndex: number): GearChangeResult {

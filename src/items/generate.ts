@@ -171,7 +171,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
   };
 }
 
-/** Стартовое оружие для песочницы (без аффиксов). */
+/** Стартовое оружие героя (без аффиксов). */
 export function createStarterWeapon(slot: EquipSlotId = "mainhand"): ItemDef {
   return {
     id: "starter_weapon",
@@ -182,9 +182,9 @@ export function createStarterWeapon(slot: EquipSlotId = "mainhand"): ItemDef {
     affixes: [],
     weapon: {
       kind: "melee",
-      damageMin: 22,
-      damageMax: 26,
-      baseCd: 1.2,
+      damageMin: 20,
+      damageMax: 30,
+      baseCd: 1.5,
       reach: 1,
       range: "melee",
     },
