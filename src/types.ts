@@ -1,6 +1,6 @@
 export type Team = "player" | "enemy";
 
-export type School = "ice" | "fire" | "iron" | "stealth" | "light";
+export type School = "ice" | "fire" | "iron" | "stealth" | "light" | "air";
 
 export type AbilityId =
   | "ice_arrow"
@@ -10,7 +10,11 @@ export type AbilityId =
   | "stun_strike"
   | "titan_might"
   | "sever_artery"
-  | "shadow_strike";
+  | "shadow_strike"
+  | "wind_gust"
+  | "tailwind"
+  | "squall"
+  | "tornado";
 
 /** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток. */
 export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone" | "cell";
@@ -22,7 +26,7 @@ export interface GridPos {
 
 export interface StatusEffect {
   id: string;
-  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "slow" | "invuln";
+  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "slow" | "haste" | "invuln";
   remaining: number;
   potency: number;
 }
@@ -56,6 +60,13 @@ export interface AbilityEffects {
   /** Доля урона вторичных клеток зоны от damage (0.55 → 55%). */
   zoneSecondaryRatio?: number;
   invulnerableDuringCast?: boolean;
+  /** Множитель интервала автоатаки героя (0.75 → быстрее). */
+  hasteIntervalMult?: number;
+  hasteDuration?: number;
+  /** Урон смерча за тик (раз в секунду). */
+  tornadoDps?: number;
+  tornadoStaySec?: number;
+  tornadoStays?: number;
 }
 
 export interface AbilityDef {

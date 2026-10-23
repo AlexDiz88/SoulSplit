@@ -33,3 +33,24 @@ export function dragonBreathCells(origin: GridPos): { pos: GridPos; full: boolea
   }
   return out;
 }
+
+/** Соседи только по стороне (не по диагонали). */
+export function orthoNeighbors(pos: GridPos): GridPos[] {
+  const deltas = [
+    { col: 0, row: -1 },
+    { col: -1, row: 0 },
+    { col: 1, row: 0 },
+    { col: 0, row: 1 },
+  ];
+  const out: GridPos[] = [];
+  for (const d of deltas) {
+    const p = { col: pos.col + d.col, row: pos.row + d.row };
+    if (inBounds(p)) out.push(p);
+  }
+  return out;
+}
+
+/** Шквал: клик без урона, крест из четырёх соседних по стороне. */
+export function squallCells(origin: GridPos): GridPos[] {
+  return orthoNeighbors(origin);
+}

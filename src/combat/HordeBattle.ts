@@ -1,6 +1,6 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitions";
-import { dragonBreathCells, GRID_SIZE } from "../abilities/shapes";
+import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { AbilityDef, AbilityId, GridPos, WeaponKind } from "../types";
@@ -29,6 +29,17 @@ interface PendingCast {
   def: AbilityDef;
   clicked: Unit | null;
   cell: GridPos | null;
+}
+
+interface TornadoField {
+  pos: GridPos;
+  stayElapsed: number;
+  stayIndex: number;
+  lastTick: number;
+  dps: number;
+  staySec: number;
+  stays: number;
+  gfx: Graphics;
 }
 
 /** Один герой снизу, враги на сетке 4×4. Ближний ряд зачищен — остальные опускаются. */
@@ -65,6 +76,7 @@ export class HordeBattle {
   private hoverCell: GridPos | null = null;
   private mark = new Graphics();
   private drop: { elapsed: number; anim: DropAnim[] } | null = null;
+  private tornados: TornadoField[] = [];
   private readonly hud: BattleHudApi;
   private readonly background: Sprite;
 
@@ -177,6 +189,7 @@ export class HordeBattle {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.clearTornados();
     this.app.ticker.remove(this.onTick);
     this.app.canvas.removeEventListener("pointerdown", this.onPointer);
     this.app.canvas.removeEventListener("pointermove", this.onPointerMove);
@@ -641,7 +654,11 @@ export class HordeBattle {
     this.hoverGfx = null;
     this.hoverCell = cell;
     const hits =
-      def.id === "flame_cone" ? dragonBreathCells(cell).map((h) => h.pos) : [cell];
+      def.id === "flame_cone"
+        ? dragonBreathCells(cell).map((h) => h.pos)
+        : def.id === "squall"
+          ? squallCells(cell)
+          : [cell];
     const centers = hits.map((pos) => {
       const c = this.cellCenter(pos);
       return { x: c.x, y: c.y, size: CELL - 6 };
@@ -649,7 +666,7 @@ export class HordeBattle {
     this.hoverGfx =
       def.id === "flame_cone"
         ? this.vfx.highlightHeatCells(centers)
-        : this.vfx.highlightCells(centers, 0xffe08a, {
+        : this.vfx.highlightCells(centers, def.school === "air" ? 0xa8c8dc : 0xffe08a, {
             fillAlpha: 0.34,
             strokeAlpha: 0.95,
             strokeWidth: 2.5,
@@ -849,9 +866,134 @@ export class HordeBattle {
         }
         break;
       }
+      case "wind_gust": {
+        if (!clicked || !clicked.alive) return;
+        const aim = { ...clicked.pos };
+        const to = this.cellCenter(aim);
+        await this.vfx.projectile(from, to, SCHOOL_COLOR.air, { size: 12, trail: true, arc: 18, duration: 0.32 });
+        if (!this.sameEnemyOnCell(clicked, aim, to)) return;
+        this.dealAbilityDamage(caster, clicked, def.damage);
+        this.tryKnockbackAway(clicked);
+        break;
+      }
+      case "tailwind": {
+        await this.vfx.ring(caster.center.x, caster.center.y, SCHOOL_COLOR.air, caster.cardSize * 0.7, 0.4);
+        const hasteMult = def.effects?.hasteIntervalMult ?? 0.75;
+        const hasteDur = def.effects?.hasteDuration ?? 5;
+        caster.addStatus({ id: "haste", kind: "haste", remaining: hasteDur, potency: hasteMult });
+        this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ВЕТЕР", 0xa8c8dc);
+        break;
+      }
+      case "squall": {
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const hits = squallCells(aim);
+        const centers = hits.map((pos) => this.cellCenter(pos));
+        await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, SCHOOL_COLOR.air, CELL * 0.55, 0.28);
+        for (const c of centers) {
+          void this.vfx.ring(c.x, c.y, SCHOOL_COLOR.air, CELL * 0.42, 0.35);
+        }
+        for (const pos of hits) {
+          const u = this.unitAtCell(pos);
+          if (!u) continue;
+          this.dealAbilityDamage(caster, u, def.damage);
+        }
+        break;
+      }
+      case "tornado": {
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        this.spawnTornado(aim, def);
+        await this.vfx.ring(this.cellCenter(aim).x, this.cellCenter(aim).y, SCHOOL_COLOR.air, CELL * 0.55, 0.4);
+        break;
+      }
       default:
         break;
     }
+  }
+
+  /** Отброс на 1 клетку дальше от героя. Если занято или за краем - без сдвига. */
+  private tryKnockbackAway(u: Unit): void {
+    if (!u.alive) return;
+    const next = { col: u.pos.col, row: u.pos.row - 1 };
+    if (!inBounds(next) || this.unitAtCell(next)) return;
+    u.pos = next;
+    const to = this.cellCenter(next);
+    u.view.position.set(to.x, to.y);
+    this.vfx.floatingText(to.x, to.y - 28, "ОТБРОС", 0xa8c8dc);
+  }
+
+  private spawnTornado(pos: GridPos, def: AbilityDef): void {
+    const c = this.cellCenter(pos);
+    const gfx = new Graphics();
+    this.drawTornadoGfx(gfx, c.x, c.y);
+    this.telegraphLayer.addChild(gfx);
+    const field: TornadoField = {
+      pos: { ...pos },
+      stayElapsed: 0,
+      stayIndex: 0,
+      lastTick: -1,
+      dps: def.effects?.tornadoDps ?? def.damage,
+      staySec: def.effects?.tornadoStaySec ?? 3,
+      stays: def.effects?.tornadoStays ?? 3,
+      gfx,
+    };
+    this.tornados.push(field);
+    this.tornadoTick(field);
+    field.lastTick = 0;
+  }
+
+  private drawTornadoGfx(gfx: Graphics, x: number, y: number): void {
+    gfx.clear();
+    gfx.circle(x, y, CELL * 0.38).fill({ color: 0xa8c8dc, alpha: 0.28 });
+    gfx.circle(x, y, CELL * 0.38).stroke({ color: 0xd5e6f0, width: 2, alpha: 0.85 });
+    gfx.circle(x, y, CELL * 0.18).fill({ color: 0xffffff, alpha: 0.22 });
+  }
+
+  private tornadoTick(field: TornadoField): void {
+    const u = this.unitAtCell(field.pos);
+    if (!u) return;
+    this.dealAbilityDamage(this.hero, u, field.dps);
+  }
+
+  private updateTornados(dt: number): void {
+    if (!this.tornados.length) return;
+    const keep: TornadoField[] = [];
+    for (const field of this.tornados) {
+      field.stayElapsed += dt;
+      const tickIndex = Math.floor(field.stayElapsed);
+      if (tickIndex > field.lastTick) {
+        const upto = Math.min(field.staySec - 1, tickIndex);
+        for (let t = field.lastTick + 1; t <= upto; t++) this.tornadoTick(field);
+        field.lastTick = upto;
+      }
+      if (field.stayElapsed < field.staySec) {
+        keep.push(field);
+        continue;
+      }
+      field.stayIndex += 1;
+      if (field.stayIndex >= field.stays) {
+        field.gfx.destroy();
+        continue;
+      }
+      const options = orthoNeighbors(field.pos);
+      if (options.length) {
+        field.pos = { ...options[Math.floor(Math.random() * options.length)]! };
+        const c = this.cellCenter(field.pos);
+        this.drawTornadoGfx(field.gfx, c.x, c.y);
+      }
+      field.stayElapsed = 0;
+      field.lastTick = -1;
+      this.tornadoTick(field);
+      field.lastTick = 0;
+      keep.push(field);
+    }
+    this.tornados = keep;
+  }
+
+  private clearTornados(): void {
+    for (const field of this.tornados) field.gfx.destroy();
+    this.tornados = [];
   }
 
   private aimCell(cell: GridPos | null, clicked: Unit | null): GridPos | null {
@@ -980,6 +1122,7 @@ export class HordeBattle {
 
     if (combatDt <= 0) return;
     this.advanceDrop(combatDt);
+    this.updateTornados(combatDt);
     this.gcdRemaining = Math.max(0, this.gcdRemaining - combatDt);
 
     for (const u of this.units) {

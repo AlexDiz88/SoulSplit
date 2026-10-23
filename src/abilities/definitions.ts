@@ -6,6 +6,7 @@ export const SCHOOL_LABEL: Record<School, string> = {
   iron: "Железо",
   stealth: "Скрытность",
   light: "Свет",
+  air: "Воздух",
 };
 
 export const SCHOOL_COLOR: Record<School, number> = {
@@ -14,6 +15,7 @@ export const SCHOOL_COLOR: Record<School, number> = {
   iron: 0xc9b896,
   stealth: 0x9b7bb8,
   light: 0xf0e2b0,
+  air: 0xa8c8dc,
 };
 
 /** id карточки гримуара (design/abilities) → AbilityId боя. */
@@ -26,6 +28,10 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "titan-might": "titan_might",
   "sever-artery": "sever_artery",
   "shadow-strike": "shadow_strike",
+  "wind-gust": "wind_gust",
+  tailwind: "tailwind",
+  squall: "squall",
+  tornado: "tornado",
 };
 
 export const ABILITIES: Record<AbilityId, AbilityDef> = {
@@ -125,18 +131,58 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 2,
     effects: { invulnerableDuringCast: true },
   },
+  wind_gust: {
+    id: "wind_gust",
+    name: "Порыв ветра",
+    school: "air",
+    glyph: "🌬",
+    cooldown: 6,
+    damage: 44,
+    targetMode: "enemy",
+    range: "ranged",
+    reach: 4,
+    effects: {},
+  },
+  tailwind: {
+    id: "tailwind",
+    name: "Попутный ветер",
+    school: "air",
+    glyph: "🍃",
+    cooldown: 7,
+    damage: 0,
+    targetMode: "ally",
+    range: "any",
+    reach: 0,
+    effects: { hasteIntervalMult: 0.75, hasteDuration: 5 },
+  },
+  squall: {
+    id: "squall",
+    name: "Шквал",
+    school: "air",
+    glyph: "💨",
+    cooldown: 7.5,
+    damage: 34,
+    targetMode: "zone",
+    range: "any",
+    reach: 4,
+    effects: {},
+  },
+  tornado: {
+    id: "tornado",
+    name: "Смерч",
+    school: "air",
+    glyph: "🌪",
+    cooldown: 11,
+    damage: 10,
+    targetMode: "zone",
+    range: "any",
+    reach: 4,
+    effects: { tornadoDps: 10, tornadoStaySec: 3, tornadoStays: 3 },
+  },
 };
 
-export const ALL_ABILITY_IDS: AbilityId[] = [
-  "ice_arrow",
-  "ice_shield",
-  "fireball",
-  "flame_cone",
-  "stun_strike",
-  "titan_might",
-  "sever_artery",
-  "shadow_strike",
-];
+/** Слоты панели героя (песочница). */
+export const ALL_ABILITY_IDS: AbilityId[] = ["wind_gust", "tailwind", "squall", "tornado"];
 
 function fmtNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
@@ -175,6 +221,14 @@ export function describeAbility(def: AbilityDef): string {
       return `Вскрывает артерию цели, нанося ${def.damage} ед. физического урона и вызывая кровотечение: ${fmtNum(e.bleedPerSec ?? 0)} ед. физического урона в секунду в течение ${fmtNum(e.bleedDuration ?? 0)} сек.`;
     case "shadow_strike":
       return `Наносит удар из тени, причиняя ${def.damage} ед. физического урона. Пока длится удар, вы неуязвимы.`;
+    case "wind_gust":
+      return `Сжимает воздух в удар по выбранному врагу, нанося ${def.damage} ед. урона воздухом, и отбрасывает его на клетку дальше от героя.`;
+    case "tailwind":
+      return `Обвивает вас попутным потоком, ускоряя автоатаки: интервал атаки ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
+    case "squall":
+      return `Рассекает воздух вокруг выбранной клетки. Сам клик пуст: соседние клетки крестом получают ${def.damage} ед. урона воздухом.`;
+    case "tornado":
+      return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
   }
 }
 
@@ -217,6 +271,21 @@ export function abilityNumberLines(def: AbilityDef): string[] {
     case "shadow_strike":
       lines.push(`${def.damage} физического урона`);
       lines.push("неуязвимость на время удара");
+      break;
+    case "wind_gust":
+      lines.push(`${def.damage} урона воздуха по выбранному врагу`);
+      lines.push("отброс на 1 клетку дальше от героя");
+      break;
+    case "tailwind":
+      lines.push(`интервал автоатаки героя ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} с`);
+      break;
+    case "squall":
+      lines.push(`каждая клетка креста: ${def.damage} урона воздуха`);
+      break;
+    case "tornado":
+      lines.push(`${fmtNum(e.tornadoDps ?? def.damage)} урона воздуха в секунду по врагам на клетке смерча`);
+      lines.push(`стоянка ${fmtNum(e.tornadoStaySec ?? 0)} с (3 удара за стоянку)`);
+      lines.push(`${fmtNum(e.tornadoStays ?? 0)} стоянки подряд (старт + 2 перемещения)`);
       break;
   }
   return lines;

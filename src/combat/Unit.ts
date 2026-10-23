@@ -230,6 +230,8 @@ export class Unit {
           return "⬆";
         case "slow":
           return "❄";
+        case "haste":
+          return "💨";
         case "invuln":
           return "◈";
         default:
@@ -390,8 +392,12 @@ export class Unit {
   }
 
   autoCdMultiplier(): number {
+    let m = 1;
     const slow = this.statuses.find((s) => s.kind === "slow");
-    return slow ? 1 + slow.potency : 1;
+    if (slow) m *= 1 + slow.potency;
+    const haste = this.statuses.find((s) => s.kind === "haste");
+    if (haste) m *= haste.potency;
+    return m;
   }
 
   tickStatuses(dt: number): number {

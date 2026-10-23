@@ -124,7 +124,11 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       const name = document.createElement("span");
       name.className = "grimoire-name";
       name.textContent = card.name;
-      text.append(name);
+      const status = document.createElement("span");
+      const statusLabel = displayStatus(card.status);
+      status.className = `grimoire-status${statusClass(statusLabel)}`;
+      status.textContent = statusLabel;
+      text.append(name, status);
       row.append(img, text);
       row.addEventListener("click", () => {
         cardId = card.id;
@@ -218,6 +222,7 @@ function statusClass(status: string): string {
   if (status === "черновик") return " draft";
   if (status === "одобрено") return " approved";
   if (status === "отказ") return " rejected";
+  if (status === "под вопросом") return " review";
   return "";
 }
 

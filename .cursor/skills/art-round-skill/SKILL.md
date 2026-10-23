@@ -5,10 +5,12 @@ description: >-
   icons (circular frame, thick black ink, jagged school-colored aura, painterly
   fill). Before drafting, fully reads the ability catalog card (INDEX + full
   design/abilities markdown) so the subject matches description, application
-  type, zone, and effect. Use when the user invokes /art-round-skill or
-  art-round-skill with ability name and school (e.g. /art-round-skill дыхание
-  дракона, огонь), or asks for round/circular/medallion skill icons - not the
-  thin white sticker ability-icon canon from gemini-art-prompts.
+  type, zone, and effect. School comes from the catalog card when the ability
+  already exists - the user only needs the ability name (optional school
+  override). Use when the user invokes /art-round-skill or art-round-skill
+  (e.g. /art-round-skill дыхание дракона), or asks for round/circular/medallion
+  skill icons - not the thin white sticker ability-icon canon from
+  gemini-art-prompts.
 disable-model-invocation: true
 ---
 
@@ -22,16 +24,19 @@ flat dark backdrop). Do **not** mix the two styles.
 
 ## Invocation (user input)
 
-User writes the skill name, then **ability name**, then after a comma the **school**:
+User writes the skill name, then **ability name**. School after a comma is
+**optional** when the ability is already in the catalog:
 
 ```
+/art-round-skill {название способности}
 /art-round-skill {название способности}, {школа}
 ```
 
 Examples:
 
 ```
-/art-round-skill дыхание дракона, огонь
+/art-round-skill дыхание дракона
+/art-round-skill попутный ветер
 /art-round-skill ледяной щит, лёд
 /art-round-skill удар тени, тьма
 ```
@@ -39,10 +44,19 @@ Examples:
 Parse rules:
 
 1. Strip leading `/art-round-skill` or `art-round-skill` (with or without slash).
-2. Split the remainder on the **first comma**.
-3. **Param 1** = ability name / lookup key (may be Russian). Resolve against the catalog before writing Subject English.
-4. **Param 2** = school (element / magic school). Trim whitespace. Map to school accent colors below; prefer card `school` if they conflict.
-5. If school is missing or unknown - ask once for school; do not invent a school.
+2. If the remainder contains a comma, split on the **first comma**: param 1 =
+   ability name, param 2 = optional school. If no comma - the whole remainder is
+   the ability name; school is unset.
+3. **Param 1** = ability name / lookup key (may be Russian). Resolve against the
+   catalog **before** accents or Subject English.
+4. **School resolution (catalog first):**
+   - If the ability is found in INDEX / card: take school from the card
+     (`school` / `school_id` / INDEX `школа`). Do **not** ask the user for
+     school.
+   - Optional param 2 may be present; if it **conflicts** with the card, prefer
+     the card's `school` / `school_id` for accents.
+   - If the ability is **not** in the catalog and param 2 is missing or unknown -
+     ask once for school; do not invent a school.
 
 ## School → accent colors
 
@@ -65,17 +79,23 @@ If the user names a school not in the table, derive a close non-neon accent pair
 
 Do **not** draft the Gemini prompt until ability data is fully read. Guessing from the name alone causes mismatches (wrong shape, wrong effect, invented props).
 
-1. Parse invocation → ability name + school → accent colors (table below).
-2. Open [`design/abilities/INDEX.md`](../../../design/abilities/INDEX.md). Find the row by **название** and **школа** / `school_id`. Note `id`, `тип`, and `крючок`.
-3. If no INDEX match: search `design/abilities/**/*.md` by frontmatter `name` / heading / Russian aliases. If still missing - ask once; do **not** invent a card or visual from the name alone.
+1. Parse invocation → ability name (+ optional school override).
+2. Open [`design/abilities/INDEX.md`](../../../design/abilities/INDEX.md). Find
+   the row by **название** (param 1). Note `id`, `school_id`, `школа`, `тип`,
+   and `крючок`. Do not require the user to pass school for a catalog hit.
+3. If no INDEX match: search `design/abilities/**/*.md` by frontmatter `name` /
+   heading / Russian aliases. If still missing - ask once for ability (and for
+   school if unset); do **not** invent a card or visual from the name alone.
 4. Read the matched card **in full** (`design/abilities/{school_id}/{id}.md`):
-   - frontmatter: `id`, `icon`, `name`, `school`, `school_id`
+   - frontmatter: `id`, `icon`, `name`, `school`, `school_id` ← **source of
+     school for accents**
    - body: **Описание**, **Тип применения**, **Зона применения**, **Тип эффекта**, **Числа**, **Доп** (if any)
    - for `зона`: the whole `## Зона` block (anchor, pattern, damage tiers) - use only as **visual metaphor** (direction, spread, focus), never draw a grid / UI / numbers
-5. If the card `icon:` already points at a real file under `assets/art/skills/` (not `no_image.png`), glance at it so the new prompt stays consistent with an approved look when regenerating.
-6. Optionally cross-check combat wiring in `src/abilities/definitions.ts` / `src/abilities/catalog.ts` only if the card is ambiguous; **design card wins** for what the icon should depict.
-7. Prefer attaching [`assets/art/approved/ability_icon_round_example.png`](../../../assets/art/approved/ability_icon_round_example.png) as style reference in Gemini.
-8. Output path after approval: `assets/art/skills/{icon from card, or id with underscores}.png` (crop one panel from the sheet).
+5. Map resolved school (`school` / `school_id`) to accent colors (table above).
+6. If the card `icon:` already points at a real file under `assets/art/skills/` (not `no_image.png`), glance at it so the new prompt stays consistent with an approved look when regenerating.
+7. Optionally cross-check combat wiring in `src/abilities/definitions.ts` / `src/abilities/catalog.ts` only if the card is ambiguous; **design card wins** for what the icon should depict.
+8. Prefer attaching [`assets/art/approved/ability_icon_round_example.png`](../../../assets/art/approved/ability_icon_round_example.png) as style reference in Gemini.
+9. Output path after approval: `assets/art/skills/{icon from card, or id with underscores}.png` (crop one panel from the sheet).
 
 ### Ground the Subject from the card (do not invent)
 
@@ -92,7 +112,10 @@ Build the English Subject from researched facts only:
 
 **Forbidden inventions:** characters, faces, hands, enemies, heroes, UI, damage digits, school logos as text, steampunk props, or a different spell than the card (e.g. do not draw a fireball for a breath cone, or a weapon swing for a pure self-buff).
 
-If the user name disagrees with the catalog card, **trust the catalog** and still depict that ability; school accents come from param 2 only when they match the card's school - if param 2 conflicts with the card, prefer the card's `school` / `school_id` for colors.
+If the user name disagrees with the catalog card, **trust the catalog** and still
+depict that ability. School accents always come from the card's `school` /
+`school_id` when the ability exists in the catalog (optional param 2 is ignored
+on conflict).
 
 ## Hard rules
 
@@ -172,7 +195,7 @@ Negatives: photorealistic, semi-realistic, 3d, cgi, soft airbrush anime, missing
 
 ## Subject writing tips
 
-- Research the catalog card first (INDEX + full `.md`). Param 1 is only a lookup key; the Subject must match the card, not a free reinterpretation of the name.
+- Research the catalog card first (INDEX + full `.md`). Param 1 is only a lookup key; school is taken from the card when present. The Subject must match the card, not a free reinterpretation of the name.
 - Translate the card’s magical action into a clear English silhouette (projectile, cone breath, shield dome, hammer of light, shadow slash mark, etc.).
 - Keep **one** ability across all nine panels.
 - Put school accent colors on both the jagged outer aura and the central effect.

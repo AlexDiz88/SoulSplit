@@ -7,6 +7,10 @@ import hammerThrowIconUrl from "../../assets/art/skills/hammer_throw.png";
 import emptySkillIconUrl from "../../assets/art/skills/no_image.png";
 import severArteryIconUrl from "../../assets/art/skills/sever_artery.png";
 import shadowStrikeIconUrl from "../../assets/art/skills/shadow_strike.png";
+import windGustIconUrl from "../../assets/art/skills/wind_gust.png";
+import tailwindIconUrl from "../../assets/art/skills/tailwind.png";
+import squallIconUrl from "../../assets/art/skills/squall.png";
+import tornadoIconUrl from "../../assets/art/skills/tornado.png";
 import type { AbilityId } from "../types";
 
 /** Круглый плейсхолдер пустого слота панели способностей. */
@@ -22,4 +26,8 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   titan_might: titanMightIconUrl,
   sever_artery: severArteryIconUrl,
   shadow_strike: shadowStrikeIconUrl,
+  wind_gust: windGustIconUrl,
+  tailwind: tailwindIconUrl,
+  squall: squallIconUrl,
+  tornado: tornadoIconUrl,
 };
