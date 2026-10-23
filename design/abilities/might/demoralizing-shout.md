@@ -1,9 +1,9 @@
-﻿---
+---
 id: demoralizing-shout
 icon: demoralizing_shout.png
 name: "Деморализующий крик"
-school: "Сила"
-school_id: might
+aspect: "Сила"
+aspect_id: might
 status: черновик
 ---
 

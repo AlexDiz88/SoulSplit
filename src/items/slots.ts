@@ -45,13 +45,13 @@ export const ALL_EQUIP_SLOTS: EquipSlotId[] = [
   "offhand",
 ];
 
-/** Слоты, на которых может быть schoolTag. */
-export const SCHOOL_ITEM_SLOTS: ReadonlySet<EquipSlotId> = new Set(["mainhand", "offhand", "trinket"]);
+/** Слоты, на которых может быть aspectTag. */
+export const ASPECT_ITEM_SLOTS: ReadonlySet<EquipSlotId> = new Set(["mainhand", "offhand", "trinket"]);
 
 export function isWeaponSlot(slot: EquipSlotId): boolean {
   return slot === "mainhand" || slot === "offhand";
 }
 
-export function isSchoolItemSlot(slot: EquipSlotId): boolean {
-  return SCHOOL_ITEM_SLOTS.has(slot);
+export function isAspectItemSlot(slot: EquipSlotId): boolean {
+  return ASPECT_ITEM_SLOTS.has(slot);
 }

@@ -101,7 +101,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
           : String(def.damage)
         : "-";
 
-    tooltip.className = `skill-tooltip school-${def.school}`;
+    tooltip.className = `skill-tooltip aspect-${def.aspect}`;
     tooltip.innerHTML = `
       <div class="tt-name">${def.name}</div>
       <div class="tt-desc">${describeAbility(def)}</div>
@@ -269,7 +269,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       const def = ABILITIES[id];
       const iconUrl = ABILITY_ICON_URLS[id];
       btn.dataset.ability = id;
-      btn.className = `skill-btn school-${def.school}${iconUrl ? " has-art" : ""}`;
+      btn.className = `skill-btn aspect-${def.aspect}${iconUrl ? " has-art" : ""}`;
       btn.setAttribute("aria-label", `${def.name}, клавиша ${hotkey}`);
       btn.innerHTML = iconUrl
         ? `<img class="skill-icon" src="${iconUrl}" alt="" draggable="false" />`

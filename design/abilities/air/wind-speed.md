@@ -1,9 +1,9 @@
-﻿---
+---
 id: wind-speed
 icon: wind_speed.png
 name: "Скорость ветра"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: одобрено
 ---
 

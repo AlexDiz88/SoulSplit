@@ -13,7 +13,7 @@ alwaysApply: true
 2. ключ и `id` в `src/abilities/definitions.ts` (+ `ABILITY_BY_GRIMOIRE_ID`, `describeAbility`, `abilityNumberLines`, `ALL_ABILITY_IDS`)
 3. `case` и вызовы в `src/combat/HordeBattle.ts`
 4. ключ в `src/art/abilityIcons.ts`
-5. карточка гримуара: файл `design/abilities/{school}/{id}.md` (kebab-case) и строка в `design/abilities/INDEX.md`
+5. карточка гримуара: файл `design/abilities/{aspect}/{id}.md` (kebab-case) и строка в `design/abilities/INDEX.md`
 6. иконка: `assets/art/skills/{snake_case}.png` - переименуй файл или скопируй под новым именем, обнови `icon:` в md
 7. VFX способности, если метод/файл названы по старому id (например `SlashVfx` → `SeverArteryVfx`)
 

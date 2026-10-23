@@ -1,9 +1,9 @@
-﻿---
+---
 id: dust-veil
 icon: dust_veil.png
 name: "Пыльная пелена"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: отказ
 ---
 

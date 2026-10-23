@@ -1,9 +1,9 @@
-﻿---
+---
 id: sever-artery
 icon: sever_artery.png
 name: "Вскрыть артерию"
-school: "Скрытность"
-school_id: stealth
+aspect: "Скрытность"
+aspect_id: stealth
 status: одобрено
 ---
 

@@ -8,7 +8,7 @@ import { isWeaponSlot } from "./slots";
  * defense: maxHp, physDr, magicResist, evasion, block, parry
  * resource: maxMana, manaRegen, manaCostReduction, hpRegen
  * tempo: attackSpeed, castSpeed, cooldownReduction
- * school: schoolDamage:* (только school-слоты)
+ * aspect: aspectDamage:* (только aspect-слоты)
  */
 export const SLOT_FAMILIES: Record<EquipSlotId, AffixFamily[]> = {
   head: ["defense", "resource"],
@@ -21,9 +21,9 @@ export const SLOT_FAMILIES: Record<EquipSlotId, AffixFamily[]> = {
   neck: ["resource", "defense"],
   ring1: ["offense", "resource", "tempo"],
   ring2: ["offense", "resource", "tempo"],
-  trinket: ["resource", "offense", "school", "tempo"],
-  mainhand: ["offense", "tempo", "school"],
-  offhand: ["offense", "tempo", "school", "defense"],
+  trinket: ["resource", "offense", "aspect", "tempo"],
+  mainhand: ["offense", "tempo", "aspect"],
+  offhand: ["offense", "tempo", "aspect", "defense"],
 };
 
 /** Запрещённые статы даже если семья разрешена (жёсткие исключения). */
@@ -48,6 +48,6 @@ export function deniedStatsForSlot(slot: EquipSlotId): string[] {
 export function isStatAllowedOnSlot(slot: EquipSlotId, statId: string): boolean {
   const deny = SLOT_STAT_DENY[slot];
   if (deny?.has(statId)) return false;
-  if (statId.startsWith("schoolDamage:") && !isWeaponSlot(slot) && slot !== "trinket") return false;
+  if (statId.startsWith("aspectDamage:") && !isWeaponSlot(slot) && slot !== "trinket") return false;
   return true;
 }

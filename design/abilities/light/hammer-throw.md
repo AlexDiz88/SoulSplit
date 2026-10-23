@@ -1,9 +1,9 @@
-﻿---
+---
 id: hammer-throw
 icon: hammer_throw.png
 name: "Бросок молота"
-school: "Свет"
-school_id: light
+aspect: "Свет"
+aspect_id: light
 status: одобрено
 ---
 

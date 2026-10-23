@@ -354,12 +354,12 @@ textarea,
 }
 
 .skill-btn.has-art:hover:not(:disabled):not(.selected),
-.skill-btn.has-art.school-ice:not(.selected),
-.skill-btn.has-art.school-fire:not(.selected),
-.skill-btn.has-art.school-iron:not(.selected),
-.skill-btn.has-art.school-stealth:not(.selected),
-.skill-btn.has-art.school-light:not(.selected),
-.skill-btn.has-art.school-air:not(.selected) {
+.skill-btn.has-art.aspect-ice:not(.selected),
+.skill-btn.has-art.aspect-fire:not(.selected),
+.skill-btn.has-art.aspect-iron:not(.selected),
+.skill-btn.has-art.aspect-stealth:not(.selected),
+.skill-btn.has-art.aspect-light:not(.selected),
+.skill-btn.has-art.aspect-air:not(.selected) {
   border: none;
   box-shadow: none;
 }
@@ -403,22 +403,22 @@ textarea,
   line-height: 1;
 }
 
-.skill-btn.school-ice {
+.skill-btn.aspect-ice {
   border-color: rgba(126, 200, 232, 0.45);
 }
-.skill-btn.school-fire {
+.skill-btn.aspect-fire {
   border-color: rgba(255, 122, 61, 0.45);
 }
-.skill-btn.school-iron {
+.skill-btn.aspect-iron {
   border-color: rgba(201, 184, 150, 0.45);
 }
-.skill-btn.school-stealth {
+.skill-btn.aspect-stealth {
   border-color: rgba(155, 123, 184, 0.45);
 }
-.skill-btn.school-light {
+.skill-btn.aspect-light {
   border-color: rgba(240, 226, 176, 0.45);
 }
-.skill-btn.school-air {
+.skill-btn.aspect-air {
   border-color: rgba(168, 200, 220, 0.45);
 }
 
@@ -434,27 +434,27 @@ textarea,
   animation: skill-select-pulse 1.8s ease-in-out infinite;
 }
 
-.skill-btn.selected.school-ice {
+.skill-btn.selected.aspect-ice {
   --skill-glow: var(--ice);
   border-color: var(--ice);
 }
-.skill-btn.selected.school-fire {
+.skill-btn.selected.aspect-fire {
   --skill-glow: var(--fire);
   border-color: var(--fire);
 }
-.skill-btn.selected.school-iron {
+.skill-btn.selected.aspect-iron {
   --skill-glow: var(--iron);
   border-color: var(--iron);
 }
-.skill-btn.selected.school-stealth {
+.skill-btn.selected.aspect-stealth {
   --skill-glow: var(--shadow);
   border-color: var(--shadow);
 }
-.skill-btn.selected.school-light {
+.skill-btn.selected.aspect-light {
   --skill-glow: var(--light);
   border-color: var(--light);
 }
-.skill-btn.selected.school-air {
+.skill-btn.selected.aspect-air {
   --skill-glow: var(--air);
   border-color: var(--air);
 }
@@ -568,22 +568,22 @@ textarea,
   color: var(--text);
 }
 
-.skill-tooltip.school-ice {
+.skill-tooltip.aspect-ice {
   border-color: rgba(126, 200, 232, 0.5);
 }
-.skill-tooltip.school-fire {
+.skill-tooltip.aspect-fire {
   border-color: rgba(255, 122, 61, 0.5);
 }
-.skill-tooltip.school-iron {
+.skill-tooltip.aspect-iron {
   border-color: rgba(201, 184, 150, 0.5);
 }
-.skill-tooltip.school-stealth {
+.skill-tooltip.aspect-stealth {
   border-color: rgba(155, 123, 184, 0.5);
 }
-.skill-tooltip.school-light {
+.skill-tooltip.aspect-light {
   border-color: rgba(240, 226, 176, 0.5);
 }
-.skill-tooltip.school-air {
+.skill-tooltip.aspect-air {
   border-color: rgba(168, 200, 220, 0.5);
 }
 
@@ -832,21 +832,21 @@ textarea,
   gap: 12px;
 }
 
-.grimoire-schools,
+.grimoire-aspects,
 .grimoire-list,
 .grimoire-detail {
   min-height: 0;
   overflow: auto;
 }
 
-.grimoire-schools,
+.grimoire-aspects,
 .grimoire-list {
   display: grid;
   align-content: start;
   gap: 8px;
 }
 
-.grimoire-school,
+.grimoire-aspect,
 .grimoire-row {
   width: 100%;
   text-align: left;
@@ -858,7 +858,7 @@ textarea,
   cursor: var(--cur-default);
 }
 
-.grimoire-school {
+.grimoire-aspect {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -867,16 +867,16 @@ textarea,
   max-width: 100%;
   min-height: 42px;
   padding: 8px 10px 8px 12px;
-  border-left: 3px solid var(--school, var(--panel-border));
+  border-left: 3px solid var(--aspect, var(--panel-border));
   font-weight: 700;
 }
 
-.grimoire-school > span {
+.grimoire-aspect > span {
   min-width: 0;
   overflow-wrap: anywhere;
 }
 
-.grimoire-school b {
+.grimoire-aspect b {
   color: var(--muted);
   font-weight: 700;
 }
@@ -944,16 +944,16 @@ textarea,
   font-size: 0.85rem;
 }
 
-.grimoire-school:hover,
-.grimoire-school.active,
+.grimoire-aspect:hover,
+.grimoire-aspect.active,
 .grimoire-row:hover,
 .grimoire-row.active,
-.grimoire-school:focus-visible,
+.grimoire-aspect:focus-visible,
 .grimoire-row:focus-visible {
   border-color: var(--accent);
 }
 
-.grimoire-school.active,
+.grimoire-aspect.active,
 .grimoire-row.active {
   background: rgba(196, 163, 90, 0.12);
 }
@@ -1084,8 +1084,8 @@ textarea,
 }
 
 .zone-cell.hit {
-  border-color: var(--school, var(--accent));
-  background: color-mix(in srgb, var(--school, var(--accent)) 42%, #10140f);
+  border-color: var(--aspect, var(--accent));
+  background: color-mix(in srgb, var(--aspect, var(--accent)) 42%, #10140f);
 }
 
 .zone-cell.aim {
@@ -1262,7 +1262,7 @@ textarea,
   }
 
   .grimoire-body,
-  .grimoire-schools,
+  .grimoire-aspects,
   .grimoire-list,
   .grimoire-detail {
     width: 100%;
@@ -1276,22 +1276,22 @@ textarea,
     flex-direction: column;
   }
 
-  .grimoire-window[data-phone-view="schools"] .grimoire-list,
-  .grimoire-window[data-phone-view="schools"] .grimoire-detail,
-  .grimoire-window[data-phone-view="list"] .grimoire-schools,
+  .grimoire-window[data-phone-view="aspects"] .grimoire-list,
+  .grimoire-window[data-phone-view="aspects"] .grimoire-detail,
+  .grimoire-window[data-phone-view="list"] .grimoire-aspects,
   .grimoire-window[data-phone-view="list"] .grimoire-detail,
-  .grimoire-window[data-phone-view="detail"] .grimoire-schools,
+  .grimoire-window[data-phone-view="detail"] .grimoire-aspects,
   .grimoire-window[data-phone-view="detail"] .grimoire-list {
     display: none;
   }
 
-  .grimoire-schools,
+  .grimoire-aspects,
   .grimoire-list,
   .grimoire-detail {
     flex: 1;
   }
 
-  .grimoire-school,
+  .grimoire-aspect,
   .grimoire-row {
     width: 100%;
     max-width: 100%;
@@ -1393,10 +1393,10 @@ textarea,
     gap: 1vw;
   }
 
-  .grimoire-schools,
+  .grimoire-aspects,
   .grimoire-list,
   .grimoire-detail,
-  .grimoire-school,
+  .grimoire-aspect,
   .grimoire-row {
     min-width: 0;
     max-width: 100%;

@@ -1,9 +1,9 @@
-﻿---
+---
 id: tornado
 icon: tornado.png
 name: "Смерч"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: одобрено
 ---
 

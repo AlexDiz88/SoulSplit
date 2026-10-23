@@ -1,9 +1,9 @@
-﻿---
+---
 id: air-pocket
 icon: air_pocket.png
 name: "Воздушный карман"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: под вопросом
 ---
 

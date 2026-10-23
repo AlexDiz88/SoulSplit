@@ -1,9 +1,9 @@
-﻿---
+---
 id: ice-arrow
 icon: frostbolt.png
 name: "Ледяная стрела"
-school: "Лёд"
-school_id: ice
+aspect: "Лёд"
+aspect_id: ice
 status: одобрено
 ---
 

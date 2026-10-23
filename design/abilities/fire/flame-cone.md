@@ -1,9 +1,9 @@
-﻿---
+---
 id: flame-cone
 icon: dragon_breath.png
 name: "Дыхание дракона"
-school: "Огонь"
-school_id: fire
+aspect: "Огонь"
+aspect_id: fire
 status: одобрено
 ---
 

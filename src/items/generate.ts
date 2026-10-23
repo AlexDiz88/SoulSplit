@@ -1,6 +1,6 @@
-import { SCHOOL_LABEL } from "../abilities/definitions";
+import { ASPECT_LABEL } from "../abilities/definitions";
 import { WEAPON_LABEL, WEAPON_REACH } from "../combat/weapons";
-import type { School, WeaponKind } from "../types";
+import type { Aspect, WeaponKind } from "../types";
 import type { AffixDef } from "./types";
 import {
   RARITY_AFFIX_COUNT,
@@ -13,10 +13,10 @@ import {
 } from "./types";
 import { AFFIX_CATALOG, rollAffixValue } from "./affixCatalog";
 import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
-import { isSchoolItemSlot, isWeaponSlot, type EquipSlotId } from "./slots";
+import { isAspectItemSlot, isWeaponSlot, type EquipSlotId } from "./slots";
 
 const WEAPON_KINDS: WeaponKind[] = ["melee", "spear", "bow", "staff"];
-const ALL_SCHOOLS: School[] = ["ice", "fire", "iron", "stealth", "light", "air"];
+const ALL_ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
 
 function randInt(rng: () => number, min: number, max: number): number {
   return Math.floor(min + rng() * (max - min + 1));
@@ -39,14 +39,14 @@ function affixCountForRarity(rarity: ItemRarity, rng: () => number): number {
   return randInt(rng, lo, hi);
 }
 
-function poolForSlot(slot: EquipSlotId, schoolTag: School | undefined): AffixDef[] {
+function poolForSlot(slot: EquipSlotId, aspectTag: Aspect | undefined): AffixDef[] {
   const families = new Set(familiesForSlot(slot));
   return AFFIX_CATALOG.filter((a) => {
     if (!families.has(a.family)) return false;
     if (!isStatAllowedOnSlot(slot, a.statId)) return false;
-    if (a.family === "school") {
-      if (!schoolTag) return false;
-      return a.statId === `schoolDamage:${schoolTag}`;
+    if (a.family === "aspect") {
+      if (!aspectTag) return false;
+      return a.statId === `aspectDamage:${aspectTag}`;
     }
     return true;
   });
@@ -58,16 +58,16 @@ function pickAffixSlot(def: AffixDef, rng: () => number): AffixSlot {
   return rng() < 0.5 ? "prefix" : "suffix";
 }
 
-function rollSchoolTag(
+function rollAspectTag(
   slot: EquipSlotId,
-  learned: School[] | undefined,
-  force: School | undefined,
+  learned: Aspect[] | undefined,
+  force: Aspect | undefined,
   rng: () => number,
-): School | undefined {
-  if (!isSchoolItemSlot(slot)) return undefined;
+): Aspect | undefined {
+  if (!isAspectItemSlot(slot)) return undefined;
   if (force) return force;
   const learnedSet = new Set(learned ?? []);
-  const pick = pickWeighted(ALL_SCHOOLS, (s) => (learnedSet.has(s) ? 3 : 1), rng);
+  const pick = pickWeighted(ALL_ASPECTS, (s) => (learnedSet.has(s) ? 3 : 1), rng);
   return pick ?? undefined;
 }
 
@@ -89,9 +89,9 @@ function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplici
   };
 }
 
-function defaultName(slot: EquipSlotId, _rarity: ItemRarity, school?: School, weapon?: WeaponImplicit): string {
-  const schoolPart = school ? SCHOOL_LABEL[school] + " " : "";
-  if (weapon) return `${schoolPart}${WEAPON_LABEL[weapon.kind]}`.trim();
+function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, weapon?: WeaponImplicit): string {
+  const aspectPart = aspect ? ASPECT_LABEL[aspect] + " " : "";
+  if (weapon) return `${aspectPart}${WEAPON_LABEL[weapon.kind]}`.trim();
   const slotNames: Partial<Record<EquipSlotId, string>> = {
     head: "Шлем",
     chest: "Нагрудник",
@@ -107,7 +107,7 @@ function defaultName(slot: EquipSlotId, _rarity: ItemRarity, school?: School, we
     mainhand: "Оружие",
     offhand: "Левая рука",
   };
-  return `${schoolPart}${slotNames[slot] ?? "Предмет"}`.trim();
+  return `${aspectPart}${slotNames[slot] ?? "Предмет"}`.trim();
 }
 
 /**
@@ -117,11 +117,11 @@ function defaultName(slot: EquipSlotId, _rarity: ItemRarity, school?: School, we
 export function generateItem(opts: GenerateItemOptions): ItemDef {
   const rng = opts.rng ?? Math.random;
   const { slot, rarity, itemLevel } = opts;
-  const schoolTag = rollSchoolTag(slot, opts.learnedSchools, opts.forceSchool, rng);
+  const aspectTag = rollAspectTag(slot, opts.learnedAspects, opts.forceAspect, rng);
   const weapon = isWeaponSlot(slot) ? makeWeaponImplicit(itemLevel, rng) : undefined;
 
   const count = affixCountForRarity(rarity, rng);
-  const pool = poolForSlot(slot, schoolTag);
+  const pool = poolForSlot(slot, aspectTag);
   const usedStats = new Set<string>();
   const affixes: RolledAffix[] = [];
 
@@ -139,19 +139,19 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     });
   }
 
-  // На аспектном предмете blue+ гарантируем хотя бы один school-ролл, если пул позволяет.
-  if (schoolTag && rarity !== "common" && rarity !== "uncommon") {
-    const hasSchool = affixes.some((a) => a.statId === `schoolDamage:${schoolTag}`);
-    if (!hasSchool) {
-      const schoolAffix = pool.find((a) => a.statId === `schoolDamage:${schoolTag}`);
-      if (schoolAffix) {
+  // На аспектном предмете blue+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
+  if (aspectTag && rarity !== "common" && rarity !== "uncommon") {
+    const hasAspect = affixes.some((a) => a.statId === `aspectDamage:${aspectTag}`);
+    if (!hasAspect) {
+      const aspectAffix = pool.find((a) => a.statId === `aspectDamage:${aspectTag}`);
+      if (aspectAffix) {
         if (affixes.length >= count && affixes.length > 0) affixes.pop();
         affixes.push({
-          affixId: schoolAffix.id,
-          statId: schoolAffix.statId,
-          value: rollAffixValue(schoolAffix, itemLevel, rng),
-          affixSlot: pickAffixSlot(schoolAffix, rng),
-          label: schoolAffix.label,
+          affixId: aspectAffix.id,
+          statId: aspectAffix.statId,
+          value: rollAffixValue(aspectAffix, itemLevel, rng),
+          affixSlot: pickAffixSlot(aspectAffix, rng),
+          label: aspectAffix.label,
         });
       }
     }
@@ -159,12 +159,12 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
 
   return {
     id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
-    name: opts.name ?? defaultName(slot, rarity, schoolTag, weapon),
+    name: opts.name ?? defaultName(slot, rarity, aspectTag, weapon),
     slot,
     rarity,
     itemLevel,
     affixes,
-    schoolTag,
+    aspectTag,
     weapon,
   };
 }

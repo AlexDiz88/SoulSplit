@@ -1,8 +1,8 @@
-import { SCHOOL_LABEL } from "../abilities/definitions";
+import { ASPECT_LABEL } from "../abilities/definitions";
 import { AFFIX_CATALOG } from "../items/affixCatalog";
 import { generateItem } from "../items/generate";
 import { deniedStatsForSlot, familiesForSlot, isStatAllowedOnSlot } from "../items/slotRules";
-import { ALL_EQUIP_SLOTS, isSchoolItemSlot, SLOT_LABEL, type EquipSlotId } from "../items/slots";
+import { ALL_EQUIP_SLOTS, isAspectItemSlot, SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import {
   RARITY_AFFIX_COUNT,
   RARITY_LABEL,
@@ -17,7 +17,7 @@ import {
   STAT_LABEL,
   capLabelForStat,
   formatStatValue,
-  isSchoolDamageStat,
+  isAspectDamageStat,
   type AffixFamily,
   type StatId,
 } from "../stats/statIds";
@@ -31,7 +31,7 @@ export interface ItemGeneratorApi {
 const RARITIES: ItemRarity[] = ["common", "uncommon", "rare", "yellow", "epic"];
 
 const FAMILY_OF_STAT: Partial<Record<StatId, AffixFamily>> = Object.fromEntries(
-  AFFIX_CATALOG.filter((a) => !isSchoolDamageStat(a.statId)).map((a) => [a.statId, a.family]),
+  AFFIX_CATALOG.filter((a) => !isAspectDamageStat(a.statId)).map((a) => [a.statId, a.family]),
 );
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -53,10 +53,10 @@ function affixesForSlot(slot: EquipSlotId) {
   });
 }
 
-const SCHOOL_BONUS_LABEL = "Урон/Бонус к способностям аспекта";
+const ASPECT_BONUS_LABEL = "Урон/Бонус к способностям аспекта";
 
 function formatStatName(id: StatId): string {
-  if (isSchoolDamageStat(id)) return SCHOOL_BONUS_LABEL;
+  if (isAspectDamageStat(id)) return ASPECT_BONUS_LABEL;
   return STAT_LABEL[id as keyof typeof STAT_LABEL] ?? id;
 }
 
@@ -191,7 +191,7 @@ function buildBench(): { root: HTMLElement } {
       slot,
       rarity,
       itemLevel,
-      learnedSchools: ["air", "ice"],
+      learnedAspects: ["air", "ice"],
     });
     result.replaceChildren(renderItemCard(item));
   });
@@ -219,8 +219,8 @@ function renderItemCard(item: ItemDef): HTMLElement {
     ),
   );
 
-  if (item.schoolTag) {
-    card.append(el("div", "igen-card-meta", `Аспект: ${SCHOOL_LABEL[item.schoolTag]}`));
+  if (item.aspectTag) {
+    card.append(el("div", "igen-card-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
   }
   if (item.weapon) {
     card.append(
@@ -328,47 +328,33 @@ function buildParamsSection(): HTMLElement {
     tbody.append(tr);
   }
 
-  const schoolRow = el("tr");
-  schoolRow.append(
-    el("td", "", SCHOOL_BONUS_LABEL),
+  const aspectRow = el("tr");
+  aspectRow.append(
+    el("td", "", ASPECT_BONUS_LABEL),
     el("td", "", "плоский %"),
-    el("td", "", FAMILY_LABEL.school),
-    el("td", "", capLabelForStat("schoolDamage:air")),
+    el("td", "", FAMILY_LABEL.aspect),
+    el("td", "", capLabelForStat("aspectDamage:air")),
     el(
       "td",
       "igen-desc",
       "Только на оружии и аксессуаре. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных аспектов весит выше.",
     ),
   );
-  tbody.append(schoolRow);
+  tbody.append(aspectRow);
   table.append(tbody);
   scroll.append(table);
   section.append(scroll);
   return section;
 }
 
-function listCell(names: string[], className: string): HTMLElement {
-  const td = el("td", className);
-  if (!names.length) {
-    td.textContent = "-";
-    return td;
-  }
-  const list = el("ul", "igen-stat-list");
-  for (const name of names) {
-    list.append(el("li", "", name));
-  }
-  td.append(list);
-  return td;
-}
-
 function typeLabel(id: StatId): string {
   if (id === "hpRegen" || id === "manaRegen") return "flat / сек";
-  if (STAT_CAPS[id] !== undefined || id === "abilityDamage" || id.startsWith("school")) return "плоский %";
+  if (STAT_CAPS[id] !== undefined || id === "abilityDamage" || id.startsWith("aspect")) return "плоский %";
   return "flat";
 }
 
 function buildSlotsSection(): HTMLElement {
-  const section = el("section", "igen-section");
+  const section = el("section", "igen-section igen-section-slots");
   section.append(
     el(
       "p",
@@ -377,39 +363,44 @@ function buildSlotsSection(): HTMLElement {
     ),
   );
 
-  const scroll = el("div", "igen-table-scroll");
-  const table = el("table", "igen-table igen-table-slots");
-  const thead = el("thead");
-  const headRow = el("tr");
-  for (const h of ["Слот", "Категории", "Может роллить", "Запрещено", "Аспект"]) {
-    headRow.append(el("th", "", h));
-  }
-  thead.append(headRow);
-  table.append(thead);
-
-  const tbody = el("tbody");
+  const grid = el("div", "igen-slot-grid");
   for (const slot of ALL_EQUIP_SLOTS) {
     const allowed = affixesForSlot(slot);
     const denied = deniedStatsForSlot(slot);
     const families = familiesForSlot(slot).map((f) => FAMILY_LABEL[f]);
     const allowedNames = uniqueLabels(allowed.map((a) => formatStatName(a.statId)));
     const deniedNames = denied.map((id) => formatStatName(id as StatId));
-    const school = isSchoolItemSlot(slot) ? "да" : "нет";
+    const aspect = isAspectItemSlot(slot) ? "да" : "нет";
 
-    const tr = el("tr");
-    tr.append(
-      el("td", "igen-slot-name", SLOT_LABEL[slot]),
-      listCell(families, ""),
-      listCell(allowedNames, "igen-allow"),
-      listCell(deniedNames, "igen-deny"),
-      el("td", "", school),
+    const card = el("article", "igen-slot-card");
+    const title = el("div", "igen-slot-card-head");
+    title.append(
+      el("h4", "igen-slot-card-title", SLOT_LABEL[slot]),
+      el("span", "igen-slot-card-aspect", aspect === "да" ? "Аспект: да" : "Аспект: нет"),
     );
-    tbody.append(tr);
+    card.append(title);
+    card.append(slotBlock("Категории", families, ""));
+    card.append(slotBlock("Может роллить", allowedNames, "igen-allow"));
+    card.append(slotBlock("Запрещено", deniedNames, "igen-deny"));
+    grid.append(card);
   }
-  table.append(tbody);
-  scroll.append(table);
-  section.append(scroll);
+  section.append(grid);
   return section;
+}
+
+function slotBlock(label: string, names: string[], className: string): HTMLElement {
+  const block = el("div", "igen-slot-block");
+  block.append(el("div", "igen-slot-block-label", label));
+  if (!names.length) {
+    block.append(el("div", className, "-"));
+    return block;
+  }
+  const list = el("ul", `igen-stat-list ${className}`.trim());
+  for (const name of names) {
+    list.append(el("li", "", name));
+  }
+  block.append(list);
+  return block;
 }
 
 function buildRulesSection(): HTMLElement {
@@ -428,7 +419,7 @@ function buildRulesSection(): HTMLElement {
   const notes: Record<ItemRarity, string> = {
     common: "Белый. Только implicit оружия, если слот оружейный.",
     uncommon: "Один ролл. Prefix или suffix случайно.",
-    rare: "Два ролла. На аспектном предмете с blue+ стараемся дать school-аффикс.",
+    rare: "Два ролла. На аспектном предмете с blue+ стараемся дать aspect-аффикс.",
     yellow: "3-4 ролла.",
     epic: "4-5 роллов. Легендарки в генератор не входят.",
   };

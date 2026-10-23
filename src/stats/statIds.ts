@@ -1,4 +1,4 @@
-import type { School } from "../types";
+import type { Aspect } from "../types";
 
 /** Глобальные статы героя (не свойства оружия). */
 export type FlatStatId =
@@ -22,9 +22,9 @@ export type PercentStatId =
   | "blockChance"
   | "parryChance";
 
-export type StatId = FlatStatId | PercentStatId | `schoolDamage:${School}`;
+export type StatId = FlatStatId | PercentStatId | `aspectDamage:${Aspect}`;
 
-export type AffixFamily = "offense" | "defense" | "resource" | "tempo" | "school";
+export type AffixFamily = "offense" | "defense" | "resource" | "tempo" | "aspect";
 
 export const CHANCE_CAP = 75;
 export const OFFENSE_AMP_CAP = 100;
@@ -72,7 +72,7 @@ export const FAMILY_LABEL: Record<AffixFamily, string> = {
   defense: "Защита",
   resource: "Ресурсы",
   tempo: "Темп",
-  school: "Аспект",
+  aspect: "Аспект",
 };
 
 export const STAT_DESC: Record<PercentStatId | FlatStatId, string> = {
@@ -95,7 +95,7 @@ export const STAT_DESC: Record<PercentStatId | FlatStatId, string> = {
   parryChance: "Плоский % парирования. Аффикс есть, бой позже. Кап 75%.",
 };
 
-/** Core-статы без schoolDamage:* для справочника. */
+/** Core-статы без aspectDamage:* для справочника. */
 export const CORE_STAT_IDS: Array<PercentStatId | FlatStatId> = [
   "maxHp",
   "hpRegen",
@@ -117,7 +117,7 @@ export const CORE_STAT_IDS: Array<PercentStatId | FlatStatId> = [
 ];
 
 export function capLabelForStat(id: StatId): string {
-  if (isSchoolDamageStat(id)) return `${OFFENSE_AMP_CAP}% (в сумме с уроном способностей)`;
+  if (isAspectDamageStat(id)) return `${OFFENSE_AMP_CAP}% (в сумме с уроном способностей)`;
   if (id === "abilityDamage") return `${OFFENSE_AMP_CAP}% (в сумме с аспектом)`;
   if (id === "critDamage") return `${CRIT_DAMAGE_CAP}% (база ${CRIT_DAMAGE_BASE}%)`;
   const cap = STAT_CAPS[id];
@@ -131,20 +131,20 @@ export function typeLabelForStat(id: StatId): string {
   return "flat";
 }
 
-export function schoolDamageStat(school: School): StatId {
-  return `schoolDamage:${school}`;
+export function aspectDamageStat(aspect: Aspect): StatId {
+  return `aspectDamage:${aspect}`;
 }
 
-export function isSchoolDamageStat(id: StatId): id is `schoolDamage:${School}` {
-  return id.startsWith("schoolDamage:");
+export function isAspectDamageStat(id: StatId): id is `aspectDamage:${Aspect}` {
+  return id.startsWith("aspectDamage:");
 }
 
-export function schoolFromStat(id: `schoolDamage:${School}`): School {
-  return id.slice("schoolDamage:".length) as School;
+export function aspectFromStat(id: `aspectDamage:${Aspect}`): Aspect {
+  return id.slice("aspectDamage:".length) as Aspect;
 }
 
 export function isPercentStat(id: StatId): boolean {
-  if (isSchoolDamageStat(id)) return true;
+  if (isAspectDamageStat(id)) return true;
   return (
     id === "manaCostReduction" ||
     id === "attackSpeed" ||

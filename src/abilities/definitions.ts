@@ -1,6 +1,6 @@
-import type { AbilityDef, AbilityId, School } from "../types";
+import type { AbilityDef, AbilityId, Aspect } from "../types";
 
-export const SCHOOL_LABEL: Record<School, string> = {
+export const ASPECT_LABEL: Record<Aspect, string> = {
   ice: "Лёд",
   fire: "Огонь",
   iron: "Железо",
@@ -9,7 +9,7 @@ export const SCHOOL_LABEL: Record<School, string> = {
   air: "Воздух",
 };
 
-export const SCHOOL_COLOR: Record<School, number> = {
+export const ASPECT_COLOR: Record<Aspect, number> = {
   ice: 0x7ec8e8,
   fire: 0xff7a3d,
   iron: 0xc9b896,
@@ -39,7 +39,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   ice_arrow: {
     id: "ice_arrow",
     name: "Ледяная стрела",
-    school: "ice",
+    aspect: "ice",
     glyph: "❄",
     cooldown: 4.5,
     damage: 38,
@@ -52,7 +52,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   ice_shield: {
     id: "ice_shield",
     name: "Ледяной щит",
-    school: "ice",
+    aspect: "ice",
     glyph: "🛡",
     cooldown: 7,
     damage: 0,
@@ -65,7 +65,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   fireball: {
     id: "fireball",
     name: "Огненный шар",
-    school: "fire",
+    aspect: "fire",
     glyph: "🔥",
     cooldown: 5.5,
     damage: 42,
@@ -78,7 +78,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   flame_cone: {
     id: "flame_cone",
     name: "Дыхание дракона",
-    school: "fire",
+    aspect: "fire",
     glyph: "🌋",
     cooldown: 6.5,
     damage: 40,
@@ -91,7 +91,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   stun_strike: {
     id: "stun_strike",
     name: "Бросок молота",
-    school: "light",
+    aspect: "light",
     glyph: "⚔",
     cooldown: 5,
     damage: 45,
@@ -104,7 +104,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   titan_might: {
     id: "titan_might",
     name: "Мощь титана",
-    school: "iron",
+    aspect: "iron",
     glyph: "📢",
     cooldown: 8,
     damage: 0,
@@ -117,7 +117,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   sever_artery: {
     id: "sever_artery",
     name: "Вскрыть артерию",
-    school: "stealth",
+    aspect: "stealth",
     glyph: "🗡",
     cooldown: 4,
     damage: 18,
@@ -130,7 +130,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   shadow_strike: {
     id: "shadow_strike",
     name: "Теневой удар",
-    school: "stealth",
+    aspect: "stealth",
     glyph: "👤",
     cooldown: 7.5,
     damage: 55,
@@ -143,7 +143,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   wind_gust: {
     id: "wind_gust",
     name: "Порыв ветра",
-    school: "air",
+    aspect: "air",
     glyph: "🌬",
     cooldown: 6,
     damage: 44,
@@ -156,7 +156,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   wind_speed: {
     id: "wind_speed",
     name: "Скорость ветра",
-    school: "air",
+    aspect: "air",
     glyph: "🍃",
     cooldown: 7,
     damage: 0,
@@ -169,7 +169,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   squall: {
     id: "squall",
     name: "Шквал",
-    school: "air",
+    aspect: "air",
     glyph: "💨",
     cooldown: 7.5,
     damage: 34,
@@ -182,7 +182,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   tornado: {
     id: "tornado",
     name: "Смерч",
-    school: "air",
+    aspect: "air",
     glyph: "🌪",
     cooldown: 11,
     damage: 10,
@@ -195,7 +195,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   dark_arrow: {
     id: "dark_arrow",
     name: "Стрела тьмы",
-    school: "stealth",
+    aspect: "stealth",
     glyph: "🏹",
     cooldown: 8,
     damage: 44,

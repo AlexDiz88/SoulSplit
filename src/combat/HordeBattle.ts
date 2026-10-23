@@ -1,10 +1,10 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
-import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitions";
+import { ABILITIES, ALL_ABILITY_IDS, ASPECT_COLOR } from "../abilities/definitions";
 import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import { createStarterWeapon } from "../items/generate";
-import type { AbilityDef, AbilityId, GridPos, School, WeaponKind } from "../types";
+import type { AbilityDef, AbilityId, GridPos, Aspect, WeaponKind } from "../types";
 import {
   abilityCooldown,
   abilityPacketDamage,
@@ -425,7 +425,7 @@ export class HordeBattle {
       name: "Айра",
       short: "АЙР",
       team: "player",
-      school: "air",
+      aspect: "air",
       pos: { col: 1, row: 0 },
       stats: {
         maxHp: 2000,
@@ -454,7 +454,7 @@ export class HordeBattle {
         name: kind.name,
         short: kind.short,
         team: "enemy",
-        school: kind.school,
+        aspect: kind.aspect,
         pos: { col: spawn.col, row: spawn.row },
         stats: {
           maxHp: kind.hp,
@@ -802,7 +802,7 @@ export class HordeBattle {
   private async resolveAbility(def: AbilityDef, clicked: Unit | null, cell: GridPos | null): Promise<void> {
     const caster = this.hero;
     const from = { x: this.heroAnchor.x, y: this.heroAnchor.y };
-    caster.flash(SCHOOL_COLOR[def.school]);
+    caster.flash(ASPECT_COLOR[def.aspect]);
 
     switch (def.id) {
       case "ice_arrow": {
@@ -836,7 +836,7 @@ export class HordeBattle {
         if (!aim) return;
         const to = this.cellCenter(aim);
         const burnDur = def.effects?.burnDuration ?? 4;
-        const burnPot = this.scaleDotPotency(caster, def.school, def.effects?.burnPerSec ?? 8);
+        const burnPot = this.scaleDotPotency(caster, def.aspect, def.effects?.burnPerSec ?? 8);
         await this.vfx.fireball(from, to, [to], () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
@@ -896,7 +896,7 @@ export class HordeBattle {
         if (!clicked || !clicked.alive) return;
         // Мгновенно: урон и кровотечение в кадр каста, VFX только визуал.
         const bleedDur = def.effects?.bleedDuration ?? 5;
-        const bleedPot = this.scaleDotPotency(caster, def.school, def.effects?.bleedPerSec ?? 12);
+        const bleedPot = this.scaleDotPotency(caster, def.aspect, def.effects?.bleedPerSec ?? 12);
         this.dealAbilityDamage(caster, clicked, def.damage, def);
         clicked.addStatus({ id: "bleed", kind: "bleed", remaining: bleedDur, potency: bleedPot });
         this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
@@ -926,7 +926,7 @@ export class HordeBattle {
         const aim = { ...clicked.pos };
         const target = clicked;
         const to = this.cellCenter(aim);
-        await this.vfx.projectile(from, to, SCHOOL_COLOR.air, {
+        await this.vfx.projectile(from, to, ASPECT_COLOR.air, {
           size: 12,
           trail: true,
           arc: 18,
@@ -942,7 +942,7 @@ export class HordeBattle {
         break;
       }
       case "wind_speed": {
-        await this.vfx.ring(caster.center.x, caster.center.y, SCHOOL_COLOR.air, caster.cardSize * 0.7, 0.4);
+        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 0.7, 0.4);
         const hasteMult = def.effects?.hasteIntervalMult ?? 0.75;
         const hasteDur = def.effects?.hasteDuration ?? 5;
         caster.addStatus({ id: "haste", kind: "haste", remaining: hasteDur, potency: hasteMult });
@@ -954,9 +954,9 @@ export class HordeBattle {
         if (!aim) return;
         const hits = squallCells(aim);
         const centers = hits.map((pos) => this.cellCenter(pos));
-        await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, SCHOOL_COLOR.air, CELL * 0.55, 0.28);
+        await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.air, CELL * 0.55, 0.28);
         for (const c of centers) {
-          void this.vfx.ring(c.x, c.y, SCHOOL_COLOR.air, CELL * 0.42, 0.35);
+          void this.vfx.ring(c.x, c.y, ASPECT_COLOR.air, CELL * 0.42, 0.35);
         }
         for (const pos of hits) {
           const u = this.unitAtCell(pos);
@@ -969,7 +969,7 @@ export class HordeBattle {
         const aim = this.aimCell(cell, clicked);
         if (!aim) return;
         this.spawnTornado(aim, def);
-        await this.vfx.ring(this.cellCenter(aim).x, this.cellCenter(aim).y, SCHOOL_COLOR.air, CELL * 0.55, 0.4);
+        await this.vfx.ring(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.air, CELL * 0.55, 0.4);
         break;
       }
       default:
@@ -1147,19 +1147,19 @@ export class HordeBattle {
     if (cost > 0) this.hero.mana = Math.max(0, this.hero.mana - cost);
   }
 
-  /** Урон/DoT-пакет способности с плоским ability% + school%. */
-  private scaleAbilityPacket(attacker: Unit, school: School, base: number): { dmg: number; crit: boolean } {
+  /** Урон/DoT-пакет способности с плоским ability% + aspect%. */
+  private scaleAbilityPacket(attacker: Unit, aspect: Aspect, base: number): { dmg: number; crit: boolean } {
     if (!attacker.sheet) {
       return { dmg: Math.round(base * attacker.atkMultiplier()), crit: false };
     }
     const crit = rollCrit(attacker.sheet);
-    const dmg = abilityPacketDamage(base, attacker.sheet, school, attacker.atkMultiplier(), crit);
+    const dmg = abilityPacketDamage(base, attacker.sheet, aspect, attacker.atkMultiplier(), crit);
     return { dmg, crit };
   }
 
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number, def?: AbilityDef): void {
-    const school = def?.school ?? attacker.school;
-    const { dmg, crit } = this.scaleAbilityPacket(attacker, school, base);
+    const aspect = def?.aspect ?? attacker.aspect;
+    const { dmg, crit } = this.scaleAbilityPacket(attacker, aspect, base);
     const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "magical" });
     target.flash(0xffffff);
     if (evaded) {
@@ -1175,10 +1175,10 @@ export class HordeBattle {
     else if (def?.effects?.interruptsCast) this.interruptUnitCast(target);
   }
 
-  /** DoT potency (урон/сек): плоский ability% + school%, без крита на наложении. */
-  private scaleDotPotency(attacker: Unit, school: School, perSec: number): number {
+  /** DoT potency (урон/сек): плоский ability% + aspect%, без крита на наложении. */
+  private scaleDotPotency(attacker: Unit, aspect: Aspect, perSec: number): number {
     if (!attacker.sheet) return Math.round(perSec * attacker.atkMultiplier());
-    return abilityPacketDamage(perSec, attacker.sheet, school, attacker.atkMultiplier(), false);
+    return abilityPacketDamage(perSec, attacker.sheet, aspect, attacker.atkMultiplier(), false);
   }
 
   private livingEnemies(): Unit[] {

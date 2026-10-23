@@ -1,6 +1,6 @@
-import { SCHOOL_LABEL } from "../abilities/definitions";
-import type { School } from "../types";
-import { schoolDamageStat, type AffixFamily, type StatId } from "../stats/statIds";
+import { ASPECT_LABEL } from "../abilities/definitions";
+import type { Aspect } from "../types";
+import { aspectDamageStat, type AffixFamily, type StatId } from "../stats/statIds";
 import type { AffixDef, AffixTierRange } from "./types";
 
 function tiers(scales: [number, number, number][]): AffixTierRange[] {
@@ -128,15 +128,15 @@ const CORE: AffixDef[] = [
   ]),
 ];
 
-const SCHOOLS: School[] = ["ice", "fire", "iron", "stealth", "light", "air"];
+const ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
 
-function schoolAffixes(): AffixDef[] {
-  return SCHOOLS.map((school) =>
+function aspectAffixes(): AffixDef[] {
+  return ASPECTS.map((aspect) =>
     affix(
-      `school_dmg_${school}`,
-      schoolDamageStat(school),
-      "school",
-      `+% урона аспекта (${SCHOOL_LABEL[school]})`,
+      `aspect_dmg_${aspect}`,
+      aspectDamageStat(aspect),
+      "aspect",
+      `+% урона аспекта (${ASPECT_LABEL[aspect]})`,
       [
         [1, 4, 8],
         [10, 6, 12],
@@ -148,7 +148,7 @@ function schoolAffixes(): AffixDef[] {
   );
 }
 
-export const AFFIX_CATALOG: AffixDef[] = [...CORE, ...schoolAffixes()];
+export const AFFIX_CATALOG: AffixDef[] = [...CORE, ...aspectAffixes()];
 
 export const AFFIX_BY_ID: Record<string, AffixDef> = Object.fromEntries(
   AFFIX_CATALOG.map((a) => [a.id, a]),

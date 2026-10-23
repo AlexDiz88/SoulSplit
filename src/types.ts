@@ -1,6 +1,6 @@
 export type Team = "player" | "enemy";
 
-export type School = "ice" | "fire" | "iron" | "stealth" | "light" | "air";
+export type Aspect = "ice" | "fire" | "iron" | "stealth" | "light" | "air";
 
 export type AbilityId =
   | "ice_arrow"
@@ -77,7 +77,7 @@ export interface AbilityEffects {
 export interface AbilityDef {
   id: AbilityId;
   name: string;
-  school: School;
+  aspect: Aspect;
   glyph: string;
   cooldown: number;
   damage: number;

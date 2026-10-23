@@ -75,8 +75,8 @@ A = (dcol −1, drow 0), B = (dcol +1, drow 0), `+` = (0, 0).
 id: ice-arrow
 icon: ice_arrow.png
 name: "Ледяная стрела"
-school: "Лёд"
-school_id: ice
+aspect: "Лёд"
+aspect_id: ice
 status: черновик
 ---
 

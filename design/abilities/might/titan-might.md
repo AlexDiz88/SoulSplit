@@ -1,9 +1,9 @@
-﻿---
+---
 id: titan-might
 icon: titan_might.png
 name: "Мощь титана"
-school: "Сила"
-school_id: might
+aspect: "Сила"
+aspect_id: might
 status: одобрено
 ---
 

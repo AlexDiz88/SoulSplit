@@ -14,8 +14,8 @@ export interface AbilityZone {
 export interface AbilityCard {
   id: string;
   name: string;
-  school: string;
-  schoolId: string;
+  aspect: string;
+  aspectId: string;
   status: string;
   icon: string;
   description: string;
@@ -41,14 +41,14 @@ export function presentAbilityCard(card: AbilityCard): AbilityCard {
   };
 }
 
-export interface GrimoireSchool {
+export interface GrimoireAspect {
   id: string;
   name: string;
   color: string;
 }
 
 /** Канон генератора. Цвета только для гримуара. */
-export const GRIMOIRE_SCHOOLS: GrimoireSchool[] = [
+export const GRIMOIRE_ASPECTS: GrimoireAspect[] = [
   { id: "alchemy", name: "Алхимия", color: "#8aaa55" },
   { id: "arcane", name: "Аркан", color: "#c45ad4" },
   { id: "air", name: "Воздух", color: "#d5dde6" },
@@ -190,8 +190,8 @@ function parseCard(path: string, raw: string): AbilityCard {
   return {
     id: front.id || fileId,
     name: front.name || fileId,
-    school: front.school || folder,
-    schoolId: front.school_id || folder,
+    aspect: front.aspect || folder,
+    aspectId: front.aspect_id || folder,
     status: front.status || "черновик",
     icon: front.icon || `${(front.id || fileId).replace(/-/g, "_")}.png`,
     description: text("Описание"),
@@ -222,9 +222,9 @@ export function loadAbilityCards(): AbilityCard[] {
   return cards;
 }
 
-export function cardsInSchool(schoolId: string): AbilityCard[] {
+export function cardsInAspect(aspectId: string): AbilityCard[] {
   return loadAbilityCards()
-    .filter((card) => card.schoolId === schoolId)
+    .filter((card) => card.aspectId === aspectId)
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
 }
 

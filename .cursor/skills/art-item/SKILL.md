@@ -16,7 +16,7 @@ disable-model-invocation: true
 
 User wants Gemini prompts for **inventory item icons** (weapons, armor, jewelry,
 trinkets). Visual language: hard toon, fine dark lines, **hairline** white sticker
-outline, flat dark backdrop - same family as ability icons / portraits.
+outline, flat solid backdrop **exactly `#151617`** (locked - never random).
 
 This is a **loot ARPG** - many items. Prefer **batch sheets** that invent many
 distinct pieces for one slot + rarity, not one-off one-item prompts, unless the
@@ -118,7 +118,9 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 - Default **3x3 contact sheet**; even gutters; no labels, numbers, captions.
 - Item fully inside each panel with a small safe margin.
 - White sticker outline must be **hairline** (see Style Lock) - never chunky.
-- Flat solid dark backdrop (inventory icon - no scene).
+- Flat solid backdrop **exactly `#151617`** on every panel and the sheet
+  (inventory icon - no scene). Never invent another gray/brown/blue/green tint.
+  Gutters: same `#151617` or solid `#0A0B0C` only - no random gutter colors.
 - No characters, faces, hands holding the item as a figure, no mannequins, no UI.
 - **Fantasy-first:** classic / dark fantasy game loot. Not historical museum
   medieval, not steampunk-first. Brass gears / tech accents only if the user's

@@ -1,6 +1,6 @@
-import { abilityIconUrl, cardsInSchool, GRIMOIRE_SCHOOLS, type AbilityCard, type AbilityZone } from "../abilities/catalog";
+import { abilityIconUrl, cardsInAspect, GRIMOIRE_ASPECTS, type AbilityCard, type AbilityZone } from "../abilities/catalog";
 
-type PhoneView = "schools" | "list" | "detail";
+type PhoneView = "aspects" | "list" | "detail";
 
 export interface GrimoireApi {
   isOpen(): boolean;
@@ -17,30 +17,30 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
   const title = document.getElementById("grimoire-title")!;
   const backBtn = document.getElementById("grimoire-back")!;
   const closeBtn = document.getElementById("grimoire-close")!;
-  const schoolList = document.getElementById("grimoire-schools")!;
+  const aspectList = document.getElementById("grimoire-aspects")!;
   const abilityList = document.getElementById("grimoire-list")!;
   const detail = document.getElementById("grimoire-detail")!;
 
-  let schoolId = GRIMOIRE_SCHOOLS.find((school) => cardsInSchool(school.id).length > 0)?.id ?? GRIMOIRE_SCHOOLS[0]!.id;
+  let aspectId = GRIMOIRE_ASPECTS.find((aspect) => cardsInAspect(aspect.id).length > 0)?.id ?? GRIMOIRE_ASPECTS[0]!.id;
   let cardId: string | null = null;
-  let view: PhoneView = "schools";
+  let view: PhoneView = "aspects";
 
-  const schoolById = (id: string) => GRIMOIRE_SCHOOLS.find((school) => school.id === id) ?? GRIMOIRE_SCHOOLS[0]!;
+  const aspectById = (id: string) => GRIMOIRE_ASPECTS.find((aspect) => aspect.id === id) ?? GRIMOIRE_ASPECTS[0]!;
 
   const syncChrome = (): void => {
     const phone = PORTRAIT.matches;
     windowEl.dataset.phoneView = view;
-    const school = schoolById(schoolId);
-    const card = cardsInSchool(schoolId).find((item) => item.id === cardId) ?? null;
-    backBtn.hidden = !phone || view === "schools";
-    if (!phone || view === "schools") title.textContent = "Гримуар";
-    else if (view === "list") title.textContent = school.name;
-    else title.textContent = card?.name ?? school.name;
+    const aspect = aspectById(aspectId);
+    const card = cardsInAspect(aspectId).find((item) => item.id === cardId) ?? null;
+    backBtn.hidden = !phone || view === "aspects";
+    if (!phone || view === "aspects") title.textContent = "Гримуар";
+    else if (view === "list") title.textContent = aspect.name;
+    else title.textContent = card?.name ?? aspect.name;
   };
 
   const renderDetail = (card: AbilityCard | null): void => {
     detail.replaceChildren();
-    detail.style.removeProperty("--school");
+    detail.style.removeProperty("--aspect");
     if (!card) {
       const empty = document.createElement("p");
       empty.className = "grimoire-empty";
@@ -48,8 +48,8 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       detail.append(empty);
       return;
     }
-    const school = schoolById(card.schoolId);
-    detail.style.setProperty("--school", school.color);
+    const aspect = aspectById(card.aspectId);
+    detail.style.setProperty("--aspect", aspect.color);
 
     const head = document.createElement("div");
     head.className = "grimoire-detail-head";
@@ -64,7 +64,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     iconId.textContent = card.icon;
     const meta = document.createElement("p");
     meta.className = "grimoire-kicker";
-    meta.textContent = card.school;
+    meta.textContent = card.aspect;
     heading.append(name, iconId, meta);
     head.append(img, heading);
 
@@ -94,7 +94,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
 
   const renderAbilities = (): void => {
     abilityList.replaceChildren();
-    const cards = cardsInSchool(schoolId);
+    const cards = cardsInAspect(aspectId);
     if (!cards.length) {
       cardId = null;
       const empty = document.createElement("p");
@@ -137,35 +137,35 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     renderDetail(cards.find((card) => card.id === cardId) ?? null);
   };
 
-  const renderSchools = (): void => {
-    schoolList.replaceChildren();
-    for (const school of GRIMOIRE_SCHOOLS) {
-      const count = cardsInSchool(school.id).length;
+  const renderAspects = (): void => {
+    aspectList.replaceChildren();
+    for (const aspect of GRIMOIRE_ASPECTS) {
+      const count = cardsInAspect(aspect.id).length;
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "grimoire-school";
-      btn.classList.toggle("active", school.id === schoolId);
-      btn.style.setProperty("--school", school.color);
+      btn.className = "grimoire-aspect";
+      btn.classList.toggle("active", aspect.id === aspectId);
+      btn.style.setProperty("--aspect", aspect.color);
       const name = document.createElement("span");
-      name.textContent = school.name;
+      name.textContent = aspect.name;
       const badge = document.createElement("b");
       badge.textContent = String(count);
       btn.append(name, badge);
       btn.addEventListener("click", () => {
-        schoolId = school.id;
+        aspectId = aspect.id;
         cardId = null;
         view = "list";
-        renderSchools();
+        renderAspects();
         renderAbilities();
         syncChrome();
       });
-      schoolList.append(btn);
+      aspectList.append(btn);
     }
   };
 
   const open = (): void => {
-    view = PORTRAIT.matches ? "schools" : "list";
-    renderSchools();
+    view = PORTRAIT.matches ? "aspects" : "list";
+    renderAspects();
     renderAbilities();
     syncChrome();
     root.hidden = false;
@@ -173,7 +173,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
 
   backBtn.addEventListener("click", () => {
     if (view === "detail") view = "list";
-    else view = "schools";
+    else view = "aspects";
     syncChrome();
   });
   closeBtn.addEventListener("click", () => {
@@ -199,9 +199,9 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       root.hidden = true;
     },
     back: () => {
-      if (root.hidden || !PORTRAIT.matches || view === "schools") return false;
+      if (root.hidden || !PORTRAIT.matches || view === "aspects") return false;
       if (view === "detail") view = "list";
-      else view = "schools";
+      else view = "aspects";
       syncChrome();
       return true;
     },

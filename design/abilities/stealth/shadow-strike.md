@@ -1,9 +1,9 @@
-﻿---
+---
 id: shadow-strike
 icon: shadow_strike.png
 name: "Теневой удар"
-school: "Скрытность"
-school_id: stealth
+aspect: "Скрытность"
+aspect_id: stealth
 status: одобрено
 ---
 

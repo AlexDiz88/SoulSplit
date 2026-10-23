@@ -1,9 +1,9 @@
-﻿---
+---
 id: dark-arrow
 icon: dark_arrow.png
 name: "Стрела тьмы"
-school: "враги"
-school_id: enemies
+aspect: "враги"
+aspect_id: enemies
 status: черновик
 ---
 

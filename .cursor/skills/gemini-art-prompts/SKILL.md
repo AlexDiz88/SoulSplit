@@ -77,7 +77,7 @@ For hero `portrait` use the same rendering language, but framing may be bust/che
 ### Ability icon Style Lock (KEEP — same visual language as unit portraits: hard toon + thin white sticker outline)
 
 ```
-Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines PLUS a THIN even WHITE sticker outer outline around the silhouette (hairline/fine ~2–3px relative to panel, NEVER thick chunky white border), single centered magical symbol/effect, RICH school-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
+Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines PLUS a THIN even WHITE sticker outer outline around the silhouette (hairline/fine ~2–3px relative to panel, NEVER thick chunky white border), single centered magical symbol/effect, RICH aspect-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
 ```
 
 **Ability icon defaults (LOCKED):** always **3×3 contact sheet**; always the Style Lock above; same ability concept × 9 composition variants; **no gears / brass / steampunk props**.
@@ -133,7 +133,7 @@ Layout: single square image, clean 2x2 contact sheet of FOUR equal panels with t
 ### portrait (heroes)
 
 ```
-Framing per panel: bust/chest-up hero portrait, shoulders visible, head large in frame, simplified stylized thematic or dark graphic backdrop (secondary), school-colored rim light (bright but not neon).
+Framing per panel: bust/chest-up hero portrait, shoulders visible, head large in frame, simplified stylized thematic or dark graphic backdrop (secondary), aspect-colored rim light (bright but not neon).
 ```
 
 ### unit_card / enemies / bestiary (LOCKED framing)
@@ -193,7 +193,7 @@ Setting: medieval fantasy dark-magic game world; pure magical effect only — no
 
 {ability_icon Framing}
 
-Subject / theme: {one ability name/concept} — same spell/effect in every panel; school-accent colors; pure magic silhouette.
+Subject / theme: {one ability name/concept} — same spell/effect in every panel; aspect-accent colors; pure magic silhouette.
 
 {Ability Diversity lock}
 

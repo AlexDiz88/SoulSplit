@@ -1,10 +1,10 @@
-import type { School } from "../types";
+import type { Aspect } from "../types";
 import {
   CRIT_DAMAGE_BASE,
   OFFENSE_AMP_CAP,
   STAT_CAPS,
-  isSchoolDamageStat,
-  schoolDamageStat,
+  isAspectDamageStat,
+  aspectDamageStat,
   type StatId,
 } from "./statIds";
 
@@ -47,13 +47,13 @@ export function emptySheet(): HeroStatSheet {
   const sheet = {} as HeroStatSheet;
   for (const id of FLAT_ZERO) sheet[id] = 0;
   sheet.critDamage = 0;
-  for (const school of SCHOOLS) {
-    sheet[schoolDamageStat(school)] = 0;
+  for (const aspect of ASPECTS) {
+    sheet[aspectDamageStat(aspect)] = 0;
   }
   return sheet;
 }
 
-const SCHOOLS: School[] = ["ice", "fire", "iron", "stealth", "light", "air"];
+const ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
 
 export function addToSheet(target: HeroStatSheet, delta: Partial<Record<StatId, number>>): void {
   for (const [key, value] of Object.entries(delta)) {
@@ -75,8 +75,8 @@ export function applyStatCaps(sheet: HeroStatSheet): HeroStatSheet {
     const id = key as StatId;
     if (sheet[id] > cap) sheet[id] = cap;
   }
-  for (const school of SCHOOLS) {
-    const id = schoolDamageStat(school);
+  for (const aspect of ASPECTS) {
+    const id = aspectDamageStat(aspect);
     if (sheet[id] > OFFENSE_AMP_CAP) sheet[id] = OFFENSE_AMP_CAP;
   }
   return sheet;
@@ -86,20 +86,20 @@ export function getStat(sheet: HeroStatSheet, id: StatId): number {
   return sheet[id] ?? 0;
 }
 
-export function schoolDamageOf(sheet: HeroStatSheet, school: School): number {
-  return getStat(sheet, schoolDamageStat(school));
+export function aspectDamageOf(sheet: HeroStatSheet, aspect: Aspect): number {
+  return getStat(sheet, aspectDamageStat(aspect));
 }
 
 /** Сумма amp к пакету способности с капом 100%. */
-export function abilityAmpPercent(sheet: HeroStatSheet, school: School): number {
-  const raw = getStat(sheet, "abilityDamage") + schoolDamageOf(sheet, school);
+export function abilityAmpPercent(sheet: HeroStatSheet, aspect: Aspect): number {
+  const raw = getStat(sheet, "abilityDamage") + aspectDamageOf(sheet, aspect);
   return Math.min(raw, OFFENSE_AMP_CAP);
 }
 
 export function sheetStatEntries(sheet: HeroStatSheet): [StatId, number][] {
   return (Object.entries(sheet) as [StatId, number][]).filter(([id, v]) => {
     if (v === 0) return false;
-    if (isSchoolDamageStat(id)) return v !== 0;
+    if (isAspectDamageStat(id)) return v !== 0;
     return true;
   });
 }

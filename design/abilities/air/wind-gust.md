@@ -1,9 +1,9 @@
-﻿---
+---
 id: wind-gust
 icon: wind_gust.png
 name: "Порыв ветра"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: одобрено
 ---
 

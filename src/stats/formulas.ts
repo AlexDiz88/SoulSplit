@@ -1,4 +1,4 @@
-import type { School } from "../types";
+import type { Aspect } from "../types";
 import { abilityAmpPercent, getStat, type HeroStatSheet } from "./sheet";
 import { CHANCE_CAP, CRIT_DAMAGE_BASE } from "./statIds";
 
@@ -54,11 +54,11 @@ export function autoAttackDamage(
 export function abilityPacketDamage(
   basePacket: number,
   sheet: HeroStatSheet,
-  school: School,
+  aspect: Aspect,
   atkBuffMult: number,
   crit: boolean,
 ): number {
-  const amp = abilityAmpPercent(sheet, school);
+  const amp = abilityAmpPercent(sheet, aspect);
   let dmg = basePacket * (1 + amp / 100) * atkBuffMult;
   if (crit) dmg *= critMultiplier(sheet);
   return Math.max(0, Math.round(dmg));

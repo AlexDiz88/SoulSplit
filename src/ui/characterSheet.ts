@@ -1,9 +1,9 @@
-import { SCHOOL_LABEL } from "../abilities/definitions";
+import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
 import type { EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
-import { getStat, schoolDamageOf } from "../stats/sheet";
+import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
 import "./characterSheet.css";
 
@@ -232,7 +232,7 @@ function renderIdentity(hero: Unit | null): HTMLElement {
   const copy = el("div", "cs-identity-copy");
   copy.append(
     el("h3", "cs-identity-name", hero?.name ?? "Герой"),
-    el("div", "cs-identity-meta", hero ? `Аспект: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
+    el("div", "cs-identity-meta", hero ? `Аспект: ${ASPECT_LABEL[hero.aspect]}` : "Нет данных"),
     el("div", "cs-identity-level", "Уровень 1"),
   );
   plate.append(portrait, copy);
@@ -280,8 +280,8 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
     el("div", "cs-tip-name", item.name),
     el("div", "cs-tip-meta", `${RARITY_LABEL[item.rarity]} · ур. ${item.itemLevel}`),
   ];
-  if (item.schoolTag) {
-    nodes.push(el("div", "cs-tip-meta", `Аспект: ${SCHOOL_LABEL[item.schoolTag]}`));
+  if (item.aspectTag) {
+    nodes.push(el("div", "cs-tip-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
   }
   if (item.weapon) {
     nodes.push(
@@ -322,10 +322,10 @@ function renderStats(hero: Unit | null): HTMLElement[] {
       ? String(s.atk)
       : "-";
 
-  const schoolRows: [string, string][] = [];
+  const aspectRows: [string, string][] = [];
   if (sheet && hero) {
-    const dmg = schoolDamageOf(sheet, hero.school);
-    if (dmg > 0) schoolRows.push([`Урон аспекта (${SCHOOL_LABEL[hero.school]})`, `${dmg}%`]);
+    const dmg = aspectDamageOf(sheet, hero.aspect);
+    if (dmg > 0) aspectRows.push([`Урон аспекта (${ASPECT_LABEL[hero.aspect]})`, `${dmg}%`]);
   }
 
   return [
@@ -352,7 +352,7 @@ function renderStats(hero: Unit | null): HTMLElement[] {
       ["Скорость каста", pct(sheet, "castSpeed")],
       ["Перезарядка", pct(sheet, "cooldownReduction")],
       ["Снижение стоимости маны", pct(sheet, "manaCostReduction")],
-      ...schoolRows,
+      ...aspectRows,
     ]),
   ];
 }

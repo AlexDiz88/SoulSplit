@@ -149,13 +149,67 @@
   padding-bottom: 10px;
 }
 
-.igen-tab-panel[data-panel="slots"] .igen-section {
-  flex-shrink: 0;
+.igen-tab-panel[data-panel="slots"] .igen-section-slots {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.igen-tab-panel[data-panel="slots"] .igen-table-scroll {
-  max-height: none;
-  overflow: visible;
+.igen-slot-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  padding-bottom: 8px;
+  align-content: start;
+}
+
+.igen-slot-card {
+  border: 1px solid rgba(120, 130, 110, 0.28);
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  background: rgba(14, 18, 14, 0.7);
+}
+
+.igen-slot-card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(120, 130, 110, 0.22);
+}
+
+.igen-slot-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f0e2b0;
+}
+
+.igen-slot-card-aspect {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #8a9280;
+  white-space: nowrap;
+}
+
+.igen-slot-block {
+  margin-top: 8px;
+}
+
+.igen-slot-block-label {
+  margin-bottom: 3px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #c4b896;
 }
 
 .igen-controls {
@@ -385,6 +439,12 @@
 
 .igen-bullets li {
   margin-bottom: 4px;
+}
+
+@media (max-width: 900px) {
+  .igen-slot-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 720px) {

@@ -1,13 +1,13 @@
 import { GRID_SIZE } from "../abilities/shapes";
 import { PORTRAIT_URLS } from "../art/portraits";
-import type { AbilityId, School, WeaponKind } from "../types";
+import type { AbilityId, Aspect, WeaponKind } from "../types";
 
 export interface EnemyKind {
   id: string;
   name: string;
   short: string;
   role: string;
-  school: School;
+  aspect: Aspect;
   weapon: WeaponKind;
   /** Дистанция в рядах: 1 — ближний ряд у героя. */
   reach: number;
@@ -27,7 +27,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     name: "Гоблин-копейщик",
     short: "ГБЛ",
     role: "Копьё",
-    school: "iron",
+    aspect: "iron",
     weapon: "spear",
     reach: 2,
     spawnRows: [1, 2],
@@ -41,7 +41,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     name: "Скелет-защитник",
     short: "СКЗ",
     role: "Защитник",
-    school: "iron",
+    aspect: "iron",
     weapon: "melee",
     reach: 1,
     spawnRows: [1],
@@ -55,7 +55,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     name: "Охотница",
     short: "ОХТ",
     role: "Лук",
-    school: "stealth",
+    aspect: "stealth",
     weapon: "bow",
     reach: 3,
     spawnRows: [2, 3],
@@ -69,7 +69,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     name: "Скелет-маг",
     short: "СКМ",
     role: "Жезл",
-    school: "stealth",
+    aspect: "stealth",
     weapon: "staff",
     reach: 4,
     spawnRows: [3, 4],

@@ -11,7 +11,7 @@ import {
   rollEvasion,
   type DamageChannel,
 } from "../stats/formulas";
-import type { AbilityId, GridPos, School, StatusEffect, Team, UnitStats } from "../types";
+import type { AbilityId, GridPos, Aspect, StatusEffect, Team, UnitStats } from "../types";
 
 export interface UnitCast {
   id: AbilityId;
@@ -30,7 +30,7 @@ export interface UnitInit {
   short: string;
   team: Team;
   pos: GridPos;
-  school: School;
+  aspect: Aspect;
   stats: UnitStats;
   abilities: AbilityId[];
   /** URL портрета (после Assets.load) */
@@ -49,7 +49,7 @@ export class Unit {
   readonly name: string;
   readonly short: string;
   readonly team: Team;
-  readonly school: School;
+  readonly aspect: Aspect;
   readonly abilities: AbilityId[];
   readonly stats: UnitStats;
   readonly portraitUrl: string | null;
@@ -91,7 +91,7 @@ export class Unit {
     this.name = init.name;
     this.short = init.short;
     this.team = init.team;
-    this.school = init.school;
+    this.aspect = init.aspect;
     this.abilities = init.abilities;
     this.stats = init.stats;
     this.portraitUrl = init.portraitUrl ?? null;

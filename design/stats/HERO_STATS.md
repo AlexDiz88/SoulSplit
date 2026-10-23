@@ -16,7 +16,7 @@
 |---|---|
 | physDamageReduction%, magicResist%, evasion%, blockChance%, parryChance%, critChance% | 75% |
 | attackSpeed%, castSpeed%, cooldownReduction%, manaCostReduction% | 75% |
-| abilityDamage% + schoolDamage%[school] (сумма к одному пакету) | 100% |
+| abilityDamage% + aspectDamage%[aspect] (сумма к одному пакету) | 100% |
 | critDamage% (итог, база 150%) | 250% |
 
 Все одинаковые % складываются плоско, затем режутся капом.
@@ -43,7 +43,7 @@ finalCd = weaponBaseCd * (1 - min(attackSpeed%, 75) / 100) * statusAutoCdMult
 ### Способность (каждый пакет урона, включая DoT)
 
 ```
-amp = min(abilityDamage% + schoolDamage%[ability.school], 100)
+amp = min(abilityDamage% + aspectDamage%[ability.aspect], 100)
 packet = basePacket * (1 + amp / 100) * atkBuffMultiplier
 если crit: packet *= critDamage% / 100
 ```
@@ -76,7 +76,7 @@ cost      = baseCost * (1 - min(manaCostReduction%, 75) / 100)
 - weaponAttackBonus
 - attackSpeed%, castSpeed%, cooldownReduction%
 - abilityDamage%
-- schoolDamage%[school]
+- aspectDamage%[aspect]
 - critChance%, critDamage%
 - physDamageReduction%, magicResist%, evasion%
 - blockChance%, parryChance% (аффиксы есть, бой позже)
@@ -103,19 +103,19 @@ Legendary / set - вне генератора v1.
 
 ### Слот → семьи аффиксов
 
-Каждый слот допускает только свой набор семей (offense / defense / resource / tempo / school). Пример:
+Каждый слот допускает только свой набор семей (offense / defense / resource / tempo / aspect). Пример:
 
 - hands: tempo (attackSpeed), defense light, resource light; не offense damage
 - chest/legs: defense heavy; не weaponAttackBonus / abilityDamage
-- weapon slots: offense + tempo + school; не evasion
-- trinket: resource + school + light offense
+- weapon slots: offense + tempo + aspect; не evasion
+- trinket: resource + aspect + light offense
 
 Точные таблицы - в `src/items/slotRules.ts`.
 
 ### Аспектные предметы
 
 Только: `mainhand`, `offhand` (оружие), `trinket` (аксессуар).
-Дроп оружия с `schoolTag` из изученных аспектов героя имеет повышенный вес.
+Дроп оружия с `aspectTag` из изученных аспектов героя имеет повышенный вес.
 
 ### Prefix / suffix
 

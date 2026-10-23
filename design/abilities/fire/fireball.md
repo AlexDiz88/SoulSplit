@@ -1,9 +1,9 @@
-﻿---
+---
 id: fireball
 icon: fireball.png
 name: "Огненный шар"
-school: "Огонь"
-school_id: fire
+aspect: "Огонь"
+aspect_id: fire
 status: одобрено
 ---
 

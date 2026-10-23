@@ -1,4 +1,4 @@
-import type { School, WeaponKind } from "../types";
+import type { Aspect, WeaponKind } from "../types";
 import type { AffixFamily, StatId } from "../stats/statIds";
 import type { EquipSlotId } from "./slots";
 
@@ -51,7 +51,7 @@ export interface ItemDef {
   itemLevel: number;
   affixes: RolledAffix[];
   /** Только оружие / аксессуар. */
-  schoolTag?: School;
+  aspectTag?: Aspect;
   weapon?: WeaponImplicit;
 }
 
@@ -59,10 +59,10 @@ export interface GenerateItemOptions {
   slot: EquipSlotId;
   rarity: ItemRarity;
   itemLevel: number;
-  /** Изученные аспекты героя - повышают вес schoolTag на оружии. */
-  learnedSchools?: School[];
+  /** Изученные аспекты героя - повышают вес aspectTag на оружии. */
+  learnedAspects?: Aspect[];
   /** Принудительный аспект (тесты / крафт). */
-  forceSchool?: School;
+  forceAspect?: Aspect;
   rng?: () => number;
   name?: string;
 }

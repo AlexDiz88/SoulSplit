@@ -1,9 +1,9 @@
-﻿---
+---
 id: squall
 icon: squall.png
 name: "Шквал"
-school: "Воздух"
-school_id: air
+aspect: "Воздух"
+aspect_id: air
 status: одобрено
 ---
 
