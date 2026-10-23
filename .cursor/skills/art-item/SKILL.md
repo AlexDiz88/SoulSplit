@@ -2,11 +2,11 @@
 name: art-item
 description: >-
   Writes ready-to-paste Gemini image prompts for Soul Split inventory item icons
-  (equipment loot) using the locked thin-white-sticker toon canon shared with
-  portraits and ability icons. Requires slot and rarity. Higher rarity means
-  more complex, unusual, detailed icons. Use when the user invokes art-item
-  (e.g. art-item голова, редкая), or asks for item / loot / equipment /
-  inventory icon prompts.
+  (equipment loot) using thin-white-sticker toon canon shared with portraits and
+  ability icons. Requires slot and rarity. Higher rarity means more complex,
+  unusual, detailed icons. Fantasy-first (not historical medieval / steampunk).
+  Use when the user invokes art-item (e.g. art-item голова, редкая), or asks for
+  item / loot / equipment / inventory icon prompts.
 disable-model-invocation: true
 ---
 
@@ -15,8 +15,8 @@ disable-model-invocation: true
 ## When to use
 
 User wants Gemini prompts for **inventory item icons** (weapons, armor, jewelry,
-trinkets). Same visual language as hero portraits / thin-sticker ability icons:
-hard toon, fine dark lines, thin white sticker outline, flat dark backdrop.
+trinkets). Visual language: hard toon, fine dark lines, **hairline** white sticker
+outline, flat dark backdrop - same family as ability icons / portraits.
 
 This is a **loot ARPG** - many items. Prefer **batch sheets** that invent many
 distinct pieces for one slot + rarity, not one-off one-item prompts, unless the
@@ -97,10 +97,10 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 
 1. Parse -> resolve `slot` + `rarity` (+ optional theme).
 2. Read [`assets/art/STYLE_BIBLE.md`](../../../assets/art/STYLE_BIBLE.md) for the
-   shared toon / thin-white-outline canon.
+   shared toon / hairline-white-outline canon (item icons section).
 3. Pick mode:
    - **Batch (DEFAULT):** no specific named item, or theme is a broad motif
-     ("bone", "frost", "brass cult") -> invent **9 different items**, all same
+     ("bone", "frost", "raven cult") -> invent **9 different items**, all same
      slot + same rarity.
    - **Named item:** user gave a clear unique item name -> **9 variations** of
      that one item (angle / wear / ornament intensity only).
@@ -116,24 +116,28 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 - **Reply with ONLY the prompt** - nothing else outside one code fence.
 - Always include Item Style Lock + Rarity Lock + negatives inside that prompt.
 - Default **3x3 contact sheet**; even gutters; no labels, numbers, captions.
-- Item fully inside each panel with a small safe margin; thin white sticker
-  outline stays thin (~2-3px relative to panel).
-- Flat solid dark backdrop (inventory icon, like ability icons - no scene).
+- Item fully inside each panel with a small safe margin.
+- White sticker outline must be **hairline** (see Style Lock) - never chunky.
+- Flat solid dark backdrop (inventory icon - no scene).
 - No characters, faces, hands holding the item as a figure, no mannequins, no UI.
-- Light fantasy + optional light steampunk materials OK on gear (brass rivets,
-  lenses as gem settings); **magic predominates** on magic+ rarities.
+- **Fantasy-first:** classic / dark fantasy game loot. Not historical museum
+  medieval, not steampunk-first. Brass gears / tech accents only if the user's
+  theme explicitly asks for them.
+- **Never name the game, project, or internal style docs** in the prompt
+  (no "Soul Split", no "Style Bible", no "our portraits"). Models do not know
+  the project - describe the look in plain English only.
 - Do not invent a competing stylization slant.
 
 ## Style Lock (always include)
 
 ```
-Style lock - ITEM ICON CANON (same rendering language as Soul Split portraits / thin-sticker ability icons): stylized 2D dark-fantasy game INVENTORY ITEM ICONS, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, not fat chunky strokes) PLUS a THIN even WHITE sticker outer outline around the item silhouette - hairline/fine weight roughly 2-3px relative to each panel, tight to the edge, NEVER a thick heavy white border - single centered readable item LARGE in frame, RICH clear local materials and strong contrast for ~64px inventory readability, flat solid dark backdrop (no scene, no environment) - entire item silhouette and thin white outline FULLY INSIDE each panel with a small safe margin - no photoreal, no 3D render, no soft anime shading without outlines, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Match thin white outline weight, fine dark line language, cel shading, and punch of the project portrait/ability-icon look; only the item designs change.
+Style lock - FANTASY INVENTORY ITEM ICONS: stylized 2D dark-fantasy game inventory item icons, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, thin not fat) PLUS a HAIRLINE even WHITE sticker outer outline around the item silhouette - ultra-thin fine weight roughly 1px relative to each panel (or thinner), tight to the edge, like a fine die-cut sticker edge - NEVER a thick heavy white border, NEVER a chunky marker stroke, NEVER a 3-6px fat outline - single centered readable item LARGE in frame, RICH clear local fantasy materials and strong contrast for ~64px inventory readability, flat solid dark backdrop (no scene, no environment) - entire item silhouette and hairline white outline FULLY INSIDE each panel with a small safe margin - no photoreal, no 3D render, no soft anime shading without outlines, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Only the item designs change.
 ```
 
 ## Setting (always weave in)
 
 ```
-Setting: medieval fantasy mixed with steampunk; magic and technology coexist, magic predominates; physical loot prop only - no full character.
+Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; magic predominates; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk/industrial tech as the default look.
 ```
 
 ## Layout Lock
@@ -145,7 +149,7 @@ Layout: single square image, clean 3x3 contact sheet of NINE equal panels with t
 ## Framing Lock
 
 ```
-Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 product view, THIN white sticker outline (fine ~2-3px, not chunky), hard toon-shaded materials, flat solid dark backdrop, no character, no hands, no mannequin, no text, no rarity frame.
+Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 product view, HAIRLINE white sticker outline (ultra-thin ~1px, never chunky), hard toon-shaded fantasy materials, flat solid dark backdrop, no character, no hands, no mannequin, no text, no rarity frame.
 ```
 
 ## Rarity -> complexity ladder (REQUIRED - bake into every prompt)
@@ -155,7 +159,7 @@ more complex, unusual, and detailed - still readable at ~64px (silhouette first)
 
 | Rarity | Complexity in the icon |
 |--------|------------------------|
-| `common` | Plain functional gear. Simple silhouette. Minimal ornament. Worn but ordinary materials (iron, leather, cloth). Almost no magic glow. |
+| `common` | Plain functional **fantasy** starter gear. Simple silhouette. Minimal ornament. Ordinary materials (iron, leather, cloth) with a light fantasy adventurer feel - not museum replicas. Almost no magic glow. |
 | `uncommon` | Slightly better craft. One modest accent (stitching, small gem, etched mark). Still mostly mundane. |
 | `magic` | Clear magical identity: runes, mild glow veins, enchanted gem, subtle aura wisps on the prop. Distinct from plain iron. |
 | `rare` | Richer materials and a memorable silhouette twist. Multiple readable details (inlays, crystals, carved relief). Strong magical motif, still clean. |
@@ -174,7 +178,7 @@ Rarity lock ({canonical} / {RU label}): {ladder sentence for that tier}. Every p
 ### Batch mode (DEFAULT - loot packing)
 
 ```
-Creative freedom (CRITICAL): YOU invent every item freely within the required equipment slot and rarity band - materials, silhouette twists, ornaments, damage/wear, magical motifs (if rarity allows), and color stories. On EVERY generation of this prompt, invent a brand-new set of items from scratch. Maximize novelty across panels and regenerations. Never recycle the same silhouette formula with only a recolor.
+Creative freedom (CRITICAL): YOU invent every item freely within the required equipment slot and rarity band - fantasy materials, silhouette twists, ornaments, damage/wear, magical motifs (if rarity allows), and color stories. Prefer classic fantasy game loot over historical armor catalogs. On EVERY generation of this prompt, invent a brand-new set of items from scratch. Maximize novelty across panels and regenerations. Never recycle the same silhouette formula with only a recolor.
 ```
 
 ```
@@ -217,7 +221,7 @@ Reply with **only** one prompt.
 ```
 {Item Style Lock}
 
-Setting: medieval fantasy mixed with steampunk; magic and technology coexist, magic predominates; physical loot prop only - no full character.
+Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; magic predominates; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk/industrial tech as the default look.
 
 {Layout Lock}
 
@@ -225,15 +229,15 @@ Setting: medieval fantasy mixed with steampunk; magic and technology coexist, ma
 
 {Rarity lock}
 
-Subject / theme: Soul Split inventory icons - equipment slot {canonical slot} ({RU label}); rarity {canonical} ({RU}); optional motif: {theme or "open fantasy loot"}. Nine different items, all that slot, all that rarity band.
+Subject / theme: fantasy game inventory item icons - equipment slot {canonical slot} ({RU label}); rarity {canonical} ({RU}); optional motif: {theme or "open fantasy loot"}. Nine different items, all that slot, all that rarity band.
 
 {Creative freedom lock}
 
 {Batch Diversity lock}
 
-Panel brief: freely invent NINE unique {slot} items at {rarity} complexity - distinct silhouettes and materials; keep each readable as a ~64px inventory icon.
+Panel brief: freely invent NINE unique {slot} items at {rarity} complexity - distinct fantasy silhouettes and materials; keep each readable as a ~64px inventory icon.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
+Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat 3-6px outline, wide white contour, historical medieval museum replica, pure steampunk, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
 ```
 
 ### Named-item mode
@@ -243,18 +247,22 @@ nine variations of that one item within the rarity band.
 
 ## Subject writing tips
 
-- Lead with **slot + rarity** so Gemini cannot drift into the wrong prop type or
+- Lead with **slot + rarity** so the model cannot drift into the wrong prop type or
   complexity band.
+- **Never** write project names ("Soul Split", internal docs, "match our portraits").
+  Describe look only via Style / Framing locks.
 - For loot volume: keep Batch mode; give only a light motif ("swamp witch",
-  "desert brass", "blood cult") when useful.
+  "frost cult", "blood raven") when useful.
 - For a hero drop or unique: Named-item mode + short English identity clause.
-- Prefer clear material words (pitted iron, lacquered leather, frost crystal,
-  void glass, living brass) over vague "cool epic item".
+- Prefer clear fantasy material words (lacquered leather, frost crystal, void
+  glass, rune-etched steel, ember iron) over vague "cool epic item" or dry
+  historical armor catalog names (avoid defaulting to kettle hat / nasal helm /
+  museum sallet unless the theme asks).
 - Magical FX sit **on the prop** (rune glow, ember cracks), not as a full spell
   explosion that hides the silhouette.
 - Set rarity: name the set motif once ("raven-bone inlay, turquoise cabochons")
   and require every panel to share that family language.
-- Workflow note (NOT in the reply): Gemini does not remember past sheets; to avoid
+- Workflow note (NOT in the reply): models do not remember past sheets; to avoid
   repeats, attach prior contact sheets as "avoid these designs".
 
 ## After user approves / corrects style

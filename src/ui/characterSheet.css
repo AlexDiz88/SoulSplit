@@ -26,6 +26,7 @@
   --c-common: #c8c2b2;
   --c-uncommon: #6fcf6a;
   --c-rare: #4fa3ff;
+  --c-yellow: #e8c84a;
   --c-epic: #b878ff;
   --c-legendary: #ff9a2e;
   position: relative;
@@ -440,8 +441,23 @@
 .cs-tip[data-rarity="common"] { --tip-c: var(--c-common); }
 .cs-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon); }
 .cs-tip[data-rarity="rare"] { --tip-c: var(--c-rare); }
+.cs-tip[data-rarity="yellow"] { --tip-c: var(--c-yellow, #e8c84a); }
 .cs-tip[data-rarity="epic"] { --tip-c: var(--c-epic); }
 .cs-tip[data-rarity="legendary"] { --tip-c: var(--c-legendary); }
+
+.cs-tip-affix {
+  margin-top: 3px;
+  font-size: 0.84rem;
+  color: #c8d0c4;
+}
+
+.cs-tip-prefix {
+  color: #9ec4e8;
+}
+
+.cs-tip-suffix {
+  color: #c4b0e0;
+}
 
 .cs-tip-name {
   color: var(--tip-c, var(--text));

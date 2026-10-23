@@ -1,6 +1,7 @@
 import { ABILITIES, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
+import { mountItemGenerator } from "./itemGenerator";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import type { Unit } from "../combat/Unit";
@@ -311,6 +312,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   };
   const grimoire = mountGrimoire(closeMenu);
   const character = mountCharacterSheet(closeMenu);
+  const itemGenerator = mountItemGenerator(closeMenu);
 
   const openMenu = (): void => {
     sideMenu.hidden = false;
@@ -389,6 +391,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   });
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "Escape") return;
+    if (itemGenerator.isOpen()) {
+      itemGenerator.close();
+      return;
+    }
     if (character.isOpen()) {
       character.close();
       return;

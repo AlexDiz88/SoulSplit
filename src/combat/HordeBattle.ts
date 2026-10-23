@@ -3,7 +3,17 @@ import { ABILITIES, ALL_ABILITY_IDS, SCHOOL_COLOR } from "../abilities/definitio
 import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
-import type { AbilityDef, AbilityId, GridPos, WeaponKind } from "../types";
+import { createStarterWeapon } from "../items/generate";
+import type { AbilityDef, AbilityId, GridPos, School, WeaponKind } from "../types";
+import {
+  abilityCooldown,
+  abilityPacketDamage,
+  autoAttackDamage,
+  manaCost,
+  rollCrit,
+  rollWeaponDamage,
+} from "../stats/formulas";
+import { createBaseHeroSheet, getStat } from "../stats/sheet";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
@@ -232,6 +242,7 @@ export class HordeBattle {
     if (!document.getElementById("grimoire")?.hidden) return;
     if (!document.getElementById("character")?.hidden) return;
     if (!document.getElementById("bestiary")?.hidden) return;
+    if (!document.getElementById("item-generator")?.hidden) return;
     if (!document.getElementById("side-menu")?.hidden) return;
 
     const id = this.hero?.abilities[slot];
@@ -406,18 +417,32 @@ export class HordeBattle {
   }
 
   private spawnCrowd(): void {
+    const starter = createStarterWeapon("mainhand");
+    const equipment = { mainhand: starter };
+    const weapon = starter.weapon!;
     this.hero = new Unit({
       id: "aira",
       name: "Айра",
       short: "АЙР",
       team: "player",
-      school: "ice",
+      school: "air",
       pos: { col: 1, row: 0 },
-      stats: { maxHp: 2000, atk: 26, autoAttackCd: 1.2, range: "melee", reach: 1 },
+      stats: {
+        maxHp: 2000,
+        atk: weapon.damageMax,
+        autoAttackCd: weapon.baseCd,
+        range: weapon.range,
+        reach: weapon.reach,
+      },
       abilities: ALL_ABILITY_IDS,
       portraitUrl: pickRandomHeroPortraitUrl(),
       cardSize: HERO_SIZE,
+      equipment,
+      sheet: undefined,
     });
+    // База + стартовое оружие уже в compute через equipment; maxHp из base sheet.
+    this.hero.rebuildSheetFromEquipment(createBaseHeroSheet());
+    this.weapon = weapon.kind;
     this.unitsLayer.addChild(this.hero.view);
     this.units.push(this.hero);
     this.hud.setHero(this.hero);
@@ -479,6 +504,16 @@ export class HordeBattle {
     this.weapon = kind;
     this.hero.stats.reach = WEAPON_REACH[kind];
     this.hero.stats.range = kind === "bow" || kind === "staff" ? "ranged" : "melee";
+    // Песочница: смена типа оружия обновляет implicit на mainhand, аффиксы сохраняются.
+    const main = this.hero.equipment.mainhand;
+    if (main?.weapon) {
+      main.weapon.kind = kind;
+      main.weapon.reach = WEAPON_REACH[kind];
+      main.weapon.range = kind === "bow" || kind === "staff" ? "ranged" : "melee";
+      main.weapon.baseCd = kind === "bow" || kind === "staff" ? 1.6 : kind === "spear" ? 1.4 : 1.2;
+      this.hero.stats.autoAttackCd = main.weapon.baseCd;
+      main.name = WEAPON_LABEL[kind];
+    }
     const pref = this.livingEnemies().find((u) => u.id === this.hero.preferredTargetId);
     if (pref && this.distanceOf(pref.pos.row) > WEAPON_REACH[kind]) {
       this.hero.preferredTargetId = null;
@@ -508,6 +543,10 @@ export class HordeBattle {
     }
     this.pendingCast = null;
     const def = ABILITIES[id];
+    if (!this.canPayMana(def)) {
+      this.hud.showToast("Недостаточно маны");
+      return;
+    }
     if (def.reach <= 0) {
       void this.performCast(def, this.hero, null);
       return;
@@ -719,12 +758,18 @@ export class HordeBattle {
       this.hud.showToast("Глобальная перезарядка");
       return;
     }
+    if (!this.canPayMana(def)) {
+      this.hud.showToast("Недостаточно маны");
+      return;
+    }
+    this.spendMana(def);
     this.casting = true;
     this.gcdRemaining = ABILITY_GCD;
     this.pendingCast = null;
     this.selectedAbility = null;
     this.clearAbilityTelegraph();
-    this.hero.abilityCd[def.id] = def.cooldown;
+    const cdr = this.hero.sheet ? getStat(this.hero.sheet, "cooldownReduction") : 0;
+    this.hero.abilityCd[def.id] = abilityCooldown(def.cooldown, cdr);
     this.refreshSkillBar();
     this.hud.setHint(`Каст: ${def.name}…`);
     try {
@@ -769,7 +814,7 @@ export class HordeBattle {
         await this.vfx.iceArrow(from, to, () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
-          this.dealAbilityDamage(caster, hit, def.damage);
+          this.dealAbilityDamage(caster, hit, def.damage, def);
           hit.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
         });
         break;
@@ -791,11 +836,11 @@ export class HordeBattle {
         if (!aim) return;
         const to = this.cellCenter(aim);
         const burnDur = def.effects?.burnDuration ?? 4;
-        const burnPot = def.effects?.burnPerSec ?? 8;
+        const burnPot = this.scaleDotPotency(caster, def.school, def.effects?.burnPerSec ?? 8);
         await this.vfx.fireball(from, to, [to], () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
-          this.dealAbilityDamage(caster, hit, def.damage);
+          this.dealAbilityDamage(caster, hit, def.damage, def);
           hit.addStatus({ id: "burn", kind: "burn", remaining: burnDur, potency: burnPot });
           this.vfx.floatingText(hit.center.x, hit.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
         });
@@ -811,7 +856,7 @@ export class HordeBattle {
         for (const hit of hits) {
           const u = this.unitAtCell(hit.pos);
           if (!u) continue;
-          this.dealAbilityDamage(caster, u, hit.full ? def.damage : def.damage * secondaryRatio);
+          this.dealAbilityDamage(caster, u, hit.full ? def.damage : def.damage * secondaryRatio, def);
         }
         break;
       }
@@ -831,7 +876,7 @@ export class HordeBattle {
           () => {
             const hit = this.occupantAtImpact(aim, to);
             if (!hit) return;
-            this.dealAbilityDamage(caster, hit, def.damage);
+            this.dealAbilityDamage(caster, hit, def.damage, def);
             hit.addStatus({ id: "stun", kind: "stun", remaining: stunDur, potency: 1 });
             this.vfx.floatingText(hit.center.x, hit.center.y - 24, "ОГЛУШЕНИЕ", 0xc9b896);
           },
@@ -851,8 +896,8 @@ export class HordeBattle {
         if (!clicked || !clicked.alive) return;
         // Мгновенно: урон и кровотечение в кадр каста, VFX только визуал.
         const bleedDur = def.effects?.bleedDuration ?? 5;
-        const bleedPot = def.effects?.bleedPerSec ?? 12;
-        this.dealAbilityDamage(caster, clicked, def.damage);
+        const bleedPot = this.scaleDotPotency(caster, def.school, def.effects?.bleedPerSec ?? 12);
+        this.dealAbilityDamage(caster, clicked, def.damage, def);
         clicked.addStatus({ id: "bleed", kind: "bleed", remaining: bleedDur, potency: bleedPot });
         this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
         await this.vfx.severArtery(clicked.center.x, clicked.center.y);
@@ -867,7 +912,7 @@ export class HordeBattle {
         try {
           await this.vfx.shadowDash(from, to, () => {
             if (!this.sameEnemyOnCell(clicked, aim, to)) return;
-            this.dealAbilityDamage(caster, clicked, def.damage);
+            this.dealAbilityDamage(caster, clicked, def.damage, def);
           });
         } finally {
           caster.clearStatus("invuln");
@@ -890,7 +935,7 @@ export class HordeBattle {
           onArrive: () => {
             if (this.destroyed) return;
             if (!this.sameEnemyOnCell(target, aim, to)) return;
-            this.dealAbilityDamage(caster, target, def.damage);
+            this.dealAbilityDamage(caster, target, def.damage, def);
             this.tryKnockbackAway(target);
           },
         });
@@ -916,7 +961,7 @@ export class HordeBattle {
         for (const pos of hits) {
           const u = this.unitAtCell(pos);
           if (!u) continue;
-          this.dealAbilityDamage(caster, u, def.damage);
+          this.dealAbilityDamage(caster, u, def.damage, def);
         }
         break;
       }
@@ -1022,7 +1067,7 @@ export class HordeBattle {
   private tornadoTick(field: TornadoField): void {
     const u = this.unitAtCell(field.pos);
     if (!u) return;
-    this.dealAbilityDamage(this.hero, u, field.dps);
+    this.dealAbilityDamage(this.hero, u, field.dps, ABILITIES.tornado);
   }
 
   private updateTornados(dt: number): void {
@@ -1086,14 +1131,54 @@ export class HordeBattle {
     return false;
   }
 
+  private canPayMana(def: AbilityDef): boolean {
+    const cost = this.abilityManaCost(def);
+    return cost <= 0 || this.hero.mana >= cost;
+  }
+
+  private abilityManaCost(def: AbilityDef): number {
+    const base = def.manaCost ?? 0;
+    if (base <= 0 || !this.hero.sheet) return base;
+    return manaCost(base, getStat(this.hero.sheet, "manaCostReduction"));
+  }
+
+  private spendMana(def: AbilityDef): void {
+    const cost = this.abilityManaCost(def);
+    if (cost > 0) this.hero.mana = Math.max(0, this.hero.mana - cost);
+  }
+
+  /** Урон/DoT-пакет способности с плоским ability% + school%. */
+  private scaleAbilityPacket(attacker: Unit, school: School, base: number): { dmg: number; crit: boolean } {
+    if (!attacker.sheet) {
+      return { dmg: Math.round(base * attacker.atkMultiplier()), crit: false };
+    }
+    const crit = rollCrit(attacker.sheet);
+    const dmg = abilityPacketDamage(base, attacker.sheet, school, attacker.atkMultiplier(), crit);
+    return { dmg, crit };
+  }
+
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number, def?: AbilityDef): void {
-    const dmg = Math.round(base * attacker.atkMultiplier());
-    const { dealt, castBroken } = target.applyDamage(dmg);
+    const school = def?.school ?? attacker.school;
+    const { dmg, crit } = this.scaleAbilityPacket(attacker, school, base);
+    const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "magical" });
     target.flash(0xffffff);
-    if (dealt > 0) this.vfx.floatingText(target.center.x, target.center.y - 10, `${dealt}`, 0xffe6a0);
+    if (evaded) {
+      this.vfx.floatingText(target.center.x, target.center.y - 10, "УКЛОН", 0x9aa3a0);
+      return;
+    }
+    if (dealt > 0) {
+      const label = crit ? `${dealt}!` : `${dealt}`;
+      this.vfx.floatingText(target.center.x, target.center.y - 10, label, crit ? 0xffb060 : 0xffe6a0);
+    }
     if (!target.alive) this.vfx.floatingText(target.center.x, target.center.y, "ПАЛ", 0xc45a4a);
     if (castBroken) this.showCastInterrupted(target);
     else if (def?.effects?.interruptsCast) this.interruptUnitCast(target);
+  }
+
+  /** DoT potency (урон/сек): плоский ability% + school%, без крита на наложении. */
+  private scaleDotPotency(attacker: Unit, school: School, perSec: number): number {
+    if (!attacker.sheet) return Math.round(perSec * attacker.atkMultiplier());
+    return abilityPacketDamage(perSec, attacker.sheet, school, attacker.atkMultiplier(), false);
   }
 
   private livingEnemies(): Unit[] {
@@ -1122,9 +1207,29 @@ export class HordeBattle {
     const reach = attacker.team === "player" ? WEAPON_REACH[this.weapon] : (attacker.stats.reach ?? 1);
     await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2);
     if (!target.alive || this.destroyed) return;
-    const dmg = Math.round(attacker.stats.atk * attacker.atkMultiplier());
-    const { dealt, castBroken } = target.applyDamage(dmg);
-    if (dealt > 0) this.vfx.floatingText(target.center.x, target.center.y - 8, `${dealt}`, 0xe8e2d4);
+
+    let dmg: number;
+    let crit = false;
+    if (attacker.team === "player" && attacker.sheet) {
+      const w = attacker.equipment.mainhand?.weapon;
+      const roll = w
+        ? rollWeaponDamage(w.damageMin, w.damageMax)
+        : attacker.stats.atk;
+      crit = rollCrit(attacker.sheet);
+      dmg = autoAttackDamage(roll, attacker.sheet, attacker.atkMultiplier(), crit);
+    } else {
+      dmg = Math.round(attacker.stats.atk * attacker.atkMultiplier());
+    }
+
+    const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
+    if (evaded) {
+      this.vfx.floatingText(target.center.x, target.center.y - 8, "УКЛОН", 0x9aa3a0);
+      return;
+    }
+    if (dealt > 0) {
+      const label = crit ? `${dealt}!` : `${dealt}`;
+      this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4);
+    }
     if (castBroken) this.showCastInterrupted(target);
   }
 
@@ -1227,7 +1332,8 @@ export class HordeBattle {
 
     for (const u of this.units) {
       if (!u.alive) continue;
-      const needPreview = u.stats.autoAttackCd * u.autoCdMultiplier();
+      u.tickResourceRegen(combatDt);
+      const needPreview = u.autoAttackNeed();
       if (u.team === "enemy" && !u.cast) {
         u.attackCharge = needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : 1;
       }
@@ -1258,7 +1364,7 @@ export class HordeBattle {
       }
 
       u.autoTimer += combatDt;
-      const need = u.stats.autoAttackCd * u.autoCdMultiplier();
+      const need = u.autoAttackNeed();
       if (u.autoTimer < need) continue;
       if (u.team === "player" && this.casting) continue;
       if (!this.findAutoTarget(u)) {

@@ -1,0 +1,344 @@
+.igen-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(6, 8, 6, 0.78);
+  display: grid;
+  place-items: center;
+  z-index: 22;
+  padding: 8px;
+}
+
+.igen-overlay[hidden] {
+  display: none;
+}
+
+.igen-window {
+  width: min(1480px, calc(100vw - 16px));
+  height: min(96vh, 980px);
+  max-height: calc(100vh - 16px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: linear-gradient(180deg, #171c17 0%, #101410 100%);
+  border: 1px solid var(--panel-border, #3a4538);
+  border-radius: 12px;
+  padding: 12px 14px 14px;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+}
+
+.igen-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.igen-title {
+  margin: 0;
+  font-family: var(--font, "Exo 2", sans-serif);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--accent, #e8d7a2);
+}
+
+.igen-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.igen-bench {
+  flex-shrink: 0;
+  border: 1px solid rgba(196, 163, 90, 0.28);
+  border-radius: 10px;
+  padding: 10px 12px 12px;
+  background: rgba(20, 24, 20, 0.9);
+}
+
+.igen-reference {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  gap: 14px;
+  overflow: hidden;
+}
+
+.igen-side {
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+.igen-section-title {
+  margin: 0 0 8px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #e6dfc8;
+}
+
+.igen-section-params {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(120, 130, 110, 0.22);
+  border-radius: 10px;
+  padding: 10px 10px 0;
+  background: rgba(14, 18, 14, 0.55);
+}
+
+.igen-section-params .igen-note {
+  flex-shrink: 0;
+  margin-top: 0;
+}
+
+.igen-table-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  margin: 0 -2px;
+  padding-bottom: 8px;
+}
+
+.igen-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  align-items: end;
+}
+
+.igen-field {
+  display: grid;
+  gap: 4px;
+  min-width: 140px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted, #8a9280);
+}
+
+.igen-select,
+.igen-input {
+  min-width: 160px;
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #4a5548;
+  border-radius: 8px;
+  background: #0e120e;
+  color: #e8e2d4;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.igen-gen-btn {
+  height: 36px;
+  padding: 0 16px;
+  border: 1px solid #8a7044;
+  border-radius: 8px;
+  background: linear-gradient(180deg, #3a3220, #241e14);
+  color: #f0e2b0;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.igen-gen-btn:hover {
+  filter: brightness(1.08);
+}
+
+.igen-note {
+  margin: 8px 0;
+  color: var(--muted, #8a9280);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
+.igen-empty {
+  margin: 0;
+  color: #7a8476;
+  font-size: 0.9rem;
+}
+
+.igen-result {
+  margin-top: 8px;
+}
+
+.igen-card {
+  border: 1px solid #5a4a2e;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #0c0f0c;
+  max-width: 420px;
+}
+
+.igen-card[data-rarity="common"] { border-color: var(--c-common, #c8c2b2); }
+.igen-card[data-rarity="uncommon"] { border-color: var(--c-uncommon, #6fcf6a); }
+.igen-card[data-rarity="rare"] { border-color: var(--c-rare, #4fa3ff); }
+.igen-card[data-rarity="yellow"] { border-color: var(--c-yellow, #e8c84a); }
+.igen-card[data-rarity="epic"] { border-color: var(--c-epic, #b878ff); }
+
+.igen-card-name {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f2ead2;
+}
+
+.igen-card[data-rarity="common"] .igen-card-name { color: var(--c-common, #c8c2b2); }
+.igen-card[data-rarity="uncommon"] .igen-card-name { color: var(--c-uncommon, #6fcf6a); }
+.igen-card[data-rarity="rare"] .igen-card-name { color: var(--c-rare, #4fa3ff); }
+.igen-card[data-rarity="yellow"] .igen-card-name { color: var(--c-yellow, #e8c84a); }
+.igen-card[data-rarity="epic"] .igen-card-name { color: var(--c-epic, #b878ff); }
+
+.igen-card-meta {
+  color: #8a9280;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.igen-card-line {
+  color: #8fd49a;
+  font-size: 0.88rem;
+  margin-top: 2px;
+}
+
+.igen-card-group {
+  margin-top: 10px;
+  margin-bottom: 2px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #a09880;
+}
+
+.igen-card-affix {
+  font-size: 0.9rem;
+  margin-top: 2px;
+}
+
+.igen-card-affix.prefix {
+  color: #9ec4e8;
+}
+
+.igen-card-affix.suffix {
+  color: #c4b0e0;
+}
+
+.igen-section {
+  margin-top: 0;
+}
+
+.igen-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.igen-table th,
+.igen-table td {
+  border-bottom: 1px solid rgba(120, 130, 110, 0.22);
+  padding: 8px 8px;
+  text-align: left;
+  vertical-align: top;
+}
+
+.igen-table th {
+  color: #c4b896;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  position: sticky;
+  top: 0;
+  background: #141914;
+  z-index: 1;
+}
+
+.igen-table td {
+  color: #d8d2c4;
+}
+
+.igen-desc {
+  color: #9aa394 !important;
+  line-height: 1.35;
+}
+
+.igen-slot-name {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.igen-allow {
+  color: #9ecf9a !important;
+  line-height: 1.35;
+}
+
+.igen-deny {
+  color: #d88a7a !important;
+  line-height: 1.35;
+}
+
+.igen-bullets {
+  margin: 10px 0 0;
+  padding-left: 18px;
+  color: #a8b0a2;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.igen-bullets li {
+  margin-bottom: 4px;
+}
+
+@media (max-width: 1100px) {
+  .igen-reference {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(220px, 1fr) minmax(180px, 0.85fr);
+  }
+}
+
+@media (max-width: 720px) {
+  .igen-window {
+    width: 100%;
+    height: calc(100vh - 12px);
+    padding: 10px;
+  }
+
+  .igen-bench {
+    max-height: 34%;
+    overflow: auto;
+  }
+
+  .igen-table {
+    display: block;
+    overflow-x: auto;
+  }
+
+  .igen-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .igen-field,
+  .igen-select,
+  .igen-input,
+  .igen-gen-btn {
+    width: 100%;
+    min-width: 0;
+  }
+}

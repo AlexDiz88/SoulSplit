@@ -1,21 +1,13 @@
 import { SCHOOL_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
+import type { EquipSlotId } from "../items/slots";
+import { RARITY_LABEL, type ItemDef } from "../items/types";
+import { autoAttackInterval } from "../stats/formulas";
+import { getStat, schoolDamageOf } from "../stats/sheet";
+import { formatStatValue, type StatId } from "../stats/statIds";
 import "./characterSheet.css";
 
-export type EquipSlotId =
-  | "head"
-  | "chest"
-  | "neck"
-  | "shoulders"
-  | "hands"
-  | "ring1"
-  | "ring2"
-  | "waist"
-  | "legs"
-  | "feet"
-  | "trinket"
-  | "mainhand"
-  | "offhand";
+export type { EquipSlotId };
 
 type GlyphId =
   | "head"
@@ -74,7 +66,7 @@ const GLYPHS: Record<GlyphId, string> = {
 };
 
 /** Сетка paperdoll: центр / левая / правая ось. Оружие отдельно снизу. */
-const BODY_SLOTS: EquipSlotId[] = [
+const BODY_SLOTS = [
   "head",
   "chest",
   "waist",
@@ -86,7 +78,7 @@ const BODY_SLOTS: EquipSlotId[] = [
   "ring1",
   "ring2",
   "trinket",
-];
+] as const satisfies readonly EquipSlotId[];
 
 const BODY_AREAS: Record<(typeof BODY_SLOTS)[number], string> = {
   head: "head",
@@ -142,7 +134,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const render = (): void => {
     tip.hidden = true;
     identityHost.replaceChildren(renderIdentity(hero));
-    dollWrap.replaceChildren(renderDoll());
+    dollWrap.replaceChildren(renderDoll(hero));
     stats.replaceChildren(...renderStats(hero));
   };
 
@@ -159,8 +151,13 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     const id = slot.dataset.slot as EquipSlotId | undefined;
     if (!id) return;
     tip.replaceChildren();
-    tip.dataset.rarity = "";
-    tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
+    const item = hero?.equipment[id];
+    tip.dataset.rarity = item?.rarity ?? "";
+    if (!item) {
+      tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
+    } else {
+      tip.append(...renderItemTip(item));
+    }
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
     const rect = slot.getBoundingClientRect();
@@ -197,7 +194,13 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
     if (ev.code !== "KeyC" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (root.hidden) {
-      if (!document.getElementById("grimoire")?.hidden || !document.getElementById("bestiary")?.hidden) return;
+      if (
+        !document.getElementById("grimoire")?.hidden ||
+        !document.getElementById("bestiary")?.hidden ||
+        !document.getElementById("item-generator")?.hidden
+      ) {
+        return;
+      }
       ev.preventDefault();
       onOpen();
       open();
@@ -236,17 +239,17 @@ function renderIdentity(hero: Unit | null): HTMLElement {
   return plate;
 }
 
-function renderDoll(): HTMLElement {
+function renderDoll(hero: Unit | null): HTMLElement {
   const doll = el("div", "cs-doll");
   const body = el("div", "cs-doll-body");
   for (const id of BODY_SLOTS) {
-    const slot = slotButton(id);
+    const slot = slotButton(id, hero?.equipment[id]);
     slot.style.gridArea = BODY_AREAS[id];
     body.append(slot);
   }
   const hands = el("div", "cs-doll-hands");
   for (const id of HAND_SLOTS) {
-    const slot = slotButton(id);
+    const slot = slotButton(id, hero?.equipment[id]);
     slot.classList.add("cs-slot-hand");
     hands.append(slot);
   }
@@ -254,41 +257,109 @@ function renderDoll(): HTMLElement {
   return doll;
 }
 
-function slotButton(id: EquipSlotId): HTMLButtonElement {
+function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
   const def = SLOTS[id];
   const btn = el("button", "cs-slot");
   btn.type = "button";
   btn.dataset.slot = id;
-  btn.setAttribute("aria-label", `${def.label}: пусто`);
+  if (item) {
+    btn.dataset.rarity = item.rarity;
+    btn.classList.add("filled");
+    btn.setAttribute("aria-label", `${def.label}: ${item.name}`);
+  } else {
+    btn.setAttribute("aria-label", `${def.label}: пусто`);
+  }
   const face = el("span", "cs-slot-face");
   face.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[def.glyph]}</svg>`;
-  btn.append(face, el("span", "cs-slot-label", def.label));
+  btn.append(face, el("span", "cs-slot-label", item?.name ?? def.label));
   return btn;
 }
 
+function renderItemTip(item: ItemDef): HTMLElement[] {
+  const nodes: HTMLElement[] = [
+    el("div", "cs-tip-name", item.name),
+    el("div", "cs-tip-meta", `${RARITY_LABEL[item.rarity]} · ур. ${item.itemLevel}`),
+  ];
+  if (item.schoolTag) {
+    nodes.push(el("div", "cs-tip-meta", `Школа: ${SCHOOL_LABEL[item.schoolTag]}`));
+  }
+  if (item.weapon) {
+    nodes.push(
+      el(
+        "div",
+        "cs-tip-line",
+        `Урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax}`,
+      ),
+      el("div", "cs-tip-line", `Кулдаун атаки: ${item.weapon.baseCd.toFixed(1)} с`),
+    );
+  }
+  const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
+  const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
+  for (const a of prefixes) {
+    nodes.push(el("div", "cs-tip-affix cs-tip-prefix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+  }
+  for (const a of suffixes) {
+    nodes.push(el("div", "cs-tip-affix cs-tip-suffix", `${a.label}: ${formatStatValue(a.statId, a.value)}`));
+  }
+  if (!item.affixes.length) {
+    nodes.push(el("div", "cs-tip-meta", "Без аффиксов"));
+  }
+  return nodes;
+}
+
 function renderStats(hero: Unit | null): HTMLElement[] {
+  const sheet = hero?.sheet;
   const s = hero?.stats;
   const reach = s?.reach ?? 1;
+  const weapon = hero?.equipment.mainhand?.weapon;
+  const asPct = sheet ? getStat(sheet, "attackSpeed") : 0;
+  const baseCd = weapon?.baseCd ?? s?.autoAttackCd ?? 0;
+  const finalCd = sheet ? autoAttackInterval(baseCd, asPct) : baseCd;
+  const atkBonus = sheet ? getStat(sheet, "weaponAttackBonus") : 0;
+  const weaponLine = weapon
+    ? `${weapon.damageMin}-${weapon.damageMax}${atkBonus ? ` (+${atkBonus})` : ""}`
+    : s
+      ? String(s.atk)
+      : "-";
+
+  const schoolRows: [string, string][] = [];
+  if (sheet && hero) {
+    const dmg = schoolDamageOf(sheet, hero.school);
+    if (dmg > 0) schoolRows.push([`Урон школы (${SCHOOL_LABEL[hero.school]})`, `${dmg}%`]);
+  }
+
   return [
     statGroup("Основные", [
-      ["Здоровье", s ? String(s.maxHp) : "-"],
-      ["Атака", s ? String(s.atk) : "-"],
-      ["Скорость атаки", s ? `${s.autoAttackCd.toFixed(1)} с` : "-"],
+      ["Здоровье", sheet ? String(getStat(sheet, "maxHp")) : s ? String(s.maxHp) : "-"],
+      ["Мана", sheet ? `${Math.round(hero!.mana)} / ${getStat(sheet, "maxMana")}` : "-"],
+      ["Реген маны", sheet ? formatStatValue("manaRegen", getStat(sheet, "manaRegen")) : "-"],
+      ["Урон оружия", weaponLine],
+      ["Интервал атаки", finalCd ? `${finalCd.toFixed(2)} с` : "-"],
+      ["Скорость атаки", sheet ? formatStatValue("attackSpeed", asPct) : "-"],
       ["Дальность", `${reach} ${reach === 1 ? "ряд" : reach < 5 ? "ряда" : "рядов"}`],
     ]),
     statGroup("Защита", [
-      ["Броня", "0"],
-      ["Уклонение", "0%"],
-      ["Блок", "0%"],
-      ["Сопротивление", "0%"],
+      ["Снижение физ. урона", pct(sheet, "physDamageReduction")],
+      ["Сопротивление магии", pct(sheet, "magicResist")],
+      ["Уклонение", pct(sheet, "evasion")],
+      ["Блок", pct(sheet, "blockChance")],
+      ["Парирование", pct(sheet, "parryChance")],
     ]),
     statGroup("Нападение", [
-      ["Шанс крита", "5%"],
-      ["Урон крита", "150%"],
-      ["Сила способностей", "100%"],
-      ["Перезарядка", "0%"],
+      ["Шанс крита", pct(sheet, "critChance")],
+      ["Урон крита", pct(sheet, "critDamage")],
+      ["Урон способностей", pct(sheet, "abilityDamage")],
+      ["Скорость каста", pct(sheet, "castSpeed")],
+      ["Перезарядка", pct(sheet, "cooldownReduction")],
+      ["Снижение стоимости маны", pct(sheet, "manaCostReduction")],
+      ...schoolRows,
     ]),
   ];
+}
+
+function pct(sheet: NonNullable<Unit["sheet"]> | null | undefined, id: StatId): string {
+  if (!sheet) return "-";
+  return formatStatValue(id, getStat(sheet, id));
 }
 
 function statGroup(title: string, rows: [string, string][]): HTMLElement {

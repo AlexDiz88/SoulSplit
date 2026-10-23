@@ -1,6 +1,16 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { ABILITIES } from "../abilities/definitions";
 import { sharpenPortraitTexture } from "../art/portraits";
+import type { EquipmentMap } from "../items/equipment";
+import { computeHeroSheet } from "../items/equipment";
+import type { HeroStatSheet } from "../stats/sheet";
+import { createBaseHeroSheet, getStat } from "../stats/sheet";
+import {
+  autoAttackInterval,
+  mitigateIncoming,
+  rollEvasion,
+  type DamageChannel,
+} from "../stats/formulas";
 import type { AbilityId, GridPos, School, StatusEffect, Team, UnitStats } from "../types";
 
 export interface UnitCast {
@@ -29,6 +39,9 @@ export interface UnitInit {
   cardSize?: number;
   /** Подпись на карточке без портрета, например тип оружия. */
   subtitle?: string;
+  /** Лист статов героя. У врагов обычно null. */
+  sheet?: HeroStatSheet | null;
+  equipment?: EquipmentMap;
 }
 
 export class Unit {
@@ -43,6 +56,10 @@ export class Unit {
   readonly cardSize: number;
   pos: GridPos;
   hp: number;
+  mana: number;
+  /** Глобальный лист; null у простых врагов. */
+  sheet: HeroStatSheet | null;
+  equipment: EquipmentMap;
   autoTimer: number;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
@@ -80,7 +97,18 @@ export class Unit {
     this.portraitUrl = init.portraitUrl ?? null;
     this.cardSize = init.cardSize ?? CARD;
     this.pos = { ...init.pos };
-    this.hp = init.stats.maxHp;
+    this.equipment = init.equipment ?? {};
+    this.sheet =
+      init.sheet === undefined
+        ? init.team === "player"
+          ? computeHeroSheet(this.equipment, createBaseHeroSheet())
+          : null
+        : init.sheet;
+    if (this.sheet) {
+      this.stats.maxHp = getStat(this.sheet, "maxHp") || this.stats.maxHp;
+    }
+    this.hp = this.stats.maxHp;
+    this.mana = this.sheet ? getStat(this.sheet, "maxMana") : 0;
     this.autoTimer = Math.random() * init.stats.autoAttackCd * 0.5;
     this.attackCharge = init.stats.autoAttackCd > 0 ? this.autoTimer / init.stats.autoAttackCd : 0;
 
@@ -422,11 +450,49 @@ export class Unit {
     return true;
   }
 
-  applyDamage(raw: number): { dealt: number; absorbed: number; castBroken: boolean } {
+  /** Пересчёт листа из экипировки (после смены предмета). */
+  rebuildSheetFromEquipment(base = createBaseHeroSheet()): void {
+    this.sheet = computeHeroSheet(this.equipment, base);
+    const maxHp = getStat(this.sheet, "maxHp");
+    const ratio = this.stats.maxHp > 0 ? this.hp / this.stats.maxHp : 1;
+    this.stats.maxHp = maxHp;
+    this.hp = Math.min(maxHp, Math.max(1, Math.round(maxHp * ratio)));
+    const maxMana = getStat(this.sheet, "maxMana");
+    this.mana = Math.min(maxMana, this.mana);
+    this.redraw();
+  }
+
+  /** Базовый CD автоатаки с учётом AS из листа (для героя) или сырого stats. */
+  autoAttackNeed(): number {
+    const baseCd = this.stats.autoAttackCd;
+    if (!this.sheet) return baseCd * this.autoCdMultiplier();
+    return autoAttackInterval(baseCd, getStat(this.sheet, "attackSpeed"), this.autoCdMultiplier());
+  }
+
+  tickResourceRegen(dt: number): void {
+    if (!this.alive || !this.sheet) return;
+    const hpR = getStat(this.sheet, "hpRegen");
+    const manaR = getStat(this.sheet, "manaRegen");
+    if (hpR > 0) this.heal(hpR * dt);
+    if (manaR > 0) {
+      const maxMana = getStat(this.sheet, "maxMana");
+      this.mana = Math.min(maxMana, this.mana + manaR * dt);
+    }
+  }
+
+  applyDamage(
+    raw: number,
+    opts?: { channel?: DamageChannel },
+  ): { dealt: number; absorbed: number; castBroken: boolean; evaded?: boolean } {
     if (!this.alive) return { dealt: 0, absorbed: 0, castBroken: false };
     if (this.hasStatus("invuln")) return { dealt: 0, absorbed: raw, castBroken: false };
+    if (this.sheet && rollEvasion(this.sheet)) {
+      this.redraw();
+      return { dealt: 0, absorbed: 0, castBroken: false, evaded: true };
+    }
+    const channel = opts?.channel ?? "physical";
     const wasCasting = this.cast !== null;
-    let dmg = raw;
+    let dmg = Math.round(mitigateIncoming(raw, this.sheet, channel));
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
     if (shield) {
@@ -491,15 +557,20 @@ export class Unit {
 
   /** true - каст сорван смертью от DoT. */
   tickStatuses(dt: number): boolean {
-    let dotDmg = 0;
+    let bleedDot = 0;
+    let burnDot = 0;
     for (const s of this.statuses) {
       s.remaining -= dt;
-      if (s.kind === "bleed" || s.kind === "burn") dotDmg += s.potency * dt;
+      if (s.kind === "bleed") bleedDot += s.potency * dt;
+      if (s.kind === "burn") burnDot += s.potency * dt;
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
     let castBroken = false;
-    if (dotDmg > 0) {
-      castBroken = this.applyDamage(dotDmg).castBroken;
+    if (bleedDot > 0) {
+      castBroken = this.applyDamage(bleedDot, { channel: "physical" }).castBroken || castBroken;
+    }
+    if (burnDot > 0) {
+      castBroken = this.applyDamage(burnDot, { channel: "magical" }).castBroken || castBroken;
     }
     this.redraw();
     return castBroken;

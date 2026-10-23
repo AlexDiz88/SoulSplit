@@ -172,7 +172,8 @@ textarea,
 #hud button,
 #hud .side-menu,
 #hud .bestiary-overlay,
-#hud .grimoire-overlay {
+#hud .grimoire-overlay,
+#hud .igen-overlay {
   pointer-events: auto;
 }
 
@@ -212,8 +213,9 @@ textarea,
   position: absolute;
   top: 62px;
   left: 14px;
-  min-width: 210px;
-  padding: 8px;
+  width: max-content;
+  max-width: min(280px, calc(100vw - 28px));
+  padding: 6px;
   background: rgba(18, 24, 18, 0.96);
   border: 1px solid var(--panel-border);
   border-radius: 8px;
@@ -224,14 +226,16 @@ textarea,
 }
 
 .menu-item {
+  display: block;
   width: 100%;
   text-align: left;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border: 0;
   border-radius: 6px;
   background: transparent;
   color: var(--text);
   font: inherit;
+  white-space: nowrap;
   font-weight: 700;
   cursor: var(--cur-default);
 }
@@ -1128,9 +1132,8 @@ textarea,
   .side-menu {
     top: 8vh;
     left: 3vw;
-    width: 72vw;
-    min-width: 0;
-    max-width: 72vw;
+    width: max-content;
+    max-width: min(280px, calc(100vw - 6vw));
   }
 
   .hud-bottom {

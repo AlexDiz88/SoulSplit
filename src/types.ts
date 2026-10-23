@@ -81,6 +81,8 @@ export interface AbilityDef {
   glyph: string;
   cooldown: number;
   damage: number;
+  /** Стоимость маны. 0 - бесплатно. */
+  manaCost?: number;
   targetMode: TargetMode;
   range: "melee" | "ranged" | "any";
   /** 0 — на себя. Иначе ряды от героя: 1 ближний … 4 дальний. */
