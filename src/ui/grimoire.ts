@@ -99,7 +99,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       cardId = null;
       const empty = document.createElement("p");
       empty.className = "grimoire-empty";
-      empty.textContent = "В этой школе пока нет способностей.";
+      empty.textContent = "В этом аспекте пока нет способностей.";
       abilityList.append(empty);
       renderDetail(null);
       return;

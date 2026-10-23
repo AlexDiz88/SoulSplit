@@ -29,7 +29,7 @@ User writes the skill name, then **ability name**. School after a comma is
 
 ```
 /art-round-skill {название способности}
-/art-round-skill {название способности}, {школа}
+/art-round-skill {название способности}, {аспект}
 ```
 
 Examples:
@@ -51,7 +51,7 @@ Parse rules:
    catalog **before** accents or Subject English.
 4. **School resolution (catalog first):**
    - If the ability is found in INDEX / card: take school from the card
-     (`school` / `school_id` / INDEX `школа`). Do **not** ask the user for
+     (`school` / `school_id` / INDEX `аспект`). Do **not** ask the user for
      school.
    - Optional param 2 may be present; if it **conflicts** with the card, prefer
      the card's `school` / `school_id` for accents.
@@ -81,7 +81,7 @@ Do **not** draft the Gemini prompt until ability data is fully read. Guessing fr
 
 1. Parse invocation → ability name (+ optional school override).
 2. Open [`design/abilities/INDEX.md`](../../../design/abilities/INDEX.md). Find
-   the row by **название** (param 1). Note `id`, `school_id`, `школа`, `тип`,
+   the row by **название** (param 1). Note `id`, `school_id`, `аспект`, `тип`,
    and `крючок`. Do not require the user to pass school for a catalog hit.
 3. If no INDEX match: search `design/abilities/**/*.md` by frontmatter `name` /
    heading / Russian aliases. If still missing - ask once for ability (and for
@@ -107,7 +107,7 @@ Build the English Subject from researched facts only:
 | Тип эффекта | damage → strike / blast / projectile; shield / buff → protective form; DoT / debuff → lingering mark / curse motif; stun / control → binding / impact freeze |
 | Тип применения | `цель` → focused single-target symbol; `зона` → cone / area / directional burst matching the zone metaphor; `на себя` → self-aura / personal ward; `все враги` → wide / omnidirectional pulse |
 | Зона (if any) | direction and shape only (e.g. forward cone upward from source, ring around anchor) - no grid cells, no letters X/A/B |
-| Школа + accents | jagged aura + effect colors from the school table |
+| Аспект + accents | jagged aura + effect colors from the school table |
 | Числа / Доп | intensity and secondary motifs only if they are **visible magic** (burn embers, ice shards, blood drops). Ignore cooldown, mana, and raw numbers |
 
 **Forbidden inventions:** characters, faces, hands, enemies, heroes, UI, damage digits, school logos as text, steampunk props, or a different spell than the card (e.g. do not draw a fireball for a breath cone, or a weapon swing for a pure self-buff).

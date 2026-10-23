@@ -22,8 +22,9 @@
   background: linear-gradient(180deg, #171c17 0%, #101410 100%);
   border: 1px solid var(--panel-border, #3a4538);
   border-radius: 12px;
-  padding: 12px 14px 14px;
+  padding: 14px 16px 16px;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  font-size: 16px;
 }
 
 .igen-head {
@@ -31,14 +32,14 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   flex-shrink: 0;
 }
 
 .igen-title {
   margin: 0;
   font-family: var(--font, "Exo 2", sans-serif);
-  font-size: 1.35rem;
+  font-size: 1.55rem;
   font-weight: 700;
   color: var(--accent, #e8d7a2);
 }
@@ -56,43 +57,82 @@
   flex-shrink: 0;
   border: 1px solid rgba(196, 163, 90, 0.28);
   border-radius: 10px;
-  padding: 10px 12px 12px;
+  padding: 12px 14px 14px;
   background: rgba(20, 24, 20, 0.9);
 }
 
-.igen-reference {
+.igen-tabs {
   flex: 1;
   min-height: 0;
-  display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.9fr);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.igen-tab-bar {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+  margin-bottom: 10px;
+}
+
+.igen-tab {
+  height: 38px;
+  padding: 0 16px;
+  border: 1px solid #4a5548;
+  border-radius: 8px;
+  background: #121812;
+  color: #b8c0b4;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.igen-tab:hover {
+  color: #e8e2d4;
+  border-color: #6a7568;
+}
+
+.igen-tab.active {
+  color: #f0e2b0;
+  border-color: #8a7044;
+  background: linear-gradient(180deg, #3a3220, #241e14);
+}
+
+.igen-tab-panel {
+  flex: 1;
+  min-height: 0;
+  display: none;
+  flex-direction: column;
   gap: 14px;
   overflow: hidden;
 }
 
-.igen-side {
-  min-height: 0;
-  overflow: auto;
+.igen-tab-panel.active {
   display: flex;
-  flex-direction: column;
-  gap: 14px;
-  padding-right: 4px;
+}
+
+.igen-tab-panel[data-panel="slots"].active {
+  overflow: auto;
 }
 
 .igen-section-title {
   margin: 0 0 8px;
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 700;
   color: #e6dfc8;
 }
 
 .igen-section-params {
+  flex: 1;
   min-height: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   border: 1px solid rgba(120, 130, 110, 0.22);
   border-radius: 10px;
-  padding: 10px 10px 0;
+  padding: 12px 12px 0;
   background: rgba(14, 18, 14, 0.55);
 }
 
@@ -106,7 +146,16 @@
   min-height: 0;
   overflow: auto;
   margin: 0 -2px;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
+}
+
+.igen-tab-panel[data-panel="slots"] .igen-section {
+  flex-shrink: 0;
+}
+
+.igen-tab-panel[data-panel="slots"] .igen-table-scroll {
+  max-height: none;
+  overflow: visible;
 }
 
 .igen-controls {
@@ -119,8 +168,9 @@
 .igen-field {
   display: grid;
   gap: 4px;
-  min-width: 140px;
-  font-size: 0.72rem;
+  width: max-content;
+  flex: 0 0 auto;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -129,26 +179,45 @@
 
 .igen-select,
 .igen-input {
-  min-width: 160px;
-  height: 36px;
-  padding: 0 10px;
+  box-sizing: border-box;
+  width: max-content;
+  max-width: 100%;
+  min-width: 0;
+  height: 38px;
+  padding: 0 28px 0 10px;
   border: 1px solid #4a5548;
   border-radius: 8px;
-  background: #0e120e;
+  background-color: #0e120e;
   color: #e8e2d4;
   font: inherit;
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 600;
 }
 
+.igen-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpolyline points='1,1.5 6,6.5 11,1.5' fill='none' stroke='%23c8c2b2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 11px 8px;
+  cursor: pointer;
+}
+
+.igen-input {
+  width: 96px;
+  padding-right: 10px;
+}
+
 .igen-gen-btn {
-  height: 36px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 18px;
   border: 1px solid #8a7044;
   border-radius: 8px;
   background: linear-gradient(180deg, #3a3220, #241e14);
   color: #f0e2b0;
   font: inherit;
+  font-size: 1rem;
   font-weight: 700;
   cursor: pointer;
 }
@@ -160,14 +229,14 @@
 .igen-note {
   margin: 8px 0;
   color: var(--muted, #8a9280);
-  font-size: 0.84rem;
-  line-height: 1.4;
+  font-size: 0.95rem;
+  line-height: 1.45;
 }
 
 .igen-empty {
   margin: 0;
   color: #7a8476;
-  font-size: 0.9rem;
+  font-size: 1rem;
 }
 
 .igen-result {
@@ -179,7 +248,7 @@
   border-radius: 10px;
   padding: 12px 14px;
   background: #0c0f0c;
-  max-width: 420px;
+  max-width: 460px;
 }
 
 .igen-card[data-rarity="common"] { border-color: var(--c-common, #c8c2b2); }
@@ -190,7 +259,7 @@
 
 .igen-card-name {
   margin: 0 0 4px;
-  font-size: 1.05rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #f2ead2;
 }
@@ -203,7 +272,7 @@
 
 .igen-card-meta {
   color: #8a9280;
-  font-size: 0.78rem;
+  font-size: 0.86rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -212,14 +281,14 @@
 
 .igen-card-line {
   color: #8fd49a;
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   margin-top: 2px;
 }
 
 .igen-card-group {
   margin-top: 10px;
   margin-bottom: 2px;
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -227,7 +296,7 @@
 }
 
 .igen-card-affix {
-  font-size: 0.9rem;
+  font-size: 1rem;
   margin-top: 2px;
 }
 
@@ -246,20 +315,20 @@
 .igen-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.84rem;
+  font-size: 0.98rem;
 }
 
 .igen-table th,
 .igen-table td {
   border-bottom: 1px solid rgba(120, 130, 110, 0.22);
-  padding: 8px 8px;
+  padding: 10px 10px;
   text-align: left;
   vertical-align: top;
 }
 
 .igen-table th {
   color: #c4b896;
-  font-size: 0.72rem;
+  font-size: 0.82rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -275,7 +344,7 @@
 
 .igen-desc {
   color: #9aa394 !important;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .igen-slot-name {
@@ -283,33 +352,39 @@
   white-space: nowrap;
 }
 
+.igen-stat-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.igen-stat-list li {
+  margin: 0 0 3px;
+  line-height: 1.35;
+}
+
+.igen-stat-list li:last-child {
+  margin-bottom: 0;
+}
+
 .igen-allow {
   color: #9ecf9a !important;
-  line-height: 1.35;
 }
 
 .igen-deny {
   color: #d88a7a !important;
-  line-height: 1.35;
 }
 
 .igen-bullets {
   margin: 10px 0 0;
   padding-left: 18px;
   color: #a8b0a2;
-  font-size: 0.88rem;
-  line-height: 1.45;
+  font-size: 0.98rem;
+  line-height: 1.5;
 }
 
 .igen-bullets li {
   margin-bottom: 4px;
-}
-
-@media (max-width: 1100px) {
-  .igen-reference {
-    grid-template-columns: 1fr;
-    grid-template-rows: minmax(220px, 1fr) minmax(180px, 0.85fr);
-  }
 }
 
 @media (max-width: 720px) {
@@ -335,10 +410,18 @@
   }
 
   .igen-field,
-  .igen-select,
-  .igen-input,
   .igen-gen-btn {
     width: 100%;
-    min-width: 0;
+  }
+
+  .igen-select,
+  .igen-input {
+    width: 100%;
+  }
+
+  .igen-tab {
+    flex: 1;
+    padding: 0 10px;
+    font-size: 0.92rem;
   }
 }

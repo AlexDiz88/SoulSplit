@@ -139,7 +139,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     });
   }
 
-  // На школьном предмете blue+ гарантируем хотя бы один school-ролл, если пул позволяет.
+  // На аспектном предмете blue+ гарантируем хотя бы один school-ролл, если пул позволяет.
   if (schoolTag && rarity !== "common" && rarity !== "uncommon") {
     const hasSchool = affixes.some((a) => a.statId === `schoolDamage:${schoolTag}`);
     if (!hasSchool) {

@@ -59,9 +59,9 @@ export interface GenerateItemOptions {
   slot: EquipSlotId;
   rarity: ItemRarity;
   itemLevel: number;
-  /** Изученные школы героя - повышают вес schoolTag на оружии. */
+  /** Изученные аспекты героя - повышают вес schoolTag на оружии. */
   learnedSchools?: School[];
-  /** Принудительная школа (тесты / крафт). */
+  /** Принудительный аспект (тесты / крафт). */
   forceSchool?: School;
   rng?: () => number;
   name?: string;

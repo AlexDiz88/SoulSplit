@@ -53,11 +53,10 @@ function affixesForSlot(slot: EquipSlotId) {
   });
 }
 
+const SCHOOL_BONUS_LABEL = "Урон/Бонус к способностям аспекта";
+
 function formatStatName(id: StatId): string {
-  if (isSchoolDamageStat(id)) {
-    const school = id.slice("schoolDamage:".length) as keyof typeof SCHOOL_LABEL;
-    return `Урон школы (${SCHOOL_LABEL[school] ?? school})`;
-  }
+  if (isSchoolDamageStat(id)) return SCHOOL_BONUS_LABEL;
   return STAT_LABEL[id as keyof typeof STAT_LABEL] ?? id;
 }
 
@@ -80,11 +79,8 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
 
   const body = el("div", "igen-body");
   const bench = buildBench();
-  const reference = el("div", "igen-reference");
-  const side = el("div", "igen-side");
-  side.append(buildSlotsSection(), buildRulesSection());
-  reference.append(buildParamsSection(), side);
-  body.append(bench.root, reference);
+  const tabs = buildTabs();
+  body.append(bench.root, tabs);
 
   win.append(head, body);
   root.append(win);
@@ -142,7 +138,6 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
 
 function buildBench(): { root: HTMLElement } {
   const root = el("section", "igen-bench");
-  root.append(el("h3", "igen-section-title", "Тестовый стенд"));
 
   const controls = el("div", "igen-controls");
 
@@ -158,7 +153,7 @@ function buildBench(): { root: HTMLElement } {
   for (const rarity of RARITIES) {
     const [lo, hi] = RARITY_AFFIX_COUNT[rarity];
     const count = lo === hi ? `${lo}` : `${lo}-${hi}`;
-    const opt = el("option", "", `${RARITY_LABEL[rarity]} (${count} афф.)`);
+    const opt = el("option", "", `${RARITY_LABEL[rarity]} (${count})`);
     opt.value = rarity;
     raritySelect.append(opt);
   }
@@ -181,8 +176,6 @@ function buildBench(): { root: HTMLElement } {
   );
 
   const result = el("div", "igen-result");
-  result.append(el("p", "igen-empty", "Нажми \"Сгенерировать\", чтобы увидеть предмет."));
-
   const note = el(
     "p",
     "igen-note",
@@ -227,7 +220,7 @@ function renderItemCard(item: ItemDef): HTMLElement {
   );
 
   if (item.schoolTag) {
-    card.append(el("div", "igen-card-meta", `Школа: ${SCHOOL_LABEL[item.schoolTag]}`));
+    card.append(el("div", "igen-card-meta", `Аспект: ${SCHOOL_LABEL[item.schoolTag]}`));
   }
   if (item.weapon) {
     card.append(
@@ -272,16 +265,44 @@ function renderItemCard(item: ItemDef): HTMLElement {
   return card;
 }
 
+function buildTabs(): HTMLElement {
+  const wrap = el("div", "igen-tabs");
+  const bar = el("div", "igen-tab-bar");
+  const btnParams = el("button", "igen-tab active", "Параметры героя") as HTMLButtonElement;
+  btnParams.type = "button";
+  btnParams.dataset.tab = "params";
+  const btnSlots = el("button", "igen-tab", "Правила по слотам") as HTMLButtonElement;
+  btnSlots.type = "button";
+  btnSlots.dataset.tab = "slots";
+  bar.append(btnParams, btnSlots);
+
+  const panelParams = el("div", "igen-tab-panel active");
+  panelParams.dataset.panel = "params";
+  panelParams.append(buildParamsSection());
+
+  const panelSlots = el("div", "igen-tab-panel");
+  panelSlots.dataset.panel = "slots";
+  panelSlots.hidden = true;
+  panelSlots.append(buildSlotsSection(), buildRulesSection());
+
+  const setTab = (id: "params" | "slots"): void => {
+    btnParams.classList.toggle("active", id === "params");
+    btnSlots.classList.toggle("active", id === "slots");
+    panelParams.classList.toggle("active", id === "params");
+    panelSlots.classList.toggle("active", id === "slots");
+    panelParams.hidden = id !== "params";
+    panelSlots.hidden = id !== "slots";
+  };
+
+  btnParams.addEventListener("click", () => setTab("params"));
+  btnSlots.addEventListener("click", () => setTab("slots"));
+
+  wrap.append(bar, panelParams, panelSlots);
+  return wrap;
+}
+
 function buildParamsSection(): HTMLElement {
-  const section = el("section", "igen-section");
-  section.append(el("h3", "igen-section-title", "Параметры героя"));
-  section.append(
-    el(
-      "p",
-      "igen-note",
-      "Все % складываются плоско. Нет local % на предмете. Нет брони-rating. Энергощит вне v1.",
-    ),
-  );
+  const section = el("section", "igen-section igen-section-params");
 
   const scroll = el("div", "igen-table-scroll");
   const table = el("table", "igen-table");
@@ -307,25 +328,37 @@ function buildParamsSection(): HTMLElement {
     tbody.append(tr);
   }
 
-  // School damage row (summary)
   const schoolRow = el("tr");
   schoolRow.append(
-    el("td", "", "Урон школы (по школам)"),
+    el("td", "", SCHOOL_BONUS_LABEL),
     el("td", "", "плоский %"),
     el("td", "", FAMILY_LABEL.school),
     el("td", "", capLabelForStat("schoolDamage:air")),
     el(
       "td",
       "igen-desc",
-      "Только на оружии и аксессуаре. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных школ весит выше.",
+      "Только на оружии и аксессуаре. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных аспектов весит выше.",
     ),
   );
   tbody.append(schoolRow);
   table.append(tbody);
   scroll.append(table);
-  section.classList.add("igen-section-params");
   section.append(scroll);
   return section;
+}
+
+function listCell(names: string[], className: string): HTMLElement {
+  const td = el("td", className);
+  if (!names.length) {
+    td.textContent = "-";
+    return td;
+  }
+  const list = el("ul", "igen-stat-list");
+  for (const name of names) {
+    list.append(el("li", "", name));
+  }
+  td.append(list);
+  return td;
 }
 
 function typeLabel(id: StatId): string {
@@ -336,7 +369,6 @@ function typeLabel(id: StatId): string {
 
 function buildSlotsSection(): HTMLElement {
   const section = el("section", "igen-section");
-  section.append(el("h3", "igen-section-title", "Правила по слотам"));
   section.append(
     el(
       "p",
@@ -345,10 +377,11 @@ function buildSlotsSection(): HTMLElement {
     ),
   );
 
+  const scroll = el("div", "igen-table-scroll");
   const table = el("table", "igen-table igen-table-slots");
   const thead = el("thead");
   const headRow = el("tr");
-  for (const h of ["Слот", "Категории", "Может роллить", "Запрещено", "Школа"]) {
+  for (const h of ["Слот", "Категории", "Может роллить", "Запрещено", "Аспект"]) {
     headRow.append(el("th", "", h));
   }
   thead.append(headRow);
@@ -358,23 +391,24 @@ function buildSlotsSection(): HTMLElement {
   for (const slot of ALL_EQUIP_SLOTS) {
     const allowed = affixesForSlot(slot);
     const denied = deniedStatsForSlot(slot);
-    const families = familiesForSlot(slot).map((f) => FAMILY_LABEL[f]).join(", ");
-    const allowedNames = uniqueLabels(allowed.map((a) => formatStatName(a.statId))).join(", ");
-    const deniedNames = denied.map((id) => formatStatName(id as StatId)).join(", ") || "-";
+    const families = familiesForSlot(slot).map((f) => FAMILY_LABEL[f]);
+    const allowedNames = uniqueLabels(allowed.map((a) => formatStatName(a.statId)));
+    const deniedNames = denied.map((id) => formatStatName(id as StatId));
     const school = isSchoolItemSlot(slot) ? "да" : "нет";
 
     const tr = el("tr");
     tr.append(
       el("td", "igen-slot-name", SLOT_LABEL[slot]),
-      el("td", "", families),
-      el("td", "igen-allow", allowedNames || "-"),
-      el("td", "igen-deny", deniedNames),
+      listCell(families, ""),
+      listCell(allowedNames, "igen-allow"),
+      listCell(deniedNames, "igen-deny"),
       el("td", "", school),
     );
     tbody.append(tr);
   }
   table.append(tbody);
-  section.append(table);
+  scroll.append(table);
+  section.append(scroll);
   return section;
 }
 
@@ -394,7 +428,7 @@ function buildRulesSection(): HTMLElement {
   const notes: Record<ItemRarity, string> = {
     common: "Белый. Только implicit оружия, если слот оружейный.",
     uncommon: "Один ролл. Prefix или suffix случайно.",
-    rare: "Два ролла. На школьном предмете с blue+ стараемся дать school-аффикс.",
+    rare: "Два ролла. На аспектном предмете с blue+ стараемся дать school-аффикс.",
     yellow: "3-4 ролла.",
     epic: "4-5 роллов. Легендарки в генератор не входят.",
   };
@@ -416,7 +450,7 @@ function buildRulesSection(): HTMLElement {
     "Аффикс = statId + roll(min, max) по itemLevel (tiers в каталоге).",
     "Prefix / suffix заложены: в v1 любой аффикс может быть обоими.",
     "Базовый урон оружия и бонус атаки оружия - разные сущности.",
-    "Школьные предметы: основная рука, левая рука, аксессуар.",
+    "Аспектные предметы: основная рука, левая рука, аксессуар.",
   ];
   for (const text of bullets) {
     list.append(el("li", "", text));

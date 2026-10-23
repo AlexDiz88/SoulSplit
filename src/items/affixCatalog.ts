@@ -136,7 +136,7 @@ function schoolAffixes(): AffixDef[] {
       `school_dmg_${school}`,
       schoolDamageStat(school),
       "school",
-      `+% урона школы (${SCHOOL_LABEL[school]})`,
+      `+% урона аспекта (${SCHOOL_LABEL[school]})`,
       [
         [1, 4, 8],
         [10, 6, 12],

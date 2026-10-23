@@ -72,7 +72,7 @@ export const FAMILY_LABEL: Record<AffixFamily, string> = {
   defense: "Защита",
   resource: "Ресурсы",
   tempo: "Темп",
-  school: "Школа",
+  school: "Аспект",
 };
 
 export const STAT_DESC: Record<PercentStatId | FlatStatId, string> = {
@@ -85,11 +85,11 @@ export const STAT_DESC: Record<PercentStatId | FlatStatId, string> = {
   attackSpeed: "Плоский % к скорости автоатак. finalCd = weaponBaseCd * (1 - AS/100). Не влияет на каст. Кап 75%.",
   castSpeed: "Плоский % к скорости каста способностей. Не влияет на автоатаки. Кап 75%.",
   cooldownReduction: "Плоский % сокращения кулдаунов способностей. Кап 75%.",
-  abilityDamage: "Плоский % ко всем пакетам урона способностей (клетки, DoT). Складывается со школьным %. Кап суммы 100%.",
+  abilityDamage: "Плоский % ко всем пакетам урона способностей (клетки, DoT). Складывается с аспектным %. Кап суммы 100%.",
   critChance: "Плоский % шанса крита для автоатак и способностей. Кап 75%.",
   critDamage: "Итоговый множитель крита в %. База 150. Рост плоский. Кап 250%.",
   physDamageReduction: "Плоский % снижения физического урона вместо брони. Кап 75%.",
-  magicResist: "Плоский % снижения магического урона (способности школ в v1). Кап 75%.",
+  magicResist: "Плоский % снижения магического урона (способности аспектов в v1). Кап 75%.",
   evasion: "Плоский % полного уклонения от удара. Кап 75%.",
   blockChance: "Плоский % блока. Аффикс есть, бой позже. Кап 75%.",
   parryChance: "Плоский % парирования. Аффикс есть, бой позже. Кап 75%.",
@@ -118,7 +118,7 @@ export const CORE_STAT_IDS: Array<PercentStatId | FlatStatId> = [
 
 export function capLabelForStat(id: StatId): string {
   if (isSchoolDamageStat(id)) return `${OFFENSE_AMP_CAP}% (в сумме с уроном способностей)`;
-  if (id === "abilityDamage") return `${OFFENSE_AMP_CAP}% (в сумме со школой)`;
+  if (id === "abilityDamage") return `${OFFENSE_AMP_CAP}% (в сумме с аспектом)`;
   if (id === "critDamage") return `${CRIT_DAMAGE_CAP}% (база ${CRIT_DAMAGE_BASE}%)`;
   const cap = STAT_CAPS[id];
   if (cap === undefined) return "-";

@@ -232,7 +232,7 @@ function renderIdentity(hero: Unit | null): HTMLElement {
   const copy = el("div", "cs-identity-copy");
   copy.append(
     el("h3", "cs-identity-name", hero?.name ?? "Герой"),
-    el("div", "cs-identity-meta", hero ? `Школа: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
+    el("div", "cs-identity-meta", hero ? `Аспект: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
     el("div", "cs-identity-level", "Уровень 1"),
   );
   plate.append(portrait, copy);
@@ -281,7 +281,7 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
     el("div", "cs-tip-meta", `${RARITY_LABEL[item.rarity]} · ур. ${item.itemLevel}`),
   ];
   if (item.schoolTag) {
-    nodes.push(el("div", "cs-tip-meta", `Школа: ${SCHOOL_LABEL[item.schoolTag]}`));
+    nodes.push(el("div", "cs-tip-meta", `Аспект: ${SCHOOL_LABEL[item.schoolTag]}`));
   }
   if (item.weapon) {
     nodes.push(
@@ -325,7 +325,7 @@ function renderStats(hero: Unit | null): HTMLElement[] {
   const schoolRows: [string, string][] = [];
   if (sheet && hero) {
     const dmg = schoolDamageOf(sheet, hero.school);
-    if (dmg > 0) schoolRows.push([`Урон школы (${SCHOOL_LABEL[hero.school]})`, `${dmg}%`]);
+    if (dmg > 0) schoolRows.push([`Урон аспекта (${SCHOOL_LABEL[hero.school]})`, `${dmg}%`]);
   }
 
   return [
