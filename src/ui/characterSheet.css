@@ -149,6 +149,43 @@
     inset 0 0 0 4px rgba(196, 163, 90, 0.22);
 }
 
+.cs-hero {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.cs-hero-portrait {
+  flex: none;
+  width: 56px;
+  height: 56px;
+  padding: 2px;
+  border-radius: 4px;
+  background: linear-gradient(155deg, #ecd08a, #5a4828 48%, #c4a35a);
+  box-shadow: 0 0 0 1px #0a0b0c;
+}
+
+.cs-hero-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 2px;
+  background: #151617;
+}
+
+.cs-hero-portrait:empty {
+  background:
+    radial-gradient(circle at 50% 40%, #2c2e30, #111213 78%),
+    linear-gradient(155deg, #ecd08a, #5a4828 48%, #c4a35a);
+  background-origin: content-box, border-box;
+  background-clip: content-box, border-box;
+}
+
+.cs-hero-copy {
+  min-width: 0;
+}
+
 .cs-hero h3 {
   font-size: 1.25rem;
   font-weight: 800;
@@ -318,56 +355,35 @@
 }
 
 .cs-doll {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 26px;
+}
+
+.cs-doll-body {
   display: grid;
-  grid-template-columns: var(--slot) calc(var(--slot) * 3.3) var(--slot);
-  grid-template-rows: repeat(6, var(--slot));
+  grid-template-columns: var(--slot) var(--slot) var(--slot);
+  grid-template-rows: repeat(5, var(--slot));
   grid-template-areas:
-    "t1   head     t2"
-    "neck portrait r1"
-    "shld portrait r2"
-    "hand portrait belt"
-    "main legs     off"
-    ".    feet     .";
-  gap: 14px 26px;
+    ".    head  ."
+    "shld chest neck"
+    "hand belt  t1"
+    "r1   legs  r2"
+    ".    feet  .";
+  gap: 18px 32px;
   justify-items: center;
 }
 
-.cs-portrait {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  padding: 3px;
-  border-radius: 50% 50% 6px 6px / 26% 26% 6px 6px;
-  background: linear-gradient(155deg, #ecd08a, #5a4828 48%, #c4a35a);
-  box-shadow:
-    0 0 0 1px #0a0b0c,
-    0 0 36px rgba(196, 163, 90, 0.18);
+.cs-doll-hands {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
 }
 
-.cs-portrait img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  border-radius: 50% 50% 4px 4px / 26% 26% 4px 4px;
-  background: #151617;
-}
-
-.cs-portrait-plate {
-  position: absolute;
-  left: 50%;
-  bottom: -13px;
-  transform: translateX(-50%);
-  padding: 3px 18px;
-  border: 1px solid #c4a35a;
-  background: linear-gradient(180deg, #3a3020, #15120c);
-  color: #ecd396;
-  font-size: 0.78rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  clip-path: polygon(8px 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 8px 100%, 0 50%);
+.cs-slot-hand {
+  width: calc(var(--slot) * 1.35);
+  height: calc(var(--slot) * 1.35);
 }
 
 @media (max-width: 760px) {
@@ -417,8 +433,20 @@
   }
 
   .cs-doll {
-    gap: 10px 14px;
-    grid-template-columns: var(--slot) calc(var(--slot) * 3) var(--slot);
+    gap: 18px;
+  }
+
+  .cs-doll-body {
+    gap: 12px 18px;
+  }
+
+  .cs-doll-hands {
+    gap: 16px;
+  }
+
+  .cs-hero-portrait {
+    width: 48px;
+    height: 48px;
   }
 }
 
@@ -439,6 +467,14 @@
   }
 
   .cs-doll {
-    gap: 6px 14px;
+    gap: 14px;
+  }
+
+  .cs-doll-body {
+    gap: 8px 16px;
+  }
+
+  .cs-doll-hands {
+    gap: 14px;
   }
 }

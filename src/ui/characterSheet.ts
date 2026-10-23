@@ -4,6 +4,7 @@ import "./characterSheet.css";
 
 export type EquipSlotId =
   | "head"
+  | "chest"
   | "neck"
   | "shoulders"
   | "hands"
@@ -12,12 +13,23 @@ export type EquipSlotId =
   | "waist"
   | "legs"
   | "feet"
-  | "trinket1"
-  | "trinket2"
+  | "trinket"
   | "mainhand"
   | "offhand";
 
-type GlyphId = "head" | "neck" | "shoulders" | "hands" | "ring" | "waist" | "legs" | "feet" | "trinket" | "mainhand" | "offhand";
+type GlyphId =
+  | "head"
+  | "chest"
+  | "neck"
+  | "shoulders"
+  | "hands"
+  | "ring"
+  | "waist"
+  | "legs"
+  | "feet"
+  | "trinket"
+  | "mainhand"
+  | "offhand";
 
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
@@ -40,6 +52,7 @@ export interface CharacterSheetApi {
 
 const SLOTS: Record<EquipSlotId, SlotDef> = {
   head: { label: "Голова", glyph: "head" },
+  chest: { label: "Туловище", glyph: "chest" },
   neck: { label: "Шея", glyph: "neck" },
   shoulders: { label: "Плечи", glyph: "shoulders" },
   hands: { label: "Перчатки", glyph: "hands" },
@@ -48,8 +61,7 @@ const SLOTS: Record<EquipSlotId, SlotDef> = {
   waist: { label: "Пояс", glyph: "waist" },
   legs: { label: "Ноги", glyph: "legs" },
   feet: { label: "Обувь", glyph: "feet" },
-  trinket1: { label: "Аксессуар", glyph: "trinket" },
-  trinket2: { label: "Аксессуар", glyph: "trinket" },
+  trinket: { label: "Аксессуар", glyph: "trinket" },
   mainhand: { label: "Основная рука", glyph: "mainhand" },
   offhand: { label: "Левая рука", glyph: "offhand" },
 };
@@ -65,17 +77,19 @@ const RARITY_LABEL: Record<Rarity, string> = {
 /** Временные предметы для оценки вида ячеек, пока нет системы экипировки. */
 const DEMO_ITEMS: Partial<Record<EquipSlotId, ItemDef>> = {
   head: { name: "Шлем ледяного стража", rarity: "rare", lines: ["+120 к здоровью", "+8 к броне"] },
+  chest: { name: "Кираса северного ветра", rarity: "epic", lines: ["+180 к здоровью", "+10 к броне"] },
   neck: { name: "Амулет угасшей звезды", rarity: "epic", lines: ["+6% к силе способностей"] },
   shoulders: { name: "Наплечники северного ветра", rarity: "epic", lines: ["+90 к здоровью", "+3% к уклонению"] },
   ring1: { name: "Кольцо тихой воды", rarity: "uncommon", lines: ["+2% к шансу крита"] },
   feet: { name: "Сапоги следопыта", rarity: "uncommon", lines: ["+4% к скорости атаки"] },
-  trinket1: { name: "Осколок вечной зимы", rarity: "legendary", lines: ["Ледяные способности -10% к кулдауну"] },
+  trinket: { name: "Осколок вечной зимы", rarity: "legendary", lines: ["Ледяные способности -10% к кулдауну"] },
   mainhand: { name: "Клинок инея", rarity: "legendary", lines: ["+18 к атаке", "Атаки замедляют цель"] },
   offhand: { name: "Ясеневый щит", rarity: "common", lines: ["+12 к броне", "+5% к блоку"] },
 };
 
 const GLYPHS: Record<GlyphId, string> = {
   head: '<path d="M4.5 14a7.5 7.5 0 0 1 15 0v5h-4.5v-4.5h-6V19H4.5z"/><path d="M12 6.5v8M9 10h6"/>',
+  chest: '<path d="M7 4.5h10l2.5 3.5v12.5H4.5V8z"/><path d="M7 4.5L4.5 8M17 4.5l2.5 3.5M9 4.5v3.5h6V4.5"/><path d="M12 10v7"/>',
   neck: '<path d="M5.5 3.5c.5 5.5 3.2 8.5 6.5 8.5s6-3 6.5-8.5"/><path d="M12 12.5l3 3.5-3 4.5-3-4.5z"/>',
   shoulders: '<path d="M3 15c0-5.5 4-9 9-9s9 3.5 9 9l-3.2 2.2-2.3-3.2h-7l-2.3 3.2z"/><path d="M8 9.5l1.2 2M16 9.5l-1.2 2"/>',
   hands: '<path d="M7 21v-6.5L4.5 11l1.6-1.2L8 12V5.5a1.2 1.2 0 0 1 2.4 0V11V4a1.2 1.2 0 0 1 2.4 0v7V5a1.2 1.2 0 0 1 2.4 0v6.5V7.5a1.2 1.2 0 0 1 2.4 0V15l-1.8 6z"/><path d="M7 18h10"/>',
@@ -88,21 +102,36 @@ const GLYPHS: Record<GlyphId, string> = {
   offhand: '<path d="M12 3l8 3v6.2c0 4.8-3.6 7.9-8 8.8-4.4-.9-8-4-8-8.8V6z"/><path d="M12 6.5v11M7.5 11h9"/>',
 };
 
-const SLOT_AREAS: Record<EquipSlotId, string> = {
-  trinket1: "t1",
+/** Сетка paperdoll: центр / левая / правая ось. Оружие отдельно снизу. */
+const BODY_SLOTS: EquipSlotId[] = [
+  "head",
+  "chest",
+  "waist",
+  "legs",
+  "feet",
+  "shoulders",
+  "hands",
+  "neck",
+  "ring1",
+  "ring2",
+  "trinket",
+];
+
+const BODY_AREAS: Record<(typeof BODY_SLOTS)[number], string> = {
   head: "head",
-  trinket2: "t2",
-  neck: "neck",
-  shoulders: "shld",
-  hands: "hand",
-  ring1: "r1",
-  ring2: "r2",
+  chest: "chest",
   waist: "belt",
   legs: "legs",
-  mainhand: "main",
   feet: "feet",
-  offhand: "off",
+  shoulders: "shld",
+  hands: "hand",
+  neck: "neck",
+  ring1: "r1",
+  ring2: "r2",
+  trinket: "t1",
 };
+
+const HAND_SLOTS: EquipSlotId[] = ["mainhand", "offhand"];
 
 export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const hud = document.getElementById("hud")!;
@@ -146,7 +175,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const render = (): void => {
     tip.hidden = true;
     demoBtn.classList.toggle("active", showItems);
-    dollWrap.replaceChildren(renderDoll(hero, items()));
+    dollWrap.replaceChildren(renderDoll(items()));
     stats.replaceChildren(...renderStats(hero));
   };
 
@@ -209,12 +238,16 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   window.addEventListener("keydown", (ev) => {
     const target = ev.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
-    if (ev.code !== "KeyC" || ev.repeat || ev.ctrlKey || ev.metaKey) return;
+    if (ev.code !== "KeyC" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     if (root.hidden) {
       if (!document.getElementById("grimoire")?.hidden || !document.getElementById("bestiary")?.hidden) return;
+      ev.preventDefault();
       onOpen();
       open();
-    } else close();
+    } else {
+      ev.preventDefault();
+      close();
+    }
   });
 
   return {
@@ -227,23 +260,21 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   };
 }
 
-function renderDoll(hero: Unit | null, items: Partial<Record<EquipSlotId, ItemDef>>): HTMLElement {
+function renderDoll(items: Partial<Record<EquipSlotId, ItemDef>>): HTMLElement {
   const doll = el("div", "cs-doll");
-  for (const id of Object.keys(SLOT_AREAS) as EquipSlotId[]) {
+  const body = el("div", "cs-doll-body");
+  for (const id of BODY_SLOTS) {
     const slot = slotButton(id, items[id]);
-    slot.style.gridArea = SLOT_AREAS[id];
-    doll.append(slot);
+    slot.style.gridArea = BODY_AREAS[id];
+    body.append(slot);
   }
-  const frame = el("div", "cs-portrait");
-  frame.style.gridArea = "portrait";
-  if (hero?.portraitUrl) {
-    const img = document.createElement("img");
-    img.src = hero.portraitUrl;
-    img.alt = hero.name;
-    frame.append(img);
+  const hands = el("div", "cs-doll-hands");
+  for (const id of HAND_SLOTS) {
+    const slot = slotButton(id, items[id]);
+    slot.classList.add("cs-slot-hand");
+    hands.append(slot);
   }
-  frame.append(el("div", "cs-portrait-plate", hero?.name ?? "Герой"));
-  doll.append(frame);
+  doll.append(body, hands);
   return doll;
 }
 
@@ -262,13 +293,20 @@ function slotButton(id: EquipSlotId, item: ItemDef | undefined): HTMLButtonEleme
 function renderStats(hero: Unit | null): HTMLElement[] {
   const s = hero?.stats;
   const card = el("div", "cs-hero");
+  const portrait = el("div", "cs-hero-portrait");
+  if (hero?.portraitUrl) {
+    const img = document.createElement("img");
+    img.src = hero.portraitUrl;
+    img.alt = hero.name;
+    portrait.append(img);
+  }
   const copy = el("div", "cs-hero-copy");
   copy.append(
     el("h3", "", hero?.name ?? "Герой"),
     el("p", "", hero ? `Школа: ${SCHOOL_LABEL[hero.school]}` : "Нет данных"),
     el("p", "cs-level", "Уровень 1"),
   );
-  card.append(copy);
+  card.append(portrait, copy);
 
   const reach = s?.reach ?? 1;
   return [
