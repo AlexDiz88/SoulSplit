@@ -1,6 +1,6 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
-import type { EquipSlotId } from "../items/slots";
+import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
@@ -32,6 +32,11 @@ export interface CharacterSheetApi {
   isOpen(): boolean;
   close(): void;
   setHero(hero: Unit): void;
+  /** Вызывается при открытии / закрытии (для компаньон-окна инвентаря). */
+  setOnVisibilityChange(fn: (open: boolean) => void): void;
+  setCanChangeEquipment(fn: () => boolean): void;
+  setOnEquipmentChanged(fn: () => void): void;
+  setShowToast(fn: (text: string) => void): void;
 }
 
 const SLOTS: Record<EquipSlotId, SlotDef> = {
@@ -130,6 +135,10 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   hud.append(root);
 
   let hero: Unit | null = null;
+  let onVisibilityChange: ((open: boolean) => void) | null = null;
+  let canChangeEquipment: () => boolean = () => true;
+  let onEquipmentChanged: (() => void) | null = null;
+  let showToast: ((text: string) => void) | null = null;
 
   const render = (): void => {
     tip.hidden = true;
@@ -141,10 +150,12 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const open = (): void => {
     render();
     root.hidden = false;
+    onVisibilityChange?.(true);
   };
   const close = (): void => {
     root.hidden = true;
     tip.hidden = true;
+    onVisibilityChange?.(false);
   };
 
   const showTip = (slot: HTMLElement): void => {
@@ -157,6 +168,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
       tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
     } else {
       tip.append(...renderItemTip(item));
+      tip.append(el("div", "cs-tip-meta", "ПКМ - снять в сумку"));
     }
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
@@ -179,6 +191,25 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     if (slot && (!next || !slot.contains(next))) tip.hidden = true;
   });
 
+  dollWrap.addEventListener("contextmenu", (ev) => {
+    ev.preventDefault();
+    const slotEl = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled");
+    if (!slotEl || !hero) return;
+    const id = slotEl.dataset.slot as EquipSlotId | undefined;
+    if (!id) return;
+    if (!canChangeEquipment()) {
+      showToast?.("Экипировку можно менять только вне боя");
+      return;
+    }
+    const result = hero.unequipSlot(id);
+    if (!result.ok) {
+      if (result.reason === "inventory_full") showToast?.("Инвентарь полон");
+      return;
+    }
+    onEquipmentChanged?.();
+    render();
+  });
+
   closeBtn.addEventListener("click", close);
   root.addEventListener("click", (ev) => {
     if (ev.target === root) close();
@@ -193,19 +224,11 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     const target = ev.target;
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
     if (ev.code !== "KeyC" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    ev.preventDefault();
     if (root.hidden) {
-      if (
-        !document.getElementById("grimoire")?.hidden ||
-        !document.getElementById("bestiary")?.hidden ||
-        !document.getElementById("item-generator")?.hidden
-      ) {
-        return;
-      }
-      ev.preventDefault();
       onOpen();
       open();
     } else {
-      ev.preventDefault();
       close();
     }
   });
@@ -216,6 +239,18 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     setHero(next: Unit) {
       hero = next;
       if (!root.hidden) render();
+    },
+    setOnVisibilityChange(fn) {
+      onVisibilityChange = fn;
+    },
+    setCanChangeEquipment(fn) {
+      canChangeEquipment = fn;
+    },
+    setOnEquipmentChanged(fn) {
+      onEquipmentChanged = fn;
+    },
+    setShowToast(fn) {
+      showToast = fn;
     },
   };
 }
@@ -270,7 +305,15 @@ function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
     btn.setAttribute("aria-label", `${def.label}: пусто`);
   }
   const face = el("span", "cs-slot-face");
-  face.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[def.glyph]}</svg>`;
+  if (item?.icon) {
+    const img = el("img", "cs-slot-icon") as HTMLImageElement;
+    img.src = item.icon;
+    img.alt = "";
+    img.draggable = false;
+    face.append(img);
+  } else {
+    face.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${GLYPHS[def.glyph]}</svg>`;
+  }
   btn.append(face, el("span", "cs-slot-label", item?.name ?? def.label));
   return btn;
 }
@@ -278,7 +321,11 @@ function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
 function renderItemTip(item: ItemDef): HTMLElement[] {
   const nodes: HTMLElement[] = [
     el("div", "cs-tip-name", item.name),
-    el("div", "cs-tip-meta", `${RARITY_LABEL[item.rarity]} · ур. ${item.itemLevel}`),
+    el(
+      "div",
+      "cs-tip-meta",
+      `${RARITY_LABEL[item.rarity]} · ${SLOT_LABEL[item.slot]} · ур. ${item.itemLevel}`,
+    ),
   ];
   if (item.aspectTag) {
     nodes.push(el("div", "cs-tip-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));

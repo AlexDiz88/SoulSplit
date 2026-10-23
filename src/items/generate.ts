@@ -1,3 +1,4 @@
+import { pickItemIconUrl } from "../art/itemIcons";
 import { ASPECT_LABEL } from "../abilities/definitions";
 import { WEAPON_LABEL, WEAPON_REACH } from "../combat/weapons";
 import type { Aspect, WeaponKind } from "../types";
@@ -139,7 +140,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     });
   }
 
-  // На аспектном предмете blue+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
+  // На аспектном предмете magic+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
   if (aspectTag && rarity !== "common" && rarity !== "uncommon") {
     const hasAspect = affixes.some((a) => a.statId === `aspectDamage:${aspectTag}`);
     if (!hasAspect) {
@@ -164,6 +165,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     rarity,
     itemLevel,
     affixes,
+    icon: pickItemIconUrl(slot, rarity, rng),
     aspectTag,
     weapon,
   };

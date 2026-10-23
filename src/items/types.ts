@@ -2,7 +2,7 @@ import type { Aspect, WeaponKind } from "../types";
 import type { AffixFamily, StatId } from "../stats/statIds";
 import type { EquipSlotId } from "./slots";
 
-export type ItemRarity = "common" | "uncommon" | "rare" | "yellow" | "epic";
+export type ItemRarity = "common" | "uncommon" | "magic" | "rare" | "epic";
 
 /** Position of a rolled mod on the item. v1: any affix may be either. */
 export type AffixSlot = "prefix" | "suffix";
@@ -50,6 +50,8 @@ export interface ItemDef {
   rarity: ItemRarity;
   itemLevel: number;
   affixes: RolledAffix[];
+  /** URL иконки из assets/art/items (префиксы slot_rarity_n). */
+  icon?: string;
   /** Только оружие / аксессуар. */
   aspectTag?: Aspect;
   weapon?: WeaponImplicit;
@@ -70,15 +72,15 @@ export interface GenerateItemOptions {
 export const RARITY_LABEL: Record<ItemRarity, string> = {
   common: "Обычный",
   uncommon: "Необычный",
-  rare: "Магический",
-  yellow: "Редкий",
+  magic: "Магический",
+  rare: "Редкий",
   epic: "Эпический",
 };
 
 export const RARITY_AFFIX_COUNT: Record<ItemRarity, [number, number]> = {
   common: [0, 0],
   uncommon: [1, 1],
-  rare: [2, 2],
-  yellow: [3, 4],
+  magic: [2, 2],
+  rare: [3, 4],
   epic: [4, 5],
 };

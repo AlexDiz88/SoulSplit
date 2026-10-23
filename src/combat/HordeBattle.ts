@@ -3,7 +3,7 @@ import { ABILITIES, ALL_ABILITY_IDS, ASPECT_COLOR } from "../abilities/definitio
 import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
-import { createStarterWeapon } from "../items/generate";
+import { createEmptyInventory } from "../items/inventory";
 import type { AbilityDef, AbilityId, GridPos, Aspect, WeaponKind } from "../types";
 import {
   abilityCooldown,
@@ -191,6 +191,7 @@ export class HordeBattle {
     this.hud.setPause(false);
     this.syncBattleBanner();
     this.hud.setHint(this.idleHint());
+    this.hud.setHero(this.hero);
   };
 
   private readonly onPauseClick = (): void => {
@@ -241,6 +242,7 @@ export class HordeBattle {
     if (slot < 0) return;
     if (!document.getElementById("grimoire")?.hidden) return;
     if (!document.getElementById("character")?.hidden) return;
+    if (!document.getElementById("inventory")?.hidden) return;
     if (!document.getElementById("bestiary")?.hidden) return;
     if (!document.getElementById("item-generator")?.hidden) return;
     if (!document.getElementById("side-menu")?.hidden) return;
@@ -261,10 +263,27 @@ export class HordeBattle {
     this.hud.onStart(this.onStartClick);
     document.getElementById("btn-pause")?.addEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.addEventListener("click", this.onSpeedClick);
+    this.hud.setCanChangeEquipment(() => this.canChangeEquipment());
+    this.hud.setOnEquipmentChanged(() => this.onHeroEquipmentChanged());
     window.addEventListener("keydown", this.onKey);
     window.addEventListener("keyup", this.onKeyUp);
     document.addEventListener("contextmenu", this.onContextMenu);
     document.addEventListener("pointerdown", this.onDocPointer);
+  }
+
+  /** Экипировка только до старта, на паузе или после боя. */
+  private canChangeEquipment(): boolean {
+    return !this.started || this.paused || this.ended;
+  }
+
+  private onHeroEquipmentChanged(): void {
+    const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
+    if (w) {
+      this.weapon = w.kind;
+      this.drawWeaponRange();
+    }
+    this.hud.setHero(this.hero);
+    if (!this.selectedAbility) this.hud.setHint(this.idleHint());
   }
 
   /** Сброс выбора способности, требующей цель (ПКМ). */
@@ -417,9 +436,6 @@ export class HordeBattle {
   }
 
   private spawnCrowd(): void {
-    const starter = createStarterWeapon("mainhand");
-    const equipment = { mainhand: starter };
-    const weapon = starter.weapon!;
     this.hero = new Unit({
       id: "aira",
       name: "Айра",
@@ -429,20 +445,20 @@ export class HordeBattle {
       pos: { col: 1, row: 0 },
       stats: {
         maxHp: 2000,
-        atk: weapon.damageMax,
-        autoAttackCd: weapon.baseCd,
-        range: weapon.range,
-        reach: weapon.reach,
+        atk: 26,
+        autoAttackCd: 1.2,
+        range: "melee",
+        reach: 1,
       },
       abilities: ALL_ABILITY_IDS,
       portraitUrl: pickRandomHeroPortraitUrl(),
       cardSize: HERO_SIZE,
-      equipment,
+      equipment: {},
+      inventory: createEmptyInventory(),
       sheet: undefined,
     });
-    // База + стартовое оружие уже в compute через equipment; maxHp из base sheet.
     this.hero.rebuildSheetFromEquipment(createBaseHeroSheet());
-    this.weapon = weapon.kind;
+    this.weapon = "melee";
     this.unitsLayer.addChild(this.hero.view);
     this.units.push(this.hero);
     this.hud.setHero(this.hero);
@@ -1399,6 +1415,7 @@ export class HordeBattle {
     this.hud.setPause(paused);
     this.syncBattleBanner();
     this.refreshSkillBar();
+    this.hud.setHero(this.hero);
   }
 
   private checkEnd(): void {

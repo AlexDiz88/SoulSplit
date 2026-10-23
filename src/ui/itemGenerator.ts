@@ -1,6 +1,8 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
+import type { Unit } from "../combat/Unit";
 import { AFFIX_CATALOG } from "../items/affixCatalog";
 import { generateItem } from "../items/generate";
+import { addItemToInventory } from "../items/inventory";
 import { deniedStatsForSlot, familiesForSlot, isStatAllowedOnSlot } from "../items/slotRules";
 import { ALL_EQUIP_SLOTS, isAspectItemSlot, SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import {
@@ -26,9 +28,12 @@ import "./itemGenerator.css";
 export interface ItemGeneratorApi {
   isOpen(): boolean;
   close(): void;
+  setHero(hero: Unit): void;
+  setOnInventoryChanged(fn: () => void): void;
+  setShowToast(fn: (text: string) => void): void;
 }
 
-const RARITIES: ItemRarity[] = ["common", "uncommon", "rare", "yellow", "epic"];
+const RARITIES: ItemRarity[] = ["common", "uncommon", "magic", "rare", "epic"];
 
 const FAMILY_OF_STAT: Partial<Record<StatId, AffixFamily>> = Object.fromEntries(
   AFFIX_CATALOG.filter((a) => !isAspectDamageStat(a.statId)).map((a) => [a.statId, a.family]),
@@ -77,8 +82,16 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
   closeBtn.type = "button";
   head.append(title, closeBtn);
 
+  let hero: Unit | null = null;
+  let onInventoryChanged: (() => void) | null = null;
+  let showToast: ((text: string) => void) | null = null;
+
   const body = el("div", "igen-body");
-  const bench = buildBench();
+  const bench = buildBench({
+    getHero: () => hero,
+    onInventoryChanged: () => onInventoryChanged?.(),
+    showToast: (text) => showToast?.(text),
+  });
   const tabs = buildTabs();
   body.append(bench.root, tabs);
 
@@ -113,19 +126,11 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
       return;
     }
     if (ev.code !== "KeyG" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    ev.preventDefault();
     if (root.hidden) {
-      if (
-        !document.getElementById("grimoire")?.hidden ||
-        !document.getElementById("bestiary")?.hidden ||
-        !document.getElementById("character")?.hidden
-      ) {
-        return;
-      }
-      ev.preventDefault();
       onOpen();
       open();
     } else {
-      ev.preventDefault();
       close();
     }
   });
@@ -133,10 +138,23 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
   return {
     isOpen: () => !root.hidden,
     close,
+    setHero(next) {
+      hero = next;
+    },
+    setOnInventoryChanged(fn) {
+      onInventoryChanged = fn;
+    },
+    setShowToast(fn) {
+      showToast = fn;
+    },
   };
 }
 
-function buildBench(): { root: HTMLElement } {
+function buildBench(hooks: {
+  getHero: () => Unit | null;
+  onInventoryChanged: () => void;
+  showToast: (text: string) => void;
+}): { root: HTMLElement } {
   const root = el("section", "igen-bench");
 
   const controls = el("div", "igen-controls");
@@ -147,7 +165,7 @@ function buildBench(): { root: HTMLElement } {
     opt.value = slot;
     slotSelect.append(opt);
   }
-  slotSelect.value = "mainhand";
+  slotSelect.value = "feet";
 
   const raritySelect = el("select", "igen-select") as HTMLSelectElement;
   for (const rarity of RARITIES) {
@@ -157,13 +175,19 @@ function buildBench(): { root: HTMLElement } {
     opt.value = rarity;
     raritySelect.append(opt);
   }
-  raritySelect.value = "rare";
+  raritySelect.value = "magic";
 
   const ilvlInput = el("input", "igen-input") as HTMLInputElement;
   ilvlInput.type = "number";
   ilvlInput.min = "1";
   ilvlInput.max = "100";
   ilvlInput.value = "10";
+
+  const addToInvLabel = el("label", "igen-check");
+  const addToInv = el("input") as HTMLInputElement;
+  addToInv.type = "checkbox";
+  addToInv.checked = true;
+  addToInvLabel.append(addToInv, document.createTextNode("Добавить предмет в инвентарь"));
 
   const genBtn = el("button", "igen-gen-btn", "Сгенерировать");
   genBtn.type = "button";
@@ -172,6 +196,7 @@ function buildBench(): { root: HTMLElement } {
     field("Слот", slotSelect),
     field("Редкость", raritySelect),
     field("Уровень предмета", ilvlInput),
+    addToInvLabel,
     genBtn,
   );
 
@@ -179,7 +204,7 @@ function buildBench(): { root: HTMLElement } {
   const note = el(
     "p",
     "igen-note",
-    "Каждая генерация создаёт новый предмет в памяти стенда. На экипировку героя не влияет.",
+    "Временно: галочка кладёт предмет в инвентарь героя для проверки иконок и дропа.",
   );
 
   genBtn.addEventListener("click", () => {
@@ -194,6 +219,19 @@ function buildBench(): { root: HTMLElement } {
       learnedAspects: ["air", "ice"],
     });
     result.replaceChildren(renderItemCard(item));
+
+    if (!addToInv.checked) return;
+    const hero = hooks.getHero();
+    if (!hero) {
+      hooks.showToast("Герой ещё не создан");
+      return;
+    }
+    const idx = addItemToInventory(hero.inventory, item);
+    if (idx < 0) {
+      hooks.showToast("Инвентарь полон");
+      return;
+    }
+    hooks.onInventoryChanged();
   });
 
   root.append(controls, note, result);
@@ -210,7 +248,16 @@ function renderItemCard(item: ItemDef): HTMLElement {
   const card = el("article", "igen-card");
   card.dataset.rarity = item.rarity;
 
-  card.append(
+  const head = el("div", "igen-card-head");
+  if (item.icon) {
+    const img = el("img", "igen-card-icon") as HTMLImageElement;
+    img.src = item.icon;
+    img.alt = "";
+    img.draggable = false;
+    head.append(img);
+  }
+  const text = el("div", "igen-card-head-text");
+  text.append(
     el("h4", "igen-card-name", item.name),
     el(
       "div",
@@ -218,6 +265,8 @@ function renderItemCard(item: ItemDef): HTMLElement {
       `${RARITY_LABEL[item.rarity]} · ${SLOT_LABEL[item.slot]} · ур. ${item.itemLevel}`,
     ),
   );
+  head.append(text);
+  card.append(head);
 
   if (item.aspectTag) {
     card.append(el("div", "igen-card-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
@@ -268,36 +317,58 @@ function renderItemCard(item: ItemDef): HTMLElement {
 function buildTabs(): HTMLElement {
   const wrap = el("div", "igen-tabs");
   const bar = el("div", "igen-tab-bar");
-  const btnParams = el("button", "igen-tab active", "Параметры героя") as HTMLButtonElement;
-  btnParams.type = "button";
-  btnParams.dataset.tab = "params";
-  const btnSlots = el("button", "igen-tab", "Правила по слотам") as HTMLButtonElement;
-  btnSlots.type = "button";
-  btnSlots.dataset.tab = "slots";
-  bar.append(btnParams, btnSlots);
+
+  type TabId = "params" | "slots" | "rarity";
+  const tabs: { id: TabId; label: string; active?: boolean }[] = [
+    { id: "params", label: "Параметры героя", active: true },
+    { id: "slots", label: "Правила по слотам" },
+    { id: "rarity", label: "Редкость и роллы" },
+  ];
+
+  const buttons = new Map<TabId, HTMLButtonElement>();
+  const panels = new Map<TabId, HTMLElement>();
+
+  for (const tab of tabs) {
+    const btn = el("button", `igen-tab${tab.active ? " active" : ""}`, tab.label) as HTMLButtonElement;
+    btn.type = "button";
+    btn.dataset.tab = tab.id;
+    buttons.set(tab.id, btn);
+    bar.append(btn);
+  }
 
   const panelParams = el("div", "igen-tab-panel active");
   panelParams.dataset.panel = "params";
   panelParams.append(buildParamsSection());
+  panels.set("params", panelParams);
 
   const panelSlots = el("div", "igen-tab-panel");
   panelSlots.dataset.panel = "slots";
   panelSlots.hidden = true;
-  panelSlots.append(buildSlotsSection(), buildRulesSection());
+  panelSlots.append(buildSlotsSection());
+  panels.set("slots", panelSlots);
 
-  const setTab = (id: "params" | "slots"): void => {
-    btnParams.classList.toggle("active", id === "params");
-    btnSlots.classList.toggle("active", id === "slots");
-    panelParams.classList.toggle("active", id === "params");
-    panelSlots.classList.toggle("active", id === "slots");
-    panelParams.hidden = id !== "params";
-    panelSlots.hidden = id !== "slots";
+  const panelRarity = el("div", "igen-tab-panel");
+  panelRarity.dataset.panel = "rarity";
+  panelRarity.hidden = true;
+  panelRarity.append(buildRulesSection());
+  panels.set("rarity", panelRarity);
+
+  const setTab = (id: TabId): void => {
+    for (const [tabId, btn] of buttons) {
+      btn.classList.toggle("active", tabId === id);
+    }
+    for (const [tabId, panel] of panels) {
+      const on = tabId === id;
+      panel.classList.toggle("active", on);
+      panel.hidden = !on;
+    }
   };
 
-  btnParams.addEventListener("click", () => setTab("params"));
-  btnSlots.addEventListener("click", () => setTab("slots"));
+  for (const [id, btn] of buttons) {
+    btn.addEventListener("click", () => setTab(id));
+  }
 
-  wrap.append(bar, panelParams, panelSlots);
+  wrap.append(bar, panelParams, panelSlots, panelRarity);
   return wrap;
 }
 
@@ -404,8 +475,7 @@ function slotBlock(label: string, names: string[], className: string): HTMLEleme
 }
 
 function buildRulesSection(): HTMLElement {
-  const section = el("section", "igen-section");
-  section.append(el("h3", "igen-section-title", "Редкость и роллы"));
+  const section = el("section", "igen-section igen-section-rarity");
 
   const table = el("table", "igen-table");
   const thead = el("thead");
@@ -419,8 +489,8 @@ function buildRulesSection(): HTMLElement {
   const notes: Record<ItemRarity, string> = {
     common: "Белый. Только implicit оружия, если слот оружейный.",
     uncommon: "Один ролл. Prefix или suffix случайно.",
-    rare: "Два ролла. На аспектном предмете с blue+ стараемся дать aspect-аффикс.",
-    yellow: "3-4 ролла.",
+    magic: "Два ролла. На аспектном предмете с magic+ стараемся дать aspect-аффикс.",
+    rare: "3-4 ролла.",
     epic: "4-5 роллов. Легендарки в генератор не входят.",
   };
   for (const rarity of RARITIES) {

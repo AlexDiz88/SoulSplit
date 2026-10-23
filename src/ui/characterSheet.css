@@ -25,8 +25,8 @@
   --slot-glyph: #c4a874;
   --c-common: #c8c2b2;
   --c-uncommon: #6fcf6a;
-  --c-rare: #4fa3ff;
-  --c-yellow: #e8c84a;
+  --c-magic: #4fa3ff;
+  --c-rare: #e8c84a;
   --c-epic: #b878ff;
   --c-legendary: #ff9a2e;
   position: relative;
@@ -386,6 +386,20 @@
   opacity: 0.42;
 }
 
+.cs-slot-icon {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.cs-slot[data-rarity="common"] { --rar-c: var(--c-common); }
+.cs-slot[data-rarity="uncommon"] { --rar-c: var(--c-uncommon); }
+.cs-slot[data-rarity="magic"] { --rar-c: var(--c-magic); }
+.cs-slot[data-rarity="rare"] { --rar-c: var(--c-rare); }
+.cs-slot[data-rarity="epic"] { --rar-c: var(--c-epic); }
+
 .cs-slot.filled {
   background: linear-gradient(155deg, var(--rar-c), color-mix(in srgb, var(--rar-c) 25%, #151515) 50%, var(--rar-c));
 }
@@ -415,6 +429,7 @@
 
 .rarity-common { --rar-c: var(--c-common); }
 .rarity-uncommon { --rar-c: var(--c-uncommon); }
+.rarity-magic { --rar-c: var(--c-magic); }
 .rarity-rare { --rar-c: var(--c-rare); }
 .rarity-epic { --rar-c: var(--c-epic); }
 .rarity-legendary { --rar-c: var(--c-legendary); }
@@ -440,8 +455,8 @@
 
 .cs-tip[data-rarity="common"] { --tip-c: var(--c-common); }
 .cs-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon); }
+.cs-tip[data-rarity="magic"] { --tip-c: var(--c-magic); }
 .cs-tip[data-rarity="rare"] { --tip-c: var(--c-rare); }
-.cs-tip[data-rarity="yellow"] { --tip-c: var(--c-yellow, #e8c84a); }
 .cs-tip[data-rarity="epic"] { --tip-c: var(--c-epic); }
 .cs-tip[data-rarity="legendary"] { --tip-c: var(--c-legendary); }
 

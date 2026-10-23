@@ -91,12 +91,12 @@ cost      = baseCost * (1 - min(manaCostReduction%, 75) / 100)
 
 ### Редкость → число роллов
 
-| rare | аффиксов |
+| rarity | аффиксов |
 |---|---|
 | common (white) | 0 |
 | uncommon (green) | 1 |
-| rare (blue) | 2 |
-| epic-yellow (yellow) | 3-4 |
+| magic (blue) | 2 |
+| rare (yellow) | 3-4 |
 | epic (purple) | 4-5 |
 
 Legendary / set - вне генератора v1.

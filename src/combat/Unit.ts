@@ -2,7 +2,19 @@ import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { ABILITIES } from "../abilities/definitions";
 import { sharpenPortraitTexture } from "../art/portraits";
 import type { EquipmentMap } from "../items/equipment";
-import { computeHeroSheet } from "../items/equipment";
+import { computeHeroSheet, equippedWeapon } from "../items/equipment";
+import {
+  cloneInventory,
+  equipFromInventory,
+  equipFromInventoryToSlot,
+  swapEquipmentSlots,
+  swapInventoryCells,
+  unequipToInventory,
+  unequipToInventoryAt,
+  type InventoryBag,
+  type GearChangeResult,
+} from "../items/inventory";
+import type { EquipSlotId } from "../items/slots";
 import type { HeroStatSheet } from "../stats/sheet";
 import { createBaseHeroSheet, getStat } from "../stats/sheet";
 import {
@@ -42,6 +54,8 @@ export interface UnitInit {
   /** Лист статов героя. У врагов обычно null. */
   sheet?: HeroStatSheet | null;
   equipment?: EquipmentMap;
+  /** Рюкзак 5×5. Только у героя. */
+  inventory?: InventoryBag;
 }
 
 export class Unit {
@@ -60,6 +74,8 @@ export class Unit {
   /** Глобальный лист; null у простых врагов. */
   sheet: HeroStatSheet | null;
   equipment: EquipmentMap;
+  /** Рюкзак 5×5 (один предмет = одна ячейка). */
+  inventory: InventoryBag;
   autoTimer: number;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
@@ -98,6 +114,7 @@ export class Unit {
     this.cardSize = init.cardSize ?? CARD;
     this.pos = { ...init.pos };
     this.equipment = init.equipment ?? {};
+    this.inventory = cloneInventory(init.inventory);
     this.sheet =
       init.sheet === undefined
         ? init.team === "player"
@@ -460,6 +477,52 @@ export class Unit {
     const maxMana = getStat(this.sheet, "maxMana");
     this.mana = Math.min(maxMana, this.mana);
     this.redraw();
+  }
+
+  /** Синхронизация боевых stats оружия + пересчёт листа. */
+  applyEquipmentChange(base = createBaseHeroSheet()): void {
+    const w = equippedWeapon(this.equipment)?.weapon;
+    if (w) {
+      this.stats.atk = w.damageMax;
+      this.stats.autoAttackCd = w.baseCd;
+      this.stats.reach = w.reach;
+      this.stats.range = w.range;
+    }
+    this.rebuildSheetFromEquipment(base);
+  }
+
+  equipInventoryItem(invIndex: number): GearChangeResult {
+    const result = equipFromInventory(this.equipment, this.inventory, invIndex);
+    if (result.ok) this.applyEquipmentChange();
+    return result;
+  }
+
+  equipInventoryItemToSlot(invIndex: number, slot: EquipSlotId): GearChangeResult {
+    const result = equipFromInventoryToSlot(this.equipment, this.inventory, invIndex, slot);
+    if (result.ok) this.applyEquipmentChange();
+    return result;
+  }
+
+  unequipSlot(slot: EquipSlotId): GearChangeResult {
+    const result = unequipToInventory(this.equipment, this.inventory, slot);
+    if (result.ok) this.applyEquipmentChange();
+    return result;
+  }
+
+  unequipSlotToIndex(slot: EquipSlotId, invIndex: number): GearChangeResult {
+    const result = unequipToInventoryAt(this.equipment, this.inventory, slot, invIndex);
+    if (result.ok) this.applyEquipmentChange();
+    return result;
+  }
+
+  moveInventoryItem(from: number, to: number): GearChangeResult {
+    return swapInventoryCells(this.inventory, from, to);
+  }
+
+  swapEquipSlots(from: EquipSlotId, to: EquipSlotId): GearChangeResult {
+    const result = swapEquipmentSlots(this.equipment, from, to);
+    if (result.ok) this.applyEquipmentChange();
+    return result;
   }
 
   /** Базовый CD автоатаки с учётом AS из листа (для героя) или сырого stats. */

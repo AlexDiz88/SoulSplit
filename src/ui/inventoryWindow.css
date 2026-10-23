@@ -1,0 +1,302 @@
+/* Сумка 5×5 - отдельное окно справа внизу. Ячейки = размер слотов персонажа (76px). */
+
+#hud .inv-bag-root {
+  pointer-events: auto;
+}
+
+.inv-bag-root {
+  --slot: 76px;
+  --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  --slot-glyph: #c4a874;
+  --c-common: #c8c2b2;
+  --c-uncommon: #6fcf6a;
+  --c-magic: #4fa3ff;
+  --c-rare: #e8c84a;
+  --c-epic: #b878ff;
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  color: var(--text);
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 60%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.38),
+    0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.inv-bag-root[hidden] {
+  display: none;
+}
+
+.inv-bag-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.inv-title {
+  margin: 0;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f4dfa2, #b08a48);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.inv-bag-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.inv-bag-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--inv-cols, 5), var(--slot));
+  gap: 8px;
+}
+
+.inv-cell {
+  --rar-c: var(--slot-glyph);
+  --cut: 7px;
+  position: relative;
+  width: var(--slot);
+  height: var(--slot);
+  padding: 0;
+  border: 0;
+  background: var(--slot-edge);
+  color: inherit;
+  font: inherit;
+  cursor: default;
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
+  transition: filter 0.15s;
+}
+
+.inv-cell-face {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 30%, #2a2c2e, #121314 78%);
+  clip-path: inherit;
+}
+
+.inv-cell:not(.filled) {
+  background: #5c6066;
+}
+
+.inv-cell:not(.filled) .inv-cell-face {
+  inset: 1px;
+  background: var(--slot-bg);
+}
+
+.inv-cell[data-rarity="common"],
+.inv-ghost[data-rarity="common"] { --rar-c: var(--c-common); }
+.inv-cell[data-rarity="uncommon"],
+.inv-ghost[data-rarity="uncommon"] { --rar-c: var(--c-uncommon); }
+.inv-cell[data-rarity="magic"],
+.inv-ghost[data-rarity="magic"] { --rar-c: var(--c-magic); }
+.inv-cell[data-rarity="rare"],
+.inv-ghost[data-rarity="rare"] { --rar-c: var(--c-rare); }
+.inv-cell[data-rarity="epic"],
+.inv-ghost[data-rarity="epic"] { --rar-c: var(--c-epic); }
+
+.inv-cell.filled {
+  cursor: grab;
+  background: linear-gradient(155deg, var(--rar-c), color-mix(in srgb, var(--rar-c) 25%, #151515) 50%, var(--rar-c));
+}
+
+.inv-cell.filled .inv-cell-face {
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    var(--slot-bg);
+}
+
+.inv-cell:hover {
+  filter: brightness(1.25);
+}
+
+.inv-cell-glyph {
+  color: var(--rar-c);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--rar-c) 55%, transparent);
+}
+
+.inv-cell-icon,
+.inv-ghost-icon {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.inv-drop-ok {
+  filter: brightness(1.35) !important;
+  outline: 2px solid #6fcf6a;
+  outline-offset: -2px;
+}
+
+.inv-drop-bad {
+  outline: 2px solid #e07070;
+  outline-offset: -2px;
+}
+
+.inv-locked .inv-cell.filled {
+  cursor: not-allowed;
+}
+
+.inv-tip {
+  position: absolute;
+  z-index: 5;
+  min-width: 170px;
+  max-width: 240px;
+  padding: 10px 12px 11px;
+  border: 1px solid #8a7044;
+  background: linear-gradient(180deg, #1c1d1f, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 2px #0a0b0c,
+    inset 0 0 0 3px rgba(196, 163, 90, 0.25),
+    0 10px 30px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+.inv-tip[hidden] {
+  display: none;
+}
+
+.inv-tip[data-rarity="common"] { --tip-c: var(--c-common); }
+.inv-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon); }
+.inv-tip[data-rarity="magic"] { --tip-c: var(--c-magic); }
+.inv-tip[data-rarity="rare"] { --tip-c: var(--c-rare); }
+.inv-tip[data-rarity="epic"] { --tip-c: var(--c-epic); }
+
+.inv-tip-name {
+  color: var(--tip-c, var(--text));
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.inv-tip-meta {
+  margin: 2px 0 6px;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.inv-tip-meta:last-child {
+  margin-bottom: 0;
+}
+
+.inv-tip-line {
+  color: #8fd49a;
+  font-size: 0.84rem;
+}
+
+.inv-tip-affix {
+  margin-top: 3px;
+  font-size: 0.82rem;
+  color: #c8d0c4;
+}
+
+.inv-tip-prefix {
+  color: #9ec4e8;
+}
+
+.inv-tip-suffix {
+  color: #c4b0e0;
+}
+
+.inv-ghost {
+  --rar-c: var(--c-common);
+  position: fixed;
+  z-index: 40;
+  width: 76px;
+  height: 76px;
+  margin: -38px 0 0 -38px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--rar-c) 70%, #3a3428);
+  background:
+    radial-gradient(circle at 50% 40%, color-mix(in srgb, var(--rar-c) 35%, transparent), transparent 72%),
+    #121314;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.inv-ghost[hidden] {
+  display: none;
+}
+
+.inv-ghost-glyph {
+  color: var(--rar-c);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.inv-ghost-icon {
+  width: 82%;
+  height: 82%;
+}
+
+body.inv-dragging,
+body.inv-dragging .inv-cell.filled,
+body.inv-dragging .cs-slot.filled {
+  cursor: grabbing;
+}
+
+@media (max-width: 760px) {
+  .inv-bag-root {
+    --slot: 56px;
+    right: 8px;
+    bottom: 8px;
+    padding: 10px;
+  }
+
+  .inv-ghost {
+    width: 56px;
+    height: 56px;
+    margin: -28px 0 0 -28px;
+  }
+}
+
+@media (max-height: 450px) and (min-width: 640px) {
+  .inv-bag-root {
+    --slot: 44px;
+    right: 10px;
+    bottom: 10px;
+  }
+
+  .inv-ghost {
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+  }
+}

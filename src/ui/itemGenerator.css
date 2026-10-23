@@ -113,7 +113,8 @@
   display: flex;
 }
 
-.igen-tab-panel[data-panel="slots"].active {
+.igen-tab-panel[data-panel="slots"].active,
+.igen-tab-panel[data-panel="rarity"].active {
   overflow: auto;
 }
 
@@ -280,6 +281,45 @@
   filter: brightness(1.08);
 }
 
+.igen-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  color: #d6d0c0;
+  font-size: 0.95rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.igen-check input {
+  width: 16px;
+  height: 16px;
+  accent-color: #c9a24a;
+  cursor: pointer;
+}
+
+.igen-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.igen-card-icon {
+  flex: none;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #151617;
+  border: 1px solid color-mix(in srgb, currentColor 35%, #3a3428);
+}
+
+.igen-card-head-text {
+  min-width: 0;
+  flex: 1;
+}
+
 .igen-note {
   margin: 8px 0;
   color: var(--muted, #8a9280);
@@ -307,8 +347,8 @@
 
 .igen-card[data-rarity="common"] { border-color: var(--c-common, #c8c2b2); }
 .igen-card[data-rarity="uncommon"] { border-color: var(--c-uncommon, #6fcf6a); }
-.igen-card[data-rarity="rare"] { border-color: var(--c-rare, #4fa3ff); }
-.igen-card[data-rarity="yellow"] { border-color: var(--c-yellow, #e8c84a); }
+.igen-card[data-rarity="magic"] { border-color: var(--c-magic, #4fa3ff); }
+.igen-card[data-rarity="rare"] { border-color: var(--c-rare, #e8c84a); }
 .igen-card[data-rarity="epic"] { border-color: var(--c-epic, #b878ff); }
 
 .igen-card-name {
@@ -320,8 +360,8 @@
 
 .igen-card[data-rarity="common"] .igen-card-name { color: var(--c-common, #c8c2b2); }
 .igen-card[data-rarity="uncommon"] .igen-card-name { color: var(--c-uncommon, #6fcf6a); }
-.igen-card[data-rarity="rare"] .igen-card-name { color: var(--c-rare, #4fa3ff); }
-.igen-card[data-rarity="yellow"] .igen-card-name { color: var(--c-yellow, #e8c84a); }
+.igen-card[data-rarity="magic"] .igen-card-name { color: var(--c-magic, #4fa3ff); }
+.igen-card[data-rarity="rare"] .igen-card-name { color: var(--c-rare, #e8c84a); }
 .igen-card[data-rarity="epic"] .igen-card-name { color: var(--c-epic, #b878ff); }
 
 .igen-card-meta {
@@ -394,6 +434,12 @@
 
 .igen-table td {
   color: #d8d2c4;
+}
+
+.igen-section-params .igen-table th:nth-child(2),
+.igen-section-params .igen-table td:nth-child(2) {
+  width: 7.5rem;
+  white-space: nowrap;
 }
 
 .igen-desc {

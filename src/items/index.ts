@@ -4,3 +4,4 @@ export * from "./affixCatalog";
 export * from "./slotRules";
 export * from "./generate";
 export * from "./equipment";
+export * from "./inventory";

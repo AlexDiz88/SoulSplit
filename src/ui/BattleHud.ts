@@ -1,6 +1,7 @@
 import { ABILITIES, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
+import { mountInventoryWindow } from "./inventoryWindow";
 import { mountItemGenerator } from "./itemGenerator";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
@@ -51,6 +52,8 @@ export interface BattleHudApi {
   setBattleBannerPosition(x: number, y: number): void;
   onStart(handler: () => void): void;
   setHero(hero: Unit): void;
+  setCanChangeEquipment(fn: () => boolean): void;
+  setOnEquipmentChanged(fn: () => void): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
@@ -310,9 +313,50 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     sideMenu.hidden = true;
     menuBtn.setAttribute("aria-expanded", "false");
   };
-  const grimoire = mountGrimoire(closeMenu);
-  const character = mountCharacterSheet(closeMenu);
-  const itemGenerator = mountItemGenerator(closeMenu);
+  const pushToast = (text: string): void => {
+    toast.hidden = false;
+    toast.textContent = text;
+    window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(() => {
+      toast.hidden = true;
+    }, 1400);
+  };
+
+  type PanelId = "character" | "grimoire" | "bestiary" | "item-generator";
+
+  let character!: ReturnType<typeof mountCharacterSheet>;
+  let grimoire!: ReturnType<typeof mountGrimoire>;
+  let itemGenerator!: ReturnType<typeof mountItemGenerator>;
+
+  /** Перед открытием панели закрывает остальные (хоткеи и меню переключают окна). */
+  const prepareOpen = (except: PanelId): void => {
+    closeMenu();
+    if (except !== "character" && character.isOpen()) character.close();
+    if (except !== "grimoire" && grimoire.isOpen()) grimoire.close();
+    if (except !== "bestiary") bestiary.hidden = true;
+    if (except !== "item-generator" && itemGenerator.isOpen()) itemGenerator.close();
+  };
+
+  grimoire = mountGrimoire(() => prepareOpen("grimoire"));
+  character = mountCharacterSheet(() => prepareOpen("character"));
+  const inventory = mountInventoryWindow();
+  let heroRef: Unit | null = null;
+  inventory.setShowToast(pushToast);
+  character.setShowToast(pushToast);
+  character.setOnVisibilityChange((open) => {
+    if (open) inventory.open();
+    else inventory.close();
+  });
+  itemGenerator = mountItemGenerator(() => prepareOpen("item-generator"));
+  itemGenerator.setShowToast(pushToast);
+
+  const refreshGearUi = (): void => {
+    if (!heroRef) return;
+    character.setHero(heroRef);
+    inventory.setHero(heroRef);
+  };
+
+  itemGenerator.setOnInventoryChanged(refreshGearUi);
 
   const openMenu = (): void => {
     sideMenu.hidden = false;
@@ -371,7 +415,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     else closeMenu();
   });
   bestiaryBtn.addEventListener("click", () => {
-    closeMenu();
+    prepareOpen("bestiary");
     fillBestiary();
     bestiary.hidden = false;
   });
@@ -419,12 +463,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     showToast(text: string) {
-      toast.hidden = false;
-      toast.textContent = text;
-      window.clearTimeout(toastTimer);
-      toastTimer = window.setTimeout(() => {
-        toast.hidden = true;
-      }, 1400);
+      pushToast(text);
     },
 
     setPause(paused: boolean) {
@@ -450,7 +489,24 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     setHero(hero: Unit) {
+      heroRef = hero;
       character.setHero(hero);
+      inventory.setHero(hero);
+      itemGenerator.setHero(hero);
+    },
+
+    setCanChangeEquipment(fn) {
+      inventory.setCanChangeEquipment(fn);
+      character.setCanChangeEquipment(fn);
+    },
+
+    setOnEquipmentChanged(fn) {
+      const notify = (): void => {
+        fn();
+        refreshGearUi();
+      };
+      inventory.setOnEquipmentChanged(notify);
+      character.setOnEquipmentChanged(notify);
     },
   };
 }
