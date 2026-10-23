@@ -22,11 +22,13 @@ const TELEGRAPH_REACH = 0xc8c4b8;
 /** Клетки урона/воздействия - одинаковый бледно-красный для всех школ. */
 const TELEGRAPH_IMPACT = 0xe07070;
 
-interface DropAnim {
+interface Motion {
   u: Unit;
   x0: number;
   y0: number;
-  to: { x: number; y: number };
+  toX: number;
+  toY: number;
+  elapsed: number;
 }
 
 interface PendingCast {
@@ -79,7 +81,9 @@ export class HordeBattle {
   private hoverGfx: Graphics | null = null;
   private hoverCell: GridPos | null = null;
   private mark = new Graphics();
-  private drop: { elapsed: number; anim: DropAnim[] } | null = null;
+  private motions: Motion[] = [];
+  /** Пока ряд доезжает, следующий сдвиг не стартует. */
+  private collapsing = false;
   private tornados: TornadoField[] = [];
   private readonly hud: BattleHudApi;
   private readonly background: Sprite;
@@ -875,11 +879,21 @@ export class HordeBattle {
       case "wind_gust": {
         if (!clicked || !clicked.alive) return;
         const aim = { ...clicked.pos };
+        const target = clicked;
         const to = this.cellCenter(aim);
-        await this.vfx.projectile(from, to, SCHOOL_COLOR.air, { size: 12, trail: true, arc: 18, duration: 0.32 });
-        if (!this.sameEnemyOnCell(clicked, aim, to)) return;
-        this.dealAbilityDamage(caster, clicked, def.damage);
-        this.tryKnockbackAway(clicked);
+        await this.vfx.projectile(from, to, SCHOOL_COLOR.air, {
+          size: 12,
+          trail: true,
+          arc: 18,
+          duration: 0.32,
+          // Попадание в том же кадре, до сдвига ряда. Иначе снаряд и промахивается, и отбрасывает.
+          onArrive: () => {
+            if (this.destroyed) return;
+            if (!this.sameEnemyOnCell(target, aim, to)) return;
+            this.dealAbilityDamage(caster, target, def.damage);
+            this.tryKnockbackAway(target);
+          },
+        });
         break;
       }
       case "wind_speed": {
@@ -924,9 +938,8 @@ export class HordeBattle {
     const next = { col: u.pos.col, row: u.pos.row - 1 };
     if (!inBounds(next) || this.unitAtCell(next)) return;
     u.pos = next;
-    const to = this.cellCenter(next);
-    u.view.position.set(to.x, to.y);
-    this.vfx.floatingText(to.x, to.y - 28, "ОТБРОШЕН", 0xa8c8dc);
+    this.retargetMotion(u);
+    this.vfx.floatingText(u.center.x, u.center.y - 28, "ОТБРОШЕН", 0xa8c8dc);
     this.interruptUnitCast(u);
   }
 
@@ -1123,65 +1136,92 @@ export class HordeBattle {
     return !onFront && above;
   }
 
-  private maybeStartDrop(): void {
-    if (this.drop || !this.frontClear()) return;
+  private maybeStartDrop(depth = 0): void {
+    if (depth > GRID_SIZE || this.collapsing || !this.frontClear()) return;
     const movers = this.livingEnemies().filter((u) => u.pos.row < GRID_SIZE - 1);
     if (!movers.length) return;
     for (const u of this.units) {
       if (u.team === "enemy" && !u.alive) u.view.visible = false;
     }
     // Логическую клетку освобождаем сразу: снаряд в старую клетку = промах, даже пока идёт анимация.
-    this.drop = {
-      elapsed: 0,
-      anim: movers.map((u) => {
-        const next = { col: u.pos.col, row: u.pos.row + 1 };
-        const x0 = u.view.x;
-        const y0 = u.view.y;
-        u.pos = next;
-        this.interruptUnitCast(u);
-        return { u, x0, y0, to: this.cellCenter(next) };
-      }),
-    };
+    this.collapsing = true;
+    for (const u of movers) {
+      u.pos = { col: u.pos.col, row: u.pos.row + 1 };
+      this.interruptUnitCast(u);
+      this.retargetMotion(u);
+    }
+    if (this.motions.length === 0) {
+      this.collapsing = false;
+      this.maybeStartDrop(depth + 1);
+    }
   }
 
-  private advanceDrop(dt: number): void {
-    if (!this.drop) return;
-    this.drop.elapsed += dt;
-    const t = Math.min(1, this.drop.elapsed / DROP_SEC);
-    const e = easeInOutQuad(t);
-    for (const a of this.drop.anim) {
-      if (!a.u.alive) continue;
-      a.u.view.x = a.x0 + (a.to.x - a.x0) * e;
-      a.u.view.y = a.y0 + (a.to.y - a.y0) * e;
+  /** Один слайд к текущей логической клетке. Смена клетки перенацеливает, а не добавляет второй рывок. */
+  private retargetMotion(u: Unit): void {
+    if (!u.alive) return;
+    const goal = this.cellCenter(u.pos);
+    const dx = u.view.x - goal.x;
+    const dy = u.view.y - goal.y;
+    if (dx * dx + dy * dy < 0.25) {
+      u.view.position.set(goal.x, goal.y);
+      this.motions = this.motions.filter((m) => m.u !== u);
+      return;
     }
-    if (t < 1) return;
-    for (const a of this.drop.anim) {
-      if (!a.u.alive) continue;
-      a.u.view.position.set(a.to.x, a.to.y);
+    const existing = this.motions.find((m) => m.u === u);
+    if (!existing) {
+      this.motions.push({ u, x0: u.view.x, y0: u.view.y, toX: goal.x, toY: goal.y, elapsed: 0 });
+      return;
     }
-    this.drop = null;
-    this.maybeStartDrop();
+    if (existing.toX === goal.x && existing.toY === goal.y) return;
+    existing.x0 = u.view.x;
+    existing.y0 = u.view.y;
+    existing.toX = goal.x;
+    existing.toY = goal.y;
+    existing.elapsed = 0;
+  }
+
+  private advanceMotion(dt: number): void {
+    const keep: Motion[] = [];
+    for (const m of this.motions) {
+      if (!m.u.alive) continue;
+      const goal = this.cellCenter(m.u.pos);
+      if (m.toX !== goal.x || m.toY !== goal.y) {
+        m.x0 = m.u.view.x;
+        m.y0 = m.u.view.y;
+        m.toX = goal.x;
+        m.toY = goal.y;
+        m.elapsed = 0;
+      }
+      m.elapsed += dt;
+      const t = Math.min(1, m.elapsed / DROP_SEC);
+      const e = easeInOutQuad(t);
+      m.u.view.x = m.x0 + (m.toX - m.x0) * e;
+      m.u.view.y = m.y0 + (m.toY - m.y0) * e;
+      if (t < 1) keep.push(m);
+      else m.u.view.position.set(m.toX, m.toY);
+    }
+    this.motions = keep;
+    if (this.collapsing && this.motions.length === 0) {
+      this.collapsing = false;
+      this.maybeStartDrop();
+    }
   }
 
   private commitDrop(): void {
-    if (!this.drop) return;
-    for (const a of this.drop.anim) {
-      if (!a.u.alive) continue;
-      a.u.view.position.set(a.to.x, a.to.y);
-    }
-    this.drop = null;
+    this.motions = [];
+    this.collapsing = false;
   }
 
   private update(rawDt: number): void {
     const tweenDt = rawDt * this.timeScale;
     const combatDt = !this.started || this.paused ? 0 : rawDt * this.timeScale;
+    if (combatDt > 0) this.advanceMotion(combatDt);
     this.tweens.update(tweenDt);
     this.board.position.set(this.baseBoardX, this.baseBoardY);
     this.vfx.update(rawDt);
     this.drawMark();
 
     if (combatDt <= 0) return;
-    this.advanceDrop(combatDt);
     this.updateTornados(combatDt);
     this.gcdRemaining = Math.max(0, this.gcdRemaining - combatDt);
 

@@ -72,7 +72,7 @@ export class VfxManager {
     from: { x: number; y: number },
     to: { x: number; y: number },
     color: number,
-    opts?: { size?: number; trail?: boolean; arc?: number; duration?: number },
+    opts?: { size?: number; trail?: boolean; arc?: number; duration?: number; onArrive?: () => void },
   ): Promise<void> {
     const size = opts?.size ?? 10;
     const duration = opts?.duration ?? 0.35;
@@ -98,7 +98,7 @@ export class VfxManager {
           old?.destroy();
         }
       }
-    });
+    }, { complete: opts?.onArrive });
 
     g.destroy();
     for (const t of trail) t.destroy();
