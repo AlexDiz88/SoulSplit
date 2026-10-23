@@ -1,6 +1,13 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import { ABILITIES } from "../abilities/definitions";
 import { sharpenPortraitTexture } from "../art/portraits";
 import type { AbilityId, GridPos, School, StatusEffect, Team, UnitStats } from "../types";
+
+export interface UnitCast {
+  id: AbilityId;
+  elapsed: number;
+  duration: number;
+}
 
 const CARD = 112;
 const PORTRAIT_PAD = 3;
@@ -40,8 +47,10 @@ export class Unit {
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
   preferredTargetId: string | null = null;
-  /** 0 — удар только что прошёл, 1 — автоатака готова. */
+  /** 0 — удар только что прошёл, 1 — автоатака готова. Во время каста - прогресс подготовки. */
   attackCharge = 0;
+  /** Активная подготовка способности. null - не кастует. */
+  cast: UnitCast | null = null;
   alive = true;
 
   readonly view = new Container();
@@ -55,8 +64,10 @@ export class Unit {
   private subText: Text;
   private flashGfx: Graphics;
   private shieldGfx: Graphics;
+  private cdBarGlow: Graphics;
   private cdBarBg: Graphics;
   private cdBarFg: Graphics;
+  private castLabel: Text;
 
   constructor(init: UnitInit) {
     this.id = init.id;
@@ -73,7 +84,15 @@ export class Unit {
     this.autoTimer = Math.random() * init.stats.autoAttackCd * 0.5;
     this.attackCharge = init.stats.autoAttackCd > 0 ? this.autoTimer / init.stats.autoAttackCd : 0;
 
-    for (const a of init.abilities) this.abilityCd[a] = 0;
+    for (const a of init.abilities) {
+      if (init.team === "player") {
+        this.abilityCd[a] = 0;
+        continue;
+      }
+      const cd = ABILITIES[a]?.cooldown ?? 8;
+      // В начале боя у монстров 70-100% кулдауна, чтобы не били скиллом сразу.
+      this.abilityCd[a] = cd * (0.7 + Math.random() * 0.3);
+    }
 
     this.view.eventMode = "none";
 
@@ -81,8 +100,10 @@ export class Unit {
     this.flashGfx = new Graphics();
     this.shieldGfx = new Graphics();
     this.shieldGfx.eventMode = "none";
+    this.cdBarGlow = new Graphics();
     this.cdBarBg = new Graphics();
     this.cdBarFg = new Graphics();
+    this.cdBarGlow.eventMode = "none";
     this.cdBarBg.eventMode = "none";
     this.cdBarFg.eventMode = "none";
     this.hpBarBg = new Graphics();
@@ -128,6 +149,19 @@ export class Unit {
       },
     });
     this.subText.anchor.set(0.5);
+    this.castLabel = new Text({
+      text: "",
+      style: {
+        fontFamily: "Exo 2, sans-serif",
+        fontSize: 9,
+        fontWeight: "800",
+        fill: 0xf8ffff,
+        stroke: { color: 0x041820, width: 2 },
+      },
+    });
+    this.castLabel.anchor.set(0.5);
+    this.castLabel.visible = false;
+    this.castLabel.eventMode = "none";
 
     this.view.addChild(
       this.frame,
@@ -144,7 +178,7 @@ export class Unit {
     if (this.portraitUrl) {
       this.mountPortrait(this.portraitUrl);
     }
-    this.view.addChild(this.cdBarBg, this.cdBarFg);
+    this.view.addChild(this.cdBarGlow, this.cdBarBg, this.cdBarFg, this.castLabel);
 
     this.redraw();
   }
@@ -321,23 +355,77 @@ export class Unit {
   }
 
   private drawAttackCharge(): void {
+    this.cdBarGlow.clear();
     this.cdBarBg.clear();
     this.cdBarFg.clear();
+    this.castLabel.visible = false;
     if (this.team !== "enemy") return;
+
+    const fill = Math.max(0, Math.min(1, this.attackCharge));
+    if (this.cast) {
+      const w = this.cardSize - 8;
+      const h = 12;
+      const x = -w / 2;
+      const y = -this.half + 4;
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.012);
+      const neon = 0x1cf0ff;
+      const neonHot = 0xa8ffff;
+      // Внешнее неоновое свечение
+      this.cdBarGlow
+        .roundRect(x - 3, y - 3, w + 6, h + 6, 4)
+        .fill({ color: neon, alpha: 0.18 + 0.14 * pulse });
+      this.cdBarGlow
+        .roundRect(x - 1, y - 1, w + 2, h + 2, 3)
+        .stroke({ color: neon, width: 2, alpha: 0.55 + 0.35 * pulse });
+      this.cdBarBg.roundRect(x, y, w, h, 2).fill({ color: 0x041820, alpha: 0.92 });
+      if (fill > 0) {
+        const fw = Math.max(4, w * fill);
+        this.cdBarFg.roundRect(x, y, fw, h, 2).fill({ color: neon, alpha: 0.88 + 0.12 * pulse });
+        this.cdBarFg.roundRect(x, y, fw, Math.max(2, h * 0.38), 2).fill({
+          color: neonHot,
+          alpha: 0.35 + 0.25 * pulse,
+        });
+      }
+      const name = ABILITIES[this.cast.id]?.name ?? this.cast.id;
+      this.castLabel.text = name;
+      this.castLabel.position.set(0, y + h / 2);
+      this.castLabel.alpha = 0.85 + 0.15 * pulse;
+      this.castLabel.visible = true;
+      return;
+    }
+
     const w = this.cardSize - 18;
     const h = 3;
     const x = -w / 2;
     const y = -this.half + 7;
     this.cdBarBg.roundRect(x, y, w, h, 1).fill({ color: 0x1a2018, alpha: 0.92 });
-    const fill = Math.max(0, Math.min(1, this.attackCharge));
     if (fill > 0) {
       this.cdBarFg.roundRect(x, y, Math.max(2, w * fill), h, 1).fill({ color: 0xe8d7a2, alpha: 0.95 });
     }
   }
 
-  applyDamage(raw: number): { dealt: number; absorbed: number } {
-    if (!this.alive) return { dealt: 0, absorbed: 0 };
-    if (this.hasStatus("invuln")) return { dealt: 0, absorbed: raw };
+  isCasting(): boolean {
+    return this.cast !== null;
+  }
+
+  beginCast(id: AbilityId, duration: number): void {
+    this.cast = { id, elapsed: 0, duration };
+    this.attackCharge = 0;
+    this.redraw();
+  }
+
+  /** Срывает подготовку. true - каст был. */
+  interruptCast(): boolean {
+    if (!this.cast) return false;
+    this.cast = null;
+    this.redraw();
+    return true;
+  }
+
+  applyDamage(raw: number): { dealt: number; absorbed: number; castBroken: boolean } {
+    if (!this.alive) return { dealt: 0, absorbed: 0, castBroken: false };
+    if (this.hasStatus("invuln")) return { dealt: 0, absorbed: raw, castBroken: false };
+    const wasCasting = this.cast !== null;
     let dmg = raw;
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
@@ -353,9 +441,10 @@ export class Unit {
     if (this.hp <= 0) {
       this.alive = false;
       this.hp = 0;
+      this.cast = null;
     }
     this.redraw();
-    return { dealt: dmg, absorbed };
+    return { dealt: dmg, absorbed, castBroken: wasCasting && !this.alive };
   }
 
   heal(amount: number): void {
@@ -400,18 +489,20 @@ export class Unit {
     return m;
   }
 
-  tickStatuses(dt: number): number {
+  /** true - каст сорван смертью от DoT. */
+  tickStatuses(dt: number): boolean {
     let dotDmg = 0;
     for (const s of this.statuses) {
       s.remaining -= dt;
       if (s.kind === "bleed" || s.kind === "burn") dotDmg += s.potency * dt;
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
+    let castBroken = false;
     if (dotDmg > 0) {
-      this.applyDamage(dotDmg);
+      castBroken = this.applyDamage(dotDmg).castBroken;
     }
     this.redraw();
-    return dotDmg;
+    return castBroken;
   }
 
   flash(color: number): void {

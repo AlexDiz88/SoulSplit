@@ -1,6 +1,6 @@
 import { GRID_SIZE } from "../abilities/shapes";
 import { PORTRAIT_URLS } from "../art/portraits";
-import type { School, WeaponKind } from "../types";
+import type { AbilityId, School, WeaponKind } from "../types";
 
 export interface EnemyKind {
   id: string;
@@ -17,6 +17,8 @@ export interface EnemyKind {
   atk: number;
   cd: number;
   portraitUrl: string;
+  /** Способности монстра в бою. */
+  abilities?: AbilityId[];
 }
 
 export const ENEMY_KINDS: EnemyKind[] = [
@@ -75,6 +77,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     atk: 13,
     cd: 2.0,
     portraitUrl: PORTRAIT_URLS.skeleton_mage,
+    abilities: ["dark_arrow"],
   },
 ];
 

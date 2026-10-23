@@ -36,7 +36,7 @@ Examples:
 
 ```
 /art-round-skill дыхание дракона
-/art-round-skill попутный ветер
+/art-round-skill скорость ветра
 /art-round-skill ледяной щит, лёд
 /art-round-skill удар тени, тьма
 ```

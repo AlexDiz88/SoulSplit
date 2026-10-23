@@ -65,11 +65,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     const meta = document.createElement("p");
     meta.className = "grimoire-kicker";
     meta.textContent = card.school;
-    const status = document.createElement("span");
-    const statusLabel = displayStatus(card.status);
-    status.className = `grimoire-status${statusClass(statusLabel)}`;
-    status.textContent = statusLabel;
-    heading.append(name, iconId, meta, status);
+    heading.append(name, iconId, meta);
     head.append(img, heading);
 
     const description = document.createElement("p");

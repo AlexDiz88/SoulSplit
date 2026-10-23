@@ -12,9 +12,10 @@ export type AbilityId =
   | "sever_artery"
   | "shadow_strike"
   | "wind_gust"
-  | "tailwind"
+  | "wind_speed"
   | "squall"
-  | "tornado";
+  | "tornado"
+  | "dark_arrow";
 
 /** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток. */
 export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone" | "cell";
@@ -67,6 +68,10 @@ export interface AbilityEffects {
   tornadoDps?: number;
   tornadoStaySec?: number;
   tornadoStays?: number;
+  /** Время подготовки перед эффектом. Пока каст идет, автоатаки юнита стоят. */
+  castTime?: number;
+  /** Срывает подготовку цели (молчание, контрзаклинание). Обычный урон каст не срывает. */
+  interruptsCast?: boolean;
 }
 
 export interface AbilityDef {

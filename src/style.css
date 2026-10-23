@@ -23,6 +23,7 @@
   --cur-pointer: url("../assets/ui/cursors/pointer.svg") 10 2, pointer;
   --cur-not-allowed: url("../assets/ui/cursors/not-allowed.svg") 4 2, not-allowed;
   --cur-crosshair: url("../assets/ui/cursors/crosshair.svg") 16 16, crosshair;
+  --cur-target: url("../assets/ui/cursors/target.svg?v=2") 24 24, crosshair;
   --cur-text: url("../assets/ui/cursors/text.svg") 16 16, text;
   --cur-wait: url("../assets/ui/cursors/wait.svg") 16 16, wait;
   --cur-progress: url("../assets/ui/cursors/progress.svg") 4 2, progress;
@@ -123,6 +124,10 @@ textarea,
 
 .cursor-crosshair {
   cursor: var(--cur-crosshair) !important;
+}
+
+.cursor-target {
+  cursor: var(--cur-target) !important;
 }
 
 .cursor-grab {

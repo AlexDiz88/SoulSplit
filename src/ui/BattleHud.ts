@@ -1,4 +1,5 @@
 import { ABILITIES, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
+import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
@@ -48,6 +49,7 @@ export interface BattleHudApi {
   setBattleBanner(mode: BattleBannerMode): void;
   setBattleBannerPosition(x: number, y: number): void;
   onStart(handler: () => void): void;
+  setHero(hero: Unit): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
@@ -308,6 +310,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     menuBtn.setAttribute("aria-expanded", "false");
   };
   const grimoire = mountGrimoire(closeMenu);
+  const character = mountCharacterSheet(closeMenu);
 
   const openMenu = (): void => {
     sideMenu.hidden = false;
@@ -323,6 +326,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     role.className = "bestiary-type";
     role.textContent = kind.role;
     bestiaryDetail.append(title, role, statLine("Здоровье", String(kind.hp)), statLine("Урон", String(kind.atk)), statLine("Кулдаун", `${kind.cd.toFixed(1)} с`), statLine("Дистанция", String(kind.reach)), statLine("Появление", rowsLabel(kind.spawnRows)));
+    const abilityNames = (kind.abilities ?? [])
+      .map((id) => ABILITIES[id]?.name)
+      .filter((name): name is string => Boolean(name));
+    if (abilityNames.length) {
+      bestiaryDetail.append(statLine("Способности", abilityNames.join(", ")));
+    }
   };
 
   const clearDetail = (): void => {
@@ -380,6 +389,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   });
   window.addEventListener("keydown", (ev) => {
     if (ev.code !== "Escape") return;
+    if (character.isOpen()) {
+      character.close();
+      return;
+    }
     if (grimoire.isOpen()) {
       if (!grimoire.back()) grimoire.close();
       return;
@@ -428,6 +441,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     onStart(handler: () => void) {
       startHandler = handler;
+    },
+
+    setHero(hero: Unit) {
+      character.setHero(hero);
     },
   };
 }

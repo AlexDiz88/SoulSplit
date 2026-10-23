@@ -17,6 +17,10 @@ const HERO_SIZE = CELL * 2 + GAP;
 const STACK_GAP = 28;
 const DROP_SEC = 0.4;
 const ABILITY_GCD = 1;
+/** Дальность способности - нейтральный тон, не цвет школы. */
+const TELEGRAPH_REACH = 0xc8c4b8;
+/** Клетки урона/воздействия - одинаковый бледно-красный для всех школ. */
+const TELEGRAPH_IMPACT = 0xe07070;
 
 interface DropAnim {
   u: Unit;
@@ -222,6 +226,7 @@ export class HordeBattle {
     const slot = (SKILL_HOTKEY_CODES as readonly string[]).indexOf(ev.code);
     if (slot < 0) return;
     if (!document.getElementById("grimoire")?.hidden) return;
+    if (!document.getElementById("character")?.hidden) return;
     if (!document.getElementById("bestiary")?.hidden) return;
     if (!document.getElementById("side-menu")?.hidden) return;
 
@@ -411,6 +416,7 @@ export class HordeBattle {
     });
     this.unitsLayer.addChild(this.hero.view);
     this.units.push(this.hero);
+    this.hud.setHero(this.hero);
 
     rollEncounter().forEach((spawn, index) => {
       const kind = spawn.kind;
@@ -428,7 +434,7 @@ export class HordeBattle {
           range: kind.reach <= 2 ? "melee" : "ranged",
           reach: kind.reach,
         },
-        abilities: [],
+        abilities: kind.abilities ?? [],
         portraitUrl: kind.portraitUrl,
       });
       this.unitsLayer.addChild(u.view);
@@ -451,7 +457,10 @@ export class HordeBattle {
   }
 
   private syncCanvasCursor(): void {
-    this.app.canvas.style.cursor = "var(--cur-default)";
+    // Способность с выбором цели/клетки - курсор-мишень.
+    this.app.canvas.style.cursor = this.selectedAbility
+      ? "var(--cur-target)"
+      : "var(--cur-default)";
   }
 
   selectHero(id: string | null): void {
@@ -616,7 +625,7 @@ export class HordeBattle {
         const c = this.cellCenter(pos);
         return { x: c.x, y: c.y, size: CELL - 8 };
       }),
-      SCHOOL_COLOR[def.school],
+      TELEGRAPH_REACH,
       { fillAlpha: 0.08, strokeAlpha: 0.32, strokeWidth: 1.5 },
     );
     this.telegraphLayer.addChild(this.abilityGfx);
@@ -663,14 +672,11 @@ export class HordeBattle {
       const c = this.cellCenter(pos);
       return { x: c.x, y: c.y, size: CELL - 6 };
     });
-    this.hoverGfx =
-      def.id === "flame_cone"
-        ? this.vfx.highlightHeatCells(centers)
-        : this.vfx.highlightCells(centers, def.school === "air" ? 0xa8c8dc : 0xffe08a, {
-            fillAlpha: 0.34,
-            strokeAlpha: 0.95,
-            strokeWidth: 2.5,
-          });
+    this.hoverGfx = this.vfx.highlightCells(centers, TELEGRAPH_IMPACT, {
+      fillAlpha: 0.34,
+      strokeAlpha: 0.95,
+      strokeWidth: 2.5,
+    });
     this.telegraphLayer.addChild(this.hoverGfx);
   }
 
@@ -876,7 +882,7 @@ export class HordeBattle {
         this.tryKnockbackAway(clicked);
         break;
       }
-      case "tailwind": {
+      case "wind_speed": {
         await this.vfx.ring(caster.center.x, caster.center.y, SCHOOL_COLOR.air, caster.cardSize * 0.7, 0.4);
         const hasteMult = def.effects?.hasteIntervalMult ?? 0.75;
         const hasteDur = def.effects?.hasteDuration ?? 5;
@@ -920,7 +926,57 @@ export class HordeBattle {
     u.pos = next;
     const to = this.cellCenter(next);
     u.view.position.set(to.x, to.y);
-    this.vfx.floatingText(to.x, to.y - 28, "ОТБРОС", 0xa8c8dc);
+    this.vfx.floatingText(to.x, to.y - 28, "ОТБРОШЕН", 0xa8c8dc);
+    this.interruptUnitCast(u);
+  }
+
+  /** Срыв подготовки: спец-способность или сдвиг с клетки. Обычный урон не срывает. */
+  private interruptUnitCast(u: Unit): void {
+    if (!u.interruptCast()) return;
+    this.showCastInterrupted(u);
+  }
+
+  private showCastInterrupted(u: Unit): void {
+    this.vfx.floatingText(u.center.x, u.center.y - 28, "ПРЕРВАНО", 0xe8dc9a);
+  }
+
+  private tryStartEnemyCast(u: Unit): void {
+    if (!u.alive || u.cast || u.hasStatus("stun") || !u.abilities.length) return;
+    if (!this.findAutoTarget(u)) return;
+    for (const id of u.abilities) {
+      if ((u.abilityCd[id] ?? 0) > 0) continue;
+      const def = ABILITIES[id];
+      if (!def) continue;
+      u.abilityCd[id] = def.cooldown;
+      const castTime = def.effects?.castTime ?? 0;
+      if (castTime <= 0) {
+        void this.resolveEnemyAbility(u, id);
+        return;
+      }
+      u.beginCast(id, castTime);
+      u.flash(0x1cf0ff);
+      return;
+    }
+  }
+
+  private async resolveEnemyAbility(caster: Unit, id: AbilityId): Promise<void> {
+    if (!caster.alive || this.destroyed) return;
+    const def = ABILITIES[id];
+    if (!def) return;
+    switch (id) {
+      case "dark_arrow": {
+        const target = this.hero;
+        if (!target.alive) return;
+        const from = caster.center;
+        const to = target.center;
+        await this.vfx.projectile(from, to, 0x6a4a8a, { size: 10, trail: true, arc: 14, duration: 0.36 });
+        if (!caster.alive || !target.alive || this.destroyed) return;
+        this.dealAbilityDamage(caster, target, def.damage, def);
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   private spawnTornado(pos: GridPos, def: AbilityDef): void {
@@ -1017,12 +1073,14 @@ export class HordeBattle {
     return false;
   }
 
-  private dealAbilityDamage(attacker: Unit, target: Unit, base: number): void {
+  private dealAbilityDamage(attacker: Unit, target: Unit, base: number, def?: AbilityDef): void {
     const dmg = Math.round(base * attacker.atkMultiplier());
-    const { dealt } = target.applyDamage(dmg);
+    const { dealt, castBroken } = target.applyDamage(dmg);
     target.flash(0xffffff);
     if (dealt > 0) this.vfx.floatingText(target.center.x, target.center.y - 10, `${dealt}`, 0xffe6a0);
     if (!target.alive) this.vfx.floatingText(target.center.x, target.center.y, "ПАЛ", 0xc45a4a);
+    if (castBroken) this.showCastInterrupted(target);
+    else if (def?.effects?.interruptsCast) this.interruptUnitCast(target);
   }
 
   private livingEnemies(): Unit[] {
@@ -1052,8 +1110,9 @@ export class HordeBattle {
     await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2);
     if (!target.alive || this.destroyed) return;
     const dmg = Math.round(attacker.stats.atk * attacker.atkMultiplier());
-    const { dealt } = target.applyDamage(dmg);
+    const { dealt, castBroken } = target.applyDamage(dmg);
     if (dealt > 0) this.vfx.floatingText(target.center.x, target.center.y - 8, `${dealt}`, 0xe8e2d4);
+    if (castBroken) this.showCastInterrupted(target);
   }
 
   private frontClear(): boolean {
@@ -1079,6 +1138,7 @@ export class HordeBattle {
         const x0 = u.view.x;
         const y0 = u.view.y;
         u.pos = next;
+        this.interruptUnitCast(u);
         return { u, x0, y0, to: this.cellCenter(next) };
       }),
     };
@@ -1128,12 +1188,35 @@ export class HordeBattle {
     for (const u of this.units) {
       if (!u.alive) continue;
       const needPreview = u.stats.autoAttackCd * u.autoCdMultiplier();
-      if (u.team === "enemy") u.attackCharge = needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : 1;
-      u.tickStatuses(combatDt);
+      if (u.team === "enemy" && !u.cast) {
+        u.attackCharge = needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : 1;
+      }
+      if (u.tickStatuses(combatDt)) this.showCastInterrupted(u);
       for (const key of Object.keys(u.abilityCd)) {
         u.abilityCd[key] = Math.max(0, (u.abilityCd[key] ?? 0) - combatDt);
       }
       if (u.hasStatus("stun")) continue;
+
+      if (u.team === "enemy" && u.cast) {
+        u.cast.elapsed += combatDt;
+        u.attackCharge = u.cast.duration > 0 ? Math.min(1, u.cast.elapsed / u.cast.duration) : 1;
+        u.redraw();
+        if (u.cast.elapsed >= u.cast.duration) {
+          const castId = u.cast.id;
+          u.cast = null;
+          u.autoTimer = 0;
+          u.attackCharge = 0;
+          u.redraw();
+          void this.resolveEnemyAbility(u, castId);
+        }
+        continue;
+      }
+
+      if (u.team === "enemy") {
+        this.tryStartEnemyCast(u);
+        if (u.cast) continue;
+      }
+
       u.autoTimer += combatDt;
       const need = u.stats.autoAttackCd * u.autoCdMultiplier();
       if (u.autoTimer < need) continue;

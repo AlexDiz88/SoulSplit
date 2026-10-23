@@ -29,9 +29,10 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "sever-artery": "sever_artery",
   "shadow-strike": "shadow_strike",
   "wind-gust": "wind_gust",
-  tailwind: "tailwind",
+  "wind-speed": "wind_speed",
   squall: "squall",
   tornado: "tornado",
+  "dark-arrow": "dark_arrow",
 };
 
 export const ABILITIES: Record<AbilityId, AbilityDef> = {
@@ -143,9 +144,9 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 4,
     effects: {},
   },
-  tailwind: {
-    id: "tailwind",
-    name: "Попутный ветер",
+  wind_speed: {
+    id: "wind_speed",
+    name: "Скорость ветра",
     school: "air",
     glyph: "🍃",
     cooldown: 7,
@@ -179,10 +180,22 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 4,
     effects: { tornadoDps: 10, tornadoStaySec: 3, tornadoStays: 3 },
   },
+  dark_arrow: {
+    id: "dark_arrow",
+    name: "Стрела тьмы",
+    school: "stealth",
+    glyph: "🏹",
+    cooldown: 8,
+    damage: 44,
+    targetMode: "enemy",
+    range: "ranged",
+    reach: 4,
+    effects: { castTime: 2 },
+  },
 };
 
 /** Слоты панели героя (песочница). */
-export const ALL_ABILITY_IDS: AbilityId[] = ["wind_gust", "tailwind", "squall", "tornado"];
+export const ALL_ABILITY_IDS: AbilityId[] = ["wind_gust", "wind_speed", "squall", "tornado"];
 
 function fmtNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
@@ -223,12 +236,14 @@ export function describeAbility(def: AbilityDef): string {
       return `Наносит удар из тени, причиняя ${def.damage} ед. физического урона. Пока длится удар, вы неуязвимы.`;
     case "wind_gust":
       return `Сжимает воздух в удар по выбранному врагу, нанося ${def.damage} ед. урона воздухом, и отбрасывает его на клетку дальше от героя.`;
-    case "tailwind":
-      return `Обвивает вас попутным потоком, ускоряя автоатаки: интервал атаки ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
+    case "wind_speed":
+      return `Обвивает вас быстрым потоком ветра, ускоряя автоатаки: интервал атаки ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
     case "squall":
       return `Рассекает воздух вокруг выбранной клетки. Сам клик пуст: соседние клетки крестом получают ${def.damage} ед. урона воздухом.`;
     case "tornado":
       return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
+    case "dark_arrow":
+      return `Враг готовит стрелу тьмы и выпускает ее в героя. Пока идет подготовка, он не атакует.`;
   }
 }
 
@@ -276,7 +291,7 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`${def.damage} урона воздуха по выбранному врагу`);
       lines.push("отброс на 1 клетку дальше от героя");
       break;
-    case "tailwind":
+    case "wind_speed":
       lines.push(`интервал автоатаки героя ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} с`);
       break;
     case "squall":
@@ -286,6 +301,12 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`${fmtNum(e.tornadoDps ?? def.damage)} урона воздуха в секунду по врагам на клетке смерча`);
       lines.push(`стоянка ${fmtNum(e.tornadoStaySec ?? 0)} с (3 удара за стоянку)`);
       lines.push(`${fmtNum(e.tornadoStays ?? 0)} стоянки подряд (старт + 2 перемещения)`);
+      break;
+    case "dark_arrow":
+      lines.push(`подготовка ${fmtNum(e.castTime ?? 0)} с`);
+      lines.push(`${def.damage} урона по герою, если подготовка дошла до конца`);
+      lines.push("на время подготовки автоатаки этого врага не проходят, шкала автоатаки стоит");
+      lines.push("после завершенной подготовки кулдаун автоатаки начинается с нуля и заполняется заново");
       break;
   }
   return lines;
