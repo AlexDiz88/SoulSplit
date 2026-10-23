@@ -4,7 +4,7 @@ icon: fireball.png
 name: "Огненный шар"
 school: "Огонь"
 school_id: fire
-status: прототип
+status: одобрено
 ---
 
 # Огненный шар

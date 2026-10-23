@@ -8,7 +8,7 @@ export type AbilityId =
   | "fireball"
   | "flame_cone"
   | "stun_strike"
-  | "battle_cry"
+  | "titan_might"
   | "sever_artery"
   | "shadow_strike";
 

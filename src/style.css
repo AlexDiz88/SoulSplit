@@ -891,6 +891,14 @@ textarea,
   font-weight: 800;
 }
 
+.grimoire-icon-id {
+  color: var(--accent);
+  font-family: ui-monospace, "Cascadia Code", "Consolas", monospace;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
 .grimoire-type,
 .grimoire-kicker,
 .grimoire-empty,
@@ -955,6 +963,16 @@ textarea,
 .grimoire-status.draft {
   color: var(--accent);
   border-color: var(--accent-dim);
+}
+
+.grimoire-status.approved {
+  color: #7ec88a;
+  border-color: rgba(126, 200, 138, 0.45);
+}
+
+.grimoire-status.rejected {
+  color: #c87878;
+  border-color: rgba(200, 120, 120, 0.45);
 }
 
 .grimoire-desc {

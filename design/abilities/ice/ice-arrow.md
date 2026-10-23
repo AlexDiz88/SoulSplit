@@ -4,7 +4,7 @@ icon: frostbolt.png
 name: "Ледяная стрела"
 school: "Лёд"
 school_id: ice
-status: прототип
+status: одобрено
 ---
 
 # Ледяная стрела

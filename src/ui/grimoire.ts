@@ -59,13 +59,17 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     const heading = document.createElement("div");
     const name = document.createElement("h3");
     name.textContent = card.name;
+    const iconId = document.createElement("p");
+    iconId.className = "grimoire-icon-id";
+    iconId.textContent = card.icon;
     const meta = document.createElement("p");
     meta.className = "grimoire-kicker";
     meta.textContent = card.school;
     const status = document.createElement("span");
-    status.className = `grimoire-status${card.status === "черновик" ? " draft" : ""}`;
-    status.textContent = card.status;
-    heading.append(name, meta, status);
+    const statusLabel = displayStatus(card.status);
+    status.className = `grimoire-status${statusClass(statusLabel)}`;
+    status.textContent = statusLabel;
+    heading.append(name, iconId, meta, status);
     head.append(img, heading);
 
     const description = document.createElement("p");
@@ -120,10 +124,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       const name = document.createElement("span");
       name.className = "grimoire-name";
       name.textContent = card.name;
-      const type = document.createElement("span");
-      type.className = "grimoire-type";
-      type.textContent = `${card.application} · ${card.cooldown}`;
-      text.append(name, type);
+      text.append(name);
       row.append(img, text);
       row.addEventListener("click", () => {
         cardId = card.id;
@@ -207,13 +208,26 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
   };
 }
 
+/** Старые метки прототип/взято показываем как "одобрено". */
+function displayStatus(status: string): string {
+  if (status === "прототип" || status === "взято") return "одобрено";
+  return status;
+}
+
+function statusClass(status: string): string {
+  if (status === "черновик") return " draft";
+  if (status === "одобрено") return " approved";
+  if (status === "отказ") return " rejected";
+  return "";
+}
+
 function stat(label: string, value: string): HTMLElement {
   const row = document.createElement("div");
   row.className = "grimoire-stat";
   const name = document.createElement("span");
   name.textContent = label;
   const val = document.createElement("b");
-  val.textContent = value || "—";
+  val.textContent = value || "-";
   row.append(name, val);
   return row;
 }
@@ -224,7 +238,7 @@ function block(label: string, value: string): HTMLElement {
   const name = document.createElement("span");
   name.textContent = label;
   const text = document.createElement("p");
-  text.textContent = value || "—";
+  text.textContent = value || "-";
   wrap.append(name, text);
   return wrap;
 }
@@ -237,7 +251,7 @@ function numberBlock(lines: string[]): HTMLElement {
   wrap.append(name);
   if (!lines.length) {
     const text = document.createElement("p");
-    text.textContent = "—";
+    text.textContent = "-";
     wrap.append(text);
     return wrap;
   }

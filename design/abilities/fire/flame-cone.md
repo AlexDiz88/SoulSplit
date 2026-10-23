@@ -4,7 +4,7 @@ icon: dragon_breath.png
 name: "Дыхание дракона"
 school: "Огонь"
 school_id: fire
-status: прототип
+status: одобрено
 ---
 
 # Дыхание дракона

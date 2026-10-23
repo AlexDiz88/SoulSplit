@@ -5,8 +5,8 @@ import { TEX } from "../textures";
 
 type Pt = { x: number; y: number };
 
-/** Премиум боевой клич: звуковые волны + бафф-ауры на союзниках. */
-export async function playBattleCryVfx(
+/** Премиум "Мощь титана": волны силы + бафф-ауры на союзниках. */
+export async function playTitanMightVfx(
   layer: Container,
   tweens: TweenManager,
   origin: Pt,

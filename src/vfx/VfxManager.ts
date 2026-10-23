@@ -1,7 +1,7 @@
 import { Container, Graphics, Text } from "pixi.js";
 import type { TweenManager } from "../util/tween";
 import { easeOutCubic } from "../util/tween";
-import { playBattleCryVfx } from "./premium/BattleCryVfx";
+import { playTitanMightVfx } from "./premium/TitanMightVfx";
 import { playFireballVfx } from "./premium/FireballVfx";
 import { playFlameConeVfx } from "./premium/FlameConeVfx";
 import { playIceArrowVfx } from "./premium/IceArrowVfx";
@@ -202,8 +202,8 @@ export class VfxManager {
     );
   }
 
-  async battleCry(origin: { x: number; y: number }, allies: { x: number; y: number }[]): Promise<void> {
-    await playBattleCryVfx(this.layer, this.tweens, origin, allies, (amp, dur) =>
+  async titanMight(origin: { x: number; y: number }, allies: { x: number; y: number }[]): Promise<void> {
+    await playTitanMightVfx(this.layer, this.tweens, origin, allies, (amp, dur) =>
       this.screenShake(amp, dur),
     );
   }

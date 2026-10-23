@@ -4,7 +4,7 @@ icon: frost_shield.png
 name: "Ледяной щит"
 school: "Лёд"
 school_id: ice
-status: прототип
+status: одобрено
 ---
 
 # Ледяной щит

@@ -1,4 +1,4 @@
-import battleCryIconUrl from "../../assets/art/skills/battle_cry.png";
+import titanMightIconUrl from "../../assets/art/skills/titan_might.png";
 import dragonBreathIconUrl from "../../assets/art/skills/dragon_breath.png";
 import fireballIconUrl from "../../assets/art/skills/fireball.png";
 import frostShieldIconUrl from "../../assets/art/skills/frost_shield.png";
@@ -19,7 +19,7 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   fireball: fireballIconUrl,
   flame_cone: dragonBreathIconUrl,
   stun_strike: hammerThrowIconUrl,
-  battle_cry: battleCryIconUrl,
+  titan_might: titanMightIconUrl,
   sever_artery: severArteryIconUrl,
   shadow_strike: shadowStrikeIconUrl,
 };

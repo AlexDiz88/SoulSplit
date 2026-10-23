@@ -23,7 +23,7 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   fireball: "fireball",
   "flame-cone": "flame_cone",
   "hammer-throw": "stun_strike",
-  "battle-cry": "battle_cry",
+  "titan-might": "titan_might",
   "sever-artery": "sever_artery",
   "shadow-strike": "shadow_strike",
 };
@@ -89,9 +89,9 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 1,
     effects: { stunDuration: 2.2 },
   },
-  battle_cry: {
-    id: "battle_cry",
-    name: "Боевой клич",
+  titan_might: {
+    id: "titan_might",
+    name: "Мощь титана",
     school: "iron",
     glyph: "📢",
     cooldown: 8,
@@ -133,7 +133,7 @@ export const ALL_ABILITY_IDS: AbilityId[] = [
   "fireball",
   "flame_cone",
   "stun_strike",
-  "battle_cry",
+  "titan_might",
   "sever_artery",
   "shadow_strike",
 ];
@@ -169,8 +169,8 @@ export function describeAbility(def: AbilityDef): string {
       return `Выдыхает столб пламени в выбранную клетку, нанося ${def.damage} ед. урона огнем. Клетки выше по зоне получают ${zoneSecondaryDamage(def)} ед. урона огнем.`;
     case "stun_strike":
       return `Швыряет молот во врага, нанося ${def.damage} ед. урона светом и оглушая цель на ${fmtNum(e.stunDuration ?? 0)} сек.`;
-    case "battle_cry":
-      return `Издает боевой клич, увеличивая ваш урон от атак на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} сек.`;
+    case "titan_might":
+      return `Наполняет вас мощью титана, увеличивая урон от атак на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} сек.`;
     case "sever_artery":
       return `Вскрывает артерию цели, нанося ${def.damage} ед. физического урона и вызывая кровотечение: ${fmtNum(e.bleedPerSec ?? 0)} ед. физического урона в секунду в течение ${fmtNum(e.bleedDuration ?? 0)} сек.`;
     case "shadow_strike":
@@ -205,7 +205,7 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`${def.damage} урона света`);
       lines.push(`стан ${fmtNum(e.stunDuration ?? 0)} с`);
       break;
-    case "battle_cry":
+    case "titan_might":
       lines.push(`урон атаки ×${fmtMult(e.atkBuffPotency ?? 0)} на ${fmtNum(e.atkBuffDuration ?? 0)} с`);
       break;
     case "sever_artery":

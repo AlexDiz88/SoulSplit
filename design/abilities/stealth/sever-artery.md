@@ -4,7 +4,7 @@ icon: sever_artery.png
 name: "Вскрыть артерию"
 school: "Скрытность"
 school_id: stealth
-status: прототип
+status: одобрено
 ---
 
 # Вскрыть артерию

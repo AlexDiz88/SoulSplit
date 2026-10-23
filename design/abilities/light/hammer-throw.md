@@ -4,7 +4,7 @@ icon: hammer_throw.png
 name: "Бросок молота"
 school: "Свет"
 school_id: light
-status: прототип
+status: одобрено
 ---
 
 # Бросок молота

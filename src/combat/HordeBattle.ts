@@ -812,8 +812,8 @@ export class HordeBattle {
         caster.view.position.set(home.x, home.y);
         break;
       }
-      case "battle_cry": {
-        await this.vfx.battleCry(from, [caster.center]);
+      case "titan_might": {
+        await this.vfx.titanMight(from, [caster.center]);
         const buffDur = def.effects?.atkBuffDuration ?? 5;
         const buffPot = def.effects?.atkBuffPotency ?? 0.35;
         caster.addStatus({ id: "atk_buff", kind: "atk_buff", remaining: buffDur, potency: buffPot });
