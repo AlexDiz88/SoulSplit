@@ -40,7 +40,6 @@ type AppScreen =
   | "create"
   | "hub"
   | "zone_select"
-  | "merchant"
   | "battle"
   | "reward"
   | "defeat";
@@ -94,10 +93,22 @@ export class GameApp {
     });
 
     this.hub = mountHubScreen({
-      onCharacter: () => this.hud.openCharacter(),
-      onBestiary: () => this.hud.openBestiary(),
-      onGrimoire: () => this.hud.openGrimoire(),
-      onItemGenerator: () => this.hud.openItemGenerator(),
+      onCharacter: () => {
+        this.merchant.hide();
+        this.hud.openCharacter();
+      },
+      onBestiary: () => {
+        this.merchant.hide();
+        this.hud.openBestiary();
+      },
+      onGrimoire: () => {
+        this.merchant.hide();
+        this.hud.openGrimoire();
+      },
+      onItemGenerator: () => {
+        this.merchant.hide();
+        this.hud.openItemGenerator();
+      },
       onSave: () => this.manualSave(),
       onSettings: () => this.goSettingsFromHub(),
       onCharacterSelect: () => this.exitToSlots(),
@@ -112,11 +123,13 @@ export class GameApp {
     });
 
     this.merchant = mountMerchantScreen({
-      onBack: () => this.goHub(),
-      onSold: () => {
+      onClose: () => {
+        /* хаб остаётся открытым под оверлеем */
+      },
+      onChanged: () => {
         this.persist();
         this.rebuildHubUnit();
-        if (this.state) this.merchant.show(this.state.hero);
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
       },
       showToast: (t) => this.hud.showToast(t),
     });
@@ -156,7 +169,7 @@ export class GameApp {
       syncProfileFromUnit(this.state.hero, this.hubUnit);
       this.persist();
       if (this.screen === "hub") this.hub.show(this.state);
-      if (this.screen === "merchant") this.merchant.show(this.state.hero);
+      if (this.merchant.isOpen() && this.state) this.merchant.show(this.state);
     });
   }
 
@@ -402,20 +415,17 @@ export class GameApp {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     ensureHeroStash(state.hero);
+    this.merchant.hide();
     this.hud.openStash(state.hero.stash);
   }
 
+  /** Рынок поверх карты города. */
   goMerchant(): void {
+    if (this.screen !== "hub") return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
-    this.hideAll();
     this.hud.closeOverlays();
-    this.screen = "merchant";
-    this.hud.setShellMode("hub");
-    this.hud.setCanChangeEquipment(() => true);
-    this.bindHubEquipmentSync();
-    this.rebuildHubUnit();
-    this.merchant.show(state.hero);
+    this.merchant.show(state);
   }
 
   startBattle(zoneId: ZoneId): void {

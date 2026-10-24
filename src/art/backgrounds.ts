@@ -6,13 +6,17 @@ const backgroundModules = import.meta.glob<{ default: string }>(
   { eager: true },
 );
 
-/** Меню / хаб - не попадают в случайный боевой пул. */
+/** Меню / хаб / портреты торговцев - не попадают в случайный боевой пул. */
 function isNonBattleBackground(path: string): boolean {
   const file = path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
   return (
     file.startsWith("main_menu") ||
     file.startsWith("town") ||
-    file.startsWith("choose_slot_screen")
+    file.startsWith("choose_slot_screen") ||
+    file.startsWith("weaponsmith") ||
+    file.startsWith("armorsmith") ||
+    file.startsWith("herbalist") ||
+    file.startsWith("baker")
   );
 }
 

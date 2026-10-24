@@ -17,3 +17,8 @@ export function victoryGold(zoneItemLevel: number, kills: number): number {
 export function sellPrice(item: ItemDef): number {
   return Math.max(1, item.itemLevel) * RARITY_SELL_MULT[item.rarity];
 }
+
+/** Цена покупки у торговца (продажа × 3.5). */
+export function buyPrice(item: ItemDef): number {
+  return Math.max(1, Math.round(sellPrice(item) * 3.5));
+}

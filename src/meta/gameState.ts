@@ -4,6 +4,7 @@ import {
   type HeroProfile,
   type NewHeroOptions,
 } from "./heroProfile";
+import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
 
 export type ZoneId = "outskirts" | "ruins";
 
@@ -11,14 +12,19 @@ export interface GameState {
   hero: HeroProfile;
   unlockedZones: ZoneId[];
   lastZoneId: ZoneId | null;
+  /** Ассортимент рынка (реролл после похода / кнопкой). */
+  market: MarketState;
 }
 
 export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
-  return {
+  const state: GameState = {
     hero: createNewHeroProfile(opts),
     unlockedZones: ["outskirts"],
     lastZoneId: null,
+    market: cloneMarketState(null),
   };
+  refreshMarketStock(state);
+  return state;
 }
 
 export function cloneGameState(src: GameState): GameState {
@@ -26,5 +32,6 @@ export function cloneGameState(src: GameState): GameState {
     hero: cloneHeroProfile(src.hero),
     unlockedZones: [...src.unlockedZones],
     lastZoneId: src.lastZoneId,
+    market: cloneMarketState(src.market),
   };
 }
