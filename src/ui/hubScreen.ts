@@ -40,6 +40,14 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const topbar = el("header", "hub-topbar");
 
   const left = el("div", "hub-topbar-left");
+  const portraitWrap = el("div", "hub-portrait");
+  portraitWrap.title = "Герой";
+  const portraitImg = el("img", "hub-portrait-img");
+  portraitImg.alt = "";
+  portraitImg.draggable = false;
+  portraitWrap.append(portraitImg);
+
+  const meta = el("div", "hub-topbar-meta");
   const heroRow = el("div", "hub-hero-row");
   const levelBadge = el("div", "hub-level");
   levelBadge.title = "Уровень";
@@ -54,7 +62,8 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const xpLabel = el("span", "hub-xp-label");
   xpTrack.append(xpFill, xpLabel);
   xp.append(xpTrack);
-  left.append(heroRow, xp);
+  meta.append(heroRow, xp);
+  left.append(portraitWrap, meta);
 
   const right = el("div", "hub-topbar-right");
   const currencies = el("div", "hub-currencies");
@@ -180,6 +189,8 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   return {
     show(state) {
       const h = state.hero;
+      portraitImg.src = h.portraitUrl;
+      portraitImg.alt = h.name;
       levelNum.textContent = String(h.level);
       nameEl.textContent = h.name;
       goldValue.textContent = String(h.gold);

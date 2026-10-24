@@ -29,12 +29,14 @@ async function boot(): Promise<void> {
   app.canvas.style.width = "100%";
   app.canvas.style.height = "100%";
 
-  await Promise.all([preloadPortraits(), preloadBackgrounds()]);
-
   let game!: GameApp;
   const hud = createBattleHud((abilityId: AbilityId) => game.selectAbility(abilityId));
   game = new GameApp(app, hud);
+  // Меню сразу: портреты/фоны боя греем в фоне, они не нужны title screen
   game.start();
+  void Promise.all([preloadPortraits(), preloadBackgrounds()]).catch((err) => {
+    console.warn("preload assets:", err);
+  });
 }
 
 boot().catch((err) => {

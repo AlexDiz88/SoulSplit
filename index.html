@@ -10,11 +10,12 @@
     <div id="app">
       <div id="game-root"></div>
       <div id="hud">
-        <header class="hud-top">
-          <button type="button" id="btn-menu" class="menu-btn" title="Меню" aria-label="Меню" aria-expanded="false" aria-controls="side-menu">
+        <!-- Боевой хром скрыт до setShellMode("battle"): иначе FOUC при обновлении вкладки -->
+        <header class="hud-top" hidden>
+          <button type="button" id="btn-menu" class="menu-btn" title="Меню" aria-label="Меню" aria-expanded="false" aria-controls="side-menu" hidden>
             <span></span><span></span><span></span>
           </button>
-          <div class="controls">
+          <div class="controls" hidden>
             <button type="button" id="btn-pause" class="ctrl-btn" title="Пробел - пауза">❚❚</button>
             <button type="button" id="btn-speed" class="ctrl-btn" title="Скорость">×1</button>
           </div>
@@ -56,11 +57,11 @@
         </div>
 
         <footer class="hud-bottom">
-          <div class="skill-bar" id="skill-bar"></div>
+          <div class="skill-bar" id="skill-bar" hidden></div>
         </footer>
 
-        <div id="battle-banner" class="battle-banner" aria-live="polite">
-          <button type="button" id="btn-start" class="battle-start-btn">Старт</button>
+        <div id="battle-banner" class="battle-banner" aria-live="polite" hidden>
+          <button type="button" id="btn-start" class="battle-start-btn" hidden>Старт</button>
           <div id="battle-pause-label" class="battle-pause-label" hidden>Пауза</div>
         </div>
 
