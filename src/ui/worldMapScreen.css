@@ -100,8 +100,8 @@
 
 .wm-zone-panel {
   box-sizing: border-box;
-  width: min(680px, 100%);
-  max-height: min(860px, calc(100vh - 40px));
+  width: min(720px, 100%);
+  max-height: min(900px, calc(100vh - 40px));
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -225,6 +225,71 @@
   font-style: italic;
 }
 
+.wm-zone-points {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.wm-zone-point-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  display: inline-flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(106, 90, 58, 0.55);
+  border-radius: 4px;
+  background: rgba(18, 20, 28, 0.9);
+  color: var(--theme-mist, #e8e2d4);
+  font: inherit;
+  font-size: 0.98rem;
+  letter-spacing: 0.04em;
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.12s ease,
+    background 0.12s ease,
+    color 0.12s ease;
+}
+
+.wm-zone-point-btn:hover,
+.wm-zone-point-btn:focus-visible {
+  border-color: rgba(196, 163, 90, 0.75);
+  background: rgba(28, 30, 42, 0.95);
+  outline: none;
+}
+
+.wm-zone-point-btn.is-active {
+  border-color: rgba(196, 163, 90, 0.95);
+  background:
+    linear-gradient(180deg, rgba(72, 56, 96, 0.45), rgba(28, 22, 42, 0.92)),
+    #1a1424;
+  color: var(--theme-corona, #e8d9a8);
+  box-shadow: inset 0 0 0 1px rgba(196, 163, 90, 0.28);
+}
+
+.wm-zone-point-name {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.wm-zone-point-lvl {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--theme-corona, #e8d9a8);
+  opacity: 0.9;
+  white-space: nowrap;
+}
+
+.wm-zone-point-btn:not(.is-active) .wm-zone-point-lvl {
+  color: var(--muted, #b8b2a4);
+}
+
 .wm-zone-enemies-head {
   display: flex;
   align-items: baseline;
@@ -242,20 +307,20 @@
 .wm-zone-enemy-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
 .wm-zone-enemy {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
-  width: 96px;
+  gap: 8px;
+  width: 128px;
 }
 
 .wm-zone-enemy-img {
-  width: 76px;
-  height: 76px;
+  width: 112px;
+  height: 112px;
   object-fit: cover;
   border: 1px solid rgba(106, 90, 58, 0.75);
   border-radius: 3px;
@@ -263,7 +328,7 @@
 }
 
 .wm-zone-enemy-name {
-  font-size: 0.85rem;
+  font-size: 0.92rem;
   line-height: 1.25;
   text-align: center;
   color: var(--muted, #b8b2a4);

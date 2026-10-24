@@ -2,7 +2,7 @@ import { generateItem } from "../items/generate";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
 import type { Aspect } from "../types";
-import type { ZoneDef } from "./zones";
+import type { ZoneDef, ZonePointDef } from "./zones";
 
 const SLOT_WEIGHTS: { slot: EquipSlotId; weight: number }[] = [
   { slot: "mainhand", weight: 22 },
@@ -57,6 +57,7 @@ function dropCount(kills: number, rng: () => number): number {
 
 export interface LootRollOptions {
   zone: ZoneDef;
+  point: ZonePointDef;
   kills: number;
   learnedAspects: Aspect[];
   rng?: () => number;
@@ -75,7 +76,7 @@ export function rollVictoryLoot(opts: LootRollOptions): ItemDef[] {
       generateItem({
         slot,
         rarity,
-        itemLevel: opts.zone.itemLevel,
+        itemLevel: opts.point.itemLevel,
         learnedAspects: opts.learnedAspects,
         rng,
       }),

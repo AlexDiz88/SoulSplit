@@ -13,6 +13,7 @@ export interface BattleKill {
 export interface BattleResult {
   outcome: "victory" | "defeat";
   zoneId: ZoneId;
+  pointId: string;
   killed: BattleKill[];
   survivingEnemyCount: number;
   durationSec: number;
@@ -23,6 +24,7 @@ export interface BattleResult {
 export interface BattleConfig {
   hero: HeroProfile;
   zone: ZoneDef;
+  pointId: string;
   encounter: SpawnedEnemy[];
   onComplete: (result: BattleResult) => void;
 }

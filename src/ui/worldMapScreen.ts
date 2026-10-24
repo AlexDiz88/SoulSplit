@@ -1,7 +1,7 @@
 import { tryResolveBackgroundStemUrl, createWorldMapBackgroundImg } from "../art/menuBackground";
 import { getEnemyKind } from "../combat/enemies";
 import type { GameState, ZoneId } from "../meta/gameState";
-import { getZone, isZoneUnlocked } from "../meta/zones";
+import { getZone, getZonePoint, isZoneUnlocked, type ZonePointDef } from "../meta/zones";
 import { coverLayout, projectLocation } from "./hubLocations";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
@@ -15,8 +15,18 @@ export interface WorldMapApi {
 
 export interface WorldMapHandlers {
   onBackToTown: () => void;
-  onStartZone: (zoneId: ZoneId) => void;
+  onStartZone: (zoneId: ZoneId, pointId: string) => void;
   showToast: (text: string) => void;
+}
+
+function formatEnemyLevels(levels: [number, number]): string {
+  const [lvlMin, lvlMax] = levels;
+  return lvlMin === lvlMax ? `уровень ${lvlMin}` : `уровень ${lvlMin}-${lvlMax}`;
+}
+
+function formatPointLevelBadge(levels: [number, number]): string {
+  const [lvlMin, lvlMax] = levels;
+  return lvlMin === lvlMax ? `${lvlMin}` : `${lvlMin}-${lvlMax}`;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -101,6 +111,13 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   heroCopy.append(titleEl, descEl);
   hero.append(previewWrap, heroCopy);
 
+  const pointsBlock = el("section", "wm-zone-block wm-zone-points-block");
+  pointsBlock.append(el("h3", "wm-zone-block-title", "Локации"));
+  const pointsRow = el("div", "wm-zone-points");
+  pointsRow.setAttribute("role", "tablist");
+  pointsRow.setAttribute("aria-label", "Локации");
+  pointsBlock.append(pointsRow);
+
   const questsBlock = el("section", "wm-zone-block");
   questsBlock.append(el("h3", "wm-zone-block-title", "Квесты"));
   const questList = el("ul", "wm-zone-quest-list");
@@ -126,7 +143,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   btnGo.type = "button";
   actions.append(btnBack, btnGo);
 
-  panel.append(hero, questsBlock, enemiesBlock, lootBlock, actions);
+  panel.append(hero, pointsBlock, questsBlock, enemiesBlock, lootBlock, actions);
   overlay.append(panel);
   root.append(overlay);
 
@@ -135,41 +152,15 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   hud.append(root);
 
   let openZoneId: ZoneId | null = null;
+  let openPointId: string | null = null;
   let panelClosing = false;
 
-  const fillZonePanel = (zoneId: ZoneId): void => {
-    const zone = getZone(zoneId);
-    openZoneId = zoneId;
-    titleEl.textContent = zone.name;
-    descEl.textContent = zone.description;
-
-    const previewUrl = tryResolveBackgroundStemUrl(zone.previewStem);
-    if (previewUrl) {
-      previewImg.src = previewUrl;
-      previewImg.hidden = false;
-      previewFallback.hidden = true;
-    } else {
-      previewImg.removeAttribute("src");
-      previewImg.hidden = true;
-      previewFallback.hidden = false;
-    }
-
-    questList.replaceChildren();
-    if (zone.quests.length === 0) {
-      const empty = el("li", "wm-zone-quest-empty", "Нет активных квестов");
-      questList.append(empty);
-    } else {
-      for (const name of zone.quests) {
-        questList.append(el("li", undefined, name));
-      }
-    }
-
-    const [lvlMin, lvlMax] = zone.enemyLevels;
-    enemyLevelEl.textContent =
-      lvlMin === lvlMax ? `уровень ${lvlMin}` : `уровень ${lvlMin}-${lvlMax}`;
+  const fillPointDetails = (point: ZonePointDef): void => {
+    openPointId = point.id;
+    enemyLevelEl.textContent = formatEnemyLevels(point.enemyLevels);
 
     enemyRow.replaceChildren();
-    for (const id of zone.enemyPool) {
+    for (const id of point.enemyPool) {
       const kind = getEnemyKind(id);
       if (!kind) continue;
       const chip = el("div", "wm-zone-enemy");
@@ -192,6 +183,64 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       enemyRow.append(chip);
     }
 
+    for (const node of pointsRow.querySelectorAll<HTMLButtonElement>(".wm-zone-point-btn")) {
+      const active = node.dataset.pointId === point.id;
+      node.classList.toggle("is-active", active);
+      node.setAttribute("aria-selected", active ? "true" : "false");
+      node.tabIndex = active ? 0 : -1;
+    }
+  };
+
+  const fillZonePanel = (zoneId: ZoneId): void => {
+    const zone = getZone(zoneId);
+    openZoneId = zoneId;
+    titleEl.textContent = zone.name;
+    descEl.textContent = zone.description;
+
+    const previewUrl = tryResolveBackgroundStemUrl(zone.previewStem);
+    if (previewUrl) {
+      previewImg.src = previewUrl;
+      previewImg.hidden = false;
+      previewFallback.hidden = true;
+    } else {
+      previewImg.removeAttribute("src");
+      previewImg.hidden = true;
+      previewFallback.hidden = false;
+    }
+
+    pointsRow.replaceChildren();
+    pointsBlock.hidden = zone.points.length <= 1;
+    for (const point of zone.points) {
+      const btn = el("button", "wm-zone-point-btn");
+      btn.type = "button";
+      btn.dataset.pointId = point.id;
+      btn.setAttribute("role", "tab");
+      const nameSpan = el("span", "wm-zone-point-name", point.name);
+      const lvlSpan = el(
+        "span",
+        "wm-zone-point-lvl",
+        formatPointLevelBadge(point.enemyLevels),
+      );
+      btn.append(nameSpan, lvlSpan);
+      btn.title = `${point.name} - ${formatEnemyLevels(point.enemyLevels)}`;
+      btn.addEventListener("click", () => {
+        if (openZoneId !== zoneId) return;
+        fillPointDetails(point);
+      });
+      pointsRow.append(btn);
+    }
+
+    questList.replaceChildren();
+    if (zone.quests.length === 0) {
+      const empty = el("li", "wm-zone-quest-empty", "Нет активных квестов");
+      questList.append(empty);
+    } else {
+      for (const name of zone.quests) {
+        questList.append(el("li", undefined, name));
+      }
+    }
+
+    fillPointDetails(getZonePoint(zone));
     panel.setAttribute("aria-labelledby", "wm-zone-title");
   };
 
@@ -221,6 +270,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       overlay.hidden = true;
       overlay.setAttribute("aria-hidden", "true");
       openZoneId = null;
+      openPointId = null;
       panelClosing = false;
       after?.();
     };
@@ -239,11 +289,24 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   btnBack.addEventListener("click", () => closeZonePanel());
   btnGo.addEventListener("click", () => {
     const id = openZoneId;
-    if (!id) return;
-    handlers.onStartZone(id);
+    const pointId = openPointId;
+    if (!id || !pointId) return;
+    handlers.onStartZone(id, pointId);
   });
   overlay.addEventListener("click", (ev) => {
     if (ev.target === overlay) closeZonePanel();
+  });
+  pointsRow.addEventListener("keydown", (ev) => {
+    if (ev.code !== "ArrowLeft" && ev.code !== "ArrowRight") return;
+    const buttons = [...pointsRow.querySelectorAll<HTMLButtonElement>(".wm-zone-point-btn")];
+    if (buttons.length < 2) return;
+    const current = buttons.findIndex((b) => b.classList.contains("is-active"));
+    if (current < 0) return;
+    ev.preventDefault();
+    const delta = ev.code === "ArrowRight" ? 1 : -1;
+    const next = buttons[(current + delta + buttons.length) % buttons.length]!;
+    next.click();
+    next.focus();
   });
 
   const onKeyDown = (ev: KeyboardEvent): void => {
@@ -321,8 +384,9 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         const unlocked = isZoneUnlocked(zoneId, state.hero.level, state.unlockedZones);
         btn.classList.toggle("is-locked", !unlocked);
         btn.dataset.unlocked = unlocked ? "1" : "0";
+        const point = getZonePoint(zone);
         const hint = unlocked
-          ? `${zone.description} (ilvl ${zone.itemLevel})`
+          ? `${zone.description} (${zone.points.length} локации, ilvl ${point.itemLevel}+)`
           : lockHint(zoneId, state.hero.level);
         btn.dataset.lockHint = unlocked ? "" : hint;
         btn.title = unlocked ? `${zone.name} - ${hint}` : hint;

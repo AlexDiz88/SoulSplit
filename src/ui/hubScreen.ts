@@ -62,7 +62,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     anchor.dataset.loc = loc.id;
     const btn = el("button", "title-btn hub-loc-btn", loc.label);
     btn.type = "button";
-    btn.title = loc.label;
     btn.setAttribute("aria-label", loc.label);
     btn.addEventListener("click", () => handlers.onLocation(loc.id));
     anchor.append(btn);
@@ -75,7 +74,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
   const left = el("button", "hub-topbar-left");
   left.type = "button";
-  left.title = "Персонаж";
   left.setAttribute("aria-label", "Персонаж");
   const portraitWrap = el("div", "hub-portrait");
   const portraitImg = el("img", "hub-portrait-img");
@@ -105,18 +103,15 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const currencies = el("div", "hub-currencies");
   const addGoldBtn = el("button", "hub-add-gold-btn", "+1000");
   addGoldBtn.type = "button";
-  addGoldBtn.title = "Тест: добавить 1000 золота";
   addGoldBtn.setAttribute("aria-label", "Добавить 1000 золота");
   addGoldBtn.addEventListener("click", () => handlers.onAddTestGold());
   const goldEl = el("div", "hub-currency hub-currency-gold");
-  goldEl.title = "Золото";
   const goldValue = el("span", "hub-currency-value", "0");
   goldEl.append(el("span", "hub-currency-label", "Золото"), goldValue);
   currencies.append(addGoldBtn, goldEl);
 
   const fsBtn = el("button", "hub-fs-btn");
   fsBtn.type = "button";
-  fsBtn.title = "Полный экран (X)";
   fsBtn.setAttribute("aria-label", "Полный экран");
   fsBtn.setAttribute("aria-pressed", "false");
   fsBtn.append(el("span", "hub-fs-icon"));
@@ -124,7 +119,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const menuWrap = el("div", "hub-menu-wrap");
   const menuBtn = el("button", "hub-menu-btn");
   menuBtn.type = "button";
-  menuBtn.title = "Меню";
   menuBtn.setAttribute("aria-label", "Меню");
   menuBtn.setAttribute("aria-expanded", "false");
   menuBtn.setAttribute("aria-controls", "hub-game-menu");
@@ -137,13 +131,10 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
   const btnBestiary = el("button", "hub-menu-item", "Бестиарий");
   btnBestiary.type = "button";
-  btnBestiary.title = "H";
   const btnGrimoire = el("button", "hub-menu-item", "Гримуар");
   btnGrimoire.type = "button";
-  btnGrimoire.title = "V";
   const btnItemGen = el("button", "hub-menu-item", "Генератор предметов");
   btnItemGen.type = "button";
-  btnItemGen.title = "G";
   const menuSep = el("div", "hub-menu-sep");
   menuSep.setAttribute("role", "separator");
   const btnSave = el("button", "hub-menu-item", "Сохранить");
@@ -191,10 +182,8 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     fsBtn.classList.toggle("is-fullscreen", on);
     fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
     if (on) {
-      fsBtn.title = "Оконный режим (X)";
       fsBtn.setAttribute("aria-label", "Оконный режим");
     } else {
-      fsBtn.title = "Полный экран (X)";
       fsBtn.setAttribute("aria-label", "Полный экран");
     }
   };
@@ -338,13 +327,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       if (h.level >= MAX_HERO_LEVEL) {
         xpLabel.textContent = "Макс. уровень";
         xpFill.style.width = "100%";
-        xpTrack.title = "Максимальный уровень";
       } else {
         const need = xpToNextLevel(h.level);
         const pct = Math.min(100, (h.xp / need) * 100);
         xpLabel.textContent = `${h.xp} / ${need}`;
         xpFill.style.width = `${pct}%`;
-        xpTrack.title = `Опыт ${h.xp} / ${need}`;
       }
 
       const nextBg = pickRandomTownBackgroundUrl();

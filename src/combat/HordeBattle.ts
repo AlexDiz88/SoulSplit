@@ -528,6 +528,7 @@ export class HordeBattle {
     const result: BattleResult = {
       outcome,
       zoneId: this.config.zone.id,
+      pointId: this.config.pointId,
       killed: [...this.killed],
       survivingEnemyCount: this.livingEnemies().length,
       durationSec: this.battleElapsed,

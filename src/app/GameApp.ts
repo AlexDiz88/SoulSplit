@@ -20,7 +20,7 @@ import {
   loadSlot,
   saveSlot,
 } from "../meta/save";
-import { getZone, isZoneUnlocked, syncUnlockedZones } from "../meta/zones";
+import { getZone, getZonePoint, isZoneUnlocked, syncUnlockedZones } from "../meta/zones";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
 import { mountCharacterCreateScreen } from "../ui/characterCreateScreen";
@@ -121,7 +121,7 @@ export class GameApp {
 
     this.worldMap = mountWorldMapScreen({
       onBackToTown: () => this.goHub(),
-      onStartZone: (id) => this.startBattle(id),
+      onStartZone: (zoneId, pointId) => this.startBattle(zoneId, pointId),
       showToast: (t) => this.hud.showToast(t),
     });
 
@@ -456,13 +456,14 @@ export class GameApp {
     this.merchant.show(state);
   }
 
-  startBattle(zoneId: ZoneId): void {
+  startBattle(zoneId: ZoneId, pointId?: string): void {
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
       this.persist();
     }
     const zone = getZone(zoneId);
+    const point = getZonePoint(zone, pointId);
     state.lastZoneId = zoneId;
     this.destroyBattle();
     this.hideAll();
@@ -471,17 +472,18 @@ export class GameApp {
     this.hud.setShellMode("battle");
 
     const encounter = rollEncounter({
-      pool: zone.enemyPool,
-      countMin: zone.enemyCount[0],
-      countMax: zone.enemyCount[1],
-      itemLevel: zone.itemLevel,
-      eliteChance: zone.eliteChance ?? 0,
+      pool: point.enemyPool,
+      countMin: point.enemyCount[0],
+      countMax: point.enemyCount[1],
+      itemLevel: point.itemLevel,
+      eliteChance: point.eliteChance ?? 0,
     });
 
     const heroSnap = cloneGameState(state).hero;
     this.battle = new HordeBattle(this.app, this.hud, {
       hero: heroSnap,
       zone,
+      pointId: point.id,
       encounter,
       onComplete: (result) => {
         queueMicrotask(() => this.onBattleComplete(result));
@@ -510,9 +512,10 @@ export class GameApp {
     }
 
     const zone = getZone(result.zoneId);
+    const point = getZonePoint(zone, result.pointId);
     const kills = result.killed.length;
     const xp = victoryXp(zone, kills);
-    const gold = victoryGold(zone.itemLevel, kills);
+    const gold = victoryGold(point.itemLevel, kills);
     const levelBefore = state.hero.level;
     const levelResult = addXpToProfile(state.hero, xp);
     state.hero.gold += gold;
@@ -520,6 +523,7 @@ export class GameApp {
 
     const items = rollVictoryLoot({
       zone,
+      point,
       kills,
       learnedAspects: state.hero.learnedAspects,
     });
