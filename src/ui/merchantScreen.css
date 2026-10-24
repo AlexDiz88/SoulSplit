@@ -283,7 +283,7 @@
   align-items: start;
   gap: 10px;
   min-height: var(--hand);
-  padding: 0 12px 10px 0;
+  padding: 4px;
   border: 1px solid #4a4538;
   border-radius: 4px;
   background: linear-gradient(180deg, #1a1c1e, #101112);
@@ -305,6 +305,7 @@
 }
 
 .market-offer-icon {
+  position: relative;
   width: var(--hand);
   height: var(--hand);
   flex-shrink: 0;
@@ -337,9 +338,9 @@
 }
 
 .market-offer-face {
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
-  margin: 2px;
+  /* absolute inset: иначе margin-top схлопывается через родителя и верх рамки пропадает */
+  position: absolute;
+  inset: 2px;
   display: grid;
   place-items: center;
   background:
@@ -437,29 +438,48 @@
 }
 
 .market-detail {
-  /* Вне потока: основное окно не смещается. */
-  --rar-c: var(--c-uncommon, #6fcf6a);
+  /* Вне потока: основное окно не смещается. Внешний вид - общий item-tip. */
   position: absolute;
   left: calc(100% + 12px);
   top: 0;
   z-index: 2;
-  width: 360px;
-  height: 100%;
+  width: 300px;
+  max-width: 300px;
+  height: auto;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  padding: 16px 14px 14px;
+  align-items: stretch;
+  padding: 16px 18px 14px;
   overflow: auto;
   pointer-events: auto;
-  border: 1px solid #6a5a3a;
   border-radius: 6px;
-  background:
-    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.12), transparent 55%),
-    linear-gradient(180deg, #1d1f21, #0d0e0f);
-  box-shadow:
-    inset 0 0 0 4px #0a0b0c,
-    inset 0 0 0 5px rgba(196, 163, 90, 0.28),
-    0 16px 40px rgba(0, 0, 0, 0.5);
+}
+
+.market-detail .item-tip-icon {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 10px;
+  clip-path: polygon(
+    10px 0,
+    calc(100% - 10px) 0,
+    100% 10px,
+    100% calc(100% - 10px),
+    calc(100% - 10px) 100%,
+    10px 100%,
+    0 calc(100% - 10px),
+    0 10px
+  );
+}
+
+.market-detail .item-tip-footer {
+  margin-top: 2px;
+}
+
+.market-detail .item-tip-sell {
+  margin-top: 6px;
+  font-size: 1.15rem;
+  color: #e8d7a2;
 }
 
 .market-hints {
@@ -491,108 +511,8 @@
   display: none;
 }
 
-.market-detail[data-rarity="common"] { --rar-c: #c8c2b2; }
-.market-detail[data-rarity="uncommon"] { --rar-c: #6fcf6a; }
-.market-detail[data-rarity="magic"] { --rar-c: #4fa3ff; }
-.market-detail[data-rarity="rare"] { --rar-c: #e8c84a; }
-.market-detail[data-rarity="epic"] { --rar-c: #b878ff; }
-
-.market-detail-icon {
-  width: 140px;
-  height: 140px;
-  margin: 4px auto 0;
-  flex-shrink: 0;
-  background: linear-gradient(
-    155deg,
-    var(--rar-c),
-    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
-    var(--rar-c)
-  );
-  clip-path: polygon(
-    10px 0,
-    calc(100% - 10px) 0,
-    100% 10px,
-    100% calc(100% - 10px),
-    calc(100% - 10px) 100%,
-    10px 100%,
-    0 calc(100% - 10px),
-    0 10px
-  );
-}
-
-.market-detail-face {
-  width: calc(100% - 6px);
-  height: calc(100% - 6px);
-  margin: 3px;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
-    radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
-  clip-path: inherit;
-}
-
-.market-detail-face img {
-  width: 88%;
-  height: 88%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-.market-detail-name {
-  margin: 0;
-  text-align: center;
-  font-size: 1.35rem;
-  font-weight: 800;
-  line-height: 1.2;
-  color: var(--rar-c);
-}
-
-.market-detail-meta {
-  text-align: center;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: #9a9488;
-}
-
-.market-detail-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-top: 4px;
-}
-
-.market-detail-line {
-  font-size: 1.05rem;
-  color: #8fd49a;
-  line-height: 1.3;
-}
-
-.market-detail-affix {
-  font-size: 1.05rem;
-  line-height: 1.3;
-  color: #c8d0c4;
-}
-
-.market-detail-price {
-  margin-top: auto;
-  padding-top: 12px;
-  display: flex;
-  justify-content: center;
-  font-size: 1.35rem;
-  font-weight: 800;
-  color: #e8d7a2;
-}
-
-.market-detail-price .gold-coin {
-  width: 1.15em;
-  height: 1.15em;
-}
-
 .market-detail-hint {
-  margin: 0;
+  margin: 10px 0 0;
   text-align: center;
   font-size: 0.78rem;
   color: #7a7468;
@@ -612,128 +532,8 @@
 }
 
 .market-tip {
-  --tip-c: var(--c-uncommon);
-  min-width: 240px;
-  max-width: 300px;
-  padding: 14px 16px 15px;
-  border: 1px solid #8a7044;
-  background: linear-gradient(180deg, #1c1d1f, #0d0e0f);
-  box-shadow:
-    inset 0 0 0 2px #0a0b0c,
-    inset 0 0 0 3px rgba(196, 163, 90, 0.25),
-    0 10px 30px rgba(0, 0, 0, 0.6);
-}
-
-.market-tip[data-rarity="common"] { --tip-c: var(--c-common); }
-.market-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon); }
-.market-tip[data-rarity="magic"] { --tip-c: var(--c-magic); }
-.market-tip[data-rarity="rare"] { --tip-c: var(--c-rare); }
-.market-tip[data-rarity="epic"] { --tip-c: var(--c-epic); }
-
-.market-tip.empty {
-  min-height: 110px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-}
-
-.market-tip-title {
-  margin: 0 0 8px;
-  color: #c4a35a;
-  font-size: 0.9rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.market-tip-head {
-  display: flex;
-  gap: 12px;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.market-tip-icon {
-  --rar-c: var(--tip-c, var(--c-uncommon));
-  width: 72px;
-  height: 72px;
-  flex-shrink: 0;
-  background: linear-gradient(
-    155deg,
-    var(--rar-c),
-    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
-    var(--rar-c)
-  );
-  clip-path: polygon(
-    7px 0,
-    calc(100% - 7px) 0,
-    100% 7px,
-    100% calc(100% - 7px),
-    calc(100% - 7px) 100%,
-    7px 100%,
-    0 calc(100% - 7px),
-    0 7px
-  );
-}
-
-.market-tip-face {
-  width: calc(100% - 4px);
-  height: calc(100% - 4px);
-  margin: 2px;
-  display: grid;
-  place-items: center;
-  background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
-    radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
-  clip-path: inherit;
-}
-
-.market-tip-face img {
-  width: 88%;
-  height: 88%;
-  object-fit: contain;
-  pointer-events: none;
-}
-
-.market-tip-text {
-  min-width: 0;
-  flex: 1;
-}
-
-.market-tip-name {
-  color: var(--tip-c, var(--text));
-  font-size: 1.2rem;
-  font-weight: 800;
-  line-height: 1.2;
-}
-
-.market-tip-meta {
-  margin: 4px 0 0;
-  color: #9a9488;
-  font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.market-tip-line {
-  color: #8fd49a;
-  font-size: 1.02rem;
-  line-height: 1.35;
-}
-
-.market-tip-affix {
-  margin-top: 3px;
-  font-size: 1.02rem;
-  line-height: 1.35;
-  color: #c8d0c4;
-}
-
-.market-tip-empty {
-  margin-top: 6px;
-  color: #8a8478;
-  font-size: 1.15rem;
-  font-weight: 700;
+  min-width: 220px;
+  max-width: 280px;
 }
 
 @media (max-width: 760px) {

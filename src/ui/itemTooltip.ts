@@ -1,6 +1,6 @@
 import { formatRolledAffix } from "../items/affixCatalog";
 import { isTwoHandPlaceholder } from "../items/equipment";
-import { SLOT_LABEL } from "../items/slots";
+import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef, type WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { goldTipLine } from "./goldIcon";
@@ -9,6 +9,13 @@ import "./itemTooltip.css";
 export interface ItemTooltipOptions {
   /** Показать цену продажи внизу. По умолчанию true. */
   showSellPrice?: boolean;
+  /** Иконка предмета над названием. */
+  showIcon?: boolean;
+  /** Подпись над иконкой/названием ("В продаже", "Экипировано"). */
+  caption?: string;
+  /** Кастомная цена в футере вместо продажи (например цена покупки). */
+  priceLabel?: string;
+  priceAmount?: number;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -50,16 +57,39 @@ function baseStatLine(label: string, value: string, valueClass = "item-tip-stat-
   return row;
 }
 
+function itemIconNode(item: ItemDef): HTMLElement {
+  const wrap = el("div", "item-tip-icon");
+  const face = el("div", "item-tip-icon-face");
+  if (item.icon) {
+    const img = document.createElement("img");
+    img.src = item.icon;
+    img.alt = "";
+    img.draggable = false;
+    face.append(img);
+  }
+  wrap.append(face);
+  return wrap;
+}
+
 /**
  * Содержимое тултипа предмета в стиле Hero Siege:
  * название → редкость+слот → база (DPS/урон/КД) → аффиксы → уровень.
  */
 export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {}): HTMLElement[] {
-  const showSell = options.showSellPrice !== false;
-  const nodes: HTMLElement[] = [
+  const showSell = options.showSellPrice !== false && options.priceAmount === undefined;
+  const nodes: HTMLElement[] = [];
+
+  if (options.caption) {
+    nodes.push(el("div", "item-tip-caption", options.caption));
+  }
+  if (options.showIcon) {
+    nodes.push(itemIconNode(item));
+  }
+
+  nodes.push(
     el("div", "item-tip-name", item.name),
     el("div", "item-tip-sub", `${RARITY_LABEL[item.rarity]}, ${itemSlotLabel(item)}`),
-  ];
+  );
 
   const hasBase = Boolean(item.weapon);
   const hasAffixes = item.affixes.length > 0;
@@ -104,7 +134,11 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
 
   const footer = el("div", "item-tip-footer");
   footer.append(el("div", "item-tip-level", `Уровень предмета ${item.itemLevel}`));
-  if (showSell) {
+  if (options.priceAmount !== undefined) {
+    footer.append(
+      goldTipLine(options.priceLabel ?? "Цена:", options.priceAmount, "item-tip-sell"),
+    );
+  } else if (showSell) {
     footer.append(goldTipLine("Продажа:", sellPrice(item), "item-tip-sell"));
   }
   nodes.push(footer);
@@ -120,5 +154,18 @@ export function fillItemTooltip(
 ): void {
   host.replaceChildren();
   host.dataset.rarity = item.rarity;
+  host.classList.remove("empty");
   host.append(...renderItemTooltip(item, options));
+}
+
+/** Пустой слот в окне сравнения. */
+export function fillEmptyItemTooltip(host: HTMLElement, slot: EquipSlotId, caption?: string): void {
+  host.replaceChildren();
+  delete host.dataset.rarity;
+  host.classList.add("empty");
+  if (caption) host.append(el("div", "item-tip-caption", caption));
+  host.append(
+    el("div", "item-tip-empty-name", SLOT_LABEL[slot]),
+    el("div", "item-tip-empty-meta", "Пусто"),
+  );
 }

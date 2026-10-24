@@ -15,6 +15,7 @@ import {
   type MarketOffer,
 } from "../meta/market";
 import { goldAmountNode } from "./goldIcon";
+import { fillEmptyItemTooltip, fillItemTooltip } from "./itemTooltip";
 import "./merchantScreen.css";
 
 export interface MerchantScreenApi {
@@ -70,48 +71,6 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
   if (!item.affixes.length && !item.weapon) {
     host.append(el("div", lineClass, "Без аффиксов"));
   }
-}
-
-function tipIcon(item: ItemDef): HTMLElement {
-  const wrap = el("div", "market-tip-icon");
-  const face = el("div", "market-tip-face");
-  if (item.icon) {
-    const img = document.createElement("img");
-    img.src = item.icon;
-    img.alt = "";
-    img.draggable = false;
-    face.append(img);
-  }
-  wrap.append(face);
-  return wrap;
-}
-
-function fillItemCard(card: HTMLElement, title: string, item: ItemDef): void {
-  card.dataset.rarity = item.rarity;
-  card.append(el("div", "market-tip-title", title));
-
-  const head = el("div", "market-tip-head");
-  head.append(tipIcon(item));
-  const text = el("div", "market-tip-text");
-  text.append(el("div", "market-tip-name", item.name));
-  text.append(
-    el(
-      "div",
-      "market-tip-meta",
-      `${RARITY_LABEL[item.rarity]} - ${SLOT_LABEL[item.slot]} - ур. ${item.itemLevel}`,
-    ),
-  );
-  head.append(text);
-  card.append(head);
-
-  appendItemStats(card, item, "market-tip-line", "market-tip-affix");
-}
-
-function fillEmptyCard(card: HTMLElement, slot: EquipSlotId): void {
-  card.classList.add("empty");
-  card.append(el("div", "market-tip-title", "Экипировано"));
-  card.append(el("div", "market-tip-meta", SLOT_LABEL[slot]));
-  card.append(el("div", "market-tip-empty", "Пусто"));
 }
 
 export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantScreenApi {
@@ -179,7 +138,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   win.append(compare);
 
   const main = el("div", "market-main");
-  const detail = el("aside", "market-detail");
+  const detail = el("aside", "market-detail item-tip");
   detail.hidden = true;
   detail.setAttribute("aria-live", "polite");
   main.append(win, detail);
@@ -224,37 +183,14 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   function showDetail(offer: MarketOffer): void {
     selectedItemId = offer.item.id;
     const item = offer.item;
-    detail.replaceChildren();
     detail.hidden = false;
     root.classList.add("has-detail");
-    detail.dataset.rarity = item.rarity;
-
-    const icon = el("div", "market-detail-icon");
-    const face = el("div", "market-detail-face");
-    if (item.icon) {
-      const img = document.createElement("img");
-      img.src = item.icon;
-      img.alt = "";
-      img.draggable = false;
-      face.append(img);
-    }
-    icon.append(face);
-
-    detail.append(icon);
-    detail.append(el("h3", "market-detail-name", item.name));
-    detail.append(
-      el(
-        "div",
-        "market-detail-meta",
-        `${RARITY_LABEL[item.rarity]} - ${SLOT_LABEL[item.slot]} - ур. ${item.itemLevel}`,
-      ),
-    );
-    const stats = el("div", "market-detail-stats");
-    appendItemStats(stats, item, "market-detail-line", "market-detail-affix");
-    detail.append(stats);
-    const detailPrice = el("div", "market-detail-price");
-    detailPrice.append(goldAmountNode(offer.price));
-    detail.append(detailPrice);
+    fillItemTooltip(detail, item, {
+      showIcon: true,
+      showSellPrice: false,
+      priceLabel: activeTab === "buyback" ? "Выкуп:" : "Цена:",
+      priceAmount: offer.price,
+    });
     detail.append(
       el("p", "market-detail-hint", activeTab === "buyback" ? "ПКМ - выкупить" : "ПКМ - купить"),
     );
@@ -296,15 +232,26 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     const slots = compareSlotsFor(item);
     compare.replaceChildren();
 
-    const saleCard = el("div", "market-tip");
-    fillItemCard(saleCard, "В продаже", item);
+    const saleCard = el("div", "item-tip market-tip");
+    fillItemTooltip(saleCard, item, {
+      showIcon: true,
+      caption: "В продаже",
+      showSellPrice: false,
+    });
     compare.append(saleCard);
 
     for (const slot of slots) {
-      const card = el("div", "market-tip");
+      const card = el("div", "item-tip market-tip");
       const equipped = equipment[slot] ?? null;
-      if (equipped) fillItemCard(card, "Экипировано", equipped);
-      else fillEmptyCard(card, slot);
+      if (equipped) {
+        fillItemTooltip(card, equipped, {
+          showIcon: true,
+          caption: "Экипировано",
+          showSellPrice: false,
+        });
+      } else {
+        fillEmptyItemTooltip(card, slot, "Экипировано");
+      }
       compare.append(card);
     }
     positionCompare(anchor);
