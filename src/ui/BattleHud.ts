@@ -5,6 +5,7 @@ import { mountInventoryWindow } from "./inventoryWindow";
 import { mountItemGenerator } from "./itemGenerator";
 import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
+import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import type { Unit } from "../combat/Unit";
@@ -68,7 +69,7 @@ export interface BattleHudApi {
   /** Рынок: та же экип-кукла + сумка, без тайника. */
   openMarketSide(): void;
   setMarketMode(active: boolean): void;
-  setOnMarketGold(fn: ((delta: number) => void) | null): void;
+  setOnMarketSell(fn: ((item: ItemDef, price: number) => void) | null): void;
   openBestiary(): void;
   openGrimoire(): void;
   openItemGenerator(): void;
@@ -634,8 +635,8 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setMarketMode(active);
     },
 
-    setOnMarketGold(fn) {
-      inventory.setOnMarketGold(fn);
+    setOnMarketSell(fn) {
+      inventory.setOnMarketSell(fn);
     },
 
     setOnPanelsClosed(fn) {

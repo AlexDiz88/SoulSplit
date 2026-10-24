@@ -1,11 +1,14 @@
 import { generateItem } from "../items/generate";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
-import { buyPrice } from "./economy";
+import { buyPrice, sellPrice } from "./economy";
 import type { Aspect } from "../types";
 import type { GameState } from "./gameState";
 
 export type MerchantId = "weaponsmith" | "armorer" | "herbalist" | "baker";
+
+/** Вкладка рынка: торговцы + выкуп. */
+export type MarketTabId = MerchantId | "buyback";
 
 export interface MerchantDef {
   id: MerchantId;
@@ -27,7 +30,11 @@ export type MarketStock = Record<MerchantId, MarketOffer[]>;
 
 export interface MarketState {
   stock: MarketStock;
+  /** Последние проданные игроком предметы (новые в начале), макс. BUYBACK_MAX. */
+  buyback: MarketOffer[];
 }
+
+export const BUYBACK_MAX = 20;
 
 export const MERCHANTS: readonly MerchantDef[] = [
   {
@@ -98,6 +105,16 @@ function emptyStock(): MarketStock {
   };
 }
 
+function cloneOffers(list: MarketOffer[] | undefined | null): MarketOffer[] {
+  if (!Array.isArray(list)) return [];
+  return list
+    .filter((o) => o?.item && typeof o.price === "number")
+    .map((o) => ({
+      item: structuredClone(o.item),
+      price: Math.max(1, Math.floor(o.price)),
+    }));
+}
+
 function shopItemLevel(heroLevel: number): number {
   return Math.max(1, heroLevel);
 }
@@ -134,11 +151,12 @@ export function rollMerchantStock(
   return out;
 }
 
-/** Полный реролл ассортимента всех торговцев. */
+/** Полный реролл ассортимента торговцев (выкуп не трогаем). */
 export function refreshMarketStock(
   state: GameState,
   rng: () => number = Math.random,
 ): MarketState {
+  const buyback = cloneOffers(state.market?.buyback);
   const stock = emptyStock();
   for (const merchant of MERCHANTS) {
     stock[merchant.id] = rollMerchantStock(merchant, {
@@ -147,27 +165,32 @@ export function refreshMarketStock(
       rng,
     });
   }
-  state.market = { stock };
+  state.market = { stock, buyback };
   return state.market;
+}
+
+/** Добавить проданный предмет в выкуп (цена = цена продажи). */
+export function pushBuyback(state: GameState, item: ItemDef): void {
+  ensureMarket(state);
+  const offer: MarketOffer = {
+    item: structuredClone(item),
+    price: sellPrice(item),
+  };
+  state.market.buyback.unshift(offer);
+  if (state.market.buyback.length > BUYBACK_MAX) {
+    state.market.buyback.length = BUYBACK_MAX;
+  }
 }
 
 export function cloneMarketState(src: MarketState | undefined | null): MarketState {
   if (!src?.stock) {
-    return { stock: emptyStock() };
+    return { stock: emptyStock(), buyback: [] };
   }
   const stock = emptyStock();
   for (const merchant of MERCHANTS) {
-    const list = src.stock[merchant.id];
-    stock[merchant.id] = Array.isArray(list)
-      ? list
-          .filter((o) => o?.item && typeof o.price === "number")
-          .map((o) => ({
-            item: structuredClone(o.item),
-            price: Math.max(1, Math.floor(o.price)),
-          }))
-      : [];
+    stock[merchant.id] = cloneOffers(src.stock[merchant.id]);
   }
-  return { stock };
+  return { stock, buyback: cloneOffers(src.buyback) };
 }
 
 /** Дозаполнить market у старых сейвов; полный реролл только если все полки пусты. */
@@ -175,4 +198,8 @@ export function ensureMarket(state: GameState): void {
   state.market = cloneMarketState(state.market);
   const allEmpty = MERCHANTS.every((m) => state.market.stock[m.id].length === 0);
   if (allEmpty) refreshMarketStock(state);
+}
+
+export function isMerchantId(id: string): id is MerchantId {
+  return id in MERCHANT_BY_ID;
 }

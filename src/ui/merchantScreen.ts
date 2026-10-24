@@ -11,7 +11,7 @@ import {
   MERCHANT_BY_ID,
   MERCHANTS,
   refreshMarketStock,
-  type MerchantId,
+  type MarketTabId,
   type MarketOffer,
 } from "../meta/market";
 import { goldAmountNode } from "./goldIcon";
@@ -118,14 +118,19 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   head.append(title, headActions);
 
   const tabs = el("div", "market-tabs");
-  const tabBtns = new Map<MerchantId, HTMLButtonElement>();
+  const tabBtns = new Map<MarketTabId, HTMLButtonElement>();
   for (const merchant of MERCHANTS) {
     const btn = el("button", "market-tab", merchant.label) as HTMLButtonElement;
     btn.type = "button";
-    btn.dataset.merchant = merchant.id;
+    btn.dataset.tab = merchant.id;
     tabs.append(btn);
     tabBtns.set(merchant.id, btn);
   }
+  const buybackTab = el("button", "market-tab", "Выкуп") as HTMLButtonElement;
+  buybackTab.type = "button";
+  buybackTab.dataset.tab = "buyback";
+  tabs.append(buybackTab);
+  tabBtns.set("buyback", buybackTab);
 
   const body = el("div", "market-body");
   const portrait = el("aside", "market-portrait");
@@ -160,7 +165,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   const hint = el("div", "market-hint");
   hint.append(
     el("div", "", "ЛКМ по товару: подробности; повторный клик закрывает. ПКМ по товару: купить."),
-    el("div", "", "ПКМ в сумке: продать. ПКМ на экипе: снять. Ctrl+ПКМ на экипе: быстрая продажа."),
+    el("div", "", "ПКМ в сумке / перетащить на рынок: продать. ПКМ на экипе: снять. Ctrl+ПКМ на экипе: быстрая продажа."),
     el(
       "div",
       "",
@@ -177,7 +182,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   hud.append(root);
 
   let stateRef: GameState | null = null;
-  let activeId: MerchantId = "weaponsmith";
+  let activeTab: MarketTabId = "weaponsmith";
   /** Выбранный товар для панели деталей (id предмета). */
   let selectedItemId: string | null = null;
 
@@ -227,7 +232,9 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     const detailPrice = el("div", "market-detail-price");
     detailPrice.append(goldAmountNode(offer.price));
     detail.append(detailPrice);
-    detail.append(el("p", "market-detail-hint", "ПКМ - купить"));
+    detail.append(
+      el("p", "market-detail-hint", activeTab === "buyback" ? "ПКМ - выкупить" : "ПКМ - купить"),
+    );
   }
 
   function restoreDetailSelection(offers: MarketOffer[]): void {
@@ -275,12 +282,18 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     positionCompare(anchor);
   }
 
+  function currentOffers(): MarketOffer[] {
+    if (!stateRef) return [];
+    if (activeTab === "buyback") return stateRef.market.buyback;
+    return stateRef.market.stock[activeTab] ?? [];
+  }
+
   function tryBuy(index: number): void {
     if (!stateRef) return;
-    const list = stateRef.market.stock[activeId];
+    const list = currentOffers();
     const current = list[index];
     if (!current) {
-      handlers.showToast("Товар уже куплен");
+      handlers.showToast(activeTab === "buyback" ? "Предмет уже выкуплен" : "Товар уже куплен");
       render();
       return;
     }
@@ -297,7 +310,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     if (selectedItemId === current.item.id) clearDetail();
     stateRef.hero.gold -= current.price;
     list.splice(index, 1);
-    handlers.showToast(`Куплено: ${name}`);
+    handlers.showToast(activeTab === "buyback" ? `Выкуплено: ${name}` : `Куплено: ${name}`);
     handlers.onChanged();
     render();
   }
@@ -310,16 +323,27 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     handlers.onClose();
   }
 
-  function setActiveTab(id: MerchantId): void {
-    if (activeId !== id) clearDetail();
-    activeId = id;
+  function setActiveTab(id: MarketTabId): void {
+    if (activeTab !== id) clearDetail();
+    activeTab = id;
     for (const [mid, btn] of tabBtns) {
       btn.classList.toggle("active", mid === id);
     }
+    btnRefresh.hidden = id === "buyback";
+    portrait.classList.toggle("market-portrait-buyback", id === "buyback");
   }
 
   function renderPortrait(): void {
-    const merchant = MERCHANT_BY_ID[activeId];
+    if (activeTab === "buyback") {
+      portrait.style.setProperty("--m-accent", "#c4a35a");
+      portraitImg.removeAttribute("src");
+      portraitImg.alt = "";
+      portraitImg.hidden = true;
+      portraitName.textContent = "Выкуп";
+      return;
+    }
+    const merchant = MERCHANT_BY_ID[activeTab];
+    portraitImg.hidden = false;
     portrait.style.setProperty("--m-accent", merchant.accent);
     portraitImg.src = resolveMerchantPortraitUrl(merchant.portraitStem);
     portraitImg.alt = merchant.label;
@@ -329,13 +353,19 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   function renderGoods(): void {
     if (!stateRef) return;
     ensureMarket(stateRef);
-    const offers = stateRef.market.stock[activeId] ?? [];
+    const offers = currentOffers();
     const gold = stateRef.hero.gold;
     goodsGrid.replaceChildren();
     hideCompare();
 
     if (!offers.length) {
-      goodsGrid.append(el("p", "market-empty", "У торговца пусто."));
+      goodsGrid.append(
+        el(
+          "p",
+          "market-empty",
+          activeTab === "buyback" ? "Пока нечего выкупать." : "У торговца пусто.",
+        ),
+      );
       clearDetail();
       return;
     }
@@ -432,7 +462,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   }
 
   btnRefresh.addEventListener("click", () => {
-    if (!stateRef) return;
+    if (!stateRef || activeTab === "buyback") return;
     clearDetail();
     refreshMarketStock(stateRef);
     handlers.showToast("Ассортимент обновлён");
@@ -456,11 +486,13 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       ensureMarket(state);
       if (!wasOpen) {
         clearDetail();
-        setActiveTab(activeId);
+        setActiveTab(activeTab);
       } else {
         for (const [mid, btn] of tabBtns) {
-          btn.classList.toggle("active", mid === activeId);
+          btn.classList.toggle("active", mid === activeTab);
         }
+        btnRefresh.hidden = activeTab === "buyback";
+        portrait.classList.toggle("market-portrait-buyback", activeTab === "buyback");
       }
       root.hidden = false;
       render();

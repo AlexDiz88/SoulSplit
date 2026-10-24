@@ -4,6 +4,7 @@ import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
 import { victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
+import { pushBuyback } from "../meta/market";
 import {
   addXpToProfile,
   ensureHeroStash,
@@ -137,9 +138,10 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
-    this.hud.setOnMarketGold((delta) => {
+    this.hud.setOnMarketSell((item, price) => {
       if (!this.state) return;
-      this.state.hero.gold += delta;
+      this.state.hero.gold += price;
+      pushBuyback(this.state, item);
       this.persist();
       if (this.screen === "hub") this.hub.show(this.state);
       if (this.merchant.isOpen()) this.merchant.show(this.state);

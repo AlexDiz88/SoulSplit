@@ -33,8 +33,8 @@ export interface InventoryWindowApi {
   setCanChangeEquipment(fn: () => boolean): void;
   setOnEquipmentChanged(fn: () => void): void;
   setOnStashChanged(fn: () => void): void;
-  /** Начисление золота за продажу в режиме рынка. */
-  setOnMarketGold(fn: ((delta: number) => void) | null): void;
+  /** Продажа в режиме рынка: золото + выкуп. */
+  setOnMarketSell(fn: ((item: ItemDef, price: number) => void) | null): void;
   setShowToast(fn: (text: string) => void): void;
 }
 
@@ -70,7 +70,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   let canChangeEquipment: () => boolean = () => true;
   let onEquipmentChanged: (() => void) | null = null;
   let onStashChanged: (() => void) | null = null;
-  let onMarketGold: ((delta: number) => void) | null = null;
+  let onMarketSell: ((item: ItemDef, price: number) => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
 
   /** Pending pointer: ещё не прошли порог движения. */
@@ -174,6 +174,36 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const equipTarget = dropEl?.closest<HTMLElement>(".cs-slot[data-slot]");
     const bagTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-inv]");
     const stashTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-stash]");
+    const marketTarget = dropEl?.closest<HTMLElement>(".market-window, .market-detail");
+
+    /** Перетащили на окно рынка - продажа. */
+    if (
+      marketMode &&
+      marketTarget &&
+      !equipTarget &&
+      !bagTarget &&
+      !stashTarget &&
+      (source.kind === "inv" || source.kind === "equip" || source.kind === "stash")
+    ) {
+      if (source.kind === "inv") {
+        sellInventoryCell(source.index);
+        return;
+      }
+      if (source.kind === "equip") {
+        sellEquipSlot(source.slot);
+        return;
+      }
+      if (source.kind === "stash" && stashBag) {
+        const item = stashBag[source.index];
+        if (!item) return;
+        const price = sellPrice(item);
+        stashBag[source.index] = null;
+        onMarketSell?.(item, price);
+        toast(`Продано: ${item.name} (+${price})`);
+        afterChange({ stash: true });
+      }
+      return;
+    }
 
     if (source.kind === "inv") {
       if (equipTarget) {
@@ -272,6 +302,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const equipTarget = under?.closest<HTMLElement>(".cs-slot[data-slot]");
     const bagTarget = under?.closest<HTMLElement>(".inv-cell[data-inv]");
     const stashTarget = under?.closest<HTMLElement>(".inv-cell[data-stash]");
+    const marketTarget = under?.closest<HTMLElement>(".market-window, .market-detail");
     if ((source.kind === "inv" || source.kind === "stash") && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
       setDropHighlight(equipTarget, canEquipInSlot(item, slot));
@@ -283,6 +314,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
     } else if (source.kind === "equip" && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
       setDropHighlight(equipTarget, slot !== source.slot && canEquipInSlot(item, slot));
+    } else if (
+      marketMode &&
+      marketTarget &&
+      (source.kind === "inv" || source.kind === "equip" || source.kind === "stash")
+    ) {
+      setDropHighlight(marketTarget, true);
     } else {
       clearDropHighlight();
     }
@@ -310,7 +347,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (!item) return;
     const price = sellPrice(item);
     hero.inventory[invIndex] = null;
-    onMarketGold?.(price);
+    onMarketSell?.(item, price);
     toast(`Продано: ${item.name} (+${price})`);
     afterChange();
   };
@@ -326,7 +363,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const price = sellPrice(item);
     delete hero.equipment[slot];
     hero.applyEquipmentChange();
-    onMarketGold?.(price);
+    onMarketSell?.(item, price);
     toast(`Продано: ${item.name} (+${price})`);
     afterChange();
   };
@@ -584,8 +621,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
     setOnStashChanged(fn) {
       onStashChanged = fn;
     },
-    setOnMarketGold(fn) {
-      onMarketGold = fn;
+    setOnMarketSell(fn) {
+      onMarketSell = fn;
     },
     setShowToast(fn) {
       showToast = fn;
