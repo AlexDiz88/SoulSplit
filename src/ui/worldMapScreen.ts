@@ -1,4 +1,5 @@
-import { tryResolveBackgroundStemUrl, createWorldMapBackgroundImg } from "../art/menuBackground";
+import { createWorldMapBackgroundImg } from "../art/menuBackground";
+import { tryResolveRegionArtUrl } from "../art/regionArt";
 import { getEnemyKind } from "../combat/enemies";
 import type { GameState, ZoneId } from "../meta/gameState";
 import { getZone, getZonePoint, isZoneUnlocked, type ZonePointDef } from "../meta/zones";
@@ -40,9 +41,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function lockHint(zoneId: ZoneId, heroLevel: number): string {
+function lockHint(zoneId: ZoneId, _heroLevel: number): string {
   const zone = getZone(zoneId);
-  if (zoneId === "ruins" && heroLevel < 3) return "Нужен 3 уровень";
   return `Закрыто (ур. ${zone.minLevel}+)`;
 }
 
@@ -197,7 +197,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     titleEl.textContent = zone.name;
     descEl.textContent = zone.description;
 
-    const previewUrl = tryResolveBackgroundStemUrl(zone.previewStem);
+    const previewUrl = tryResolveRegionArtUrl(zone.previewStem);
     if (previewUrl) {
       previewImg.src = previewUrl;
       previewImg.hidden = false;

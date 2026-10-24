@@ -1,7 +1,38 @@
-import { cloneGameState, createNewGameState, type GameState } from "./gameState";
+import { remapAspectId } from "../abilities/aspects";
+import type { ItemDef } from "../items/types";
+import type { StatId } from "../stats/statIds";
+import type { Aspect } from "../types";
+import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "./gameState";
 import { ensureHeroStash, HERO_PROFILE_VERSION } from "./heroProfile";
 import { ensureMarket } from "./market";
-import type { Aspect } from "../types";
+
+/** Старые ZoneId → актуальные (разработка, свободный rename). */
+const ZONE_ID_REMAP: Record<string, ZoneId> = {
+  outskirts: "north_road",
+};
+
+function remapZoneId(id: string): ZoneId {
+  return ZONE_ID_REMAP[id] ?? (id as ZoneId);
+}
+
+function remapAspect(id: string): Aspect {
+  return remapAspectId(id) ?? "air";
+}
+
+function remapStatId(id: string): StatId {
+  if (id.startsWith("aspectDamage:")) {
+    const aspect = remapAspect(id.slice("aspectDamage:".length));
+    return `aspectDamage:${aspect}`;
+  }
+  return id as StatId;
+}
+
+function remapItem(item: ItemDef): void {
+  if (item.aspectTag) item.aspectTag = remapAspect(String(item.aspectTag));
+  for (const affix of item.affixes) {
+    affix.statId = remapStatId(String(affix.statId));
+  }
+}
 
 /** Число слотов сохранений (сетка 5x3). */
 export const SAVE_SLOT_COUNT = 15;
@@ -52,6 +83,30 @@ function normalizeState(parsed: GameState): GameState {
   if (typeof state.hero.gold !== "number" || !Number.isFinite(state.hero.gold)) {
     state.hero.gold = 0;
   }
+  state.hero.aspect = remapAspect(state.hero.aspect);
+  state.hero.learnedAspects = [
+    ...new Set(state.hero.learnedAspects.map((a) => remapAspect(String(a)))),
+  ];
+  for (const item of Object.values(state.hero.equipment)) {
+    if (item) remapItem(item);
+  }
+  for (const cell of state.hero.inventory) {
+    if (cell) remapItem(cell);
+  }
+  for (const cell of state.hero.stash ?? []) {
+    if (cell) remapItem(cell);
+  }
+  const bonuses = state.hero.levelBonuses;
+  if (bonuses) {
+    for (const key of Object.keys(bonuses)) {
+      const next = remapStatId(key);
+      if (next === key) continue;
+      bonuses[next] = (bonuses[next] ?? 0) + (bonuses[key as StatId] ?? 0);
+      delete bonuses[key as StatId];
+    }
+  }
+  state.unlockedZones = [...new Set(state.unlockedZones.map(remapZoneId))];
+  if (state.lastZoneId) state.lastZoneId = remapZoneId(state.lastZoneId);
   ensureHeroStash(state.hero);
   ensureMarket(state);
   return state;

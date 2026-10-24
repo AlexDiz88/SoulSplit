@@ -25,12 +25,12 @@ export interface WorldMapSpotDef {
 export const WORLD_MAP_SPOTS: readonly WorldMapSpotDef[] = [
   { id: "town", kind: "town", label: "Город", x: 0.5, y: 0.46 },
   {
-    id: "outskirts",
+    id: "north_road",
     kind: "zone",
     label: "Северная дорога",
     x: 0.69,
     y: 0.36,
-    zoneId: "outskirts",
+    zoneId: "north_road",
   },
   {
     id: "ruins",

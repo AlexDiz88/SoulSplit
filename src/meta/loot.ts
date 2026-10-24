@@ -22,7 +22,7 @@ type RarityTable = { rarity: ItemRarity; weight: number }[];
 
 const RARITY_BY_ZONE: Record<string, RarityTable> = {
   /** C3: чуть больше rare, чтобы за 2-3 боя экип ощущался. */
-  outskirts: [
+  north_road: [
     { rarity: "common", weight: 40 },
     { rarity: "uncommon", weight: 30 },
     { rarity: "magic", weight: 20 },
@@ -67,7 +67,7 @@ export interface LootRollOptions {
 export function rollVictoryLoot(opts: LootRollOptions): ItemDef[] {
   const rng = opts.rng ?? Math.random;
   const count = dropCount(opts.kills, rng);
-  const table = RARITY_BY_ZONE[opts.zone.id] ?? RARITY_BY_ZONE.outskirts!;
+  const table = RARITY_BY_ZONE[opts.zone.id] ?? RARITY_BY_ZONE.north_road!;
   const items: ItemDef[] = [];
   for (let i = 0; i < count; i++) {
     const slot = pickWeighted(SLOT_WEIGHTS, (s) => s.weight, rng).slot;

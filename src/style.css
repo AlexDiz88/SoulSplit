@@ -6,10 +6,11 @@
   /* UI palette: --bg/--panel/--accent/... из theme.css */
   --ice: #7ec8e8;
   --fire: #ff7a3d;
-  --iron: #c9b896;
+  --might: #c9b896;
   --shadow: #9b7bb8;
   --light: #f0e2b0;
   --air: #a8c8dc;
+  --aspect-color: var(--accent);
   --hp: #5a9e5a;
   --hp-bg: #1e2230;
 
@@ -312,12 +313,7 @@ textarea,
 }
 
 .skill-btn.has-art:hover:not(:disabled):not(.selected),
-.skill-btn.has-art.aspect-ice:not(.selected),
-.skill-btn.has-art.aspect-fire:not(.selected),
-.skill-btn.has-art.aspect-iron:not(.selected),
-.skill-btn.has-art.aspect-stealth:not(.selected),
-.skill-btn.has-art.aspect-light:not(.selected),
-.skill-btn.has-art.aspect-air:not(.selected) {
+.skill-btn.has-art[class*="aspect-"]:not(.selected) {
   border: none;
   box-shadow: none;
 }
@@ -361,23 +357,8 @@ textarea,
   line-height: 1;
 }
 
-.skill-btn.aspect-ice {
-  border-color: rgba(126, 200, 232, 0.45);
-}
-.skill-btn.aspect-fire {
-  border-color: rgba(255, 122, 61, 0.45);
-}
-.skill-btn.aspect-iron {
-  border-color: rgba(201, 184, 150, 0.45);
-}
-.skill-btn.aspect-stealth {
-  border-color: rgba(155, 123, 184, 0.45);
-}
-.skill-btn.aspect-light {
-  border-color: rgba(240, 226, 176, 0.45);
-}
-.skill-btn.aspect-air {
-  border-color: rgba(168, 200, 220, 0.45);
+.skill-btn[class*="aspect-"] {
+  border-color: color-mix(in srgb, var(--aspect-color) 45%, transparent);
 }
 
 .skill-btn:hover:not(:disabled) {
@@ -392,29 +373,9 @@ textarea,
   animation: skill-select-pulse 1.8s ease-in-out infinite;
 }
 
-.skill-btn.selected.aspect-ice {
-  --skill-glow: var(--ice);
-  border-color: var(--ice);
-}
-.skill-btn.selected.aspect-fire {
-  --skill-glow: var(--fire);
-  border-color: var(--fire);
-}
-.skill-btn.selected.aspect-iron {
-  --skill-glow: var(--iron);
-  border-color: var(--iron);
-}
-.skill-btn.selected.aspect-stealth {
-  --skill-glow: var(--shadow);
-  border-color: var(--shadow);
-}
-.skill-btn.selected.aspect-light {
-  --skill-glow: var(--light);
-  border-color: var(--light);
-}
-.skill-btn.selected.aspect-air {
-  --skill-glow: var(--air);
-  border-color: var(--air);
+.skill-btn.selected[class*="aspect-"] {
+  --skill-glow: var(--aspect-color);
+  border-color: var(--aspect-color);
 }
 
 .skill-btn.has-art.selected,
@@ -526,23 +487,8 @@ textarea,
   color: var(--text);
 }
 
-.skill-tooltip.aspect-ice {
-  border-color: rgba(126, 200, 232, 0.5);
-}
-.skill-tooltip.aspect-fire {
-  border-color: rgba(255, 122, 61, 0.5);
-}
-.skill-tooltip.aspect-iron {
-  border-color: rgba(201, 184, 150, 0.5);
-}
-.skill-tooltip.aspect-stealth {
-  border-color: rgba(155, 123, 184, 0.5);
-}
-.skill-tooltip.aspect-light {
-  border-color: rgba(240, 226, 176, 0.5);
-}
-.skill-tooltip.aspect-air {
-  border-color: rgba(168, 200, 220, 0.5);
+.skill-tooltip[class*="aspect-"] {
+  border-color: color-mix(in srgb, var(--aspect-color) 50%, transparent);
 }
 
 .battle-banner {

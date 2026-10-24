@@ -1,6 +1,27 @@
 export type Team = "player" | "enemy";
 
-export type Aspect = "ice" | "fire" | "iron" | "stealth" | "light" | "air";
+/** Игровые аспекты героя (канон: 20 штук). Кластер врагов - не аспект. */
+export type Aspect =
+  | "alchemy"
+  | "arcane"
+  | "air"
+  | "beast"
+  | "earth"
+  | "illusion"
+  | "witchcraft"
+  | "blood"
+  | "ice"
+  | "mechanics"
+  | "lightning"
+  | "death"
+  | "fire"
+  | "nature"
+  | "mind"
+  | "light"
+  | "might"
+  | "stealth"
+  | "hunt"
+  | "dark";
 
 export type AbilityId =
   | "ice_arrow"

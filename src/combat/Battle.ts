@@ -985,7 +985,7 @@ export class Battle {
         break;
       }
       case "demoralizing_shout": {
-        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.iron, caster.cardSize * 1.1, 0.45);
+        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.might, caster.cardSize * 1.1, 0.45);
         const debuffDur = def.effects?.atkDebuffDuration ?? 5;
         const debuffMult = def.effects?.atkDebuffMult ?? 0.7;
         for (const u of this.livingEnemies()) {

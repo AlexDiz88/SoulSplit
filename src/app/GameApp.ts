@@ -354,7 +354,7 @@ export class GameApp {
 
   private retryLastZone(): void {
     const state = this.requireState();
-    const id = state.lastZoneId ?? "outskirts";
+    const id = state.lastZoneId ?? "north_road";
     if (!isZoneUnlocked(id, state.hero.level, state.unlockedZones)) {
       this.goHub();
       return;
@@ -530,7 +530,6 @@ export class GameApp {
     const kills = result.killed.length;
     const xp = victoryXp(zone, kills);
     const gold = victoryGold(point.itemLevel, kills);
-    const levelBefore = state.hero.level;
     const levelResult = addXpToProfile(state.hero, xp);
     state.hero.gold += gold;
     state.unlockedZones = syncUnlockedZones(state.hero.level, state.unlockedZones);
@@ -551,10 +550,7 @@ export class GameApp {
     this.bindHubEquipmentSync();
     this.rebuildHubUnit();
 
-    if (levelBefore < 3 && state.hero.level >= 3 && !this.prevUnlocked.has("ruins")) {
-      this.hud.showToast("Открыты Руины");
-      this.prevUnlocked.add("ruins");
-    }
+    this.noteNewZones();
 
     this.reward.show(state.hero, {
       items,

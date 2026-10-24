@@ -540,8 +540,17 @@
 
 .aspect-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  max-height: min(42vh, 320px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.aspect-opt {
+  font-size: 0.78rem;
+  padding: 8px 6px;
+  line-height: 1.2;
 }
 
 .create-field-portraits {
@@ -668,7 +677,7 @@
   }
 
   .aspect-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
 
   .portrait-grid {

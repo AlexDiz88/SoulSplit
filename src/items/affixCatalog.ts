@@ -1,5 +1,4 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
-import type { Aspect } from "../types";
+import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { aspectDamageStat, formatAffixBonus, type AffixFamily, type StatId } from "../stats/statIds";
 import type { AffixDef, AffixTierRange, RolledAffix } from "./types";
 
@@ -131,10 +130,8 @@ const CORE: AffixDef[] = [
   ]),
 ];
 
-const ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
-
 function aspectAffixes(): AffixDef[] {
-  return ASPECTS.map((aspect) =>
+  return ALL_ASPECTS.map((aspect) =>
     affix(
       `aspect_dmg_${aspect}`,
       aspectDamageStat(aspect),

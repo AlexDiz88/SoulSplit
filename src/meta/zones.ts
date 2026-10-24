@@ -22,7 +22,7 @@ export interface ZoneDef {
   minLevel: number;
   /** Названия квестов зоны (пока заглушки / будущий квестлог). */
   quests: string[];
-  /** Stem арта превью в `assets/art/backgrounds`. */
+  /** Stem арта превью в `assets/art/regions` (обычно = ZoneId). */
   previewStem: string;
   xpBase: number;
   xpPerKill: number;
@@ -31,13 +31,13 @@ export interface ZoneDef {
 }
 
 export const ZONES: Record<ZoneId, ZoneDef> = {
-  outskirts: {
-    id: "outskirts",
+  north_road: {
+    id: "north_road",
     name: "Северная дорога",
     description: "Тракт от северных ворот. Редкие патрули и путники у стены.",
     minLevel: 1,
     quests: [],
-    previewStem: "battle_location-01",
+    previewStem: "north_road",
     xpBase: 140,
     xpPerKill: 40,
     points: [
@@ -72,9 +72,9 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     id: "ruins",
     name: "Руины",
     description: "Старые катакомбы. Враги крепче, лут заметно лучше.",
-    minLevel: 3,
+    minLevel: 1,
     quests: [],
-    previewStem: "battle_location-02",
+    previewStem: "ruins",
     xpBase: 220,
     xpPerKill: 55,
     points: [
@@ -112,16 +112,14 @@ export function getZonePoint(zone: ZoneDef, pointId?: string | null): ZonePointD
   return zone.points[0]!;
 }
 
-/** Ruins открываются с 3 уровня. */
 export function isZoneUnlocked(id: ZoneId, heroLevel: number, unlocked: ZoneId[]): boolean {
   if (!unlocked.includes(id)) return false;
-  if (id === "ruins") return heroLevel >= 3;
-  return true;
+  return heroLevel >= getZone(id).minLevel;
 }
 
-export function syncUnlockedZones(heroLevel: number, unlocked: ZoneId[]): ZoneId[] {
+export function syncUnlockedZones(_heroLevel: number, unlocked: ZoneId[]): ZoneId[] {
   const next = new Set<ZoneId>(unlocked);
-  next.add("outskirts");
-  if (heroLevel >= 3) next.add("ruins");
+  next.add("north_road");
+  next.add("ruins");
   return [...next];
 }

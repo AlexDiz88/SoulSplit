@@ -1,3 +1,4 @@
+import { ALL_ASPECTS } from "../abilities/aspects";
 import type { Aspect } from "../types";
 import {
   CRIT_DAMAGE_BASE,
@@ -47,13 +48,12 @@ export function emptySheet(): HeroStatSheet {
   const sheet = {} as HeroStatSheet;
   for (const id of FLAT_ZERO) sheet[id] = 0;
   sheet.critDamage = 0;
-  for (const aspect of ASPECTS) {
+  for (const aspect of ALL_ASPECTS) {
     sheet[aspectDamageStat(aspect)] = 0;
   }
   return sheet;
 }
 
-const ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
 
 export function addToSheet(target: HeroStatSheet, delta: Partial<Record<StatId, number>>): void {
   for (const [key, value] of Object.entries(delta)) {
@@ -75,7 +75,7 @@ export function applyStatCaps(sheet: HeroStatSheet): HeroStatSheet {
     const id = key as StatId;
     if (sheet[id] > cap) sheet[id] = cap;
   }
-  for (const aspect of ASPECTS) {
+  for (const aspect of ALL_ASPECTS) {
     const id = aspectDamageStat(aspect);
     if (sheet[id] > OFFENSE_AMP_CAP) sheet[id] = OFFENSE_AMP_CAP;
   }

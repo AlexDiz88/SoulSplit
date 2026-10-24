@@ -1,4 +1,4 @@
-import { ABILITIES, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
+import { ABILITIES, ASPECT_HEX, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
 import { mountInventoryWindow } from "./inventoryWindow";
@@ -128,6 +128,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
         : "-";
 
     tooltip.className = `skill-tooltip aspect-${def.aspect}`;
+    tooltip.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
     tooltip.innerHTML = `
       <div class="tt-name">${def.name}</div>
       <div class="tt-desc">${describeAbility(def)}</div>
@@ -296,6 +297,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       const iconUrl = ABILITY_ICON_URLS[id];
       btn.dataset.ability = id;
       btn.className = `skill-btn aspect-${def.aspect}${iconUrl ? " has-art" : ""}`;
+      btn.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
       btn.setAttribute("aria-label", `${def.name}, клавиша ${hotkey}`);
       btn.innerHTML = iconUrl
         ? `<img class="skill-icon" src="${iconUrl}" alt="" draggable="false" />`

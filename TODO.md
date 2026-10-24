@@ -13,7 +13,7 @@
 | Герой | Айра, `air`, loadout wind x4 |
 | Стартовое оружие | 20-30, CD 1.5 |
 | Save | `soulsplit.save.v1` |
-| Зоны | `outskirts` → `ruins` (с ур. 3) |
+| Зоны | `north_road` → `ruins` (с ур. 3) |
 
 ## Фаза A - фундамент героя
 

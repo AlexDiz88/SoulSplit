@@ -1,5 +1,5 @@
 import { pickItemIconUrl } from "../art/itemIcons";
-import { ASPECT_LABEL } from "../abilities/definitions";
+import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { WEAPON_LABEL, WEAPON_REACH } from "../combat/weapons";
 import type { Aspect, WeaponKind } from "../types";
 import type { AffixDef } from "./types";
@@ -17,13 +17,12 @@ import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
 import { isAspectItemSlot, isWeaponSlot, type EquipSlotId } from "./slots";
 
 const WEAPON_KINDS: WeaponKind[] = ["melee", "spear", "bow", "staff"];
-const ALL_ASPECTS: Aspect[] = ["ice", "fire", "iron", "stealth", "light", "air"];
 
 function randInt(rng: () => number, min: number, max: number): number {
   return Math.floor(min + rng() * (max - min + 1));
 }
 
-function pickWeighted<T>(items: T[], weightOf: (t: T) => number, rng: () => number): T | null {
+function pickWeighted<T>(items: readonly T[], weightOf: (t: T) => number, rng: () => number): T | null {
   let total = 0;
   for (const it of items) total += Math.max(0, weightOf(it));
   if (total <= 0 || !items.length) return null;

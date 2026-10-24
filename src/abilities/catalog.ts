@@ -1,3 +1,4 @@
+import { ALL_ASPECTS, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 import {
   abilityDefForGrimoireId,
   abilityNumberLines,
@@ -47,28 +48,13 @@ export interface GrimoireAspect {
   color: string;
 }
 
-/** Канон генератора. Цвета только для гримуара. */
+/** Канон генератора + кластер врагов. Цвета для гримуара. */
 export const GRIMOIRE_ASPECTS: GrimoireAspect[] = [
-  { id: "alchemy", name: "Алхимия", color: "#8aaa55" },
-  { id: "arcane", name: "Аркан", color: "#c45ad4" },
-  { id: "air", name: "Воздух", color: "#d5dde6" },
-  { id: "beast", name: "Дух Зверя", color: "#d08a45" },
-  { id: "earth", name: "Земля", color: "#c4a06a" },
-  { id: "illusion", name: "Иллюзии/Эфир", color: "#8eb8d4" },
-  { id: "witchcraft", name: "Колдовство", color: "#a57ad4" },
-  { id: "blood", name: "Кровь", color: "#d45454" },
-  { id: "ice", name: "Лёд", color: "#7ec8e8" },
-  { id: "mechanics", name: "Механика", color: "#d0a060" },
-  { id: "lightning", name: "Молния", color: "#e6d36a" },
-  { id: "death", name: "Некромантия/Смерть", color: "#8aaa78" },
-  { id: "fire", name: "Огонь", color: "#ff7a3d" },
-  { id: "nature", name: "Природа", color: "#6aaa62" },
-  { id: "mind", name: "Разум", color: "#e0a0c4" },
-  { id: "light", name: "Свет", color: "#f0e2b0" },
-  { id: "might", name: "Сила", color: "#c9b896" },
-  { id: "stealth", name: "Скрытность", color: "#9b7bb8" },
-  { id: "hunt", name: "Стрельба/Охота", color: "#a3b56a" },
-  { id: "dark", name: "Тьма", color: "#8a74b0" },
+  ...ALL_ASPECTS.map((id) => ({
+    id,
+    name: ASPECT_LABEL[id],
+    color: ASPECT_HEX[id],
+  })),
   { id: "enemies", name: "Враги", color: "#c45a4a" },
 ];
 

@@ -6,7 +6,7 @@ import {
 } from "./heroProfile";
 import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
 
-export type ZoneId = "outskirts" | "ruins";
+export type ZoneId = "north_road" | "ruins";
 
 export interface GameState {
   hero: HeroProfile;
@@ -19,7 +19,7 @@ export interface GameState {
 export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
   const state: GameState = {
     hero: createNewHeroProfile(opts),
-    unlockedZones: ["outskirts"],
+    unlockedZones: ["north_road", "ruins"],
     lastZoneId: null,
     market: cloneMarketState(null),
   };

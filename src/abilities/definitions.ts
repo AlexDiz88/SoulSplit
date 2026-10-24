@@ -1,22 +1,5 @@
-import type { AbilityDef, AbilityId, Aspect } from "../types";
-
-export const ASPECT_LABEL: Record<Aspect, string> = {
-  ice: "Лёд",
-  fire: "Огонь",
-  iron: "Железо",
-  stealth: "Скрытность",
-  light: "Свет",
-  air: "Воздух",
-};
-
-export const ASPECT_COLOR: Record<Aspect, number> = {
-  ice: 0x7ec8e8,
-  fire: 0xff7a3d,
-  iron: 0xc9b896,
-  stealth: 0x9b7bb8,
-  light: 0xf0e2b0,
-  air: 0xa8c8dc,
-};
+import type { AbilityDef, AbilityId } from "../types";
+export { ALL_ASPECTS, ASPECT_COLOR, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 
 /** id карточки гримуара (design/abilities) → AbilityId боя. */
 export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
@@ -107,7 +90,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   titan_might: {
     id: "titan_might",
     name: "Мощь титана",
-    aspect: "iron",
+    aspect: "might",
     glyph: "📢",
     cooldown: 8,
     damage: 0,
@@ -120,7 +103,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
   demoralizing_shout: {
     id: "demoralizing_shout",
     name: "Деморализующий крик",
-    aspect: "iron",
+    aspect: "might",
     glyph: "📣",
     cooldown: 7.5,
     damage: 0,

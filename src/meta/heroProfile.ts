@@ -18,12 +18,26 @@ export const HERO_PROFILE_VERSION = 1 as const;
 
 /** Стартовый лоадаут по первичному аспекту (до 4 слотов панели). */
 export const STARTER_LOADOUT_BY_ASPECT: Record<Aspect, AbilityId[]> = {
+  alchemy: [],
+  arcane: [],
   air: ["wind_gust", "wind_speed", "squall", "tornado"],
+  beast: [],
+  earth: [],
+  illusion: [],
+  witchcraft: [],
+  blood: [],
   ice: ["ice_arrow", "ice_shield"],
+  mechanics: [],
+  lightning: [],
+  death: [],
   fire: ["fireball", "flame_cone"],
+  nature: [],
+  mind: [],
   light: ["hammer_throw"],
-  iron: ["titan_might", "demoralizing_shout"],
-  stealth: ["sever_artery", "shadow_strike", "dark_arrow"],
+  might: ["titan_might", "demoralizing_shout"],
+  stealth: ["sever_artery", "shadow_strike"],
+  hunt: [],
+  dark: [],
 };
 
 export interface NewHeroOptions {

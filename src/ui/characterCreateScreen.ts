@@ -1,4 +1,4 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
+import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { listHeroPortraitUrls, type HeroGender } from "../art/portraits";
 import { pickRandomHeroName } from "../meta/heroNames";
 import {
@@ -9,8 +9,6 @@ import {
 import type { Aspect } from "../types";
 import "./hubScreen.css";
 import "./startMenu.css";
-
-const ASPECTS: Aspect[] = ["air", "ice", "fire", "iron", "stealth", "light"];
 
 export interface CharacterCreateScreenApi {
   show(slotIndex: number): void;
@@ -119,7 +117,7 @@ export function mountCharacterCreateScreen(
   aspectField.append(el("label", undefined, "Первичный аспект"));
   const aspectGrid = el("div", "aspect-grid");
   const aspectButtons = new Map<Aspect, HTMLButtonElement>();
-  for (const id of ASPECTS) {
+  for (const id of ALL_ASPECTS) {
     const btn = el("button", "aspect-opt", ASPECT_LABEL[id]);
     btn.type = "button";
     btn.addEventListener("click", () => {
