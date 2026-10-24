@@ -8,8 +8,14 @@ export interface ZoneDef {
   minLevel: number;
   /** Уровень предмета и скейл врагов. */
   itemLevel: number;
+  /** Диапазон уровней врагов для UI карты. */
+  enemyLevels: [number, number];
   enemyCount: [number, number];
   enemyPool: string[];
+  /** Названия квестов зоны (пока заглушки / будущий квестлог). */
+  quests: string[];
+  /** Stem арта превью в `assets/art/backgrounds`. */
+  previewStem: string;
   xpBase: number;
   xpPerKill: number;
   /** Шанс элитного модификатора на каждого врага (0 = нет). */
@@ -19,13 +25,16 @@ export interface ZoneDef {
 export const ZONES: Record<ZoneId, ZoneDef> = {
   outskirts: {
     id: "outskirts",
-    name: "Окраина",
-    description: "Редкие патрули у стены. Подходит для первого оружия и брони.",
+    name: "Северная дорога",
+    description: "Тракт от северных ворот. Редкие патрули и путники у стены.",
     minLevel: 1,
     itemLevel: 1,
+    enemyLevels: [1, 2],
     /** C2: [3, 6] - на ур.1 пачка 7+ слишком жирная. */
     enemyCount: [3, 6],
     enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
+    quests: [],
+    previewStem: "battle_location-01",
     xpBase: 140,
     xpPerKill: 40,
   },
@@ -35,8 +44,11 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     description: "Старые катакомбы. Враги крепче, лут заметно лучше.",
     minLevel: 3,
     itemLevel: 4,
+    enemyLevels: [3, 5],
     enemyCount: [6, 11],
     enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
+    quests: [],
+    previewStem: "battle_location-02",
     xpBase: 220,
     xpPerKill: 55,
     /** Шанс элиты на каждого заспавненного врага. */

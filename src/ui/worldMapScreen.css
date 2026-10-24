@@ -74,3 +74,224 @@
     ),
     #12141e;
 }
+
+/* Окно локации */
+.wm-zone-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  padding: 20px 16px;
+  background: rgba(8, 10, 16, 0.45);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.16s ease;
+}
+
+.wm-zone-overlay.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.wm-zone-overlay[hidden] {
+  display: none;
+}
+
+.wm-zone-panel {
+  box-sizing: border-box;
+  width: min(680px, 100%);
+  max-height: min(860px, calc(100vh - 40px));
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 22px;
+  border: 1px solid var(--theme-border, #6a5a3a);
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.12), transparent 55%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.32),
+    0 18px 42px rgba(0, 0, 0, 0.55);
+  color: var(--theme-mist, #e8e2d4);
+  font-family: var(--font);
+  font-size: 1.05rem;
+  transform: scale(0.94);
+  opacity: 0;
+  transition:
+    transform 0.18s ease,
+    opacity 0.18s ease;
+  pointer-events: auto;
+}
+
+.wm-zone-overlay.is-open .wm-zone-panel {
+  transform: scale(1);
+  opacity: 1;
+}
+
+.wm-zone-block {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid rgba(106, 90, 58, 0.45);
+  border-radius: 4px;
+  background: rgba(12, 14, 18, 0.55);
+}
+
+.wm-zone-block-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--theme-corona, #e8d9a8);
+}
+
+.wm-zone-hero {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 16px;
+}
+
+.wm-zone-preview {
+  flex: 0 0 200px;
+  width: 200px;
+  height: 132px;
+  overflow: hidden;
+  border: 1px solid rgba(106, 90, 58, 0.7);
+  border-radius: 3px;
+  background: #0a0b0c;
+}
+
+.wm-zone-preview-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+  display: block;
+}
+
+.wm-zone-preview-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 0.95rem;
+  color: var(--muted, #9a9488);
+}
+
+.wm-zone-hero-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  justify-content: center;
+}
+
+.wm-zone-title {
+  margin: 0;
+  font-size: 1.55rem;
+  font-weight: 700;
+  color: var(--theme-corona, #e8d9a8);
+  letter-spacing: 0.04em;
+}
+
+.wm-zone-desc {
+  margin: 0;
+  font-size: 1.08rem;
+  line-height: 1.45;
+  color: var(--muted, #b8b2a4);
+}
+
+.wm-zone-quest-list {
+  margin: 0;
+  padding: 0 0 0 1.15em;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 1.05rem;
+  color: var(--theme-mist, #e8e2d4);
+}
+
+.wm-zone-quest-empty {
+  list-style: none;
+  margin-left: -1.1em;
+  color: var(--muted, #9a9488);
+  font-style: italic;
+}
+
+.wm-zone-enemies-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.wm-zone-enemy-levels {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--theme-corona, #e8d9a8);
+  white-space: nowrap;
+}
+
+.wm-zone-enemy-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.wm-zone-enemy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 96px;
+}
+
+.wm-zone-enemy-img {
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border: 1px solid rgba(106, 90, 58, 0.75);
+  border-radius: 3px;
+  background: #111213;
+}
+
+.wm-zone-enemy-name {
+  font-size: 0.85rem;
+  line-height: 1.25;
+  text-align: center;
+  color: var(--muted, #b8b2a4);
+  max-width: 100%;
+  overflow-wrap: normal;
+  word-break: normal;
+  hyphens: manual;
+}
+
+.wm-zone-loot-stub {
+  margin: 0;
+  font-size: 1.02rem;
+  color: var(--muted, #9a9488);
+  font-style: italic;
+}
+
+.wm-zone-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.wm-zone-btn {
+  width: 100%;
+  text-align: center;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 1rem;
+  padding: 14px 16px;
+}

@@ -107,3 +107,12 @@ export function createWorldMapBackgroundImg(): HTMLImageElement {
 export function resolveMerchantPortraitUrl(stem: string): string {
   return resolveAssetBgUrl(stem);
 }
+
+/** URL любого файла из backgrounds по stem; `null`, если файла нет. */
+export function tryResolveBackgroundStemUrl(stem: string): string | null {
+  try {
+    return resolveAssetBgUrl(stem);
+  } catch {
+    return null;
+  }
+}

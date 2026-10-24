@@ -82,6 +82,10 @@ export const ENEMY_KINDS: EnemyKind[] = [
   },
 ];
 
+export function getEnemyKind(id: string): EnemyKind | undefined {
+  return ENEMY_KINDS.find((k) => k.id === id);
+}
+
 export function rowsLabel(rows: number[]): string {
   const sorted = [...rows].sort((a, b) => a - b);
   if (sorted.length === 1) return `ряд ${sorted[0]}`;

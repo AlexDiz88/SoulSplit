@@ -1,4 +1,5 @@
-import { createWorldMapBackgroundImg } from "../art/menuBackground";
+import { tryResolveBackgroundStemUrl, createWorldMapBackgroundImg } from "../art/menuBackground";
+import { getEnemyKind } from "../combat/enemies";
 import type { GameState, ZoneId } from "../meta/gameState";
 import { getZone, isZoneUnlocked } from "../meta/zones";
 import { coverLayout, projectLocation } from "./hubLocations";
@@ -56,6 +57,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     btn.setAttribute("aria-label", spot.label);
     btn.addEventListener("click", () => {
       if (spot.kind === "town") {
+        closeZonePanel();
         handlers.onBackToTown();
         return;
       }
@@ -66,7 +68,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         handlers.showToast(btn.dataset.lockHint || "Закрыто");
         return;
       }
-      handlers.onStartZone(zoneId);
+      openZonePanel(zoneId);
     });
     anchor.append(btn);
     spotAnchors.set(spot.id, anchor);
@@ -75,9 +77,174 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   }
   root.append(map);
 
+  const overlay = el("div", "wm-zone-overlay");
+  overlay.hidden = true;
+  overlay.setAttribute("aria-hidden", "true");
+
+  const panel = el("div", "wm-zone-panel");
+  panel.setAttribute("role", "dialog");
+  panel.setAttribute("aria-modal", "true");
+  panel.setAttribute("aria-labelledby", "wm-zone-title");
+
+  const hero = el("section", "wm-zone-block wm-zone-hero");
+  const previewWrap = el("div", "wm-zone-preview");
+  const previewImg = el("img", "wm-zone-preview-img");
+  previewImg.alt = "";
+  previewImg.draggable = false;
+  previewImg.decoding = "async";
+  const previewFallback = el("div", "wm-zone-preview-fallback", "Нет арта");
+  previewWrap.append(previewImg, previewFallback);
+  const heroCopy = el("div", "wm-zone-hero-copy");
+  const titleEl = el("h2", "wm-zone-title");
+  titleEl.id = "wm-zone-title";
+  const descEl = el("p", "wm-zone-desc");
+  heroCopy.append(titleEl, descEl);
+  hero.append(previewWrap, heroCopy);
+
+  const questsBlock = el("section", "wm-zone-block");
+  questsBlock.append(el("h3", "wm-zone-block-title", "Квесты"));
+  const questList = el("ul", "wm-zone-quest-list");
+  questsBlock.append(questList);
+
+  const enemiesBlock = el("section", "wm-zone-block");
+  const enemiesHead = el("div", "wm-zone-enemies-head");
+  enemiesHead.append(el("h3", "wm-zone-block-title", "Возможные враги"));
+  const enemyLevelEl = el("span", "wm-zone-enemy-levels");
+  enemiesHead.append(enemyLevelEl);
+  const enemyRow = el("div", "wm-zone-enemy-row");
+  enemiesBlock.append(enemiesHead, enemyRow);
+
+  const lootBlock = el("section", "wm-zone-block wm-zone-loot");
+  lootBlock.append(el("h3", "wm-zone-block-title", "Особый лут"));
+  const lootStub = el("p", "wm-zone-loot-stub", "Особые ресурсы зоны появятся позже.");
+  lootBlock.append(lootStub);
+
+  const actions = el("div", "wm-zone-actions");
+  const btnBack = el("button", "meta-btn wm-zone-btn", "Назад");
+  btnBack.type = "button";
+  const btnGo = el("button", "meta-btn meta-btn-primary wm-zone-btn", "В путь");
+  btnGo.type = "button";
+  actions.append(btnBack, btnGo);
+
+  panel.append(hero, questsBlock, enemiesBlock, lootBlock, actions);
+  overlay.append(panel);
+  root.append(overlay);
+
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
   hud.append(root);
+
+  let openZoneId: ZoneId | null = null;
+  let panelClosing = false;
+
+  const fillZonePanel = (zoneId: ZoneId): void => {
+    const zone = getZone(zoneId);
+    openZoneId = zoneId;
+    titleEl.textContent = zone.name;
+    descEl.textContent = zone.description;
+
+    const previewUrl = tryResolveBackgroundStemUrl(zone.previewStem);
+    if (previewUrl) {
+      previewImg.src = previewUrl;
+      previewImg.hidden = false;
+      previewFallback.hidden = true;
+    } else {
+      previewImg.removeAttribute("src");
+      previewImg.hidden = true;
+      previewFallback.hidden = false;
+    }
+
+    questList.replaceChildren();
+    if (zone.quests.length === 0) {
+      const empty = el("li", "wm-zone-quest-empty", "Нет активных квестов");
+      questList.append(empty);
+    } else {
+      for (const name of zone.quests) {
+        questList.append(el("li", undefined, name));
+      }
+    }
+
+    const [lvlMin, lvlMax] = zone.enemyLevels;
+    enemyLevelEl.textContent =
+      lvlMin === lvlMax ? `уровень ${lvlMin}` : `уровень ${lvlMin}-${lvlMax}`;
+
+    enemyRow.replaceChildren();
+    for (const id of zone.enemyPool) {
+      const kind = getEnemyKind(id);
+      if (!kind) continue;
+      const chip = el("div", "wm-zone-enemy");
+      chip.title = kind.name;
+      const img = el("img", "wm-zone-enemy-img");
+      img.src = kind.portraitUrl;
+      img.alt = kind.name;
+      img.draggable = false;
+      const nameEl = el("span", "wm-zone-enemy-name");
+      // Перенос только после "-" (например "Гоблин-копейщик").
+      const parts = kind.name.split("-");
+      parts.forEach((part, i) => {
+        if (i > 0) {
+          nameEl.append("-");
+          nameEl.append(document.createElement("wbr"));
+        }
+        nameEl.append(part);
+      });
+      chip.append(img, nameEl);
+      enemyRow.append(chip);
+    }
+
+    panel.setAttribute("aria-labelledby", "wm-zone-title");
+  };
+
+  const openZonePanel = (zoneId: ZoneId): void => {
+    panelClosing = false;
+    fillZonePanel(zoneId);
+    overlay.hidden = false;
+    overlay.setAttribute("aria-hidden", "false");
+    // Два кадра: сначала mount, потом класс анимации.
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (openZoneId !== zoneId) return;
+        overlay.classList.add("is-open");
+      });
+    });
+    btnGo.focus();
+  };
+
+  const closeZonePanel = (after?: () => void): void => {
+    if (overlay.hidden || panelClosing) {
+      after?.();
+      return;
+    }
+    panelClosing = true;
+    overlay.classList.remove("is-open");
+    const finish = (): void => {
+      overlay.hidden = true;
+      overlay.setAttribute("aria-hidden", "true");
+      openZoneId = null;
+      panelClosing = false;
+      after?.();
+    };
+    const onEnd = (ev: TransitionEvent): void => {
+      if (ev.target !== panel || ev.propertyName !== "transform") return;
+      panel.removeEventListener("transitionend", onEnd);
+      finish();
+    };
+    panel.addEventListener("transitionend", onEnd);
+    window.setTimeout(() => {
+      panel.removeEventListener("transitionend", onEnd);
+      if (panelClosing) finish();
+    }, 220);
+  };
+
+  btnBack.addEventListener("click", () => closeZonePanel());
+  btnGo.addEventListener("click", () => {
+    const id = openZoneId;
+    if (!id) return;
+    handlers.onStartZone(id);
+  });
+  overlay.addEventListener("click", (ev) => {
+    if (ev.target === overlay) closeZonePanel();
+  });
 
   const onKeyDown = (ev: KeyboardEvent): void => {
     if (root.hidden) return;
@@ -87,10 +254,13 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement;
     if (typing) return;
-    if (ev.code === "Escape") {
-      ev.preventDefault();
-      handlers.onBackToTown();
+    if (ev.code !== "Escape") return;
+    ev.preventDefault();
+    if (!overlay.hidden) {
+      closeZonePanel();
+      return;
     }
+    handlers.onBackToTown();
   };
   window.addEventListener("keydown", onKeyDown);
 
@@ -135,6 +305,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
 
   return {
     show(state) {
+      closeZonePanel();
       for (const spot of WORLD_MAP_SPOTS) {
         const btn = spotButtons.get(spot.id);
         if (!btn) continue;
@@ -155,11 +326,14 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
           : lockHint(zoneId, state.hero.level);
         btn.dataset.lockHint = unlocked ? "" : hint;
         btn.title = unlocked ? `${zone.name} - ${hint}` : hint;
+        btn.textContent = zone.name;
+        btn.setAttribute("aria-label", zone.name);
       }
       root.hidden = false;
       scheduleLayout();
     },
     hide() {
+      closeZonePanel();
       root.hidden = true;
     },
     isOpen() {
