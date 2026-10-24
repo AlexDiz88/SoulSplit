@@ -18,7 +18,7 @@ export interface HubLocationDef {
 }
 
 /**
- * Якоря подогнаны под `assets/art/backgrounds/town.*` (2595x1440).
+ * Якоря подогнаны под `assets/art/backgrounds/town-*` (~2580x1440).
  * При смене арта подкрути x/y.
  */
 export const HUB_LOCATIONS: readonly HubLocationDef[] = [

@@ -9,7 +9,7 @@ alwaysApply: true
 
 ## Канон (меню / хаб / слоты)
 
-1. Файл лежит в `assets/art/backgrounds/` (рядом с боевыми фонами), например `main_menu.png`, `town.jpg`, `choose_slot_screen.jpg`.
+1. Файл лежит в `assets/art/backgrounds/` (рядом с боевыми фонами), например `main_menu.png`, `town-day.jpeg` / `town-evening.jpg`, `choose_slot_screen.jpg`.
 2. Формат: `png` / `jpg` / `jpeg` / `webp`. В коде только имя без расширения - хелпер подхватит любой из этих.
 3. В DOM - отдельный `<img>`, не CSS `background-image` для самого арта.
 4. Поверх арта нет затемняющих/цветных градиентов и vignette. UI (кнопки, заголовки) - отдельным слоем выше.

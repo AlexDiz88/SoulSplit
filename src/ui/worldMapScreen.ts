@@ -75,15 +75,6 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   }
   root.append(map);
 
-  const topbar = el("header", "world-map-topbar");
-  const btnBack = el("button", "title-btn world-map-back", "Вернуться в город");
-  btnBack.type = "button";
-  btnBack.title = "Вернуться в город";
-  btnBack.setAttribute("aria-label", "Вернуться в город");
-  btnBack.addEventListener("click", () => handlers.onBackToTown());
-  topbar.append(btnBack);
-  root.append(topbar);
-
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
   hud.append(root);

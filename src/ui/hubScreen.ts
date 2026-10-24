@@ -1,4 +1,7 @@
-import { createTownBackgroundImg } from "../art/menuBackground";
+import {
+  createTownBackgroundImg,
+  pickRandomTownBackgroundUrl,
+} from "../art/menuBackground";
 import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
 import {
@@ -48,6 +51,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   root.id = "hub-screen";
   root.hidden = true;
   const bgImg = createTownBackgroundImg();
+  let currentTownBgUrl = bgImg.getAttribute("src") ?? "";
   root.append(bgImg);
 
   const map = el("div", "hub-map");
@@ -341,6 +345,14 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
         xpLabel.textContent = `${h.xp} / ${need}`;
         xpFill.style.width = `${pct}%`;
         xpTrack.title = `Опыт ${h.xp} / ${need}`;
+      }
+
+      const nextBg = pickRandomTownBackgroundUrl();
+      if (currentTownBgUrl !== nextBg) {
+        currentTownBgUrl = nextBg;
+        imageW = 0;
+        imageH = 0;
+        bgImg.src = nextBg;
       }
 
       closeMenu();

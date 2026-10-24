@@ -27,17 +27,17 @@ export const WORLD_MAP_SPOTS: readonly WorldMapSpotDef[] = [
   {
     id: "outskirts",
     kind: "zone",
-    label: "Окраина",
-    x: 0.6,
-    y: 0.56,
+    label: "Северная дорога",
+    x: 0.69,
+    y: 0.36,
     zoneId: "outskirts",
   },
   {
     id: "ruins",
     kind: "zone",
     label: "Руины",
-    x: 0.28,
-    y: 0.74,
+    x: 0.25,
+    y: 0.65,
     zoneId: "ruins",
   },
 ];
