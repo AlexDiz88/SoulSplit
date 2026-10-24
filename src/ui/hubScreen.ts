@@ -48,16 +48,18 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
   const map = el("div", "hub-map");
   map.setAttribute("aria-label", "Локации города");
-  const locationBtns = new Map<HubLocationId, HTMLButtonElement>();
+  const locationAnchors = new Map<HubLocationId, HTMLElement>();
   for (const loc of HUB_LOCATIONS) {
-    const btn = el("button", "hub-loc-btn", loc.label);
+    const anchor = el("div", "hub-loc");
+    anchor.dataset.loc = loc.id;
+    const btn = el("button", "title-btn hub-loc-btn", loc.label);
     btn.type = "button";
-    btn.dataset.loc = loc.id;
     btn.title = loc.label;
     btn.setAttribute("aria-label", loc.label);
     btn.addEventListener("click", () => handlers.onLocation(loc.id));
-    locationBtns.set(loc.id, btn);
-    map.append(btn);
+    anchor.append(btn);
+    locationAnchors.set(loc.id, anchor);
+    map.append(anchor);
   }
   root.append(map);
 
@@ -231,11 +233,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
     const layout = coverLayout(cw, ch, iw, ih);
     for (const loc of HUB_LOCATIONS) {
-      const btn = locationBtns.get(loc.id);
-      if (!btn) continue;
+      const anchor = locationAnchors.get(loc.id);
+      if (!anchor) continue;
       const { left, top } = projectLocation(loc, layout);
-      btn.style.left = `${left}px`;
-      btn.style.top = `${top}px`;
+      anchor.style.left = `${left}px`;
+      anchor.style.top = `${top}px`;
     }
   };
 
