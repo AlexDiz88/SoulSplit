@@ -73,7 +73,10 @@ export class GameApp {
     });
 
     this.settings = mountSettingsScreen({
-      onBack: () => this.goTitle(),
+      onBack: () => {
+        if (this.state) this.goHub();
+        else this.goTitle();
+      },
     });
 
     this.slots = mountSaveSlotsScreen({
@@ -89,12 +92,12 @@ export class GameApp {
     });
 
     this.hub = mountHubScreen({
-      onEmbark: () => this.embarkQuick(),
-      onSelectZone: () => this.goZoneSelect(),
-      onMerchant: () => this.goMerchant(),
-      onCharacter: () => this.hud.openCharacter(),
-      onInventory: () => this.hud.openInventory(),
+      onBestiary: () => this.hud.openBestiary(),
+      onGrimoire: () => this.hud.openGrimoire(),
+      onItemGenerator: () => this.hud.openItemGenerator(),
       onSave: () => this.manualSave(),
+      onSettings: () => this.goSettingsFromHub(),
+      onCharacterSelect: () => this.exitToSlots(),
       onExitToMenu: () => this.exitToMenu(),
     });
 
@@ -175,6 +178,16 @@ export class GameApp {
   }
 
   private exitToMenu(): void {
+    this.leaveActiveGame();
+    this.goTitle();
+  }
+
+  private exitToSlots(): void {
+    this.leaveActiveGame();
+    this.goSlots();
+  }
+
+  private leaveActiveGame(): void {
     this.persist();
     this.destroyBattle();
     this.hubUnit = null;
@@ -182,7 +195,14 @@ export class GameApp {
     this.activeSlot = -1;
     this.prevUnlocked = new Set();
     this.hud.closeOverlays();
-    this.goTitle();
+  }
+
+  private goSettingsFromHub(): void {
+    this.hideAll();
+    this.hud.closeOverlays();
+    this.screen = "settings";
+    this.hud.setShellMode("title");
+    this.settings.show();
   }
 
   private hideAll(): void {
@@ -273,8 +293,8 @@ export class GameApp {
     this.battle = null;
   }
 
-  /** C4: после первого похода "В поход" сразу в последнюю зону. */
-  private embarkQuick(): void {
+  /** Вход в поход с карты города (локации подключим отдельно). */
+  embarkQuick(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     const last = state.lastZoneId;
@@ -327,7 +347,7 @@ export class GameApp {
     this.prevUnlocked = new Set(state.unlockedZones);
   }
 
-  private goZoneSelect(): void {
+  goZoneSelect(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.hideAll();
@@ -339,7 +359,8 @@ export class GameApp {
     this.zones.show(state);
   }
 
-  private goMerchant(): void {
+  /** Вход к скупщику с карты города (локации подключим отдельно). */
+  goMerchant(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.hideAll();

@@ -601,7 +601,7 @@ textarea,
   background: rgba(6, 8, 6, 0.72);
   display: grid;
   place-items: center;
-  z-index: 20;
+  z-index: 50;
 }
 
 .bestiary-overlay[hidden] {
@@ -719,7 +719,7 @@ textarea,
 .grimoire-overlay {
   position: absolute;
   inset: 0;
-  z-index: 20;
+  z-index: 50;
   display: grid;
   place-items: center;
   background: rgba(6, 8, 6, 0.72);
@@ -730,13 +730,13 @@ textarea,
 }
 
 .grimoire-window {
-  --zone-cell: 42px;
-  width: min(1080px, calc(100vw - 40px));
-  height: min(86vh, 760px);
+  --zone-cell: 48px;
+  width: min(1560px, calc(100vw - 28px));
+  height: min(94vh, 1040px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 16px 18px 18px;
+  padding: 18px 22px 22px;
   border: 1px solid var(--panel-border);
   border-radius: 12px;
   background: #141a14;
@@ -764,8 +764,8 @@ textarea,
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: 210px 280px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 260px 340px minmax(0, 1fr);
+  gap: 16px;
 }
 
 .grimoire-aspects,
@@ -780,6 +780,10 @@ textarea,
   display: grid;
   align-content: start;
   gap: 8px;
+}
+
+.grimoire-aspects {
+  gap: 7px;
 }
 
 .grimoire-aspect,
@@ -801,8 +805,8 @@ textarea,
   gap: 8px;
   min-width: 0;
   max-width: 100%;
-  min-height: 42px;
-  padding: 8px 10px 8px 12px;
+  min-height: 38px;
+  padding: 6px 10px 6px 12px;
   border-left: 3px solid var(--aspect, var(--panel-border));
   font-weight: 700;
 }

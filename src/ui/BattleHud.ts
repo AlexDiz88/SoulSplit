@@ -60,6 +60,9 @@ export interface BattleHudApi {
   setShellMode(mode: HudShellMode): void;
   openCharacter(): void;
   openInventory(): void;
+  openBestiary(): void;
+  openGrimoire(): void;
+  openItemGenerator(): void;
   closeOverlays(): void;
 }
 
@@ -421,10 +424,14 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     if (sideMenu.hidden) openMenu();
     else closeMenu();
   });
-  bestiaryBtn.addEventListener("click", () => {
+  const openBestiary = (): void => {
     prepareOpen("bestiary");
     fillBestiary();
     bestiary.hidden = false;
+  };
+
+  bestiaryBtn.addEventListener("click", () => {
+    openBestiary();
   });
   bestiaryClose.addEventListener("click", () => {
     bestiary.hidden = true;
@@ -441,6 +448,27 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     closeMenu();
   });
   window.addEventListener("keydown", (ev) => {
+    const target = ev.target;
+    const typing =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement;
+
+    if (!typing && !ev.repeat && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (ev.code === "KeyH") {
+        ev.preventDefault();
+        if (bestiary.hidden) openBestiary();
+        else bestiary.hidden = true;
+        return;
+      }
+      if (ev.code === "KeyV") {
+        ev.preventDefault();
+        if (grimoire.isOpen()) grimoire.close();
+        else grimoire.open();
+        return;
+      }
+    }
+
     if (ev.code !== "Escape") return;
     if (itemGenerator.isOpen()) {
       itemGenerator.close();
@@ -519,12 +547,13 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     setShellMode(mode: HudShellMode) {
       const battle = mode === "battle";
       const title = mode === "title";
+      const hub = mode === "hub";
       const controls = document.querySelector(".controls") as HTMLElement | null;
       const hudTop = document.querySelector(".hud-top") as HTMLElement | null;
       if (controls) controls.hidden = !battle;
-      if (hudTop) hudTop.hidden = title;
-      menuBtn.hidden = title;
-      if (title) closeMenu();
+      if (hudTop) hudTop.hidden = title || hub;
+      menuBtn.hidden = title || hub;
+      if (title || hub) closeMenu();
       skillBar.hidden = !battle;
       if (!battle) {
         setBattleBanner("hidden");
@@ -538,6 +567,18 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     openInventory() {
       inventory.open();
+    },
+
+    openBestiary() {
+      openBestiary();
+    },
+
+    openGrimoire() {
+      grimoire.open();
+    },
+
+    openItemGenerator() {
+      itemGenerator.open();
     },
 
     closeOverlays() {

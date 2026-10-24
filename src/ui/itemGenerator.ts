@@ -26,6 +26,7 @@ import "./itemGenerator.css";
 
 export interface ItemGeneratorApi {
   isOpen(): boolean;
+  open(): void;
   close(): void;
   setHero(hero: Unit): void;
   setOnInventoryChanged(fn: () => void): void;
@@ -136,6 +137,10 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
 
   return {
     isOpen: () => !root.hidden,
+    open: () => {
+      onOpen();
+      open();
+    },
     close,
     setHero(next) {
       hero = next;

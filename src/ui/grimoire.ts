@@ -4,6 +4,7 @@ type PhoneView = "aspects" | "list" | "detail";
 
 export interface GrimoireApi {
   isOpen(): boolean;
+  open(): void;
   close(): void;
   /** На узком портретном экране возвращает на предыдущий шаг. Иначе false. */
   back(): boolean;
@@ -195,6 +196,10 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
 
   return {
     isOpen: () => !root.hidden,
+    open: () => {
+      onOpen();
+      open();
+    },
     close: () => {
       root.hidden = true;
     },
