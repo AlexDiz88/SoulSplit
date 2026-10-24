@@ -23,6 +23,7 @@ import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
 import { mountCharacterCreateScreen } from "../ui/characterCreateScreen";
 import { mountDefeatScreen } from "../ui/defeatScreen";
+import type { HubLocationId } from "../ui/hubLocations";
 import { mountHubScreen } from "../ui/hubScreen";
 import { mountMerchantScreen } from "../ui/merchantScreen";
 import { mountRewardScreen } from "../ui/rewardScreen";
@@ -100,6 +101,7 @@ export class GameApp {
       onSettings: () => this.goSettingsFromHub(),
       onCharacterSelect: () => this.exitToSlots(),
       onExitToMenu: () => this.exitToMenu(),
+      onLocation: (id) => this.onTownLocation(id),
     });
 
     this.zones = mountZoneSelectScreen({
@@ -360,7 +362,26 @@ export class GameApp {
     this.zones.show(state);
   }
 
-  /** Вход к скупщику с карты города (локации подключим отдельно). */
+  private onTownLocation(id: HubLocationId): void {
+    switch (id) {
+      case "market":
+        this.goMerchant();
+        return;
+      case "city_gate":
+        this.goZoneSelect();
+        return;
+      case "town_hall":
+        this.hud.showToast("Ратуша - скоро");
+        return;
+      case "forge":
+        this.hud.showToast("Кузница - скоро");
+        return;
+      case "tavern":
+        this.hud.showToast("Таверна - скоро");
+        return;
+    }
+  }
+
   goMerchant(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);

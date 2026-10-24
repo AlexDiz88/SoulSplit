@@ -1,6 +1,12 @@
 import { createTownBackgroundImg } from "../art/menuBackground";
 import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
+import {
+  HUB_LOCATIONS,
+  coverLayout,
+  projectLocation,
+  type HubLocationId,
+} from "./hubLocations";
 import "./hubScreen.css";
 
 export interface HubScreenApi {
@@ -19,6 +25,7 @@ export interface HubScreenHandlers {
   onSettings: () => void;
   onCharacterSelect: () => void;
   onExitToMenu: () => void;
+  onLocation: (id: HubLocationId) => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -36,7 +43,23 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const root = el("div", "meta-screen hub-screen");
   root.id = "hub-screen";
   root.hidden = true;
-  root.append(createTownBackgroundImg());
+  const bgImg = createTownBackgroundImg();
+  root.append(bgImg);
+
+  const map = el("div", "hub-map");
+  map.setAttribute("aria-label", "Локации города");
+  const locationBtns = new Map<HubLocationId, HTMLButtonElement>();
+  for (const loc of HUB_LOCATIONS) {
+    const btn = el("button", "hub-loc-btn", loc.label);
+    btn.type = "button";
+    btn.dataset.loc = loc.id;
+    btn.title = loc.label;
+    btn.setAttribute("aria-label", loc.label);
+    btn.addEventListener("click", () => handlers.onLocation(loc.id));
+    locationBtns.set(loc.id, btn);
+    map.append(btn);
+  }
+  root.append(map);
 
   const topbar = el("header", "hub-topbar");
 
@@ -189,6 +212,45 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   document.addEventListener("pointerdown", onPointerDown);
   window.addEventListener("keydown", onKeyDown);
 
+  let imageW = 0;
+  let imageH = 0;
+  let layoutRaf = 0;
+
+  const layoutLocations = (): void => {
+    layoutRaf = 0;
+    if (root.hidden) return;
+    const cw = root.clientWidth;
+    const ch = root.clientHeight;
+    if (cw <= 0 || ch <= 0) return;
+
+    const iw = imageW || bgImg.naturalWidth;
+    const ih = imageH || bgImg.naturalHeight;
+    if (iw <= 0 || ih <= 0) return;
+    imageW = iw;
+    imageH = ih;
+
+    const layout = coverLayout(cw, ch, iw, ih);
+    for (const loc of HUB_LOCATIONS) {
+      const btn = locationBtns.get(loc.id);
+      if (!btn) continue;
+      const { left, top } = projectLocation(loc, layout);
+      btn.style.left = `${left}px`;
+      btn.style.top = `${top}px`;
+    }
+  };
+
+  const scheduleLayout = (): void => {
+    if (layoutRaf) return;
+    layoutRaf = requestAnimationFrame(layoutLocations);
+  };
+
+  const onBgLoad = (): void => scheduleLayout();
+  bgImg.addEventListener("load", onBgLoad);
+  if (bgImg.complete && bgImg.naturalWidth > 0) scheduleLayout();
+
+  const resizeObs = new ResizeObserver(() => scheduleLayout());
+  resizeObs.observe(root);
+
   return {
     show(state) {
       const h = state.hero;
@@ -212,6 +274,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
       closeMenu();
       root.hidden = false;
+      scheduleLayout();
     },
     hide() {
       closeMenu();
@@ -221,6 +284,9 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       return !root.hidden;
     },
     destroy() {
+      if (layoutRaf) cancelAnimationFrame(layoutRaf);
+      resizeObs.disconnect();
+      bgImg.removeEventListener("load", onBgLoad);
       document.removeEventListener("pointerdown", onPointerDown);
       window.removeEventListener("keydown", onKeyDown);
       root.remove();
