@@ -80,7 +80,7 @@
   background: var(--slot-edge);
   color: inherit;
   font: inherit;
-  cursor: default;
+  cursor: var(--cur-default);
   clip-path: polygon(
     var(--cut) 0,
     calc(100% - var(--cut)) 0,
@@ -124,7 +124,7 @@
 .inv-ghost[data-rarity="epic"] { --rar-c: var(--c-epic); }
 
 .inv-cell.filled {
-  cursor: grab;
+  cursor: var(--cur-grab);
   background: linear-gradient(155deg, var(--rar-c), color-mix(in srgb, var(--rar-c) 25%, #151515) 50%, var(--rar-c));
 }
 
@@ -168,7 +168,7 @@
 }
 
 .inv-locked .inv-cell.filled {
-  cursor: not-allowed;
+  cursor: var(--cur-not-allowed);
 }
 
 .inv-tip {
@@ -293,7 +293,7 @@
 body.inv-dragging,
 body.inv-dragging .inv-cell.filled,
 body.inv-dragging .cs-slot.filled {
-  cursor: grabbing;
+  cursor: var(--cur-grabbing);
 }
 
 @media (max-width: 760px) {

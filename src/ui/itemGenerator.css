@@ -86,7 +86,7 @@
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
-  cursor: pointer;
+  cursor: var(--cur-default);
 }
 
 .igen-tab:hover {
@@ -256,7 +256,7 @@
   background-repeat: no-repeat;
   background-position: right 10px center;
   background-size: 11px 8px;
-  cursor: pointer;
+  cursor: var(--cur-default);
 }
 
 .igen-input {
@@ -274,7 +274,7 @@
   font: inherit;
   font-size: 1rem;
   font-weight: 700;
-  cursor: pointer;
+  cursor: var(--cur-default);
 }
 
 .igen-gen-btn:hover {
@@ -333,7 +333,7 @@
   font: inherit;
   font-size: 0.95rem;
   font-weight: 700;
-  cursor: pointer;
+  cursor: var(--cur-default);
 }
 
 .igen-add-btn:hover:not(:disabled) {
@@ -344,7 +344,7 @@
 
 .igen-add-btn:disabled {
   opacity: 0.55;
-  cursor: default;
+  cursor: var(--cur-default);
   color: #9aa394;
   border-color: #3a4538;
 }

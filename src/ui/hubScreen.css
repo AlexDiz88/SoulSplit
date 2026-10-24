@@ -86,7 +86,7 @@
   font: inherit;
   font-weight: 600;
   padding: 12px 14px;
-  cursor: var(--cur-pointer);
+  cursor: var(--cur-default);
   text-align: left;
 }
 
@@ -186,7 +186,7 @@
   font: inherit;
   font-size: 0.8rem;
   padding: 6px 10px;
-  cursor: var(--cur-pointer);
+  cursor: var(--cur-default);
 }
 
 .meta-reward-actions button:disabled {

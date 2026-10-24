@@ -115,7 +115,7 @@
   border-radius: 0;
   background: transparent;
   color: #d8b86a;
-  cursor: pointer;
+  cursor: var(--cur-default);
   transition: color 0.15s, filter 0.15s;
 }
 

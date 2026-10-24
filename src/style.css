@@ -20,15 +20,16 @@
   --hp-bg: #2a3228;
 
   --cur-default: url("../assets/ui/cursors/default.svg") 4 2, default;
-  --cur-pointer: url("../assets/ui/cursors/pointer.svg") 10 2, pointer;
-  --cur-not-allowed: url("../assets/ui/cursors/not-allowed.svg") 4 2, not-allowed;
+  /* Клики без "руки": тот же кастомный default, что и везде */
+  --cur-pointer: var(--cur-default);
+  --cur-not-allowed: var(--cur-default);
   --cur-crosshair: url("../assets/ui/cursors/crosshair.svg") 16 16, crosshair;
   --cur-target: url("../assets/ui/cursors/target.svg?v=2") 24 24, crosshair;
   --cur-text: url("../assets/ui/cursors/text.svg") 16 16, text;
   --cur-wait: url("../assets/ui/cursors/wait.svg") 16 16, wait;
   --cur-progress: url("../assets/ui/cursors/progress.svg") 4 2, progress;
-  --cur-grab: url("../assets/ui/cursors/grab.svg") 12 8, grab;
-  --cur-grabbing: url("../assets/ui/cursors/grabbing.svg") 12 14, grabbing;
+  --cur-grab: var(--cur-default);
+  --cur-grabbing: var(--cur-default);
   --cur-move: url("../assets/ui/cursors/move.svg") 16 16, move;
   --cur-help: url("../assets/ui/cursors/help.svg") 4 2, help;
   --cur-ew-resize: url("../assets/ui/cursors/ew-resize.svg") 16 16, ew-resize;
@@ -313,7 +314,7 @@ textarea,
 }
 
 .skill-btn.empty {
-  cursor: default;
+  cursor: var(--cur-default);
   opacity: 0.85;
 }
 
