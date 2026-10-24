@@ -1,0 +1,101 @@
+/* Карта мира: арт без пелены, UI поверх */
+.world-map-screen {
+  isolation: isolate;
+  overflow: hidden;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 0;
+  background: var(--theme-ink);
+  pointer-events: none;
+}
+
+.world-map-screen .title-bg-img {
+  object-fit: cover;
+  object-position: center center;
+}
+
+.world-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.world-map-spot {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: auto;
+}
+
+.world-map-spot-btn {
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(72, 76, 102, 0.55) 0%,
+      rgba(28, 30, 46, 0.82) 48%,
+      rgba(14, 16, 26, 0.92) 100%
+    ),
+    #12141e;
+}
+
+.world-map-spot-btn:hover,
+.world-map-spot-btn:focus-visible {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(88, 90, 120, 0.62) 0%,
+      rgba(36, 38, 58, 0.88) 48%,
+      rgba(16, 18, 30, 0.95) 100%
+    ),
+    #161822;
+}
+
+.world-map-spot-btn.is-locked {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.world-map-spot-btn.is-locked:hover,
+.world-map-spot-btn.is-locked:focus-visible {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(72, 76, 102, 0.55) 0%,
+      rgba(28, 30, 46, 0.82) 48%,
+      rgba(14, 16, 26, 0.92) 100%
+    ),
+    #12141e;
+}
+
+.world-map-topbar {
+  position: absolute;
+  z-index: 2;
+  right: 60px;
+  bottom: 52px;
+  left: auto;
+  top: auto;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 0;
+  pointer-events: none;
+}
+
+.world-map-back {
+  pointer-events: auto;
+  width: auto;
+  min-width: 0;
+  margin: 0;
+  padding: 10px 16px;
+  font-size: 0.92rem;
+  letter-spacing: 0.1em;
+}

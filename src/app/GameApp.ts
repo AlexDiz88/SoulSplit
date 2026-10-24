@@ -32,7 +32,7 @@ import { mountRewardScreen } from "../ui/rewardScreen";
 import { mountSaveSlotsScreen } from "../ui/saveSlotsScreen";
 import { mountSettingsScreen } from "../ui/settingsScreen";
 import { mountStartMenu } from "../ui/startMenu";
-import { mountZoneSelectScreen } from "../ui/zoneSelectScreen";
+import { mountWorldMapScreen } from "../ui/worldMapScreen";
 
 type AppScreen =
   | "title"
@@ -40,7 +40,7 @@ type AppScreen =
   | "slots"
   | "create"
   | "hub"
-  | "zone_select"
+  | "world_map"
   | "battle"
   | "reward"
   | "defeat";
@@ -60,7 +60,7 @@ export class GameApp {
   private readonly slots: ReturnType<typeof mountSaveSlotsScreen>;
   private readonly create: ReturnType<typeof mountCharacterCreateScreen>;
   private readonly hub: ReturnType<typeof mountHubScreen>;
-  private readonly zones: ReturnType<typeof mountZoneSelectScreen>;
+  private readonly worldMap: ReturnType<typeof mountWorldMapScreen>;
   private readonly merchant: ReturnType<typeof mountMerchantScreen>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
   private readonly defeat: ReturnType<typeof mountDefeatScreen>;
@@ -119,9 +119,10 @@ export class GameApp {
       onAddTestGold: () => this.addTestGold(),
     });
 
-    this.zones = mountZoneSelectScreen({
-      onBack: () => this.goHub(),
+    this.worldMap = mountWorldMapScreen({
+      onBackToTown: () => this.goHub(),
       onStartZone: (id) => this.startBattle(id),
+      showToast: (t) => this.hud.showToast(t),
     });
 
     this.merchant = mountMerchantScreen({
@@ -246,7 +247,7 @@ export class GameApp {
     this.slots.hide();
     this.create.hide();
     this.hub.hide();
-    this.zones.hide();
+    this.worldMap.hide();
     this.merchant.hide();
     this.reward.hide();
     this.defeat.hide();
@@ -328,7 +329,7 @@ export class GameApp {
     this.battle = null;
   }
 
-  /** Вход в поход с карты города (локации подключим отдельно). */
+  /** Быстрый поход: последняя зона, иначе карта мира. */
   embarkQuick(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
@@ -344,7 +345,7 @@ export class GameApp {
       this.startBattle(unlocked[0]!);
       return;
     }
-    this.goZoneSelect();
+    this.goWorldMap();
   }
 
   private retryLastZone(): void {
@@ -382,16 +383,16 @@ export class GameApp {
     this.prevUnlocked = new Set(state.unlockedZones);
   }
 
-  goZoneSelect(): void {
+  goWorldMap(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.hideAll();
     this.hud.closeOverlays();
-    this.screen = "zone_select";
+    this.screen = "world_map";
     this.hud.setShellMode("hub");
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
-    this.zones.show(state);
+    this.worldMap.show(state);
   }
 
   private onTownLocation(id: HubLocationId): void {
@@ -400,7 +401,7 @@ export class GameApp {
         this.goMerchant();
         return;
       case "city_gate":
-        this.goZoneSelect();
+        this.goWorldMap();
         return;
       case "town_hall":
         this.hud.showToast("Ратуша - скоро");

@@ -58,7 +58,7 @@ export function coverLayout(
 }
 
 export function projectLocation(
-  loc: HubLocationDef,
+  loc: { x: number; y: number },
   layout: CoverLayout,
 ): { left: number; top: number } {
   return {

@@ -1,33 +1,19 @@
 import { Assets, type Texture } from "pixi.js";
 
-/** Все фоны из assets/art/backgrounds - подхватываются автоматически. */
+/** Все файлы из assets/art/backgrounds - подхватываются автоматически. */
 const backgroundModules = import.meta.glob<{ default: string }>(
   "../../assets/art/backgrounds/*.{png,jpg,jpeg,webp}",
   { eager: true },
 );
 
-/** Меню / хаб / портреты торговцев - не попадают в случайный боевой пул. */
-function isNonBattleBackground(path: string): boolean {
-  const file = path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
-  return (
-    file.startsWith("main_menu") ||
-    file.startsWith("town") ||
-    file.startsWith("choose_slot_screen") ||
-    file.startsWith("weaponsmith") ||
-    file.startsWith("armorsmith") ||
-    file.startsWith("herbalist") ||
-    file.startsWith("baker")
-  );
+function fileName(path: string): string {
+  return path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
 }
 
-const ALL_BACKGROUND_ENTRIES = Object.entries(backgroundModules).map(([path, mod]) => ({
-  path,
-  url: mod.default,
-  nonBattle: isNonBattleBackground(path),
-}));
-
-/** Боевые фоны (без меню и города). */
-const BATTLE_BACKGROUND_URLS = ALL_BACKGROUND_ENTRIES.filter((e) => !e.nonBattle).map((e) => e.url);
+/** Боевые фоны: только `battle_location*`. */
+const BATTLE_BACKGROUND_URLS = Object.entries(backgroundModules)
+  .filter(([path]) => fileName(path).startsWith("battle_location"))
+  .map(([, mod]) => mod.default);
 
 const BACKGROUND_TEXTURE_DATA = {
   autoGenerateMipmaps: true,
@@ -37,18 +23,19 @@ const BACKGROUND_TEXTURE_DATA = {
 /** Случайный URL боевого фона. */
 export function pickRandomBackgroundUrl(): string {
   if (BATTLE_BACKGROUND_URLS.length === 0) {
-    throw new Error("Нет фонов: добавьте файлы в assets/art/backgrounds");
+    throw new Error(
+      "Нет боевых фонов: добавьте assets/art/backgrounds/battle_location*.{png|jpg|jpeg|webp}",
+    );
   }
   const index = Math.floor(Math.random() * BATTLE_BACKGROUND_URLS.length);
   return BATTLE_BACKGROUND_URLS[index]!;
 }
 
 export async function preloadBackgrounds(): Promise<void> {
-  const urls = ALL_BACKGROUND_ENTRIES.map((e) => e.url);
-  if (urls.length === 0) return;
+  if (BATTLE_BACKGROUND_URLS.length === 0) return;
 
   await Assets.load(
-    urls.map((src, i) => ({
+    BATTLE_BACKGROUND_URLS.map((src, i) => ({
       alias: [`background:${i}`, src],
       src,
       data: BACKGROUND_TEXTURE_DATA,

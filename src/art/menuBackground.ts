@@ -60,6 +60,10 @@ export function createChooseSlotBackgroundImg(): HTMLImageElement {
   return createBackgroundImgFromStem("choose_slot_screen");
 }
 
+export function createWorldMapBackgroundImg(): HTMLImageElement {
+  return createBackgroundImgFromStem("map_01");
+}
+
 /** URL портрета торговца (`weaponsmith`, `armorsmith`, …). */
 export function resolveMerchantPortraitUrl(stem: string): string {
   return resolveAssetBgUrl(stem);

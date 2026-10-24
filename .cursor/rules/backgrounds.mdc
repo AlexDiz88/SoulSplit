@@ -14,7 +14,7 @@ alwaysApply: true
 3. В DOM - отдельный `<img>`, не CSS `background-image` для самого арта.
 4. Поверх арта нет затемняющих/цветных градиентов и vignette. UI (кнопки, заголовки) - отдельным слоем выше.
 5. Масштаб: `object-fit: cover` + `object-position` по композиции (для меню - `center top`).
-6. Хелперы в `src/art/menuBackground.ts`: `createMenuBackgroundImg()`, `createTownBackgroundImg()`, `createChooseSlotBackgroundImg()`. Новые экраны с тем же фоном - переиспользуй хелпер.
+6. Хелперы в `src/art/menuBackground.ts`: `createMenuBackgroundImg()`, `createTownBackgroundImg()`, `createChooseSlotBackgroundImg()`, `createWorldMapBackgroundImg()`. Новые экраны с тем же фоном - переиспользуй хелпер.
 
 ```html
 <!-- хорошо -->
@@ -55,8 +55,7 @@ background-image:
 
 ## Боевые фоны (Pixi)
 
-- Боевые фоны тоже в `assets/art/backgrounds/` (`bg-*.png` и т.п.), подхватываются через `src/art/backgrounds.ts`.
-- Файлы меню / хаба (`main_menu*`, `town*`, `choose_slot_screen*`) в боевой пул не попадают.
+- Боевой пул: только `assets/art/backgrounds/battle_location*` (`src/art/backgrounds.ts`). Остальные файлы в папке в бой не идут.
 - В Pixi тоже не накладывай поверх фона полупрозрачные fullscreen-заливки "для атмосферы", если задача - показать арт как есть. Локальный VFX/туман в зоне боя - ок, глобальная пелена на весь фон - нет.
 
 ## Если нужен контраст для текста

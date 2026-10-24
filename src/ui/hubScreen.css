@@ -519,39 +519,6 @@
   gap: 10px;
 }
 
-.meta-zone-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin: 16px 0 18px;
-}
-
-.meta-zone-card {
-  border: 1px solid var(--theme-border);
-  padding: 14px;
-  background: rgba(20, 22, 36, 0.72);
-  box-shadow: inset 0 1px 0 rgba(230, 225, 255, 0.08);
-}
-
-.meta-zone-card h3 {
-  margin: 0 0 6px;
-  font-size: 1.1rem;
-  color: var(--theme-corona);
-}
-
-.meta-zone-card p {
-  margin: 0 0 10px;
-  color: var(--muted);
-  font-size: 0.9rem;
-  line-height: 1.4;
-}
-
-.meta-zone-meta {
-  margin-bottom: 10px;
-  font-size: 0.8rem;
-  color: var(--muted);
-}
-
 .meta-reward-list {
   display: flex;
   flex-direction: column;
