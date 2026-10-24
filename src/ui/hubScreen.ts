@@ -26,6 +26,8 @@ export interface HubScreenHandlers {
   onCharacterSelect: () => void;
   onExitToMenu: () => void;
   onLocation: (id: HubLocationId) => void;
+  /** Горячая клавиша S - тайник (только пока открыт город). */
+  onStash: () => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -248,17 +250,17 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       target instanceof HTMLTextAreaElement ||
       target instanceof HTMLSelectElement;
 
-    if (
-      !typing &&
-      !ev.repeat &&
-      !ev.ctrlKey &&
-      !ev.metaKey &&
-      !ev.altKey &&
-      ev.code === "KeyX"
-    ) {
-      ev.preventDefault();
-      toggleFullscreen();
-      return;
+    if (!typing && !ev.repeat && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (ev.code === "KeyX") {
+        ev.preventDefault();
+        toggleFullscreen();
+        return;
+      }
+      if (ev.code === "KeyS" && !root.hidden) {
+        ev.preventDefault();
+        handlers.onStash();
+        return;
+      }
     }
 
     if (ev.code !== "Escape" || menu.hidden) return;

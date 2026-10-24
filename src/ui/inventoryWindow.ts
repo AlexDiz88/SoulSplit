@@ -4,10 +4,12 @@ import { canEquipInSlot } from "../items/equipment";
 import {
   equipFromInventory,
   equipFromInventoryToSlot,
+  findEmptyInventorySlot,
   INVENTORY_COLS,
   INVENTORY_SIZE,
   swapBetweenBags,
   swapInventoryCells,
+  unequipToInventory,
   unequipToInventoryAt,
   type InventoryBag,
 } from "../items/inventory";
@@ -309,19 +311,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
     afterChange();
   };
 
-  const tryEquipStashRmb = (stashIndex: number): void => {
-    if (!hero || !stashBag) return;
-    if (!canChangeEquipment()) {
-      toast("Экипировку можно менять только вне боя");
-      return;
-    }
-    const result = equipFromInventory(hero.equipment, stashBag, stashIndex);
-    if (!result.ok) {
-      toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
-      return;
-    }
-    hero.applyEquipmentChange();
-    afterChange({ stash: true });
+  const moveToFirstEmpty = (from: InventoryBag, fromIndex: number, to: InventoryBag): boolean => {
+    const free = findEmptyInventorySlot(to);
+    if (free < 0) return false;
+    to[free] = from[fromIndex] ?? null;
+    from[fromIndex] = null;
+    return true;
   };
 
   gridHost.addEventListener("pointerover", (ev) => {
@@ -334,7 +329,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (cell && (!next || !cell.contains(next))) tip.hidden = true;
   });
 
+  /** Без тайника: ПКМ в сумке надевает. С тайником - см. window capture. */
   gridHost.addEventListener("contextmenu", (ev) => {
+    if (stashBag) return;
     ev.preventDefault();
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
     if (!cell) return;
@@ -343,16 +340,81 @@ export function mountInventoryWindow(): InventoryWindowApi {
     tryEquipRmb(index);
   });
 
+  /** Режим тайника: ПКМ перекладывает, Ctrl+ПКМ надевает / снимает в тайник. */
   window.addEventListener(
     "contextmenu",
     (ev) => {
       if (!stashBag || !hero) return;
-      const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-stash]");
-      if (!cell) return;
+      const invCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
+      const stashCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-stash]");
+      const equipSlot = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled[data-slot]");
+      if (!invCell && !stashCell && !equipSlot) return;
+
       ev.preventDefault();
-      const index = Number(cell.dataset.stash);
-      if (!Number.isFinite(index)) return;
-      tryEquipStashRmb(index);
+      ev.stopPropagation();
+
+      if (!canChangeEquipment()) {
+        toast("Экипировку можно менять только вне боя");
+        return;
+      }
+
+      const ctrl = ev.ctrlKey || ev.metaKey;
+
+      if (stashCell) {
+        const index = Number(stashCell.dataset.stash);
+        if (!Number.isFinite(index)) return;
+        if (ctrl) {
+          const result = equipFromInventory(hero.equipment, stashBag, index);
+          if (!result.ok) {
+            toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
+            return;
+          }
+          hero.applyEquipmentChange();
+          afterChange({ stash: true });
+          return;
+        }
+        if (!moveToFirstEmpty(stashBag, index, hero.inventory)) {
+          toast("Инвентарь полон");
+          return;
+        }
+        afterChange({ stash: true });
+        return;
+      }
+
+      if (invCell) {
+        const index = Number(invCell.dataset.inv);
+        if (!Number.isFinite(index)) return;
+        if (ctrl) {
+          tryEquipRmb(index);
+          return;
+        }
+        if (!moveToFirstEmpty(hero.inventory, index, stashBag)) {
+          toast("Тайник полон");
+          return;
+        }
+        afterChange({ stash: true });
+        return;
+      }
+
+      if (equipSlot) {
+        const slot = equipSlot.dataset.slot as EquipSlotId;
+        if (ctrl) {
+          const result = unequipToInventory(hero.equipment, stashBag, slot);
+          if (!result.ok) {
+            if (result.reason === "inventory_full") toast("Тайник полон");
+            return;
+          }
+          hero.applyEquipmentChange();
+          afterChange({ stash: true });
+          return;
+        }
+        const result = hero.unequipSlot(slot);
+        if (!result.ok) {
+          if (result.reason === "inventory_full") toast("Инвентарь полон");
+          return;
+        }
+        afterChange();
+      }
     },
     true,
   );

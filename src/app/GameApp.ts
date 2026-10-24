@@ -103,6 +103,7 @@ export class GameApp {
       onCharacterSelect: () => this.exitToSlots(),
       onExitToMenu: () => this.exitToMenu(),
       onLocation: (id) => this.onTownLocation(id),
+      onStash: () => this.toggleTownStash(),
     });
 
     this.zones = mountZoneSelectScreen({
@@ -380,14 +381,28 @@ export class GameApp {
       case "tavern":
         this.hud.showToast("Таверна - скоро");
         return;
-      case "stash": {
-        const state = this.requireState();
-        if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
-        ensureHeroStash(state.hero);
-        this.hud.openStash(state.hero.stash);
+      case "stash":
+        this.openTownStash();
         return;
-      }
     }
+  }
+
+  /** Открыть / закрыть тайник (кнопка города и клавиша S). */
+  private toggleTownStash(): void {
+    if (this.screen !== "hub") return;
+    if (this.hud.isStashOpen()) {
+      this.hud.closeOverlays();
+      return;
+    }
+    this.openTownStash();
+  }
+
+  private openTownStash(): void {
+    if (this.screen !== "hub") return;
+    const state = this.requireState();
+    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    ensureHeroStash(state.hero);
+    this.hud.openStash(state.hero.stash);
   }
 
   goMerchant(): void {

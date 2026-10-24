@@ -64,6 +64,7 @@ export interface BattleHudApi {
   openInventory(): void;
   /** Тайник: экип без портрета/статов + инвентарь + сетка 10×10. */
   openStash(bag: InventoryBag): void;
+  isStashOpen(): boolean;
   openBestiary(): void;
   openGrimoire(): void;
   openItemGenerator(): void;
@@ -601,6 +602,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       character.setMode("gear");
       character.open();
       stash.open();
+    },
+
+    isStashOpen() {
+      return stash.isOpen();
     },
 
     openBestiary() {

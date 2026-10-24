@@ -227,6 +227,8 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
   dollWrap.addEventListener("contextmenu", (ev) => {
     ev.preventDefault();
+    // В режиме тайника ПКМ обрабатывает inventoryWindow (снять / Ctrl+снять в тайник).
+    if (mode === "gear") return;
     const slotEl = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled");
     if (!slotEl || !hero) return;
     const id = slotEl.dataset.slot as EquipSlotId | undefined;

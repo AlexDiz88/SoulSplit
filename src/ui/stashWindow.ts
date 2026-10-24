@@ -17,9 +17,11 @@ export interface StashWindowApi {
 /** Окно тайника 10×10 по центру экрана (стиль ячеек как у инвентаря). */
 export function mountStashWindow(): StashWindowApi {
   const hud = document.getElementById("hud")!;
+  const stack = el("div", "stash-stack");
+  stack.hidden = true;
+
   const root = el("div", "stash-root");
   root.id = "stash";
-  root.hidden = true;
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-labelledby", "stash-title");
 
@@ -33,8 +35,17 @@ export function mountStashWindow(): StashWindowApi {
   const tip = el("div", "inv-tip");
   tip.hidden = true;
 
+  const hints = el("div", "stash-hints");
+  const hint = el("div", "stash-hint");
+  hint.append(
+    el("div", "", "ПКМ: переложить между сумкой и тайником; с экипировки снять в сумку."),
+    el("div", "", "Ctrl+ПКМ: надеть предмет; с экипировки снять в тайник."),
+  );
+  hints.append(hint);
+
   root.append(head, gridHost, tip);
-  hud.append(root);
+  stack.append(root, hints);
+  hud.append(stack);
 
   let bag: InventoryBag | null = null;
 
@@ -85,21 +96,21 @@ export function mountStashWindow(): StashWindowApi {
   });
 
   return {
-    isOpen: () => !root.hidden,
+    isOpen: () => !stack.hidden,
     open() {
       render();
-      root.hidden = false;
+      stack.hidden = false;
     },
     close() {
-      root.hidden = true;
+      stack.hidden = true;
       tip.hidden = true;
     },
     setBag(next) {
       bag = next;
-      if (!root.hidden) render();
+      if (!stack.hidden) render();
     },
     refresh() {
-      if (!root.hidden) render();
+      if (!stack.hidden) render();
     },
   };
 }
