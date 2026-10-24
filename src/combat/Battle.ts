@@ -19,7 +19,7 @@ import {
   rollWeaponDamage,
 } from "../stats/formulas";
 import { getStat } from "../stats/sheet";
-import { hydrateCombatUnit, sheetBaseFromProfile } from "../meta/heroProfile";
+import { applyProfileHp, hydrateCombatUnit, sheetBaseFromProfile } from "../meta/heroProfile";
 import { cloneInventory } from "../items/inventory";
 import type { EquipmentMap } from "../items/equipment";
 import { easeInOutQuad, TweenManager } from "../util/tween";
@@ -69,7 +69,7 @@ interface TornadoField {
 }
 
 /** Один герой снизу, враги на сетке 4×4. Ближний ряд зачищен — остальные опускаются. */
-export class HordeBattle {
+export class Battle {
   readonly app: Application;
   readonly root = new Container();
   readonly board = new Container();
@@ -216,6 +216,10 @@ export class HordeBattle {
     this.hud.setHint(this.paused ? "Пауза. Пробел - продолжить." : this.idleHint());
   };
 
+  private readonly onFleeClick = (): void => {
+    this.flee();
+  };
+
   private readonly onSpeedClick = (): void => {
     this.timeScale = this.timeScale === 1 ? 2 : 1;
     this.hud.setSpeed(this.timeScale);
@@ -230,6 +234,7 @@ export class HordeBattle {
     this.app.canvas.removeEventListener("pointermove", this.onPointerMove);
     this.app.canvas.removeEventListener("pointerleave", this.onPointerLeave);
     window.removeEventListener("resize", this.onResize);
+    document.getElementById("btn-flee")?.removeEventListener("click", this.onFleeClick);
     document.getElementById("btn-pause")?.removeEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.removeEventListener("click", this.onSpeedClick);
     window.removeEventListener("keydown", this.onKey);
@@ -277,6 +282,7 @@ export class HordeBattle {
 
   private bindHud(): void {
     this.hud.onStart(this.onStartClick);
+    document.getElementById("btn-flee")?.addEventListener("click", this.onFleeClick);
     document.getElementById("btn-pause")?.addEventListener("click", this.onPauseClick);
     document.getElementById("btn-speed")?.addEventListener("click", this.onSpeedClick);
     this.hud.setCanChangeEquipment(() => this.canChangeEquipment());
@@ -457,6 +463,7 @@ export class HordeBattle {
     init.cardSize = HERO_SIZE;
     this.hero = new Unit(init);
     this.hero.rebuildSheetFromEquipment(sheetBaseFromProfile(heroProfile));
+    applyProfileHp(this.hero, heroProfile);
     const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
     this.weapon = w?.kind ?? "melee";
     this.unitsLayer.addChild(this.hero.view);
@@ -489,10 +496,15 @@ export class HordeBattle {
     });
   }
 
-  /** Добровольный выход = поражение без лута. */
+  /** Добровольный выход: без лута, с текущим HP. */
   flee(): void {
-    if (this.destroyed || this.completed) return;
-    this.finish("defeat");
+    if (this.destroyed || this.completed || this.ended) return;
+    if (!this.started) {
+      this.hud.showToast("Сначала начни бой");
+      return;
+    }
+    if (!this.hero?.alive) return;
+    this.finish("flee");
   }
 
   private noteKill(u: Unit): void {
@@ -532,12 +544,16 @@ export class HordeBattle {
       killed: [...this.killed],
       survivingEnemyCount: this.livingEnemies().length,
       durationSec: this.battleElapsed,
+      heroHp: Math.max(0, Math.ceil(this.hero.hp)),
       equipment: gear.equipment,
       inventory: gear.inventory,
     };
     if (outcome === "victory") {
       this.hud.showToast("Победа!");
       this.hud.setHint("Враги повержены.");
+    } else if (outcome === "flee") {
+      this.hud.showToast("Отступление");
+      this.hud.setHint("Герой сбежал. Лут не получен.");
     } else {
       this.hud.showToast("Поражение");
       this.hud.setHint("Айра пала.");

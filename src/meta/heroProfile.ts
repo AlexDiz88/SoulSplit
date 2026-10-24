@@ -98,6 +98,12 @@ export interface HeroProfile {
   levelBonuses: Partial<Record<StatId, number>>;
   /** URL портрета; фиксируется при создании, чтобы не прыгал между боями. */
   portraitUrl: string;
+  /**
+   * Текущее HP вне полного восстановления.
+   * `null` / отсутствует - полный запас (maxHp).
+   * После "Белый флаг" сохраняется урон; после победы/смерти сбрасывается.
+   */
+  currentHp?: number | null;
 }
 
 function cloneEquipment(src: EquipmentMap): EquipmentMap {
@@ -118,6 +124,7 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     inventory: cloneInventory(src.inventory).map((cell) => (cell ? structuredClone(cell) : null)),
     stash: cloneStash(src.stash).map((cell) => (cell ? structuredClone(cell) : null)),
     levelBonuses: { ...src.levelBonuses },
+    currentHp: src.currentHp ?? null,
   };
 }
 
@@ -147,6 +154,7 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     stash: createEmptyStash(),
     levelBonuses: {},
     portraitUrl: opts?.portraitUrl || pickRandomHeroPortraitUrl(),
+    currentHp: null,
   };
 }
 
@@ -194,6 +202,26 @@ export function syncProfileFromUnit(
   profile.inventory = cloneInventory(gear.inventory).map((cell) =>
     cell ? structuredClone(cell) : null,
   );
+}
+
+/** Записать текущее HP юнита в профиль (`null` = полный запас). */
+export function syncProfileHp(
+  profile: HeroProfile,
+  unit: { hp: number; stats: { maxHp: number } },
+): void {
+  const hp = Math.ceil(unit.hp);
+  profile.currentHp = hp >= unit.stats.maxHp ? null : Math.max(1, hp);
+}
+
+/** Наложить `currentHp` профиля на уже собранного юнита (после rebuild листа). */
+export function applyProfileHp(
+  unit: { hp: number; stats: { maxHp: number }; redraw: () => void },
+  profile: HeroProfile,
+): void {
+  const saved = profile.currentHp;
+  if (saved == null) return;
+  unit.hp = Math.min(unit.stats.maxHp, Math.max(1, Math.ceil(saved)));
+  unit.redraw();
 }
 
 /** Добавить XP и обновить levelBonuses. Мутирует profile. */

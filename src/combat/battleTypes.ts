@@ -11,12 +11,14 @@ export interface BattleKill {
 }
 
 export interface BattleResult {
-  outcome: "victory" | "defeat";
+  outcome: "victory" | "defeat" | "flee";
   zoneId: ZoneId;
   pointId: string;
   killed: BattleKill[];
   survivingEnemyCount: number;
   durationSec: number;
+  /** Текущее HP героя на момент исхода (для отступления). */
+  heroHp: number;
   equipment: EquipmentMap;
   inventory: InventoryBag;
 }

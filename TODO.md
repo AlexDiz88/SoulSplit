@@ -21,13 +21,13 @@
 - [x] A1. `src/meta/heroProfile.ts` - профиль, hydrate Unit
 - [x] A2. `src/meta/gameState.ts` - GameState
 - [x] A3. База листа `maxHp 300`, starter weapon 20-30/1.5
-- [x] A3. `HordeBattle` спавнит героя из профиля
+- [x] A3. `Battle` спавнит героя из профиля
 - [x] A3. Character sheet показывает `hero.level`
 
 ## Фаза B - игровой loop
 
 - [x] B1. `src/app/GameApp.ts` + правка `main.ts`
-- [x] B2. `BattleConfig` / `BattleResult` в `HordeBattle`
+- [x] B2. `BattleConfig` / `BattleResult` в `Battle`
 - [x] B3. `src/meta/zones.ts` + `rollEncounter(opts)`
 - [x] B4. Hub screen
 - [x] B5. Zone select

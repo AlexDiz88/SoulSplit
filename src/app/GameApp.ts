@@ -1,5 +1,5 @@
 import type { Application } from "pixi.js";
-import { HordeBattle, type BattleResult } from "../combat/HordeBattle";
+import { Battle, type BattleResult } from "../combat/Battle";
 import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
 import { victoryGold } from "../meta/economy";
@@ -7,10 +7,12 @@ import { cloneGameState, createNewGameState, type GameState, type ZoneId } from 
 import { pushBuyback } from "../meta/market";
 import {
   addXpToProfile,
+  applyProfileHp,
   ensureHeroStash,
   hydrateCombatUnit,
   sheetBaseFromProfile,
   syncProfileFromUnit,
+  syncProfileHp,
   type NewHeroOptions,
 } from "../meta/heroProfile";
 import { rollVictoryLoot, victoryXp } from "../meta/loot";
@@ -49,7 +51,7 @@ export class GameApp {
   private screen: AppScreen = "title";
   private state: GameState | null = null;
   private activeSlot = -1;
-  private battle: HordeBattle | null = null;
+  private battle: Battle | null = null;
   private hubUnit: Unit | null = null;
   private prevUnlocked = new Set<ZoneId>();
 
@@ -204,6 +206,7 @@ export class GameApp {
     if (!this.state || this.activeSlot < 0) return;
     if (this.hubUnit && this.screen !== "battle") {
       syncProfileFromUnit(this.state.hero, this.hubUnit);
+      syncProfileHp(this.state.hero, this.hubUnit);
     }
     saveSlot(this.activeSlot, this.state);
   }
@@ -320,6 +323,7 @@ export class GameApp {
     const init = hydrateCombatUnit(state.hero);
     this.hubUnit = new Unit(init);
     this.hubUnit.rebuildSheetFromEquipment(sheetBaseFromProfile(state.hero));
+    applyProfileHp(this.hubUnit, state.hero);
     this.hud.setHero(this.hubUnit);
   }
 
@@ -480,7 +484,7 @@ export class GameApp {
     });
 
     const heroSnap = cloneGameState(state).hero;
-    this.battle = new HordeBattle(this.app, this.hud, {
+    this.battle = new Battle(this.app, this.hud, {
       hero: heroSnap,
       zone,
       pointId: point.id,
@@ -498,7 +502,16 @@ export class GameApp {
       inventory: result.inventory,
     });
 
+    if (result.outcome === "flee") {
+      state.hero.currentHp = Math.max(1, result.heroHp);
+      this.goHub();
+      if (this.hubUnit) syncProfileHp(state.hero, this.hubUnit);
+      this.persist();
+      return;
+    }
+
     if (result.outcome === "defeat") {
+      state.hero.currentHp = null;
       this.persist();
       this.destroyBattle();
       this.hideAll();
@@ -511,6 +524,7 @@ export class GameApp {
       return;
     }
 
+    state.hero.currentHp = null;
     const zone = getZone(result.zoneId);
     const point = getZonePoint(zone, result.pointId);
     const kills = result.killed.length;

@@ -103,7 +103,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     battleBanner.hidden = mode === "hidden";
   };
 
-  // Стартуем в title-режиме: баннер боя включается только из HordeBattle
+  // Стартуем в title-режиме: баннер боя включается только из Battle
   setBattleBanner("hidden");
   btnStart.addEventListener("click", () => startHandler?.());
 
