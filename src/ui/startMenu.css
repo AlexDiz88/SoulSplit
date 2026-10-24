@@ -553,6 +553,24 @@
   line-height: 1.2;
 }
 
+.weapon-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.weapon-opt {
+  font-size: 0.8rem;
+  padding: 10px 8px;
+  line-height: 1.25;
+}
+
+@media (max-width: 720px) {
+  .weapon-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 .create-field-portraits {
   flex: 1;
   display: flex;

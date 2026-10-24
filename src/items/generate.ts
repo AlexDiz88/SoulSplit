@@ -169,23 +169,3 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     weapon,
   };
 }
-
-/** Стартовое оружие героя (без аффиксов). */
-export function createStarterWeapon(slot: EquipSlotId = "mainhand"): ItemDef {
-  return {
-    id: "starter_weapon",
-    name: "Тренировочный клинок",
-    slot,
-    rarity: "common",
-    itemLevel: 1,
-    affixes: [],
-    weapon: {
-      kind: "melee",
-      damageMin: 20,
-      damageMax: 30,
-      baseCd: 1.5,
-      reach: 1,
-      range: "melee",
-    },
-  };
-}

@@ -37,9 +37,9 @@ export function findWeaponImplicit(equipment: EquipmentMap) {
   return equippedWeapon(equipment)?.weapon ?? null;
 }
 
-export function isTwoHandPlaceholder(_item: ItemDef): boolean {
-  // Зарезервировано: двуручное займёт mainhand+offhand.
-  return false;
+/** Двуручное оружие (показывает слот "Обе руки", блокирует offhand). */
+export function isTwoHandPlaceholder(item: ItemDef): boolean {
+  return Boolean(item.weapon?.twoHand);
 }
 
 export function canEquipInSlot(item: ItemDef, slot: EquipSlotId): boolean {

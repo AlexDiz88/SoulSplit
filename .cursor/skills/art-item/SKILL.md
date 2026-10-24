@@ -2,11 +2,12 @@
 name: art-item
 description: >-
   Writes ready-to-paste Gemini image prompts for Soul Split inventory item icons
-  (equipment loot) using thin-white-sticker toon canon shared with portraits and
-  ability icons. Requires slot and rarity. Higher rarity means more complex,
-  unusual, detailed icons. Fantasy-first (not historical medieval catalog, not steampunk).
-  Use when the user invokes art-item (e.g. art-item голова, редкая), or asks for
-  item / loot / equipment / inventory icon prompts.
+  (equipment loot) using hard-toon canon with an extremely thin paper-hairline
+  white sticker outline (thinner than portraits/ability icons). Requires slot
+  and rarity. Higher rarity means more complex, unusual, detailed icons.
+  Fantasy-first (not historical medieval catalog, not steampunk). Use when the
+  user invokes art-item (e.g. art-item голова, редкая), or asks for item / loot /
+  equipment / inventory icon prompts.
 disable-model-invocation: true
 ---
 
@@ -15,8 +16,9 @@ disable-model-invocation: true
 ## When to use
 
 User wants Gemini prompts for **inventory item icons** (weapons, armor, jewelry,
-trinkets). Visual language: hard toon, fine dark lines, **hairline** white sticker
-outline, flat solid backdrop **exactly `#151617`** (locked - never random).
+trinkets). Visual language: hard toon, fine dark lines, **extremely thin**
+(paper-thin hairline) white sticker outline, flat solid backdrop **exactly
+`#151617`** (locked - never random).
 
 This is a **loot ARPG** - many items. Prefer **batch sheets** that invent many
 distinct pieces for one slot + rarity, not one-off one-item prompts, unless the
@@ -97,7 +99,7 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 
 1. Parse -> resolve `slot` + `rarity` (+ optional theme).
 2. Read [`assets/art/STYLE_BIBLE.md`](../../../assets/art/STYLE_BIBLE.md) for the
-   shared toon / hairline-white-outline canon (item icons section).
+   shared toon / extremely-thin white-outline canon (item icons section).
 3. Pick mode:
    - **Batch (DEFAULT):** no specific named item, or theme is a broad motif
      ("bone", "frost", "raven cult") -> invent **9 different items**, all same
@@ -118,7 +120,9 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
   inside that prompt.
 - Default **3x3 contact sheet**; even gutters; no labels, numbers, captions.
 - Item fully inside each panel with a small safe margin.
-- White sticker outline must be **hairline** (see Style Lock) - never chunky.
+- White sticker outline must be **extremely thin / paper-thin hairline**
+  (see Style Lock) - thinner than portrait/ability icons; never chunky, never
+  a readable thick rim.
 - Flat solid backdrop **exactly `#151617`** on every panel and the sheet
   (inventory icon - no scene). Never invent another gray/brown/blue/green tint.
   Gutters: same `#151617` or solid `#0A0B0C` only - no random gutter colors.
@@ -135,7 +139,7 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 ## Style Lock (always include)
 
 ```
-Style lock - FANTASY INVENTORY ITEM ICONS: stylized 2D dark-fantasy game inventory item icons, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, thin not fat) PLUS a HAIRLINE even WHITE sticker outer outline around the item silhouette - ultra-thin fine weight roughly 1px relative to each panel (or thinner), tight to the edge, like a fine die-cut sticker edge - NEVER a thick heavy white border, NEVER a chunky marker stroke, NEVER a 3-6px fat outline - single centered readable item LARGE in frame, RICH clear local fantasy materials and strong contrast for ~64px inventory readability, flat solid backdrop exactly hex #151617 (no scene, no environment, no gradient, no noise) - entire item silhouette and hairline white outline FULLY INSIDE each panel with a small safe margin - no photoreal, no 3D render, no soft anime shading without outlines, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Only the item designs change.
+Style lock - FANTASY INVENTORY ITEM ICONS: stylized 2D dark-fantasy game inventory item icons, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, thin not fat) PLUS an EXTREMELY THIN paper-thin HAIRLINE even WHITE sticker outer outline around the item silhouette - CRITICAL: the white outline must be as thin as possible, a barely-there fine thread at most ~0.5px relative to each panel (thinner preferred), tight to the edge like a razor die-cut sticker edge - NEVER ~1-2px or thicker, NEVER a visible white rim/halo, NEVER a thick heavy white border, NEVER a chunky marker stroke, NEVER a 2-6px fat outline - if the white edge reads as a bold contour at a glance it is TOO THICK - single centered readable item LARGE in frame, RICH clear local fantasy materials and strong contrast for ~64px inventory readability, flat solid backdrop exactly hex #151617 (no scene, no environment, no gradient, no noise) - entire item silhouette and hairline white outline FULLY INSIDE each panel with a small safe margin - no photoreal, no 3D render, no soft anime shading without outlines, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Only the item designs change.
 ```
 
 ## Backdrop Lock (always include - CRITICAL)
@@ -161,7 +165,7 @@ Layout: single square image, clean 3x3 contact sheet of NINE equal panels with t
 ## Framing Lock
 
 ```
-Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 product view, HAIRLINE white sticker outline (ultra-thin ~1px, never chunky), hard toon-shaded fantasy materials, flat solid backdrop exactly #151617, no character, no hands, no mannequin, no text, no rarity frame.
+Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 product view, EXTREMELY THIN paper-thin hairline white sticker outline (max ~0.5px, barely visible thread, never ~1px+, never chunky, never a bold white rim), hard toon-shaded fantasy materials, flat solid backdrop exactly #151617, no character, no hands, no mannequin, no text, no rarity frame.
 ```
 
 ## Rarity -> complexity ladder (REQUIRED - bake into every prompt)
@@ -251,7 +255,7 @@ Subject / theme: fantasy game inventory item icons - equipment slot {canonical s
 
 Panel brief: freely invent NINE unique {slot} items at {rarity} complexity - distinct fantasy silhouettes and materials; keep each readable as a ~64px inventory icon.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, any backdrop color other than exact #151617, random dark gray, warm brown backdrop, olive backdrop, blue-tinted backdrop, purple-tinted backdrop, green-tinted backdrop, gradient backdrop, vignette backdrop, textured backdrop, different background color per panel, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat 3-6px outline, wide white contour, historical medieval museum replica, steampunk, Victorian industrial, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
+Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, any backdrop color other than exact #151617, random dark gray, warm brown backdrop, olive backdrop, blue-tinted backdrop, purple-tinted backdrop, green-tinted backdrop, gradient backdrop, vignette backdrop, textured backdrop, different background color per panel, missing white sticker outline, thick white outline, medium white outline, ~1px white outline, ~2px white outline, heavy white border, bold white rim, white halo around item, chunky sticker stroke, fat 2-6px outline, wide white contour, oversized white stroke, historical medieval museum replica, steampunk, Victorian industrial, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
 ```
 
 ### Named-item mode

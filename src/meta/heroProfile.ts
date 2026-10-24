@@ -1,7 +1,11 @@
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { UnitInit } from "../combat/Unit";
 import type { EquipmentMap } from "../items/equipment";
-import { createStarterWeapon } from "../items/generate";
+import {
+  createStarterWeapon,
+  DEFAULT_STARTER_WEAPON,
+  type StarterWeaponId,
+} from "../items/starterWeapons";
 import {
   cloneInventory,
   cloneStash,
@@ -44,6 +48,8 @@ export interface NewHeroOptions {
   name: string;
   aspect: Aspect;
   portraitUrl: string;
+  /** Стартовое оружие; экипируется в mainhand при создании. */
+  starterWeapon?: StarterWeaponId;
 }
 
 export const HERO_NAME_MIN_LENGTH = 2;
@@ -148,7 +154,8 @@ export function sheetBaseFromProfile(profile: HeroProfile): HeroStatSheet {
 }
 
 export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfile {
-  const weapon = createStarterWeapon("mainhand");
+  const starterId = opts?.starterWeapon ?? DEFAULT_STARTER_WEAPON;
+  const weapon = createStarterWeapon(starterId, "mainhand");
   const name = (opts?.name?.trim() || "Айра").slice(0, HERO_NAME_MAX_LENGTH);
   const aspect = opts?.aspect ?? "air";
   const loadout = STARTER_LOADOUT_BY_ASPECT[aspect];

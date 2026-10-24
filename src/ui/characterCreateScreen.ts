@@ -1,5 +1,10 @@
 import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { listHeroPortraitUrls, type HeroGender } from "../art/portraits";
+import {
+  DEFAULT_STARTER_WEAPON,
+  STARTER_WEAPONS,
+  type StarterWeaponId,
+} from "../items/starterWeapons";
 import { pickRandomHeroName } from "../meta/heroNames";
 import {
   HERO_NAME_MAX_LENGTH,
@@ -54,6 +59,7 @@ export function mountCharacterCreateScreen(
   let slotIndex = 0;
   let aspect: Aspect = "air";
   let gender: HeroGender = "male";
+  let starterWeapon: StarterWeaponId = DEFAULT_STARTER_WEAPON;
   let portraitUrl = "";
 
   const root = el("div", "meta-screen create-screen");
@@ -130,6 +136,23 @@ export function mountCharacterCreateScreen(
   aspectField.append(aspectGrid);
   body.append(aspectField);
 
+  const weaponField = el("div", "create-field");
+  weaponField.append(el("label", undefined, "Стартовое оружие"));
+  const weaponGrid = el("div", "weapon-grid");
+  const weaponButtons = new Map<StarterWeaponId, HTMLButtonElement>();
+  for (const def of STARTER_WEAPONS) {
+    const btn = el("button", "aspect-opt weapon-opt", def.name);
+    btn.type = "button";
+    btn.addEventListener("click", () => {
+      starterWeapon = def.id;
+      for (const [id, b] of weaponButtons) b.classList.toggle("is-active", id === starterWeapon);
+    });
+    weaponButtons.set(def.id, btn);
+    weaponGrid.append(btn);
+  }
+  weaponField.append(weaponGrid);
+  body.append(weaponField);
+
   const portraitField = el("div", "create-field create-field-portraits");
   portraitField.append(el("label", undefined, "Портрет"));
   const portraitGrid = el("div", "portrait-grid");
@@ -190,9 +213,11 @@ export function mountCharacterCreateScreen(
     nameInput.value = "";
     aspect = "air";
     gender = "male";
+    starterWeapon = DEFAULT_STARTER_WEAPON;
     error.textContent = "";
     syncGenderButtons();
     for (const [a, b] of aspectButtons) b.classList.toggle("is-active", a === aspect);
+    for (const [id, b] of weaponButtons) b.classList.toggle("is-active", id === starterWeapon);
     rebuildPortraits();
   };
 
@@ -216,7 +241,7 @@ export function mountCharacterCreateScreen(
       return;
     }
     error.textContent = "";
-    handlers.onCreate(slotIndex, { name, aspect, portraitUrl });
+    handlers.onCreate(slotIndex, { name, aspect, portraitUrl, starterWeapon });
   });
 
   return {

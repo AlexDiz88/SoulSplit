@@ -41,6 +41,8 @@ export interface WeaponImplicit {
   baseCd: number;
   reach: number;
   range: "melee" | "ranged";
+  /** Двуручное: занимает обе руки (offhand недоступен). */
+  twoHand?: boolean;
 }
 
 export interface ItemDef {
