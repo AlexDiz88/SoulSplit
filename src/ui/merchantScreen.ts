@@ -72,23 +72,46 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
   }
 }
 
-function fillItemCard(card: HTMLElement, item: ItemDef): void {
+function tipIcon(item: ItemDef): HTMLElement {
+  const wrap = el("div", "market-tip-icon");
+  const face = el("div", "market-tip-face");
+  if (item.icon) {
+    const img = document.createElement("img");
+    img.src = item.icon;
+    img.alt = "";
+    img.draggable = false;
+    face.append(img);
+  }
+  wrap.append(face);
+  return wrap;
+}
+
+function fillItemCard(card: HTMLElement, title: string, item: ItemDef): void {
   card.dataset.rarity = item.rarity;
-  card.append(el("div", "market-tip-name", item.name));
-  card.append(
+  card.append(el("div", "market-tip-title", title));
+
+  const head = el("div", "market-tip-head");
+  head.append(tipIcon(item));
+  const text = el("div", "market-tip-text");
+  text.append(el("div", "market-tip-name", item.name));
+  text.append(
     el(
       "div",
       "market-tip-meta",
       `${RARITY_LABEL[item.rarity]} - ${SLOT_LABEL[item.slot]} - ур. ${item.itemLevel}`,
     ),
   );
+  head.append(text);
+  card.append(head);
+
   appendItemStats(card, item, "market-tip-line", "market-tip-affix");
 }
 
 function fillEmptyCard(card: HTMLElement, slot: EquipSlotId): void {
   card.classList.add("empty");
+  card.append(el("div", "market-tip-title", "Экипировано"));
   card.append(el("div", "market-tip-meta", SLOT_LABEL[slot]));
-  card.append(el("div", "market-tip-empty", "Не экипировано"));
+  card.append(el("div", "market-tip-empty", "Пусто"));
 }
 
 export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantScreenApi {
@@ -272,10 +295,15 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   function showCompare(item: ItemDef, equipment: EquipmentMap, anchor: HTMLElement): void {
     const slots = compareSlotsFor(item);
     compare.replaceChildren();
+
+    const saleCard = el("div", "market-tip");
+    fillItemCard(saleCard, "В продаже", item);
+    compare.append(saleCard);
+
     for (const slot of slots) {
       const card = el("div", "market-tip");
       const equipped = equipment[slot] ?? null;
-      if (equipped) fillItemCard(card, equipped);
+      if (equipped) fillItemCard(card, "Экипировано", equipped);
       else fillEmptyCard(card, slot);
       compare.append(card);
     }

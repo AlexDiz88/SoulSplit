@@ -1,4 +1,3 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
 import { canEquipInSlot } from "../items/equipment";
 import {
@@ -14,11 +13,10 @@ import {
   type InventoryBag,
 } from "../items/inventory";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
-import { RARITY_LABEL, type ItemDef } from "../items/types";
-import { formatRolledAffix } from "../items/affixCatalog";
+import type { ItemDef } from "../items/types";
 import { sellPrice } from "../meta/economy";
-import { goldTipLine } from "./goldIcon";
 import { getItemDrag, type ItemDragSource } from "./itemDrag";
+import { fillItemTooltip } from "./itemTooltip";
 import "./inventoryWindow.css";
 
 export interface InventoryWindowApi {
@@ -56,7 +54,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   head.append(title, count);
 
   const gridHost = el("div", "inv-bag-grid-host");
-  const tip = el("div", "inv-tip");
+  const tip = el("div", "item-tip inv-tip");
   tip.hidden = true;
 
   root.append(head, gridHost, tip);
@@ -130,9 +128,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       tip.hidden = true;
       return;
     }
-    tip.replaceChildren();
-    tip.dataset.rarity = item.rarity;
-    tip.append(...renderItemTip(item));
+    fillItemTooltip(tip, item);
     placeTip(cell);
   };
 
@@ -662,43 +658,6 @@ function bagCell(index: number, item: ItemDef | null): HTMLButtonElement {
   }
   btn.append(face);
   return btn;
-}
-
-function renderItemTip(item: ItemDef): HTMLElement[] {
-  const nodes: HTMLElement[] = [
-    el("div", "inv-tip-name", item.name),
-    el(
-      "div",
-      "inv-tip-meta",
-      `${RARITY_LABEL[item.rarity]} · ${SLOT_LABEL[item.slot]} · ур. ${item.itemLevel}`,
-    ),
-  ];
-  if (item.aspectTag) {
-    nodes.push(el("div", "inv-tip-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
-  }
-  if (item.weapon) {
-    nodes.push(
-      el(
-        "div",
-        "inv-tip-line",
-        `Урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax}`,
-      ),
-      el("div", "inv-tip-line", `Кулдаун атаки: ${item.weapon.baseCd.toFixed(1)} с`),
-    );
-  }
-  const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
-  const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
-  for (const a of prefixes) {
-    nodes.push(el("div", "inv-tip-affix inv-tip-prefix", formatRolledAffix(a)));
-  }
-  for (const a of suffixes) {
-    nodes.push(el("div", "inv-tip-affix inv-tip-suffix", formatRolledAffix(a)));
-  }
-  if (!item.affixes.length) {
-    nodes.push(el("div", "inv-tip-meta", "Без аффиксов"));
-  }
-  nodes.push(goldTipLine("Продажа:", sellPrice(item), "inv-tip-line inv-tip-sell"));
-  return nodes;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, className: string, text?: string): HTMLElementTagNameMap[K] {

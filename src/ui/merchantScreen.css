@@ -602,7 +602,7 @@
   position: absolute;
   z-index: 8;
   display: flex;
-  gap: 8px;
+  gap: 12px;
   align-items: flex-start;
   pointer-events: none;
 }
@@ -613,9 +613,9 @@
 
 .market-tip {
   --tip-c: var(--c-uncommon);
-  min-width: 170px;
-  max-width: 230px;
-  padding: 10px 12px 11px;
+  min-width: 240px;
+  max-width: 300px;
+  padding: 14px 16px 15px;
   border: 1px solid #8a7044;
   background: linear-gradient(180deg, #1c1d1f, #0d0e0f);
   box-shadow:
@@ -631,22 +631,86 @@
 .market-tip[data-rarity="epic"] { --tip-c: var(--c-epic); }
 
 .market-tip.empty {
-  min-height: 72px;
+  min-height: 110px;
   display: flex;
   flex-direction: column;
   justify-content: center;
 }
 
+.market-tip-title {
+  margin: 0 0 8px;
+  color: #c4a35a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.market-tip-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.market-tip-icon {
+  --rar-c: var(--tip-c, var(--c-uncommon));
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    155deg,
+    var(--rar-c),
+    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
+    var(--rar-c)
+  );
+  clip-path: polygon(
+    7px 0,
+    calc(100% - 7px) 0,
+    100% 7px,
+    100% calc(100% - 7px),
+    calc(100% - 7px) 100%,
+    7px 100%,
+    0 calc(100% - 7px),
+    0 7px
+  );
+}
+
+.market-tip-face {
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
+  margin: 2px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  clip-path: inherit;
+}
+
+.market-tip-face img {
+  width: 88%;
+  height: 88%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.market-tip-text {
+  min-width: 0;
+  flex: 1;
+}
+
 .market-tip-name {
   color: var(--tip-c, var(--text));
-  font-size: 1rem;
+  font-size: 1.2rem;
   font-weight: 800;
+  line-height: 1.2;
 }
 
 .market-tip-meta {
-  margin: 2px 0 6px;
+  margin: 4px 0 0;
   color: #9a9488;
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -654,18 +718,21 @@
 
 .market-tip-line {
   color: #8fd49a;
-  font-size: 0.82rem;
+  font-size: 1.02rem;
+  line-height: 1.35;
 }
 
 .market-tip-affix {
-  margin-top: 2px;
-  font-size: 0.82rem;
+  margin-top: 3px;
+  font-size: 1.02rem;
+  line-height: 1.35;
   color: #c8d0c4;
 }
 
 .market-tip-empty {
+  margin-top: 6px;
   color: #8a8478;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
   font-weight: 700;
 }
 

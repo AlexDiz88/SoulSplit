@@ -1,13 +1,11 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
-import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
-import { RARITY_LABEL, type ItemDef } from "../items/types";
+import type { EquipSlotId } from "../items/slots";
+import type { ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
-import { formatRolledAffix } from "../items/affixCatalog";
 import { formatStatValue, type StatId } from "../stats/statIds";
-import { sellPrice } from "../meta/economy";
-import { goldTipLine } from "./goldIcon";
+import { fillItemTooltip } from "./itemTooltip";
 import "./characterSheet.css";
 
 export type { EquipSlotId };
@@ -138,7 +136,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const stats = el("aside", "cs-stats");
   body.append(identityHost, dollWrap, stats);
 
-  const tip = el("div", "cs-tip");
+  const tip = el("div", "item-tip cs-tip");
   tip.hidden = true;
 
   win.append(closeBtn, head, body, tip);
@@ -200,11 +198,14 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     if (!id) return;
     tip.replaceChildren();
     const item = hero?.equipment[id];
-    tip.dataset.rarity = item?.rarity ?? "";
     if (!item) {
-      tip.append(el("div", "cs-tip-name", SLOTS[id].label), el("div", "cs-tip-meta", "Пусто"));
+      delete tip.dataset.rarity;
+      tip.append(
+        el("div", "item-tip-empty-name", SLOTS[id].label),
+        el("div", "item-tip-empty-meta", "Пусто"),
+      );
     } else {
-      tip.append(...renderItemTip(item));
+      fillItemTooltip(tip, item);
     }
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
@@ -365,43 +366,6 @@ function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
   }
   btn.append(face, el("span", "cs-slot-label", item?.name ?? def.label));
   return btn;
-}
-
-function renderItemTip(item: ItemDef): HTMLElement[] {
-  const nodes: HTMLElement[] = [
-    el("div", "cs-tip-name", item.name),
-    el(
-      "div",
-      "cs-tip-meta",
-      `${RARITY_LABEL[item.rarity]} · ${SLOT_LABEL[item.slot]} · ур. ${item.itemLevel}`,
-    ),
-  ];
-  if (item.aspectTag) {
-    nodes.push(el("div", "cs-tip-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
-  }
-  if (item.weapon) {
-    nodes.push(
-      el(
-        "div",
-        "cs-tip-line",
-        `Урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax}`,
-      ),
-      el("div", "cs-tip-line", `Кулдаун атаки: ${item.weapon.baseCd.toFixed(1)} с`),
-    );
-  }
-  const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
-  const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
-  for (const a of prefixes) {
-    nodes.push(el("div", "cs-tip-affix cs-tip-prefix", formatRolledAffix(a)));
-  }
-  for (const a of suffixes) {
-    nodes.push(el("div", "cs-tip-affix cs-tip-suffix", formatRolledAffix(a)));
-  }
-  if (!item.affixes.length) {
-    nodes.push(el("div", "cs-tip-meta", "Без аффиксов"));
-  }
-  nodes.push(goldTipLine("Продажа:", sellPrice(item), "cs-tip-line cs-tip-sell"));
-  return nodes;
 }
 
 function renderStats(hero: Unit | null): HTMLElement[] {
