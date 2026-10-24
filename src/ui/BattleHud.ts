@@ -65,10 +65,16 @@ export interface BattleHudApi {
   /** Тайник: экип без портрета/статов + инвентарь + сетка 10×10. */
   openStash(bag: InventoryBag): void;
   isStashOpen(): boolean;
+  /** Рынок: та же экип-кукла + сумка, без тайника. */
+  openMarketSide(): void;
+  setMarketMode(active: boolean): void;
+  setOnMarketGold(fn: ((delta: number) => void) | null): void;
   openBestiary(): void;
   openGrimoire(): void;
   openItemGenerator(): void;
   closeOverlays(): void;
+  /** Когда закрыли персонажа/экип (чтобы спрятать рынок). */
+  setOnPanelsClosed(fn: (() => void) | null): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
@@ -360,18 +366,23 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   let heroRef: Unit | null = null;
   inventory.setShowToast(pushToast);
   character.setShowToast(pushToast);
+  let onPanelsClosed: (() => void) | null = null;
+
   character.setOnVisibilityChange((open) => {
     if (open) {
       inventory.open();
     } else {
       inventory.close();
       inventory.setStashBag(null);
+      inventory.setMarketMode(false);
       stash.close();
+      onPanelsClosed?.();
     }
   });
   character.setOnModeChange((mode) => {
     if (mode === "full") {
       inventory.setStashBag(null);
+      inventory.setMarketMode(false);
       stash.close();
     }
   });
@@ -586,6 +597,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     openCharacter() {
       prepareOpen("character");
       inventory.setStashBag(null);
+      inventory.setMarketMode(false);
       stash.close();
       character.setMode("full");
       character.open();
@@ -597,6 +609,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     openStash(bag) {
       prepareOpen("character");
+      inventory.setMarketMode(false);
       inventory.setStashBag(bag);
       stash.setBag(bag);
       character.setMode("gear");
@@ -606,6 +619,27 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     isStashOpen() {
       return stash.isOpen();
+    },
+
+    openMarketSide() {
+      prepareOpen("character");
+      inventory.setStashBag(null);
+      stash.close();
+      inventory.setMarketMode(true);
+      character.setMode("gear");
+      character.open();
+    },
+
+    setMarketMode(active) {
+      inventory.setMarketMode(active);
+    },
+
+    setOnMarketGold(fn) {
+      inventory.setOnMarketGold(fn);
+    },
+
+    setOnPanelsClosed(fn) {
+      onPanelsClosed = fn;
     },
 
     openBestiary() {
@@ -624,6 +658,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       character.close();
       inventory.close();
       inventory.setStashBag(null);
+      inventory.setMarketMode(false);
       stash.close();
       if (itemGenerator.isOpen()) itemGenerator.close();
       if (grimoire.isOpen()) grimoire.close();

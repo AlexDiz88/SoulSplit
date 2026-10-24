@@ -28,6 +28,8 @@ export interface HubScreenHandlers {
   onLocation: (id: HubLocationId) => void;
   /** Горячая клавиша S - тайник (только пока открыт город). */
   onStash: () => void;
+  /** Тест: +1000 золота. */
+  onAddTestGold: () => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -97,11 +99,16 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
   const right = el("div", "hub-topbar-right");
   const currencies = el("div", "hub-currencies");
+  const addGoldBtn = el("button", "hub-add-gold-btn", "+1000");
+  addGoldBtn.type = "button";
+  addGoldBtn.title = "Тест: добавить 1000 золота";
+  addGoldBtn.setAttribute("aria-label", "Добавить 1000 золота");
+  addGoldBtn.addEventListener("click", () => handlers.onAddTestGold());
   const goldEl = el("div", "hub-currency hub-currency-gold");
   goldEl.title = "Золото";
   const goldValue = el("span", "hub-currency-value", "0");
   goldEl.append(el("span", "hub-currency-label", "Золото"), goldValue);
-  currencies.append(goldEl);
+  currencies.append(addGoldBtn, goldEl);
 
   const fsBtn = el("button", "hub-fs-btn");
   fsBtn.type = "button";

@@ -535,6 +535,12 @@
   margin-bottom: 0;
 }
 
+.cs-tip-sell {
+  margin-top: 8px;
+  color: #e8d7a2;
+  font-weight: 700;
+}
+
 .cs-tip-line {
   color: #8fd49a;
   font-size: 0.98rem;

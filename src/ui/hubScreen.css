@@ -261,6 +261,29 @@
   gap: 12px;
 }
 
+.hub-add-gold-btn {
+  appearance: none;
+  margin: 0;
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--theme-border);
+  border-radius: 2px;
+  background: var(--theme-btn-face);
+  box-shadow: var(--theme-shadow-btn);
+  color: var(--theme-corona);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: var(--cur-default);
+  font-variant-numeric: tabular-nums;
+}
+
+.hub-add-gold-btn:hover {
+  filter: brightness(1.12);
+  border-color: var(--theme-corona);
+}
+
 .hub-currency {
   display: flex;
   flex-direction: column;

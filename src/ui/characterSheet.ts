@@ -6,6 +6,8 @@ import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatRolledAffix } from "../items/affixCatalog";
 import { formatStatValue, type StatId } from "../stats/statIds";
+import { sellPrice } from "../meta/economy";
+import { goldTipLine } from "./goldIcon";
 import "./characterSheet.css";
 
 export type { EquipSlotId };
@@ -398,6 +400,7 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
   if (!item.affixes.length) {
     nodes.push(el("div", "cs-tip-meta", "Без аффиксов"));
   }
+  nodes.push(goldTipLine("Продажа:", sellPrice(item), "cs-tip-line cs-tip-sell"));
   return nodes;
 }
 

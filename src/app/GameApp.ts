@@ -115,6 +115,7 @@ export class GameApp {
       onExitToMenu: () => this.exitToMenu(),
       onLocation: (id) => this.onTownLocation(id),
       onStash: () => this.toggleTownStash(),
+      onAddTestGold: () => this.addTestGold(),
     });
 
     this.zones = mountZoneSelectScreen({
@@ -124,14 +125,28 @@ export class GameApp {
 
     this.merchant = mountMerchantScreen({
       onClose: () => {
-        /* хаб остаётся открытым под оверлеем */
+        this.hud.closeOverlays();
       },
       onChanged: () => {
-        this.persist();
+        // Сначала unit из профиля (покупка пишет в profile.inventory),
+        // иначе persist() затрёт сумку старым hubUnit.
         this.rebuildHubUnit();
+        this.persist();
         if (this.state && this.screen === "hub") this.hub.show(this.state);
       },
       showToast: (t) => this.hud.showToast(t),
+    });
+
+    this.hud.setOnMarketGold((delta) => {
+      if (!this.state) return;
+      this.state.hero.gold += delta;
+      this.persist();
+      if (this.screen === "hub") this.hub.show(this.state);
+      if (this.merchant.isOpen()) this.merchant.show(this.state);
+    });
+
+    this.hud.setOnPanelsClosed(() => {
+      if (this.merchant.isOpen()) this.merchant.hide();
     });
 
     this.reward = mountRewardScreen({
@@ -419,12 +434,22 @@ export class GameApp {
     this.hud.openStash(state.hero.stash);
   }
 
-  /** Рынок поверх карты города. */
+  /** Тест: +1000 золота на топбаре. */
+  private addTestGold(): void {
+    if (this.screen !== "hub" || !this.state) return;
+    this.state.hero.gold += 1000;
+    this.persist();
+    this.hub.show(this.state);
+    if (this.merchant.isOpen()) this.merchant.show(this.state);
+    this.hud.showToast("+1000 золота");
+  }
+
+  /** Рынок поверх карты города + экип и сумка справа как у тайника. */
   goMerchant(): void {
     if (this.screen !== "hub") return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
-    this.hud.closeOverlays();
+    this.hud.openMarketSide();
     this.merchant.show(state);
   }
 

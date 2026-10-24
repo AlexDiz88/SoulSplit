@@ -16,6 +16,8 @@ import {
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
 import { formatRolledAffix } from "../items/affixCatalog";
+import { sellPrice } from "../meta/economy";
+import { goldTipLine } from "./goldIcon";
 import "./inventoryWindow.css";
 
 export interface InventoryWindowApi {
@@ -25,9 +27,13 @@ export interface InventoryWindowApi {
   setHero(hero: Unit): void;
   /** Сумка тайника для drag-and-drop; null = тайник закрыт. */
   setStashBag(bag: InventoryBag | null): void;
+  /** Режим рынка: ПКМ продажа / экип, Ctrl+ПКМ быстрые действия. */
+  setMarketMode(active: boolean): void;
   setCanChangeEquipment(fn: () => boolean): void;
   setOnEquipmentChanged(fn: () => void): void;
   setOnStashChanged(fn: () => void): void;
+  /** Начисление золота за продажу в режиме рынка. */
+  setOnMarketGold(fn: ((delta: number) => void) | null): void;
   setShowToast(fn: (text: string) => void): void;
 }
 
@@ -64,9 +70,11 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   let hero: Unit | null = null;
   let stashBag: InventoryBag | null = null;
+  let marketMode = false;
   let canChangeEquipment: () => boolean = () => true;
   let onEquipmentChanged: (() => void) | null = null;
   let onStashChanged: (() => void) | null = null;
+  let onMarketGold: ((delta: number) => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
 
   let dragOrigin: DragOrigin | null = null;
@@ -297,17 +305,46 @@ export function mountInventoryWindow(): InventoryWindowApi {
     tip.hidden = true;
   };
 
-  const tryEquipRmb = (invIndex: number): void => {
+  const tryEquipRmb = (invIndex: number, forceSlot?: EquipSlotId): void => {
     if (!hero) return;
     if (!canChangeEquipment()) {
       toast("Экипировку можно менять только вне боя");
       return;
     }
-    const result = hero.equipInventoryItem(invIndex);
+    const result = forceSlot
+      ? hero.equipInventoryItemToSlot(invIndex, forceSlot)
+      : hero.equipInventoryItem(invIndex);
     if (!result.ok) {
       toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
       return;
     }
+    afterChange();
+  };
+
+  const sellInventoryCell = (invIndex: number): void => {
+    if (!hero) return;
+    const item = hero.inventory[invIndex];
+    if (!item) return;
+    const price = sellPrice(item);
+    hero.inventory[invIndex] = null;
+    onMarketGold?.(price);
+    toast(`Продано: ${item.name} (+${price})`);
+    afterChange();
+  };
+
+  const sellEquipSlot = (slot: EquipSlotId): void => {
+    if (!hero) return;
+    if (!canChangeEquipment()) {
+      toast("Экипировку можно менять только вне боя");
+      return;
+    }
+    const item = hero.equipment[slot];
+    if (!item) return;
+    const price = sellPrice(item);
+    delete hero.equipment[slot];
+    hero.applyEquipmentChange();
+    onMarketGold?.(price);
+    toast(`Продано: ${item.name} (+${price})`);
     afterChange();
   };
 
@@ -329,9 +366,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (cell && (!next || !cell.contains(next))) tip.hidden = true;
   });
 
-  /** Без тайника: ПКМ в сумке надевает. С тайником - см. window capture. */
+  /** Без тайника/рынка: ПКМ в сумке надевает. Иначе - window capture. */
   gridHost.addEventListener("contextmenu", (ev) => {
-    if (stashBag) return;
+    if (stashBag || marketMode) return;
     ev.preventDefault();
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
     if (!cell) return;
@@ -340,11 +377,17 @@ export function mountInventoryWindow(): InventoryWindowApi {
     tryEquipRmb(index);
   });
 
-  /** Режим тайника: ПКМ перекладывает, Ctrl+ПКМ надевает / снимает в тайник. */
+  /**
+   * Тайник: ПКМ перекладывает, Ctrl+ПКМ надевает / снимает в тайник.
+   * Рынок: ПКМ продажа / снять; Ctrl+ПКМ одеть / быстрая продажа с экипа;
+   * кольца: Ctrl+ПКМ = левый (ring1), Shift+ПКМ = правый (ring2).
+   */
   window.addEventListener(
     "contextmenu",
     (ev) => {
-      if (!stashBag || !hero) return;
+      if (!hero) return;
+      if (!stashBag && !marketMode) return;
+
       const invCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
       const stashCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-stash]");
       const equipSlot = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled[data-slot]");
@@ -359,6 +402,48 @@ export function mountInventoryWindow(): InventoryWindowApi {
       }
 
       const ctrl = ev.ctrlKey || ev.metaKey;
+      const shift = ev.shiftKey;
+
+      if (marketMode && !stashBag) {
+        if (invCell) {
+          const index = Number(invCell.dataset.inv);
+          if (!Number.isFinite(index)) return;
+          const item = hero.inventory[index];
+          if (!item) return;
+          const isRing = item.slot === "ring1" || item.slot === "ring2";
+          if (isRing && shift) {
+            tryEquipRmb(index, "ring2");
+            return;
+          }
+          if (isRing && ctrl) {
+            tryEquipRmb(index, "ring1");
+            return;
+          }
+          if (ctrl) {
+            tryEquipRmb(index);
+            return;
+          }
+          sellInventoryCell(index);
+          return;
+        }
+
+        if (equipSlot) {
+          const slot = equipSlot.dataset.slot as EquipSlotId;
+          if (ctrl) {
+            sellEquipSlot(slot);
+            return;
+          }
+          const result = hero.unequipSlot(slot);
+          if (!result.ok) {
+            if (result.reason === "inventory_full") toast("Инвентарь полон");
+            return;
+          }
+          afterChange();
+        }
+        return;
+      }
+
+      if (!stashBag) return;
 
       if (stashCell) {
         const index = Number(stashCell.dataset.stash);
@@ -510,6 +595,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     setStashBag(bag) {
       stashBag = bag;
     },
+    setMarketMode(active) {
+      marketMode = active;
+    },
     setCanChangeEquipment(fn) {
       canChangeEquipment = fn;
       if (!root.hidden) render();
@@ -519,6 +607,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     },
     setOnStashChanged(fn) {
       onStashChanged = fn;
+    },
+    setOnMarketGold(fn) {
+      onMarketGold = fn;
     },
     setShowToast(fn) {
       showToast = fn;
@@ -593,6 +684,7 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
   if (!item.affixes.length) {
     nodes.push(el("div", "inv-tip-meta", "Без аффиксов"));
   }
+  nodes.push(goldTipLine("Продажа:", sellPrice(item), "inv-tip-line inv-tip-sell"));
   return nodes;
 }
 

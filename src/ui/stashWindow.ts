@@ -3,6 +3,8 @@ import { formatRolledAffix } from "../items/affixCatalog";
 import { STASH_COLS, STASH_SIZE, type InventoryBag } from "../items/inventory";
 import { SLOT_LABEL } from "../items/slots";
 import { RARITY_LABEL, type ItemDef } from "../items/types";
+import { sellPrice } from "../meta/economy";
+import { goldTipLine } from "./goldIcon";
 import "./stashWindow.css";
 import "./inventoryWindow.css";
 
@@ -182,6 +184,7 @@ function renderItemTip(item: ItemDef): HTMLElement[] {
   if (!item.affixes.length) {
     nodes.push(el("div", "inv-tip-meta", "Без аффиксов"));
   }
+  nodes.push(goldTipLine("Продажа:", sellPrice(item), "inv-tip-line inv-tip-sell"));
   return nodes;
 }
 

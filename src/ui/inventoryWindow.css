@@ -242,6 +242,12 @@
   color: #c4b0e0;
 }
 
+.inv-tip-sell {
+  margin-top: 8px;
+  color: #e8d7a2;
+  font-weight: 700;
+}
+
 /* Призрак вне .inv-bag-root - свои --c-* и тот же каркас, что у .inv-cell.filled. */
 .inv-ghost {
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
