@@ -92,6 +92,7 @@ export class GameApp {
     });
 
     this.hub = mountHubScreen({
+      onCharacter: () => this.hud.openCharacter(),
       onBestiary: () => this.hud.openBestiary(),
       onGrimoire: () => this.hud.openGrimoire(),
       onItemGenerator: () => this.hud.openItemGenerator(),

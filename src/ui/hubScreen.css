@@ -47,12 +47,37 @@
 }
 
 .hub-topbar-left {
+  appearance: none;
+  margin: 0;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 10px;
   min-width: 0;
   max-width: min(560px, 62vw);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.hub-topbar-left:hover {
+  background: rgba(230, 225, 255, 0.06);
+  border-color: rgba(180, 165, 255, 0.28);
+  box-shadow: 0 0 16px rgba(140, 120, 220, 0.12);
+}
+
+.hub-topbar-left:focus-visible {
+  outline: 2px solid rgba(180, 165, 255, 0.55);
+  outline-offset: 2px;
 }
 
 .hub-portrait {

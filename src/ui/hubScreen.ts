@@ -11,6 +11,7 @@ export interface HubScreenApi {
 }
 
 export interface HubScreenHandlers {
+  onCharacter: () => void;
   onBestiary: () => void;
   onGrimoire: () => void;
   onItemGenerator: () => void;
@@ -39,9 +40,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
   const topbar = el("header", "hub-topbar");
 
-  const left = el("div", "hub-topbar-left");
+  const left = el("button", "hub-topbar-left");
+  left.type = "button";
+  left.title = "Персонаж";
+  left.setAttribute("aria-label", "Персонаж");
   const portraitWrap = el("div", "hub-portrait");
-  portraitWrap.title = "Герой";
   const portraitImg = el("img", "hub-portrait-img");
   portraitImg.alt = "";
   portraitImg.draggable = false;
@@ -50,7 +53,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const meta = el("div", "hub-topbar-meta");
   const heroRow = el("div", "hub-hero-row");
   const levelBadge = el("div", "hub-level");
-  levelBadge.title = "Уровень";
   const levelNum = el("span", "hub-level-num", "1");
   levelBadge.append(levelNum);
   const nameEl = el("div", "hub-name");
@@ -64,6 +66,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   xp.append(xpTrack);
   meta.append(heroRow, xp);
   left.append(portraitWrap, meta);
+  left.addEventListener("click", () => handlers.onCharacter());
 
   const right = el("div", "hub-topbar-right");
   const currencies = el("div", "hub-currencies");
