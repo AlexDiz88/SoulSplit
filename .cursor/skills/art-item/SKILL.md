@@ -4,7 +4,7 @@ description: >-
   Writes ready-to-paste Gemini image prompts for Soul Split inventory item icons
   (equipment loot) using thin-white-sticker toon canon shared with portraits and
   ability icons. Requires slot and rarity. Higher rarity means more complex,
-  unusual, detailed icons. Fantasy-first (not historical medieval / steampunk).
+  unusual, detailed icons. Fantasy-first (not historical medieval catalog, not steampunk).
   Use when the user invokes art-item (e.g. art-item голова, редкая), or asks for
   item / loot / equipment / inventory icon prompts.
 disable-model-invocation: true
@@ -124,8 +124,9 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
   Gutters: same `#151617` or solid `#0A0B0C` only - no random gutter colors.
 - No characters, faces, hands holding the item as a figure, no mannequins, no UI.
 - **Fantasy-first:** classic / dark fantasy game loot. Not historical museum
-  medieval, not steampunk-first. Brass gears / tech accents only if the user's
-  theme explicitly asks for them.
+  medieval, not steampunk / Victorian industrial. Alchemy vials, engineer tools,
+  or bomb charges only if the user's theme explicitly asks for them - still
+  fantasy craft, never brass-gear steampunk fashion.
 - **Never name the game, project, or internal style docs** in the prompt
   (no "Soul Split", no "Style Bible", no "our portraits"). Models do not know
   the project - describe the look in plain English only.
@@ -148,7 +149,7 @@ Backdrop lock (CRITICAL - identical every generation): every panel background AN
 ## Setting (always weave in)
 
 ```
-Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; magic predominates; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk/industrial tech as the default look.
+Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk, NOT Victorian industrial / brass-gear fashion.
 ```
 
 ## Layout Lock
@@ -234,7 +235,7 @@ Reply with **only** one prompt.
 
 {Backdrop Lock}
 
-Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; magic predominates; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk/industrial tech as the default look.
+Setting: classic dark fantasy game world - enchanted adventurer loot, magic materials, fantasy silhouettes; physical loot prop only - no full character. NOT historical medieval reenactment, NOT steampunk, NOT Victorian industrial / brass-gear fashion.
 
 {Layout Lock}
 
@@ -250,7 +251,7 @@ Subject / theme: fantasy game inventory item icons - equipment slot {canonical s
 
 Panel brief: freely invent NINE unique {slot} items at {rarity} complexity - distinct fantasy silhouettes and materials; keep each readable as a ~64px inventory icon.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, any backdrop color other than exact #151617, random dark gray, warm brown backdrop, olive backdrop, blue-tinted backdrop, purple-tinted backdrop, green-tinted backdrop, gradient backdrop, vignette backdrop, textured backdrop, different background color per panel, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat 3-6px outline, wide white contour, historical medieval museum replica, pure steampunk, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
+Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, any backdrop color other than exact #151617, random dark gray, warm brown backdrop, olive backdrop, blue-tinted backdrop, purple-tinted backdrop, green-tinted backdrop, gradient backdrop, vignette backdrop, textured backdrop, different background color per panel, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat 3-6px outline, wide white contour, historical medieval museum replica, steampunk, Victorian industrial, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
 ```
 
 ### Named-item mode

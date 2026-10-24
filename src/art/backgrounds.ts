@@ -6,19 +6,24 @@ const backgroundModules = import.meta.glob<{ default: string }>(
   { eager: true },
 );
 
-function isMenuBackground(path: string): boolean {
+/** Меню / хаб - не попадают в случайный боевой пул. */
+function isNonBattleBackground(path: string): boolean {
   const file = path.split(/[/\\]/).pop()?.toLowerCase() ?? "";
-  return file.startsWith("main_menu");
+  return (
+    file.startsWith("main_menu") ||
+    file.startsWith("town") ||
+    file.startsWith("choose_slot_screen")
+  );
 }
 
 const ALL_BACKGROUND_ENTRIES = Object.entries(backgroundModules).map(([path, mod]) => ({
   path,
   url: mod.default,
-  menu: isMenuBackground(path),
+  nonBattle: isNonBattleBackground(path),
 }));
 
-/** Боевые фоны (без стартового меню). */
-const BATTLE_BACKGROUND_URLS = ALL_BACKGROUND_ENTRIES.filter((e) => !e.menu).map((e) => e.url);
+/** Боевые фоны (без меню и города). */
+const BATTLE_BACKGROUND_URLS = ALL_BACKGROUND_ENTRIES.filter((e) => !e.nonBattle).map((e) => e.url);
 
 const BACKGROUND_TEXTURE_DATA = {
   autoGenerateMipmaps: true,

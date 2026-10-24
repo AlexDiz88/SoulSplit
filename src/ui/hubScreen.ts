@@ -1,7 +1,9 @@
+import { createTownBackgroundImg } from "../art/menuBackground";
 import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
 import { getZone, isZoneUnlocked } from "../meta/zones";
 import "./hubScreen.css";
+import "./startMenu.css";
 
 export interface HubScreenApi {
   show(state: GameState): void;
@@ -32,9 +34,10 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
-  const root = el("div", "meta-screen");
+  const root = el("div", "meta-screen hub-screen");
   root.id = "hub-screen";
   root.hidden = true;
+  root.append(createTownBackgroundImg());
   const panel = el("div", "meta-panel");
   const brand = el("h1", "meta-brand", "Soul Split");
   const heroLine = el("p", "meta-hero-line");

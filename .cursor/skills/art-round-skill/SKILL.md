@@ -110,7 +110,7 @@ Build the English Subject from researched facts only:
 | Аспект + accents | jagged aura + effect colors from the aspect table |
 | Числа / Доп | intensity and secondary motifs only if they are **visible magic** (burn embers, ice shards, blood drops). Ignore cooldown, mana, and raw numbers |
 
-**Forbidden inventions:** characters, faces, hands, enemies, heroes, UI, damage digits, aspect logos as text, steampunk props, or a different spell than the card (e.g. do not draw a fireball for a breath cone, or a weapon swing for a pure self-buff).
+**Forbidden inventions:** characters, faces, hands, enemies, heroes, UI, damage digits, aspect logos as text, steampunk / brass-gear props, or a different spell than the card (e.g. do not draw a fireball for a breath cone, or a weapon swing for a pure self-buff).
 
 If the user name disagrees with the catalog card, **trust the catalog** and still
 depict that ability. Aspect accents always come from the card's `aspect` /
@@ -125,7 +125,7 @@ on conflict).
 - Always include Round Style Lock + negatives inside that prompt.
 - Always **3×3 contact sheet** of the **same** ability (composition / angle / intensity only).
 - Even gutters; no labels, numbers, captions inside the image.
-- **Magic-only visual.** No steampunk, brass, gears, cogs, lenses, valves, or machinery unless the user **explicitly** asks for a tech ability.
+- **Magic-only visual.** No steampunk, brass gears, cogs, lenses, valves, or industrial machinery. If the ability is explicitly alchemy / engineer / bomb craft, use fantasy craft props only - still not steampunk.
 - Do **not** use the thin white sticker outline from unit/portrait canon.
 - Do **not** invent a competing slant that drifts from `ability_icon_round_example.png`.
 - Do **not** write the prompt before completing the research steps above.
@@ -144,7 +144,7 @@ Locked look = `ability_icon_round_example.png`:
 ## Setting (always weave in)
 
 ```
-Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+Setting: medieval fantasy dark-magic game world; pure magical effect only - no steampunk, no gears, no brass machinery.
 ```
 
 ## Round Style Lock (always include)
@@ -178,7 +178,7 @@ Reply with **only** one prompt:
 ```
 {Round Style Lock}
 
-Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+Setting: medieval fantasy dark-magic game world; pure magical effect only - no steampunk, no gears, no brass machinery.
 
 {Layout Lock}
 

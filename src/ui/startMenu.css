@@ -176,17 +176,17 @@
 /* --- Выбор слота --- */
 .slots-screen {
   z-index: 60;
+  isolation: isolate;
   align-items: center;
   justify-content: center;
   overflow: auto;
   padding: 20px 16px 28px;
-  background:
-    var(--theme-screen-wash),
-    radial-gradient(ellipse at 50% 0%, rgba(80, 70, 140, 0.2), transparent 50%),
-    var(--theme-ink);
+  background: var(--theme-ink);
 }
 
 .slots-wrap {
+  position: relative;
+  z-index: 1;
   width: min(1100px, 100%);
   margin: auto;
   display: flex;

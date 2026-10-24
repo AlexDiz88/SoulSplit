@@ -12,6 +12,23 @@
   pointer-events: auto;
 }
 
+/* Город: арт без пелены, UI поверх */
+.hub-screen {
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--theme-ink);
+}
+
+.hub-screen .title-bg-img {
+  object-fit: fill;
+  object-position: center center;
+}
+
+.hub-screen .meta-panel {
+  position: relative;
+  z-index: 1;
+}
+
 .meta-screen[hidden] {
   display: none !important;
 }

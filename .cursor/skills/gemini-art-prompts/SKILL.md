@@ -27,11 +27,11 @@ User wants prompts for Gemini (or similar) to generate game art. Always follow t
 - **Reply with ONLY the prompt** — nothing else outside one code fence.
 - Always include Style Lock + negatives inside that prompt.
 - **Reusable + creative (DEFAULT for character sheets):** do **NOT** hardcode per-panel character types, poses, outfits, weapons, or backdrops. Give Gemini the theme/faction and let it invent unique designs. One prompt must stay useful across repeated Gemini generations without the user re-requesting a new prompt each time.
-- **Default contact-sheet** (one square 1:1 image):
-  - `portrait` → **3×3 = 9** unique characters (bust/chest-up)
-  - `unit_card` / enemies / bestiary → **3×3 = 9** unique **waist-up** portraits
-  - `ability_icon` → **3×3 = 9** variations of the **same** ability
-  - `environment` → **2×2 = 4** unless user asks otherwise
+- **Default contact-sheet**:
+  - `portrait` → square **1:1**, **3×3 = 9** unique characters (bust/chest-up)
+  - `unit_card` / enemies / bestiary → square **1:1**, **3×3 = 9** unique **waist-up** portraits
+  - `ability_icon` → square **1:1**, **3×3 = 9** variations of the **same** ability
+  - `environment` / backgrounds / hub / menu / town → **16:9**, **2×2 = 4** variations (each panel 16:9; full sheet also 16:9) unless user asks otherwise
 - Even gutters; no labels, numbers, captions inside the image.
 - Do not describe UI chrome, HP bars, or game grid cells in character prompts.
 - **Never default to full-body** for enemies, units, or bestiary — full-body only if the user explicitly asks.
@@ -41,14 +41,18 @@ User wants prompts for Gemini (or similar) to generate game art. Always follow t
 
 ### Character sheets / environments
 
-Medieval fantasy mixed with steampunk: magic and technology coexist, **magic predominates**. Light brass/gear/lens accents allowed; magic stays primary.
+Pure medieval / dark fantasy. No steampunk lore or aesthetic. Fantasy craft is allowed when the subject needs it (alchemy, siege engineering, powder bombs, forge tools) - still read as classic fantasy, never Victorian steampunk / brass-gear fashion.
+
+```
+Setting: medieval dark-fantasy game world; pure fantasy - no steampunk, no Victorian industrial, no clockwork-as-fashion.
+```
 
 ### Ability icons (LOCKED)
 
-**Magic-only visual.** Do **not** weave steampunk, brass, gears, cogs, lenses, valves, or machinery into ability-icon prompts unless the user **explicitly** asks for a tech/steampunk ability. Use:
+**Magic-only visual by default.** Do **not** weave steampunk, brass gears, cogs, lenses, valves, or industrial machinery into ability-icon prompts. If the ability is explicitly alchemy / engineer / bomb craft, use fantasy craft props (vials, rune charges, siege tools) - still not steampunk. Use:
 
 ```
-Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+Setting: medieval fantasy dark-magic game world; pure magical effect only - no steampunk, no gears, no brass machinery.
 ```
 
 ## Stylization direction (LOCKED — match enemy portrait canon)
@@ -77,10 +81,10 @@ For hero `portrait` use the same rendering language, but framing may be bust/che
 ### Ability icon Style Lock (KEEP — same visual language as unit portraits: hard toon + thin white sticker outline)
 
 ```
-Style: STRONGLY stylized 2D game skill icon — hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines PLUS a THIN even WHITE sticker outer outline around the silhouette (hairline/fine ~2–3px relative to panel, NEVER thick chunky white border), single centered magical symbol/effect, RICH aspect-accent color on flat solid dark backdrop, high contrast for ~64px — no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
+Style: STRONGLY stylized 2D game skill icon - hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines PLUS a THIN even WHITE sticker outer outline around the silhouette (hairline/fine ~2–3px relative to panel, NEVER thick chunky white border), single centered magical symbol/effect, RICH aspect-accent color on flat solid dark backdrop, high contrast for ~64px - no character, no text, no watermark, no UI, no neon candy glow, no steampunk gears or brass machinery.
 ```
 
-**Ability icon defaults (LOCKED):** always **3×3 contact sheet**; always the Style Lock above; same ability concept × 9 composition variants; **no gears / brass / steampunk props**.
+**Ability icon defaults (LOCKED):** always **3×3 contact sheet**; always the Style Lock above; same ability concept × 9 composition variants; **no steampunk / brass-gear props**.
 
 ## Creative Freedom Lock (DEFAULT for `portrait` / `unit_card` / enemies / bestiary)
 
@@ -122,10 +126,10 @@ Layout: single square image, clean 3x3 contact sheet of NINE equal panels with t
 Layout: single square image, clean 3x3 contact sheet of NINE equal panels with thin even dark gutters, no labels, no numbers, no captions. Each panel reads as a clear ~64px game skill icon.
 ```
 
-### environment — 2×2
+### environment / backgrounds — 2×2 @ 16:9 (LOCKED)
 
 ```
-Layout: single square image, clean 2x2 contact sheet of FOUR equal panels with thin even dark gutters, no labels, no numbers, no captions.
+Layout: single widescreen 16:9 image, clean 2x2 contact sheet of FOUR equal 16:9 panels with thin even dark gutters, no labels, no numbers, no captions. Aspect ratio CRITICAL: the full sheet AND every panel must be 16:9 landscape (NOT square 1:1, NOT 4:3, NOT portrait).
 ```
 
 ## Framing by asset type
@@ -145,13 +149,21 @@ Framing per panel: WAIST-UP / torso mid-portrait like enemy_portrait_example.jpg
 ### ability_icon
 
 ```
-Framing per panel: one clear magical effect centered and large, THIN white sticker outline (fine ~2–3px, not chunky), hard toon-shaded form, flat solid dark backdrop, no character, no text, no gears, no brass gadgets, no steampunk props.
+Framing per panel: one clear magical effect centered and large, THIN white sticker outline (fine ~2–3px, not chunky), hard toon-shaded form, flat solid dark backdrop, no character, no text, no steampunk props, no brass-gear gadgets.
 ```
 
-### environment
+### environment / backgrounds (LOCKED — always 16:9)
+
+Default for hubs / towns / menu / key art (unless user asks for a battle arena):
 
 ```
-Framing per panel: stylized medieval-fantasy + steampunk arena backdrop for a top-down tactical grid, not cluttered, leaves space for UI and units.
+Framing per panel: widescreen 16:9 stylized game BACKGROUND for a static interactive hub screen. Eye-level or slight elevated 3/4 town/plaza view. Buildings must read as CLEAR SEPARATE clickable zones (shop/market stall, blacksmith forge, town hall / quest board, inn, gate, etc.) with readable silhouettes and gaps between them. Small stylized townspeople for life, but buildings stay the interaction targets — no single giant character dominating. Leave calm areas for UI overlays. NOT top-down tactical grid, NOT character portrait, NOT empty wasteland with one figure.
+```
+
+Only if the user explicitly asks for a battle arena / combat backdrop:
+
+```
+Framing per panel: widescreen 16:9 stylized medieval dark-fantasy arena backdrop for a top-down tactical grid, not cluttered, leaves space for UI and units.
 ```
 
 ## Output format (CRITICAL)
@@ -163,11 +175,11 @@ Reply with **only** one prompt.
 ```
 {Style lock}
 
-Setting: medieval fantasy mixed with steampunk; magic and technology coexist, magic predominates.
+Setting: medieval dark-fantasy game world; pure fantasy - no steampunk, no Victorian industrial, no clockwork-as-fashion.
 
 {Layout}
 
-{Framing — waist-up for enemies/units}
+{Framing - waist-up for enemies/units}
 
 Subject / theme: {user theme / faction / mood — high-level only; do NOT list nine fixed designs}
 
@@ -177,17 +189,17 @@ Subject / theme: {user theme / faction / mood — high-level only; do NOT list n
 
 Panel brief: freely invent NINE unique subjects within the theme — any mix of roles is fine as long as all nine feel distinct and game-ready; do not prescribe fixed face/gear/backdrop lists.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny distant characters, naturalistic wildlife illustration, soft painterly fur, timid mild cartoon realism, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat marker outer outline, oversized white stroke, extreme chibi, neon glow, candy oversaturation, washed-out colors, muddy grey-brown palette, overly desaturated, soft anime shading without outlines, unstructured smoke background, grey-green fog wash, airbrushed smoky backdrop without structure, busy photo landscape, ornate frames, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same face repeated across panels, identical characters across panels, near-duplicate characters, recycled outfit templates, same weapon in every panel, same backdrop formula repeated, character overflowing panel edges, limbs or weapons crossing gutters, clipped silhouette cut by border, elements spilling into neighboring cells, {extras}
+Negatives: photorealistic, semi-realistic, 3d, cgi, full-body figures, tiny distant characters, naturalistic wildlife illustration, soft painterly fur, timid mild cartoon realism, missing white sticker outline, thick white outline, heavy white border, chunky sticker stroke, fat marker outer outline, oversized white stroke, extreme chibi, neon glow, candy oversaturation, washed-out colors, muddy grey-brown palette, overly desaturated, soft anime shading without outlines, unstructured smoke background, grey-green fog wash, airbrushed smoky backdrop without structure, busy photo landscape, ornate frames, text, watermark, UI, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same face repeated across panels, identical characters across panels, near-duplicate characters, recycled outfit templates, same weapon in every panel, same backdrop formula repeated, character overflowing panel edges, limbs or weapons crossing gutters, clipped silhouette cut by border, elements spilling into neighboring cells, steampunk, Victorian industrial, brass gears as fashion, clockwork costume, {extras}
 ```
 
 ### Ability icons (`ability_icon`)
 
-Keep **3×3** grid + Style Lock. No Creative Freedom Lock for inventing different abilities. No steampunk/gears.
+Keep **3×3** grid + Style Lock. No Creative Freedom Lock for inventing different abilities. No steampunk / brass-gear clutter.
 
 ```
 {Ability icon Style Lock}
 
-Setting: medieval fantasy dark-magic game world; pure magical effect only — no steampunk, no gears, no brass machinery.
+Setting: medieval fantasy dark-magic game world; pure magical effect only - no steampunk, no gears, no brass machinery.
 
 {ability_icon Layout — 3x3}
 
@@ -204,9 +216,9 @@ Negatives: {shared negatives} + character, face, hands, different ability concep
 
 ### Asset-specific negative extras
 
-- **portrait / unit_card / enemies:** `full-body standing pose, feet visible, character too small in frame, empty flat void background, smoky teal fog behind subject, overflow outside frame, cropped horns/weapons by panel edge, thick white outline, heavy white border, chunky sticker stroke`
+- **portrait / unit_card / enemies:** `full-body standing pose, feet visible, character too small in frame, empty flat void background, smoky teal fog behind subject, overflow outside frame, cropped horns/weapons by panel edge, thick white outline, heavy white border, chunky sticker stroke, steampunk, Victorian industrial, brass gears as fashion, clockwork costume`
 - **ability_icon:** `character, face, hands, different ability concepts across panels, weak muddy silhouette, thick white outline, heavy white border, chunky sticker stroke, steampunk, gears, cogs, brass machinery, valves, lenses, mechanical props, clockwork`
-- **environment:** `busy unreadable clutter, neon haze, dominating foreground characters, photoreal landscape`
+- **environment:** `square 1:1 crop, portrait orientation, busy unreadable clutter, neon haze, dominating foreground characters, photoreal landscape, empty wasteland with lone figure, sparse 3-building outpost, fewer than 8 buildings, merged unreadable shop facades, baked-in UI buttons or hotspot markers, any text, any labels, any captions, readable sign lettering, floating nameplates, planet in sky, eclipse disk, dark sun, giant celestial body, black hole sun, every panel forced night, steampunk skyline, Victorian industrial city, brass gear decoration`
 
 ## Subject writing tips
 
@@ -215,8 +227,10 @@ Negatives: {shared negatives} + character, face, hands, different ability concep
 - **Theme only, not cast list:** describe faction/biome/mood (e.g. “desert warrior unit roster”, “swamp cult bestiary”) and optional color accents. Do **not** prescribe nine specific characters, weapons, or backdrops unless the user asked for a fixed roster.
 - Require Gemini to invent pose, clothing, gear, weapons, and matching simplified thematic backdrops freely — still **one unique backdrop per panel**, invented by the model.
 - Unique designs per panel; clear color identity; maximize novelty across regenerations of the same prompt.
-- Light steampunk accents OK on **characters/environments**; magic primary.
-- **Ability icons:** keep **3×3** + toon/white-outline style; describe only the magical effect; **never** add gears, brass, or steampunk clutter unless the user explicitly requests a tech ability.
+- Pure fantasy on **characters/environments**; alchemy / engineer / bomb props only when the subject needs them, and never as steampunk genre.
+- **Environments / backgrounds (LOCKED):** always **16:9** and **four** variations in a 2×2 contact sheet. Prefer clickable-hub town/plaza language (distinct buildings: shop, forge, town hall, etc.) when the user asks for hub / starting zone / town. Match world mood of menu key art when a reference is attached. Do **not** default to empty dual-soul wasteland key art unless the user asks for menu/title art.
+- **Hub town hard rules (LOCKED):** ZERO text anywhere (no building labels, no sign lettering, no captions). NO planet / eclipse / dark sun / giant celestial disk dominating the sky. Dense city feel: about **8–10** readable buildings per panel (not a 3-building outpost). Time of day may vary across panels (dawn / day / golden hour / dusk / night) - night is optional, not default.
+- **Ability icons:** keep **3×3** + toon/white-outline style; describe only the magical effect by default; **never** add steampunk / brass-gear clutter.
 - Tell the user (only inside skill workflow notes, NOT in the reply): for LOCKED enemy portraits, attach `assets/art/approved/enemy_portrait_example.jpg` in Gemini as style reference — but the assistant reply must still be **prompt-only**, so bake “must match enemy_portrait_example.jpg” into the prompt itself.
 - Cross-run uniqueness tip (workflow only, NOT in the reply): Gemini does not remember past generations; if the user wants to avoid repeating prior sheets, they should attach previous contact sheets as “avoid these designs”.
 

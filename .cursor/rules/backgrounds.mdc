@@ -7,18 +7,19 @@ alwaysApply: true
 
 Фоны должны выглядеть так же чётко, как при открытии файла в просмотрщике. Не класть арт под полупрозрачные градиенты и не рисовать его через `background-image` с оверлеями.
 
-## Канон (как стартовое меню)
+## Канон (меню / хаб / слоты)
 
-1. Файл лежит в `public/` (Vite отдаёт без обработки), например `public/art/backgrounds/main_menu.png`.
-2. В DOM - отдельный `<img>`, не CSS `background-image` для самого арта.
-3. Поверх арта нет затемняющих/цветных градиентов и vignette. UI (кнопки, заголовки) - отдельным слоем выше.
-4. Масштаб: `object-fit: cover` + `object-position` по композиции (для меню - `center top`).
-5. Хелпер: `createMenuBackgroundImg()` / `MAIN_MENU_BG_URL` в `src/art/menuBackground.ts`. Новые экраны с тем же фоном - переиспользуй хелпер.
+1. Файл лежит в `assets/art/backgrounds/` (рядом с боевыми фонами), например `main_menu.png`, `town.jpg`, `choose_slot_screen.jpg`.
+2. Формат: `png` / `jpg` / `jpeg` / `webp`. В коде только имя без расширения - хелпер подхватит любой из этих.
+3. В DOM - отдельный `<img>`, не CSS `background-image` для самого арта.
+4. Поверх арта нет затемняющих/цветных градиентов и vignette. UI (кнопки, заголовки) - отдельным слоем выше.
+5. Масштаб: `object-fit: cover` + `object-position` по композиции (для меню - `center top`).
+6. Хелперы в `src/art/menuBackground.ts`: `createMenuBackgroundImg()`, `createTownBackgroundImg()`, `createChooseSlotBackgroundImg()`. Новые экраны с тем же фоном - переиспользуй хелпер.
 
 ```html
 <!-- хорошо -->
 <div class="title-screen">
-  <img class="title-bg-img" src="/art/backgrounds/main_menu.png" alt="" />
+  <img class="title-bg-img" alt="" />
   <div class="title-stage">...</div>
 </div>
 ```
@@ -54,8 +55,8 @@ background-image:
 
 ## Боевые фоны (Pixi)
 
-- Боевые фоны живут в `assets/art/backgrounds/` (`bg-*.png` и т.п.), подхватываются через `src/art/backgrounds.ts`.
-- Файлы меню `main_menu*` в боевой пул не попадают.
+- Боевые фоны тоже в `assets/art/backgrounds/` (`bg-*.png` и т.п.), подхватываются через `src/art/backgrounds.ts`.
+- Файлы меню / хаба (`main_menu*`, `town*`, `choose_slot_screen*`) в боевой пул не попадают.
 - В Pixi тоже не накладывай поверх фона полупрозрачные fullscreen-заливки "для атмосферы", если задача - показать арт как есть. Локальный VFX/туман в зоне боя - ок, глобальная пелена на весь фон - нет.
 
 ## Если нужен контраст для текста

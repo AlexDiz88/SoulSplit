@@ -1,3 +1,4 @@
+import { createChooseSlotBackgroundImg } from "../art/menuBackground";
 import { ASPECT_LABEL } from "../abilities/definitions";
 import {
   SAVE_SLOT_COUNT,
@@ -35,6 +36,7 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
   const root = el("div", "meta-screen slots-screen");
   root.id = "save-slots-screen";
   root.hidden = true;
+  root.append(createChooseSlotBackgroundImg());
 
   const wrap = el("div", "slots-wrap");
   const head = el("div", "slots-head");
