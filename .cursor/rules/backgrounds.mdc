@@ -1,0 +1,63 @@
+---
+description: Как показывать фоновые изображения в игре (чёткость, без пелены)
+alwaysApply: true
+---
+
+# Фоновые изображения
+
+Фоны должны выглядеть так же чётко, как при открытии файла в просмотрщике. Не класть арт под полупрозрачные градиенты и не рисовать его через `background-image` с оверлеями.
+
+## Канон (как стартовое меню)
+
+1. Файл лежит в `public/` (Vite отдаёт без обработки), например `public/art/backgrounds/main_menu.png`.
+2. В DOM - отдельный `<img>`, не CSS `background-image` для самого арта.
+3. Поверх арта нет затемняющих/цветных градиентов и vignette. UI (кнопки, заголовки) - отдельным слоем выше.
+4. Масштаб: `object-fit: cover` + `object-position` по композиции (для меню - `center top`).
+5. Хелпер: `createMenuBackgroundImg()` / `MAIN_MENU_BG_URL` в `src/art/menuBackground.ts`. Новые экраны с тем же фоном - переиспользуй хелпер.
+
+```html
+<!-- хорошо -->
+<div class="title-screen">
+  <img class="title-bg-img" src="/art/backgrounds/main_menu.png" alt="" />
+  <div class="title-stage">...</div>
+</div>
+```
+
+```css
+.title-bg-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+}
+```
+
+## Запрещено для полного кадра фона
+
+```css
+/* плохо: арт + пелена в одном background-image */
+background-image:
+  linear-gradient(...),
+  radial-gradient(...),
+  url("...");
+```
+
+```css
+/* плохо: vignette поверх всего экрана, которая моет арт */
+.screen::before {
+  background: radial-gradient(..., rgba(0, 0, 0, 0.55));
+}
+```
+
+## Боевые фоны (Pixi)
+
+- Боевые фоны живут в `assets/art/backgrounds/` (`bg-*.png` и т.п.), подхватываются через `src/art/backgrounds.ts`.
+- Файлы меню `main_menu*` в боевой пул не попадают.
+- В Pixi тоже не накладывай поверх фона полупрозрачные fullscreen-заливки "для атмосферы", если задача - показать арт как есть. Локальный VFX/туман в зоне боя - ок, глобальная пелена на весь фон - нет.
+
+## Если нужен контраст для текста
+
+Делай подложку у самого UI (кнопка, панель, text-shadow), а не затемняй весь фон.

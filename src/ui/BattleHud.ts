@@ -41,8 +41,8 @@ export interface SkillBarState {
 
 export type BattleBannerMode = "start" | "pause" | "hidden";
 
-/** Режим оболочки HUD: хаб прячет бойцовые контролы. */
-export type HudShellMode = "hub" | "battle";
+/** Режим оболочки HUD: хаб прячет бойцовые контролы, title - стартовое меню. */
+export type HudShellMode = "hub" | "battle" | "title";
 
 export interface BattleHudApi {
   renderSkills(unit: Unit | null, state: SkillBarState): void;
@@ -518,8 +518,13 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     setShellMode(mode: HudShellMode) {
       const battle = mode === "battle";
+      const title = mode === "title";
       const controls = document.querySelector(".controls") as HTMLElement | null;
+      const hudTop = document.querySelector(".hud-top") as HTMLElement | null;
       if (controls) controls.hidden = !battle;
+      if (hudTop) hudTop.hidden = title;
+      menuBtn.hidden = title;
+      if (title) closeMenu();
       skillBar.hidden = !battle;
       if (!battle) {
         setBattleBanner("hidden");

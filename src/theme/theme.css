@@ -1,0 +1,390 @@
+/* Тема UI: eclipse / ghost-violet (main_menu). Токены зеркалят src/theme/tokens.ts */
+
+:root {
+  --theme-ink: #0a0c14;
+  --theme-slate: #1a1d2c;
+  --theme-stone: #2a2e42;
+  --theme-mist: #d8d4f0;
+  --theme-corona: #f0ecff;
+  --theme-violet: #a898e8;
+  --theme-violet-deep: #6a5aab;
+  --theme-pool: #b8d0e8;
+  --theme-danger: #d07070;
+  --theme-danger-deep: #a84848;
+
+  --theme-border: rgba(170, 165, 210, 0.38);
+  --theme-border-hover: rgba(210, 200, 255, 0.72);
+  --theme-border-primary: rgba(190, 180, 245, 0.5);
+  --theme-border-danger: rgba(196, 90, 90, 0.55);
+
+  --theme-glow-soft: rgba(160, 145, 230, 0.35);
+  --theme-glow-strong: rgba(180, 165, 255, 0.5);
+  --theme-glow-corona: rgba(200, 185, 255, 0.85);
+
+  --theme-panel: rgba(22, 24, 38, 0.9);
+  --theme-panel-solid: rgba(18, 20, 32, 0.96);
+  --theme-overlay: rgba(4, 5, 12, 0.72);
+
+  --theme-btn-face: linear-gradient(
+    180deg,
+    rgba(72, 76, 102, 0.55) 0%,
+    rgba(28, 30, 46, 0.82) 48%,
+    rgba(14, 16, 26, 0.92) 100%
+  );
+  --theme-btn-face-hover: linear-gradient(
+    180deg,
+    rgba(88, 90, 120, 0.62) 0%,
+    rgba(36, 38, 58, 0.88) 48%,
+    rgba(16, 18, 30, 0.95) 100%
+  );
+  --theme-btn-primary: linear-gradient(
+    180deg,
+    rgba(90, 82, 130, 0.7) 0%,
+    rgba(40, 36, 68, 0.88) 45%,
+    rgba(16, 14, 28, 0.95) 100%
+  );
+  --theme-btn-danger: linear-gradient(
+    180deg,
+    rgba(90, 42, 48, 0.55) 0%,
+    rgba(40, 18, 24, 0.88) 48%,
+    rgba(18, 10, 14, 0.95) 100%
+  );
+
+  --theme-shadow-btn:
+    inset 0 1px 0 rgba(230, 225, 255, 0.22),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(20, 18, 32, 0.65),
+    0 1px 0 rgba(255, 255, 255, 0.04),
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    0 0 18px rgba(120, 110, 180, 0.12);
+
+  --theme-shadow-btn-hover:
+    inset 0 1px 0 rgba(245, 240, 255, 0.35),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.4),
+    inset 0 0 0 1px rgba(20, 18, 32, 0.55),
+    0 0 0 1px rgba(180, 170, 240, 0.25),
+    0 12px 32px rgba(0, 0, 0, 0.6),
+    0 0 28px var(--theme-glow-soft),
+    0 0 56px rgba(120, 100, 210, 0.2);
+
+  --theme-shadow-panel:
+    inset 0 1px 0 rgba(230, 225, 255, 0.12),
+    0 18px 48px rgba(0, 0, 0, 0.55),
+    0 0 32px rgba(100, 90, 160, 0.12);
+
+  --theme-screen-wash:
+    radial-gradient(ellipse 70% 45% at 50% 8%, rgba(200, 190, 255, 0.14), transparent 58%),
+    radial-gradient(ellipse 55% 40% at 50% 88%, rgba(40, 50, 80, 0.4), transparent 65%),
+    linear-gradient(180deg, rgba(6, 8, 14, 0.55), rgba(8, 10, 18, 0.88));
+
+  /* Семантические алиасы приложения */
+  --bg: var(--theme-ink);
+  --panel: var(--theme-panel);
+  --panel-border: var(--theme-border);
+  --accent: var(--theme-violet);
+  --accent-dim: var(--theme-violet-deep);
+  --text: var(--theme-mist);
+  --muted: rgba(180, 175, 205, 0.72);
+  --danger: var(--theme-danger);
+
+  --scroll-track: #12141c;
+  --scroll-thumb: var(--theme-violet-deep);
+  --scroll-thumb-hover: var(--theme-violet);
+  --scroll-edge: var(--theme-stone);
+}
+
+/* --- Базовая кнопка темы --- */
+.ui-btn,
+.title-btn,
+.meta-btn,
+.ctrl-btn,
+.menu-item,
+.slot-action,
+.battle-start-btn,
+.aspect-opt,
+.meta-reward-actions button {
+  appearance: none;
+  position: relative;
+  border: 1px solid var(--theme-border);
+  border-radius: 2px;
+  background: var(--theme-btn-face);
+  color: var(--theme-mist);
+  font: inherit;
+  font-weight: 700;
+  cursor: var(--cur-default);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 0 12px rgba(180, 170, 230, 0.2);
+  box-shadow: var(--theme-shadow-btn);
+  transition:
+    border-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.25s ease,
+    transform 0.15s ease,
+    background 0.25s ease;
+}
+
+.ui-btn::before,
+.title-btn::before,
+.meta-btn::before,
+.battle-start-btn::before {
+  content: "";
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(140, 135, 180, 0.16);
+  pointer-events: none;
+}
+
+.ui-btn::after,
+.title-btn::after,
+.meta-btn::after,
+.battle-start-btn::after {
+  content: "";
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(230, 225, 255, 0.5) 50%, transparent);
+  opacity: 0.65;
+  pointer-events: none;
+}
+
+.ui-btn:hover,
+.ui-btn:focus-visible,
+.title-btn:hover,
+.title-btn:focus-visible,
+.meta-btn:hover,
+.meta-btn:focus-visible,
+.ctrl-btn:hover,
+.ctrl-btn:focus-visible,
+.ctrl-btn.active,
+.menu-item:hover,
+.menu-item:focus-visible,
+.slot-action:hover:not(:disabled),
+.battle-start-btn:hover,
+.aspect-opt:hover,
+.meta-reward-actions button:hover:not(:disabled) {
+  outline: none;
+  color: var(--theme-corona);
+  border-color: var(--theme-border-hover);
+  background: var(--theme-btn-face-hover);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.85),
+    0 0 16px rgba(210, 200, 255, 0.5),
+    0 0 28px var(--theme-glow-soft);
+  box-shadow: var(--theme-shadow-btn-hover);
+}
+
+.ui-btn:active,
+.title-btn:active,
+.meta-btn:active,
+.ctrl-btn:active,
+.battle-start-btn:active {
+  transform: translateY(1px);
+  box-shadow:
+    inset 0 2px 10px rgba(0, 0, 0, 0.55),
+    inset 0 0 0 1px rgba(20, 18, 32, 0.7),
+    0 4px 14px rgba(0, 0, 0, 0.45),
+    0 0 16px rgba(140, 130, 210, 0.2);
+}
+
+.ui-btn-primary,
+.title-btn-primary,
+.meta-btn-primary,
+.battle-start-btn {
+  border-color: var(--theme-border-primary);
+  background: var(--theme-btn-primary);
+  color: var(--theme-corona);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 235, 255, 0.28),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.45),
+    inset 0 0 0 1px rgba(20, 18, 32, 0.65),
+    0 10px 28px rgba(0, 0, 0, 0.55),
+    0 0 24px rgba(150, 130, 230, 0.28),
+    0 0 48px rgba(100, 80, 180, 0.15);
+}
+
+.ui-btn-primary:hover,
+.ui-btn-primary:focus-visible,
+.title-btn-primary:hover,
+.title-btn-primary:focus-visible,
+.meta-btn-primary:hover,
+.meta-btn-primary:focus-visible,
+.battle-start-btn:hover {
+  border-color: rgba(235, 230, 255, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(200, 190, 255, 0.35),
+    0 12px 34px rgba(0, 0, 0, 0.6),
+    0 0 36px var(--theme-glow-strong),
+    0 0 70px rgba(140, 120, 240, 0.28);
+}
+
+.ui-btn-danger,
+.meta-btn-danger,
+.slot-action-danger {
+  border-color: var(--theme-border-danger);
+  color: var(--theme-danger);
+  background: var(--theme-btn-danger);
+}
+
+.ui-btn-danger:hover,
+.ui-btn-danger:focus-visible,
+.meta-btn-danger:hover,
+.meta-btn-danger:focus-visible,
+.slot-action-danger:hover:not(:disabled) {
+  color: #f0a8a8;
+  border-color: rgba(220, 130, 130, 0.75);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 200, 200, 0.2),
+    inset 0 -2px 8px rgba(0, 0, 0, 0.45),
+    0 10px 28px rgba(0, 0, 0, 0.5),
+    0 0 24px rgba(180, 70, 70, 0.28);
+}
+
+.ui-btn:disabled,
+.meta-btn:disabled,
+.slot-action:disabled,
+.meta-reward-actions button:disabled {
+  opacity: 0.35;
+  cursor: var(--cur-not-allowed);
+  transform: none;
+  box-shadow: var(--theme-shadow-btn);
+}
+
+/* Размеры / раскладка */
+.title-btn,
+.ui-btn-block {
+  width: 100%;
+  padding: 15px 22px;
+  font-size: 1.08rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.meta-btn {
+  width: 100%;
+  padding: 12px 14px;
+  text-align: left;
+  letter-spacing: 0.04em;
+}
+
+.meta-btn-primary,
+.meta-btn-danger,
+.create-actions .meta-btn,
+.confirm-actions .meta-btn {
+  text-align: center;
+}
+
+.meta-btn-danger {
+  margin-top: 8px;
+}
+
+.ctrl-btn {
+  min-width: 52px;
+  height: 36px;
+  padding: 0 14px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.ctrl-btn::before,
+.ctrl-btn::after,
+.menu-item::before,
+.menu-item::after,
+.slot-action::before,
+.slot-action::after,
+.aspect-opt::before,
+.aspect-opt::after {
+  display: none;
+}
+
+.menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 2px;
+  background: transparent;
+  box-shadow: none;
+  letter-spacing: 0.02em;
+}
+
+.menu-item:hover {
+  background: rgba(168, 152, 232, 0.14);
+  box-shadow: none;
+  transform: none;
+}
+
+.slot-action {
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 7px 4px;
+  letter-spacing: 0.02em;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(230, 225, 255, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.battle-start-btn {
+  pointer-events: auto;
+  min-width: 140px;
+  height: 48px;
+  padding: 0 28px;
+  font-size: 1.15rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aspect-opt {
+  padding: 10px 8px;
+  letter-spacing: 0.03em;
+  text-align: center;
+  box-shadow:
+    inset 0 1px 0 rgba(230, 225, 255, 0.12),
+    0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.aspect-opt.is-active {
+  border-color: var(--theme-border-primary);
+  color: var(--theme-corona);
+  background: var(--theme-btn-primary);
+  box-shadow:
+    inset 0 1px 0 rgba(240, 235, 255, 0.28),
+    0 0 18px var(--theme-glow-soft);
+}
+
+.meta-reward-actions button {
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 10px;
+  box-shadow:
+    inset 0 1px 0 rgba(230, 225, 255, 0.12),
+    0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Панели темы */
+.theme-panel,
+.meta-panel,
+.confirm-panel {
+  border: 1px solid var(--theme-border);
+  background: var(--theme-panel);
+  box-shadow: var(--theme-shadow-panel);
+  color: var(--theme-mist);
+}
+
+.theme-heading,
+.meta-brand,
+.slots-head h1,
+.create-panel h1,
+.confirm-panel h2 {
+  color: var(--theme-corona);
+  text-shadow:
+    0 1px 0 rgba(0, 0, 0, 0.8),
+    0 0 18px rgba(180, 165, 255, 0.35);
+}

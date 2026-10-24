@@ -32,7 +32,7 @@ export function mountDefeatScreen(handlers: DefeatScreenHandlers): DefeatScreenA
   const panel = el("div", "meta-panel");
   panel.append(el("h1", "meta-brand", "Поражение"));
   panel.append(
-    el("p", "meta-summary", "Айра пала. Лут и опыт не получены. Экип можно сменить перед повтором."),
+    el("p", "meta-summary", "Герой пал. Лут и опыт не получены. Экип можно сменить перед повтором."),
   );
   const actions = el("div", "meta-actions");
   const btnRetry = el("button", "meta-btn meta-btn-primary", "Повторить зону");

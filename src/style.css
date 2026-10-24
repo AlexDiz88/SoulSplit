@@ -1,15 +1,9 @@
 @import "./fonts.css";
+@import "./theme/theme.css";
 
 :root {
   --font: "Exo 2", system-ui, sans-serif;
-  --bg: #0c0f0c;
-  --panel: rgba(18, 24, 18, 0.82);
-  --panel-border: rgba(120, 150, 90, 0.35);
-  --accent: #c4a35a;
-  --accent-dim: #7a6840;
-  --text: #e8e2d4;
-  --muted: #9a927f;
-  --danger: #c45a4a;
+  /* UI palette: --bg/--panel/--accent/... из theme.css */
   --ice: #7ec8e8;
   --fire: #ff7a3d;
   --iron: #c9b896;
@@ -17,7 +11,7 @@
   --light: #f0e2b0;
   --air: #a8c8dc;
   --hp: #5a9e5a;
-  --hp-bg: #2a3228;
+  --hp-bg: #1e2230;
 
   --cur-default: url("../assets/ui/cursors/default.svg") 4 2, default;
   /* Клики без "руки": тот же кастомный default, что и везде */
@@ -36,11 +30,6 @@
   --cur-ns-resize: url("../assets/ui/cursors/ns-resize.svg") 16 16, ns-resize;
   --cur-nwse-resize: url("../assets/ui/cursors/nwse-resize.svg") 16 16, nwse-resize;
   --cur-nesw-resize: url("../assets/ui/cursors/nesw-resize.svg") 16 16, nesw-resize;
-
-  --scroll-track: #121810;
-  --scroll-thumb: #7a6840;
-  --scroll-thumb-hover: #c4a35a;
-  --scroll-edge: #3a3424;
 }
 
 * {
@@ -192,22 +181,25 @@ textarea,
   display: grid;
   gap: 5px;
   place-content: center;
-  border-radius: 6px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel);
+  border-radius: 2px;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-btn-face);
+  box-shadow: var(--theme-shadow-btn);
   cursor: var(--cur-default);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
 }
 
 .menu-btn span {
   display: block;
   width: 16px;
   height: 2px;
-  background: var(--text);
+  background: var(--theme-mist);
 }
 
 .menu-btn[aria-expanded="true"],
 .menu-btn:hover {
-  border-color: var(--accent);
+  border-color: var(--theme-border-hover);
+  box-shadow: var(--theme-shadow-btn-hover);
 }
 
 .side-menu {
@@ -217,9 +209,10 @@ textarea,
   width: max-content;
   max-width: min(280px, calc(100vw - 28px));
   padding: 6px;
-  background: rgba(18, 24, 18, 0.96);
-  border: 1px solid var(--panel-border);
-  border-radius: 8px;
+  background: var(--theme-panel-solid);
+  border: 1px solid var(--theme-border);
+  border-radius: 2px;
+  box-shadow: var(--theme-shadow-panel);
 }
 
 .side-menu[hidden] {
@@ -227,48 +220,12 @@ textarea,
 }
 
 .menu-item {
-  display: block;
-  width: 100%;
-  text-align: left;
-  padding: 8px 10px;
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
   white-space: nowrap;
-  font-weight: 700;
-  cursor: var(--cur-default);
-}
-
-.menu-item:hover {
-  background: rgba(196, 163, 90, 0.12);
-  color: var(--accent);
 }
 
 .controls {
   display: flex;
   gap: 8px;
-}
-
-.ctrl-btn {
-  min-width: 52px;
-  height: 36px;
-  padding: 0 14px;
-  border: 1px solid var(--panel-border);
-  background: var(--panel);
-  color: var(--text);
-  border-radius: 6px;
-  cursor: var(--cur-default);
-  font: inherit;
-  font-weight: 700;
-  white-space: nowrap;
-}
-
-.ctrl-btn:hover,
-.ctrl-btn.active {
-  border-color: var(--accent);
-  color: var(--accent);
 }
 
 .hud-bottom {
@@ -601,30 +558,6 @@ textarea,
   pointer-events: none;
 }
 
-.battle-start-btn {
-  pointer-events: auto;
-  min-width: 140px;
-  height: 48px;
-  padding: 0 28px;
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  background: linear-gradient(180deg, #302816, #12100a);
-  color: var(--accent);
-  font: inherit;
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  cursor: var(--cur-default);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
-}
-
-.battle-start-btn:hover {
-  color: var(--text);
-  border-color: #e0c57a;
-  background: linear-gradient(180deg, #40341c, #18140c);
-}
-
 .battle-start-btn[hidden],
 .battle-pause-label[hidden] {
   display: none;
@@ -632,10 +565,12 @@ textarea,
 
 .battle-pause-label {
   padding: 8px 22px;
-  border: 1px solid rgba(196, 163, 90, 0.55);
-  border-radius: 8px;
-  background: #0c100c;
-  color: var(--accent);
+  border: 1px solid var(--theme-border-primary);
+  border-radius: 2px;
+  background: var(--theme-panel-solid);
+  color: var(--theme-corona);
+  box-shadow: var(--theme-shadow-panel);
+  text-shadow: 0 0 16px var(--theme-glow-soft);
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0.12em;

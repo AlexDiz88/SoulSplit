@@ -26,6 +26,11 @@ const PORTRAIT_TEXTURE_DATA = {
   scaleMode: "linear" as const,
 };
 
+/** Все URL портретов героя (файлы hero_*). */
+export function listHeroPortraitUrls(): readonly string[] {
+  return HERO_PORTRAIT_URLS;
+}
+
 /** Случайный портрет героя из папки portraits (файлы hero_*). */
 export function pickRandomHeroPortraitUrl(): string {
   if (HERO_PORTRAIT_URLS.length === 0) {

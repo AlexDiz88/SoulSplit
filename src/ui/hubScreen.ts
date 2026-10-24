@@ -16,7 +16,8 @@ export interface HubScreenHandlers {
   onMerchant: () => void;
   onCharacter: () => void;
   onInventory: () => void;
-  onNewGame: () => void;
+  onSave: () => void;
+  onExitToMenu: () => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -59,9 +60,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   btnChar.type = "button";
   const btnInv = el("button", "meta-btn", "Инвентарь");
   btnInv.type = "button";
-  const btnNew = el("button", "meta-btn meta-btn-danger", "Новая игра");
-  btnNew.type = "button";
-  actions.append(btnEmbark, btnZones, btnMerchant, btnChar, btnInv, btnNew);
+  const btnSave = el("button", "meta-btn", "Сохранить");
+  btnSave.type = "button";
+  const btnExit = el("button", "meta-btn meta-btn-danger", "В меню");
+  btnExit.type = "button";
+  actions.append(btnEmbark, btnZones, btnMerchant, btnChar, btnInv, btnSave, btnExit);
   panel.append(brand, heroLine, goldLine, xpBlock, actions);
   root.append(panel);
 
@@ -74,11 +77,8 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   btnMerchant.addEventListener("click", () => handlers.onMerchant());
   btnChar.addEventListener("click", () => handlers.onCharacter());
   btnInv.addEventListener("click", () => handlers.onInventory());
-  btnNew.addEventListener("click", () => {
-    if (window.confirm("Начать новую игру? Текущий прогресс будет стёрт.")) {
-      handlers.onNewGame();
-    }
-  });
+  btnSave.addEventListener("click", () => handlers.onSave());
+  btnExit.addEventListener("click", () => handlers.onExitToMenu());
 
   return {
     show(state) {

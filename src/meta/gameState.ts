@@ -1,4 +1,9 @@
-import { cloneHeroProfile, createNewHeroProfile, type HeroProfile } from "./heroProfile";
+import {
+  cloneHeroProfile,
+  createNewHeroProfile,
+  type HeroProfile,
+  type NewHeroOptions,
+} from "./heroProfile";
 
 export type ZoneId = "outskirts" | "ruins";
 
@@ -8,9 +13,9 @@ export interface GameState {
   lastZoneId: ZoneId | null;
 }
 
-export function createNewGameState(): GameState {
+export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
   return {
-    hero: createNewHeroProfile(),
+    hero: createNewHeroProfile(opts),
     unlockedZones: ["outskirts"],
     lastZoneId: null,
   };
