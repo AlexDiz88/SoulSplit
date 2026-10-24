@@ -73,7 +73,7 @@ export function mountStashWindow(): StashWindowApi {
   };
 
   const showBagTip = (cell: HTMLElement): void => {
-    if (!bag || document.body.classList.contains("inv-dragging")) return;
+    if (!bag || document.body.classList.contains("item-dragging")) return;
     const index = Number(cell.dataset.stash);
     if (!Number.isFinite(index)) return;
     const item = bag[index];

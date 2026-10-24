@@ -18,6 +18,7 @@ import { RARITY_LABEL, type ItemDef } from "../items/types";
 import { formatRolledAffix } from "../items/affixCatalog";
 import { sellPrice } from "../meta/economy";
 import { goldTipLine } from "./goldIcon";
+import { getItemDrag, type ItemDragSource } from "./itemDrag";
 import "./inventoryWindow.css";
 
 export interface InventoryWindowApi {
@@ -36,11 +37,6 @@ export interface InventoryWindowApi {
   setOnMarketGold(fn: ((delta: number) => void) | null): void;
   setShowToast(fn: (text: string) => void): void;
 }
-
-type DragOrigin =
-  | { kind: "inv"; index: number }
-  | { kind: "stash"; index: number }
-  | { kind: "equip"; slot: EquipSlotId };
 
 const DRAG_THRESHOLD = 5;
 
@@ -62,11 +58,11 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const gridHost = el("div", "inv-bag-grid-host");
   const tip = el("div", "inv-tip");
   tip.hidden = true;
-  const ghost = el("div", "inv-ghost");
-  ghost.hidden = true;
 
   root.append(head, gridHost, tip);
-  hud.append(root, ghost);
+  hud.append(root);
+
+  const itemDrag = getItemDrag();
 
   let hero: Unit | null = null;
   let stashBag: InventoryBag | null = null;
@@ -77,11 +73,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
   let onMarketGold: ((delta: number) => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
 
-  let dragOrigin: DragOrigin | null = null;
-  let dragItem: ItemDef | null = null;
-  let dragActive = false;
-  let dragStartX = 0;
-  let dragStartY = 0;
+  /** Pending pointer: ещё не прошли порог движения. */
+  let pending: { source: ItemDragSource; item: ItemDef; el: HTMLElement; x: number; y: number } | null =
+    null;
   let dropHighlight: HTMLElement | null = null;
 
   const toast = (text: string): void => {
@@ -108,7 +102,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const close = (): void => {
-    endDrag(false);
+    cancelDrag();
     root.hidden = true;
     tip.hidden = true;
   };
@@ -128,7 +122,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const showBagTip = (cell: HTMLElement): void => {
-    if (dragActive || !hero) return;
+    if (itemDrag.isActive() || !hero) return;
     const index = Number(cell.dataset.inv);
     if (!Number.isFinite(index)) return;
     const item = hero.inventory[index];
@@ -163,24 +157,14 @@ export function mountInventoryWindow(): InventoryWindowApi {
     }
   };
 
-  const hitUnder = (x: number, y: number): Element | null => {
-    ghost.hidden = true;
-    const under = document.elementFromPoint(x, y);
-    if (dragActive) ghost.hidden = false;
-    return under;
+  const cancelDrag = (): void => {
+    pending = null;
+    itemDrag.cancel();
+    clearDropHighlight();
   };
 
-  const endDrag = (apply: boolean, dropEl?: Element | null): void => {
-    const origin = dragOrigin;
-    const item = dragItem;
-    dragOrigin = null;
-    dragItem = null;
-    dragActive = false;
-    ghost.hidden = true;
-    ghost.replaceChildren();
-    clearDropHighlight();
-    document.body.classList.remove("inv-dragging");
-    if (!apply || !origin || !item || !hero) return;
+  const applyDrop = (source: ItemDragSource, dropEl: Element | null): void => {
+    if (!hero) return;
 
     if (!canChangeEquipment()) {
       toast("Экипировку можно менять только вне боя");
@@ -191,10 +175,10 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const bagTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-inv]");
     const stashTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-stash]");
 
-    if (origin.kind === "inv") {
+    if (source.kind === "inv") {
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
-        const result = hero.equipInventoryItemToSlot(origin.index, slot);
+        const result = hero.equipInventoryItemToSlot(source.index, slot);
         if (!result.ok) {
           toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
           return;
@@ -204,25 +188,25 @@ export function mountInventoryWindow(): InventoryWindowApi {
       }
       if (bagTarget) {
         const to = Number(bagTarget.dataset.inv);
-        if (!Number.isFinite(to) || to === origin.index) return;
-        hero.moveInventoryItem(origin.index, to);
+        if (!Number.isFinite(to) || to === source.index) return;
+        hero.moveInventoryItem(source.index, to);
         afterChange();
         return;
       }
       if (stashTarget && stashBag) {
         const to = Number(stashTarget.dataset.stash);
         if (!Number.isFinite(to)) return;
-        swapBetweenBags(hero.inventory, origin.index, stashBag, to);
+        swapBetweenBags(hero.inventory, source.index, stashBag, to);
         afterChange({ stash: true });
       }
       return;
     }
 
-    if (origin.kind === "stash") {
+    if (source.kind === "stash") {
       if (!stashBag) return;
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
-        const result = equipFromInventoryToSlot(hero.equipment, stashBag, origin.index, slot);
+        const result = equipFromInventoryToSlot(hero.equipment, stashBag, source.index, slot);
         if (!result.ok) {
           toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
           return;
@@ -234,24 +218,24 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (bagTarget) {
         const to = Number(bagTarget.dataset.inv);
         if (!Number.isFinite(to)) return;
-        swapBetweenBags(stashBag, origin.index, hero.inventory, to);
+        swapBetweenBags(stashBag, source.index, hero.inventory, to);
         afterChange({ stash: true });
         return;
       }
       if (stashTarget) {
         const to = Number(stashTarget.dataset.stash);
-        if (!Number.isFinite(to) || to === origin.index) return;
-        swapInventoryCells(stashBag, origin.index, to);
+        if (!Number.isFinite(to) || to === source.index) return;
+        swapInventoryCells(stashBag, source.index, to);
         afterChange({ stash: true });
       }
       return;
     }
 
-    if (origin.kind === "equip") {
+    if (source.kind === "equip") {
       if (bagTarget) {
         const to = Number(bagTarget.dataset.inv);
         if (!Number.isFinite(to)) return;
-        const result = hero.unequipSlotToIndex(origin.slot, to);
+        const result = hero.unequipSlotToIndex(source.slot, to);
         if (!result.ok) {
           toast(result.reason === "bad_slot" ? "Нельзя обменять с этим предметом" : "Нельзя снять");
           return;
@@ -262,7 +246,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (stashTarget && stashBag) {
         const to = Number(stashTarget.dataset.stash);
         if (!Number.isFinite(to)) return;
-        const result = unequipToInventoryAt(hero.equipment, stashBag, origin.slot, to);
+        const result = unequipToInventoryAt(hero.equipment, stashBag, source.slot, to);
         if (!result.ok) {
           toast(result.reason === "bad_slot" ? "Нельзя обменять с этим предметом" : "Нельзя снять");
           return;
@@ -273,8 +257,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
       }
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
-        if (slot === origin.slot) return;
-        const result = hero.swapEquipSlots(origin.slot, slot);
+        if (slot === source.slot) return;
+        const result = hero.swapEquipSlots(source.slot, slot);
         if (!result.ok) {
           toast("Слот не подходит");
           return;
@@ -284,25 +268,24 @@ export function mountInventoryWindow(): InventoryWindowApi {
     }
   };
 
-  const beginGhost = (item: ItemDef, x: number, y: number): void => {
-    ghost.replaceChildren();
-    ghost.dataset.rarity = item.rarity;
-    const face = el("span", "inv-ghost-face");
-    if (item.icon) {
-      const img = el("img", "inv-ghost-icon") as HTMLImageElement;
-      img.src = item.icon;
-      img.alt = "";
-      img.draggable = false;
-      face.append(img);
+  const updateDropHighlight = (source: ItemDragSource, item: ItemDef, under: Element | null): void => {
+    const equipTarget = under?.closest<HTMLElement>(".cs-slot[data-slot]");
+    const bagTarget = under?.closest<HTMLElement>(".inv-cell[data-inv]");
+    const stashTarget = under?.closest<HTMLElement>(".inv-cell[data-stash]");
+    if ((source.kind === "inv" || source.kind === "stash") && equipTarget) {
+      const slot = equipTarget.dataset.slot as EquipSlotId;
+      setDropHighlight(equipTarget, canEquipInSlot(item, slot));
+    } else if (
+      (source.kind === "equip" || source.kind === "inv" || source.kind === "stash") &&
+      (bagTarget || stashTarget)
+    ) {
+      setDropHighlight(bagTarget ?? stashTarget ?? null, true);
+    } else if (source.kind === "equip" && equipTarget) {
+      const slot = equipTarget.dataset.slot as EquipSlotId;
+      setDropHighlight(equipTarget, slot !== source.slot && canEquipInSlot(item, slot));
     } else {
-      face.append(el("span", "inv-ghost-glyph", SLOT_LABEL[item.slot].slice(0, 1)));
+      clearDropHighlight();
     }
-    ghost.append(face);
-    ghost.hidden = false;
-    ghost.style.left = `${x}px`;
-    ghost.style.top = `${y}px`;
-    document.body.classList.add("inv-dragging");
-    tip.hidden = true;
   };
 
   const tryEquipRmb = (invIndex: number, forceSlot?: EquipSlotId): void => {
@@ -513,76 +496,69 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (!equip && !invCell && !stashCell) return;
     if (invCell && root.hidden) return;
     if (stashCell && !stashBag) return;
-    if (equip && root.hidden && !stashBag) return;
+    if (equip && root.hidden && !stashBag && !marketMode) return;
 
-    let origin: DragOrigin;
+    let source: ItemDragSource;
     let item: ItemDef | null | undefined;
+    let sourceEl: HTMLElement;
     if (equip) {
       const slot = equip.dataset.slot as EquipSlotId;
       item = hero.equipment[slot];
-      origin = { kind: "equip", slot };
+      source = { kind: "equip", slot };
+      sourceEl = equip;
     } else if (stashCell && stashBag) {
       const index = Number(stashCell.dataset.stash);
       if (!Number.isFinite(index)) return;
       item = stashBag[index];
-      origin = { kind: "stash", index };
+      source = { kind: "stash", index };
+      sourceEl = stashCell;
     } else if (invCell) {
       const index = Number(invCell.dataset.inv);
       if (!Number.isFinite(index)) return;
       item = hero.inventory[index];
-      origin = { kind: "inv", index };
+      source = { kind: "inv", index };
+      sourceEl = invCell;
     } else {
       return;
     }
     if (!item) return;
 
-    dragOrigin = origin;
-    dragItem = item;
-    dragActive = false;
-    dragStartX = ev.clientX;
-    dragStartY = ev.clientY;
+    pending = { source, item, el: sourceEl, x: ev.clientX, y: ev.clientY };
   };
 
   window.addEventListener("pointerdown", onPointerDown, true);
 
   window.addEventListener("pointermove", (ev) => {
-    if (!dragOrigin || !dragItem) return;
-    const dx = ev.clientX - dragStartX;
-    const dy = ev.clientY - dragStartY;
-    if (!dragActive) {
+    if (pending && !itemDrag.isActive()) {
+      const dx = ev.clientX - pending.x;
+      const dy = ev.clientY - pending.y;
       if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
-      dragActive = true;
-      beginGhost(dragItem, ev.clientX, ev.clientY);
+      tip.hidden = true;
+      itemDrag.begin(pending.item, pending.source, ev.clientX, ev.clientY, pending.el);
+      pending = null;
     }
-    ghost.style.left = `${ev.clientX}px`;
-    ghost.style.top = `${ev.clientY}px`;
 
-    const under = hitUnder(ev.clientX, ev.clientY);
-    const equipTarget = under?.closest<HTMLElement>(".cs-slot[data-slot]");
-    const bagTarget = under?.closest<HTMLElement>(".inv-cell[data-inv]");
-    const stashTarget = under?.closest<HTMLElement>(".inv-cell[data-stash]");
-    if ((dragOrigin.kind === "inv" || dragOrigin.kind === "stash") && equipTarget) {
-      const slot = equipTarget.dataset.slot as EquipSlotId;
-      setDropHighlight(equipTarget, canEquipInSlot(dragItem, slot));
-    } else if (
-      (dragOrigin.kind === "equip" || dragOrigin.kind === "inv" || dragOrigin.kind === "stash") &&
-      (bagTarget || stashTarget)
-    ) {
-      setDropHighlight(bagTarget ?? stashTarget ?? null, true);
-    } else if (dragOrigin.kind === "equip" && equipTarget) {
-      const slot = equipTarget.dataset.slot as EquipSlotId;
-      setDropHighlight(equipTarget, slot !== dragOrigin.slot && canEquipInSlot(dragItem, slot));
-    } else {
-      clearDropHighlight();
-    }
+    if (!itemDrag.isActive()) return;
+    const session = itemDrag.getSession();
+    if (!session) return;
+    itemDrag.move(ev.clientX, ev.clientY);
+    updateDropHighlight(session.source, session.item, itemDrag.hitTest(ev.clientX, ev.clientY));
   });
 
   window.addEventListener("pointerup", (ev) => {
-    if (!dragOrigin) return;
-    const under = hitUnder(ev.clientX, ev.clientY);
-    endDrag(dragActive, under);
+    if (pending) {
+      pending = null;
+      return;
+    }
+    if (!itemDrag.isActive()) return;
+    const under = itemDrag.hitTest(ev.clientX, ev.clientY);
+    const session = itemDrag.end();
+    clearDropHighlight();
+    if (session && (session.source.kind === "inv" || session.source.kind === "stash" || session.source.kind === "equip")) {
+      applyDrop(session.source, under);
+    }
   });
-  window.addEventListener("pointercancel", () => endDrag(false));
+  window.addEventListener("pointercancel", () => cancelDrag());
 
   return {
     isOpen: () => !root.hidden,

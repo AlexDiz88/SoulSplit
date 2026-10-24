@@ -1,0 +1,109 @@
+/* Единый курсорный призрак предмета на всех экранах. */
+
+.item-drag-ghost {
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  --c-common: #c8c2b2;
+  --c-uncommon: #6fcf6a;
+  --c-magic: #4fa3ff;
+  --c-rare: #e8c84a;
+  --c-epic: #b878ff;
+  --rar-c: var(--c-common);
+  --cut: 7px;
+  --item-drag-size: var(--inv-slot, 76px);
+  position: fixed;
+  z-index: 10000;
+  left: 0;
+  top: 0;
+  width: var(--item-drag-size);
+  height: var(--item-drag-size);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 1;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(
+    155deg,
+    var(--rar-c),
+    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
+    var(--rar-c)
+  );
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--rar-c) 70%, #000),
+    0 12px 32px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
+  filter: none;
+}
+
+.item-drag-ghost[data-rarity="common"] { --rar-c: var(--c-common); }
+.item-drag-ghost[data-rarity="uncommon"] { --rar-c: var(--c-uncommon); }
+.item-drag-ghost[data-rarity="magic"] { --rar-c: var(--c-magic); }
+.item-drag-ghost[data-rarity="rare"] { --rar-c: var(--c-rare); }
+.item-drag-ghost[data-rarity="epic"] { --rar-c: var(--c-epic); }
+
+.item-drag-ghost[hidden] {
+  display: none;
+}
+
+.item-drag-face {
+  position: absolute;
+  inset: 2px;
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  background:
+    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    var(--slot-bg);
+  clip-path: inherit;
+}
+
+.item-drag-icon {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+  opacity: 1;
+}
+
+.item-drag-glyph {
+  color: var(--rar-c);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  text-shadow: 0 0 8px color-mix(in srgb, var(--rar-c) 55%, transparent);
+}
+
+body.item-dragging,
+body.item-dragging .inv-cell.filled,
+body.item-dragging .cs-slot.filled,
+body.item-dragging .market-offer {
+  cursor: var(--cur-grabbing);
+}
+
+/* Источник остаётся на месте, но без "прозрачного" призрака поверх UI. */
+.item-drag-source {
+  filter: brightness(0.55);
+}
+
+@media (max-width: 760px) {
+  .item-drag-ghost {
+    --item-drag-size: 56px;
+  }
+}
+
+@media (max-height: 450px) and (min-width: 640px) {
+  .item-drag-ghost {
+    --item-drag-size: 44px;
+  }
+}
