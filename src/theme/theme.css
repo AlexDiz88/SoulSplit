@@ -381,7 +381,7 @@
 .theme-heading,
 .meta-brand,
 .slots-head h1,
-.create-panel h1,
+.create-titles h1,
 .confirm-panel h2 {
   color: var(--theme-corona);
   text-shadow:

@@ -146,7 +146,7 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
         if (!slot.empty) handlers.onInfo(slot.index);
       });
 
-      const btnDel = el("button", "slot-action slot-action-danger", "Корзина");
+      const btnDel = el("button", "slot-action slot-action-danger", "Удалить");
       btnDel.type = "button";
       btnDel.disabled = slot.empty;
       btnDel.title = "Удалить персонажа";

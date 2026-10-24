@@ -1,6 +1,10 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import { listHeroPortraitUrls } from "../art/portraits";
-import type { NewHeroOptions } from "../meta/heroProfile";
+import {
+  HERO_NAME_MAX_LENGTH,
+  type NewHeroOptions,
+  validateHeroName,
+} from "../meta/heroProfile";
 import type { Aspect } from "../types";
 import "./hubScreen.css";
 import "./startMenu.css";
@@ -42,22 +46,31 @@ export function mountCharacterCreateScreen(
   root.id = "character-create-screen";
   root.hidden = true;
 
-  const panel = el("div", "meta-panel create-panel");
-  panel.append(el("h1", undefined, "Создание персонажа"));
+  const wrap = el("div", "create-wrap");
+  const head = el("div", "create-head");
+  const titles = el("div", "create-titles");
+  titles.append(el("h1", undefined, "Создание персонажа"));
   const hint = el("p", "create-hint", "Слот 1");
-  panel.append(hint);
+  titles.append(hint);
+  const btnBack = el("button", "meta-btn", "Назад");
+  btnBack.type = "button";
+  head.append(titles, btnBack);
+  wrap.append(head);
 
-  const nameField = el("div", "create-field");
+  const body = el("div", "create-body");
+
+  const nameField = el("div", "create-field create-field-name");
   const nameLabel = el("label", undefined, "Имя");
   nameLabel.htmlFor = "hero-name-input";
   const nameInput = el("input");
   nameInput.type = "text";
   nameInput.id = "hero-name-input";
-  nameInput.maxLength = 24;
+  nameInput.maxLength = HERO_NAME_MAX_LENGTH;
   nameInput.autocomplete = "off";
   nameInput.placeholder = "Имя героя";
+  nameInput.spellcheck = false;
   nameField.append(nameLabel, nameInput);
-  panel.append(nameField);
+  body.append(nameField);
 
   const aspectField = el("div", "create-field");
   aspectField.append(el("label", undefined, "Первичный аспект"));
@@ -74,9 +87,9 @@ export function mountCharacterCreateScreen(
     aspectGrid.append(btn);
   }
   aspectField.append(aspectGrid);
-  panel.append(aspectField);
+  body.append(aspectField);
 
-  const portraitField = el("div", "create-field");
+  const portraitField = el("div", "create-field create-field-portraits");
   portraitField.append(el("label", undefined, "Портрет"));
   const portraitGrid = el("div", "portrait-grid");
   const portraitButtons: HTMLButtonElement[] = [];
@@ -98,19 +111,19 @@ export function mountCharacterCreateScreen(
     portraitGrid.append(btn);
   }
   portraitField.append(portraitGrid);
-  panel.append(portraitField);
+  body.append(portraitField);
 
+  const footer = el("div", "create-footer");
   const error = el("p", "create-error");
-  panel.append(error);
-
   const actions = el("div", "create-actions");
-  const btnBack = el("button", "meta-btn", "Назад");
-  btnBack.type = "button";
   const btnCreate = el("button", "meta-btn meta-btn-primary", "Создать");
   btnCreate.type = "button";
-  actions.append(btnBack, btnCreate);
-  panel.append(actions);
-  root.append(panel);
+  actions.append(btnCreate);
+  footer.append(error, actions);
+  body.append(footer);
+
+  wrap.append(body);
+  root.append(wrap);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
@@ -130,8 +143,9 @@ export function mountCharacterCreateScreen(
   btnBack.addEventListener("click", () => handlers.onBack());
   btnCreate.addEventListener("click", () => {
     const name = nameInput.value.trim();
-    if (name.length < 2) {
-      error.textContent = "Имя должно быть не короче 2 символов.";
+    const nameError = validateHeroName(name);
+    if (nameError) {
+      error.textContent = nameError;
       nameInput.focus();
       return;
     }

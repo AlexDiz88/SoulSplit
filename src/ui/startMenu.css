@@ -176,8 +176,8 @@
 /* --- Выбор слота --- */
 .slots-screen {
   z-index: 60;
-  align-items: stretch;
-  justify-content: flex-start;
+  align-items: center;
+  justify-content: center;
   overflow: auto;
   padding: 20px 16px 28px;
   background:
@@ -188,7 +188,7 @@
 
 .slots-wrap {
   width: min(1100px, 100%);
-  margin: 0 auto;
+  margin: auto;
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -226,7 +226,7 @@
 .slot-card {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 2px;
   min-width: 0;
 }
 
@@ -360,17 +360,35 @@
 /* --- Создание персонажа --- */
 .create-screen {
   z-index: 60;
+  align-items: stretch;
+  justify-content: flex-start;
   overflow: auto;
-  background: var(--theme-screen-wash), var(--theme-ink);
+  padding: 20px 16px 28px;
+  background:
+    var(--theme-screen-wash),
+    radial-gradient(ellipse at 50% 0%, rgba(80, 70, 140, 0.2), transparent 50%),
+    var(--theme-ink);
 }
 
-.create-panel {
-  width: min(640px, 100%);
-  padding: 28px 24px 24px;
+.create-wrap {
+  width: min(1100px, 100%);
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
 }
 
-.create-panel h1 {
-  margin: 0 0 6px;
+.create-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.create-titles h1 {
+  margin: 0 0 4px;
   font-size: 1.55rem;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -378,33 +396,52 @@
 }
 
 .create-hint {
-  margin: 0 0 18px;
+  margin: 0;
   color: var(--muted);
   font-size: 0.9rem;
 }
 
+.create-head .meta-btn {
+  width: auto;
+  min-width: 120px;
+  text-align: center;
+  padding: 10px 16px;
+}
+
+.create-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
 .create-field {
-  margin-bottom: 16px;
+  margin: 0;
 }
 
 .create-field label {
   display: block;
-  margin-bottom: 6px;
+  margin-bottom: 10px;
   font-size: 0.82rem;
   font-weight: 600;
   color: var(--muted);
   letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.create-field-name input[type="text"] {
+  width: min(420px, 100%);
 }
 
 .create-field input[type="text"] {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--theme-border);
   border-radius: 2px;
   background: rgba(12, 14, 22, 0.92);
   color: var(--theme-mist);
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.05rem;
   box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.45);
 }
 
@@ -418,16 +455,21 @@
 
 .aspect-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.create-field-portraits {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .portrait-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 8px;
-  max-height: 220px;
-  overflow: auto;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
   padding: 2px;
 }
 
@@ -459,19 +501,30 @@
   box-shadow: 0 0 16px var(--theme-glow-soft);
 }
 
+.create-footer {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 8px;
+}
+
 .create-actions {
   display: flex;
   gap: 10px;
-  margin-top: 8px;
-}
-
-.create-actions .meta-btn {
-  flex: 1;
   margin-top: 0;
 }
 
+.create-actions .meta-btn {
+  width: auto;
+  min-width: 180px;
+  margin-top: 0;
+  padding: 12px 28px;
+}
+
 .create-error {
-  margin: 0 0 10px;
+  margin: 0;
   min-height: 1.2em;
   color: var(--theme-danger);
   font-size: 0.85rem;
@@ -528,6 +581,14 @@
   .slots-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
+
+  .aspect-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .portrait-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -536,6 +597,10 @@
   }
 
   .aspect-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .portrait-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }

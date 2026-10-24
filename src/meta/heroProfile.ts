@@ -26,6 +26,30 @@ export interface NewHeroOptions {
   portraitUrl: string;
 }
 
+export const HERO_NAME_MIN_LENGTH = 2;
+export const HERO_NAME_MAX_LENGTH = 15;
+
+/** Буквы, опционально группы через -/_ , цифры только в самом конце. */
+const HERO_NAME_PATTERN = /^[A-Za-zА-Яа-яЁё]+(?:[-_][A-Za-zА-Яа-яЁё]+)*\d*$/;
+
+/** null если имя ок, иначе текст ошибки для UI. */
+export function validateHeroName(raw: string): string | null {
+  const name = raw.trim();
+  if (name.length < HERO_NAME_MIN_LENGTH || name.length > HERO_NAME_MAX_LENGTH) {
+    return `Имя должно быть от ${HERO_NAME_MIN_LENGTH} до ${HERO_NAME_MAX_LENGTH} символов.`;
+  }
+  if (/[^A-Za-zА-Яа-яЁё0-9_-]/.test(name)) {
+    return 'Разрешены буквы, цифры и символы "-" и "_".';
+  }
+  if (/[-_]$/.test(name)) {
+    return 'Имя не может заканчиваться на "-" или "_".';
+  }
+  if (!HERO_NAME_PATTERN.test(name)) {
+    return "Цифры допустимы только в конце имени.";
+  }
+  return null;
+}
+
 function shortFromName(name: string): string {
   const trimmed = name.trim();
   const letters = [...trimmed].filter((ch) => /\S/.test(ch));
@@ -85,7 +109,7 @@ export function sheetBaseFromProfile(profile: HeroProfile): HeroStatSheet {
 
 export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfile {
   const weapon = createStarterWeapon("mainhand");
-  const name = (opts?.name?.trim() || "Айра").slice(0, 24);
+  const name = (opts?.name?.trim() || "Айра").slice(0, HERO_NAME_MAX_LENGTH);
   const aspect = opts?.aspect ?? "air";
   const loadout = STARTER_LOADOUT_BY_ASPECT[aspect];
   return {
