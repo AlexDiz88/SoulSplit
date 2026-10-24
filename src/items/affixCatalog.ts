@@ -29,7 +29,8 @@ function affix(
 
 const CORE: AffixDef[] = [
   affix("max_hp", "maxHp", "defense", "здоровья", [
-    [1, 20, 40],
+    [1, 22, 44],
+    [4, 32, 58],
     [10, 40, 80],
     [20, 80, 140],
     [30, 120, 200],
@@ -85,13 +86,15 @@ const CORE: AffixDef[] = [
   ], 7),
 
   affix("weapon_atk", "weaponAttackBonus", "offense", "бонуса атаки оружия", [
-    [1, 2, 5],
+    [1, 3, 6],
+    [4, 4, 8],
     [10, 4, 9],
     [20, 7, 14],
     [30, 10, 18],
   ]),
   affix("ability_dmg", "abilityDamage", "offense", "урона способностей", [
-    [1, 3, 6],
+    [1, 4, 7],
+    [4, 5, 9],
     [10, 5, 10],
     [20, 8, 14],
     [30, 10, 18],

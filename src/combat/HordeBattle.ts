@@ -1,6 +1,13 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
 import { ABILITIES, ASPECT_COLOR } from "../abilities/definitions";
-import { dragonBreathCells, GRID_SIZE, inBounds, orthoNeighbors, squallCells } from "../abilities/shapes";
+import {
+  airPocketCells,
+  dragonBreathCells,
+  GRID_SIZE,
+  inBounds,
+  orthoNeighbors,
+  squallCells,
+} from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
 import type { AbilityDef, AbilityId, GridPos, Aspect, WeaponKind } from "../types";
 import {
@@ -458,9 +465,10 @@ export class HordeBattle {
 
     this.config.encounter.forEach((spawn, index) => {
       const kind = spawn.kind;
+      const elite = spawn.elite === true;
       const u = new Unit({
         id: `${kind.id}-${index}`,
-        name: kind.name,
+        name: elite ? `Элита: ${kind.name}` : kind.name,
         short: kind.short,
         team: "enemy",
         aspect: kind.aspect,
@@ -474,6 +482,7 @@ export class HordeBattle {
         },
         abilities: kind.abilities ?? [],
         portraitUrl: kind.portraitUrl,
+        elite,
       });
       this.unitsLayer.addChild(u.view);
       this.units.push(u);
@@ -774,7 +783,9 @@ export class HordeBattle {
         ? dragonBreathCells(cell).map((h) => h.pos)
         : def.id === "squall"
           ? squallCells(cell)
-          : [cell];
+          : def.id === "air_pocket"
+            ? airPocketCells(cell)
+            : [cell];
     const centers = hits.map((pos) => {
       const c = this.cellCenter(pos);
       return { x: c.x, y: c.y, size: CELL - 6 };
@@ -924,13 +935,13 @@ export class HordeBattle {
         }
         break;
       }
-      case "stun_strike": {
+      case "hammer_throw": {
         const aim = this.aimCell(cell, clicked);
         if (!aim) return;
         const to = this.cellCenter(aim);
         const home = { ...from };
         const stunDur = def.effects?.stunDuration ?? 2.2;
-        await this.vfx.stunStrike(
+        await this.vfx.hammerThrow(
           from,
           to,
           (t) => {
@@ -954,6 +965,16 @@ export class HordeBattle {
         const buffPot = def.effects?.atkBuffPotency ?? 0.35;
         caster.addStatus({ id: "atk_buff", kind: "atk_buff", remaining: buffDur, potency: buffPot });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "СИЛА", 0xc9b896);
+        break;
+      }
+      case "demoralizing_shout": {
+        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.iron, caster.cardSize * 1.1, 0.45);
+        const debuffDur = def.effects?.atkDebuffDuration ?? 5;
+        const debuffMult = def.effects?.atkDebuffMult ?? 0.7;
+        for (const u of this.livingEnemies()) {
+          u.addStatus({ id: "atk_debuff", kind: "atk_debuff", remaining: debuffDur, potency: debuffMult });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "СТРАХ", 0xc9b896);
+        }
         break;
       }
       case "sever_artery": {
@@ -1026,6 +1047,33 @@ export class HordeBattle {
           const u = this.unitAtCell(pos);
           if (!u) continue;
           this.dealAbilityDamage(caster, u, def.damage, def);
+        }
+        break;
+      }
+      case "dust_veil": {
+        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 1.2, 0.5);
+        const slowDur = def.effects?.slowDuration ?? 4;
+        const slowPot = def.effects?.slowPotency ?? 0.3;
+        for (const u of this.livingEnemies()) {
+          u.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "ПЫЛЬ", 0xa8c8dc);
+        }
+        break;
+      }
+      case "air_pocket": {
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const hits = airPocketCells(aim);
+        await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.air, CELL * 0.5, 0.3);
+        const slowDur = def.effects?.slowDuration ?? 5;
+        const slowPot = def.effects?.slowPotency ?? 0.35;
+        for (const pos of hits) {
+          const c = this.cellCenter(pos);
+          void this.vfx.ring(c.x, c.y, ASPECT_COLOR.air, CELL * 0.4, 0.35);
+          const u = this.unitAtCell(pos);
+          if (!u) continue;
+          u.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "КАРМАН", 0xa8c8dc);
         }
         break;
       }

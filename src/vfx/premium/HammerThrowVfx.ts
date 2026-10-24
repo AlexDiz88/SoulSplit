@@ -6,7 +6,7 @@ import { TEX } from "../textures";
 type Pt = { x: number; y: number };
 
 /** Премиум оглушающий удар: рывок → металлический удар → стан-звёзды. */
-export async function playStunStrikeVfx(
+export async function playHammerThrowVfx(
   layer: Container,
   tweens: TweenManager,
   from: Pt,

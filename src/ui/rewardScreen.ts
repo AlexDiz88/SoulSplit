@@ -8,6 +8,7 @@ import "./hubScreen.css";
 export interface RewardScreenPayload {
   items: ItemDef[];
   xpGained: number;
+  goldGained: number;
   levelsGained: number;
   newLevel: number;
   kills: number;
@@ -117,7 +118,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     show(profile, payload) {
       heroRef = profile;
       taken.clear();
-      summary.textContent = `${payload.zoneName}: +${payload.xpGained} опыта, убито ${payload.kills}`;
+      summary.textContent = `${payload.zoneName}: +${payload.xpGained} опыта, +${payload.goldGained} золота, убито ${payload.kills}`;
       if (payload.levelsGained > 0) {
         levelup.hidden = false;
         levelup.textContent = `Новый уровень: ${payload.newLevel}`;

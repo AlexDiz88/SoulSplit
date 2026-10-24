@@ -2,6 +2,7 @@ import type { Application } from "pixi.js";
 import { HordeBattle, type BattleResult } from "../combat/HordeBattle";
 import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
+import { victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
 import {
   addXpToProfile,
@@ -11,26 +12,29 @@ import {
 } from "../meta/heroProfile";
 import { rollVictoryLoot, victoryXp } from "../meta/loot";
 import { clearSave, loadOrNewGame, saveGame } from "../meta/save";
-import { getZone, syncUnlockedZones } from "../meta/zones";
+import { getZone, isZoneUnlocked, syncUnlockedZones } from "../meta/zones";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
 import { mountDefeatScreen } from "../ui/defeatScreen";
 import { mountHubScreen } from "../ui/hubScreen";
+import { mountMerchantScreen } from "../ui/merchantScreen";
 import { mountRewardScreen } from "../ui/rewardScreen";
 import { mountZoneSelectScreen } from "../ui/zoneSelectScreen";
 
-type AppScreen = "hub" | "zone_select" | "battle" | "reward" | "defeat";
+type AppScreen = "hub" | "zone_select" | "merchant" | "battle" | "reward" | "defeat";
 
 export class GameApp {
   private screen: AppScreen = "hub";
   private state: GameState;
   private battle: HordeBattle | null = null;
   private hubUnit: Unit | null = null;
+  private prevUnlocked = new Set<ZoneId>();
 
   private readonly app: Application;
   private readonly hud: BattleHudApi;
   private readonly hub: ReturnType<typeof mountHubScreen>;
   private readonly zones: ReturnType<typeof mountZoneSelectScreen>;
+  private readonly merchant: ReturnType<typeof mountMerchantScreen>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
   private readonly defeat: ReturnType<typeof mountDefeatScreen>;
 
@@ -39,9 +43,12 @@ export class GameApp {
     this.hud = hud;
     this.state = loadOrNewGame();
     this.state.unlockedZones = syncUnlockedZones(this.state.hero.level, this.state.unlockedZones);
+    this.prevUnlocked = new Set(this.state.unlockedZones);
 
     this.hub = mountHubScreen({
-      onEmbark: () => this.goZoneSelect(),
+      onEmbark: () => this.embarkQuick(),
+      onSelectZone: () => this.goZoneSelect(),
+      onMerchant: () => this.goMerchant(),
       onCharacter: () => this.hud.openCharacter(),
       onInventory: () => this.hud.openInventory(),
       onNewGame: () => this.newGame(),
@@ -50,6 +57,17 @@ export class GameApp {
     this.zones = mountZoneSelectScreen({
       onBack: () => this.goHub(),
       onStartZone: (id) => this.startBattle(id),
+    });
+
+    this.merchant = mountMerchantScreen({
+      onBack: () => this.goHub(),
+      onSold: () => {
+        // Продажа уже в profile.inventory - не перетирать из hubUnit.
+        this.persist();
+        this.rebuildHubUnit();
+        this.merchant.show(this.state.hero);
+      },
+      showToast: (t) => this.hud.showToast(t),
     });
 
     this.reward = mountRewardScreen({
@@ -62,7 +80,12 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
-    this.defeat = mountDefeatScreen(() => this.goHub());
+    this.defeat = mountDefeatScreen({
+      onHub: () => this.goHub(),
+      onRetry: () => this.retryLastZone(),
+      onCharacter: () => this.hud.openCharacter(),
+      onInventory: () => this.hud.openInventory(),
+    });
 
     document.addEventListener("visibilitychange", () => {
       if (document.visibilityState === "hidden") this.persist();
@@ -80,6 +103,8 @@ export class GameApp {
       if (!this.hubUnit) return;
       syncProfileFromUnit(this.state.hero, this.hubUnit);
       this.persist();
+      if (this.screen === "hub") this.hub.show(this.state);
+      if (this.screen === "merchant") this.merchant.show(this.state.hero);
     });
   }
 
@@ -94,6 +119,7 @@ export class GameApp {
   private newGame(): void {
     clearSave();
     this.state = createNewGameState();
+    this.prevUnlocked = new Set(this.state.unlockedZones);
     this.persist();
     this.goHub();
     this.hud.showToast("Новая игра");
@@ -102,6 +128,7 @@ export class GameApp {
   private hideMeta(): void {
     this.hub.hide();
     this.zones.hide();
+    this.merchant.hide();
     this.reward.hide();
     this.defeat.hide();
   }
@@ -119,6 +146,33 @@ export class GameApp {
     this.battle = null;
   }
 
+  /** C4: после первого похода "В поход" сразу в последнюю зону. */
+  private embarkQuick(): void {
+    if (this.hubUnit) syncProfileFromUnit(this.state.hero, this.hubUnit);
+    const last = this.state.lastZoneId;
+    if (last && isZoneUnlocked(last, this.state.hero.level, this.state.unlockedZones)) {
+      this.startBattle(last);
+      return;
+    }
+    const unlocked = this.state.unlockedZones.filter((id) =>
+      isZoneUnlocked(id, this.state.hero.level, this.state.unlockedZones),
+    );
+    if (unlocked.length === 1) {
+      this.startBattle(unlocked[0]!);
+      return;
+    }
+    this.goZoneSelect();
+  }
+
+  private retryLastZone(): void {
+    const id = this.state.lastZoneId ?? "outskirts";
+    if (!isZoneUnlocked(id, this.state.hero.level, this.state.unlockedZones)) {
+      this.goHub();
+      return;
+    }
+    this.startBattle(id);
+  }
+
   goHub(): void {
     this.destroyBattle();
     this.hideMeta();
@@ -128,15 +182,22 @@ export class GameApp {
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.state.unlockedZones = syncUnlockedZones(this.state.hero.level, this.state.unlockedZones);
+    this.noteNewZones();
     this.rebuildHubUnit();
     this.hub.show(this.state);
     this.persist();
   }
 
-  private goZoneSelect(): void {
-    if (this.hubUnit) {
-      syncProfileFromUnit(this.state.hero, this.hubUnit);
+  private noteNewZones(): void {
+    for (const id of this.state.unlockedZones) {
+      if (this.prevUnlocked.has(id)) continue;
+      if (id === "ruins") this.hud.showToast("Открыты Руины");
     }
+    this.prevUnlocked = new Set(this.state.unlockedZones);
+  }
+
+  private goZoneSelect(): void {
+    if (this.hubUnit) syncProfileFromUnit(this.state.hero, this.hubUnit);
     this.hideMeta();
     this.hud.closeOverlays();
     this.screen = "zone_select";
@@ -144,6 +205,18 @@ export class GameApp {
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.zones.show(this.state);
+  }
+
+  private goMerchant(): void {
+    if (this.hubUnit) syncProfileFromUnit(this.state.hero, this.hubUnit);
+    this.hideMeta();
+    this.hud.closeOverlays();
+    this.screen = "merchant";
+    this.hud.setShellMode("hub");
+    this.hud.setCanChangeEquipment(() => true);
+    this.bindHubEquipmentSync();
+    this.rebuildHubUnit();
+    this.merchant.show(this.state.hero);
   }
 
   startBattle(zoneId: ZoneId): void {
@@ -164,6 +237,7 @@ export class GameApp {
       countMin: zone.enemyCount[0],
       countMax: zone.enemyCount[1],
       itemLevel: zone.itemLevel,
+      eliteChance: zone.eliteChance ?? 0,
     });
 
     const heroSnap = cloneGameState(this.state).hero;
@@ -190,6 +264,7 @@ export class GameApp {
       this.hideMeta();
       this.screen = "defeat";
       this.hud.setShellMode("hub");
+      this.hud.setCanChangeEquipment(() => true);
       this.bindHubEquipmentSync();
       this.rebuildHubUnit();
       this.defeat.show();
@@ -199,7 +274,10 @@ export class GameApp {
     const zone = getZone(result.zoneId);
     const kills = result.killed.length;
     const xp = victoryXp(zone, kills);
+    const gold = victoryGold(zone.itemLevel, kills);
+    const levelBefore = this.state.hero.level;
     const levelResult = addXpToProfile(this.state.hero, xp);
+    this.state.hero.gold += gold;
     this.state.unlockedZones = syncUnlockedZones(this.state.hero.level, this.state.unlockedZones);
 
     const items = rollVictoryLoot({
@@ -216,9 +294,16 @@ export class GameApp {
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.rebuildHubUnit();
+
+    if (levelBefore < 3 && this.state.hero.level >= 3 && !this.prevUnlocked.has("ruins")) {
+      this.hud.showToast("Открыты Руины");
+      this.prevUnlocked.add("ruins");
+    }
+
     this.reward.show(this.state.hero, {
       items,
       xpGained: xp,
+      goldGained: gold,
       levelsGained: levelResult.levelsGained,
       newLevel: this.state.hero.level,
       kills,

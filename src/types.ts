@@ -7,18 +7,30 @@ export type AbilityId =
   | "ice_shield"
   | "fireball"
   | "flame_cone"
-  | "stun_strike"
+  | "hammer_throw"
   | "titan_might"
+  | "demoralizing_shout"
   | "sever_artery"
   | "shadow_strike"
   | "wind_gust"
   | "wind_speed"
   | "squall"
+  | "dust_veil"
+  | "air_pocket"
   | "tornado"
   | "dark_arrow";
 
-/** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток. */
-export type TargetMode = "enemy" | "ally" | "self" | "cone" | "ally_aura" | "enemy_blast" | "zone" | "cell";
+/** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток; all_enemies - мгновенно по всем. */
+export type TargetMode =
+  | "enemy"
+  | "ally"
+  | "self"
+  | "cone"
+  | "ally_aura"
+  | "enemy_blast"
+  | "zone"
+  | "cell"
+  | "all_enemies";
 
 export interface GridPos {
   col: number;
@@ -27,7 +39,7 @@ export interface GridPos {
 
 export interface StatusEffect {
   id: string;
-  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "slow" | "haste" | "invuln";
+  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "atk_debuff" | "slow" | "haste" | "invuln";
   remaining: number;
   potency: number;
 }
@@ -58,6 +70,9 @@ export interface AbilityEffects {
   atkBuffDuration?: number;
   /** Прибавка к урону атаки (0.35 → +35% / ×1.35). */
   atkBuffPotency?: number;
+  atkDebuffDuration?: number;
+  /** Множитель урона атаки врагов (0.7 → ×0.7). */
+  atkDebuffMult?: number;
   /** Доля урона вторичных клеток зоны от damage (0.55 → 55%). */
   zoneSecondaryRatio?: number;
   invulnerableDuringCast?: boolean;

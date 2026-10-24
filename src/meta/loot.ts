@@ -21,19 +21,20 @@ const SLOT_WEIGHTS: { slot: EquipSlotId; weight: number }[] = [
 type RarityTable = { rarity: ItemRarity; weight: number }[];
 
 const RARITY_BY_ZONE: Record<string, RarityTable> = {
+  /** C3: чуть больше rare, чтобы за 2-3 боя экип ощущался. */
   outskirts: [
-    { rarity: "common", weight: 45 },
+    { rarity: "common", weight: 40 },
     { rarity: "uncommon", weight: 30 },
-    { rarity: "magic", weight: 18 },
-    { rarity: "rare", weight: 6 },
+    { rarity: "magic", weight: 20 },
+    { rarity: "rare", weight: 9 },
     { rarity: "epic", weight: 1 },
   ],
   ruins: [
-    { rarity: "common", weight: 25 },
-    { rarity: "uncommon", weight: 30 },
+    { rarity: "common", weight: 22 },
+    { rarity: "uncommon", weight: 28 },
     { rarity: "magic", weight: 28 },
-    { rarity: "rare", weight: 14 },
-    { rarity: "epic", weight: 3 },
+    { rarity: "rare", weight: 17 },
+    { rarity: "epic", weight: 5 },
   ],
 };
 
@@ -49,7 +50,8 @@ function pickWeighted<T>(items: T[], weightOf: (t: T) => number, rng: () => numb
 }
 
 function dropCount(kills: number, rng: () => number): number {
-  const bonusChance = Math.min(0.15 + kills * 0.03, 0.55);
+  /** C3: чаще 2 дропа после средней пачки. */
+  const bonusChance = Math.min(0.22 + kills * 0.04, 0.62);
   return 1 + (rng() < bonusChance ? 1 : 0);
 }
 

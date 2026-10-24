@@ -34,9 +34,16 @@
 }
 
 .meta-hero-line {
-  margin: 0 0 12px;
+  margin: 0 0 4px;
   color: var(--muted);
   font-size: 0.95rem;
+}
+
+.meta-gold-line {
+  margin: 0 0 12px;
+  color: var(--accent);
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .meta-xp {

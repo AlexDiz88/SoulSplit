@@ -25,7 +25,11 @@ export function loadGame(): GameState | null {
     if (!raw) return null;
     const parsed: unknown = JSON.parse(raw);
     if (!isGameState(parsed)) return null;
-    return cloneGameState(parsed);
+    const state = cloneGameState(parsed);
+    if (typeof state.hero.gold !== "number" || !Number.isFinite(state.hero.gold)) {
+      state.hero.gold = 0;
+    }
+    return state;
   } catch (err) {
     console.warn("loadGame failed", err);
     return null;

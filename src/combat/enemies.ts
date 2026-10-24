@@ -45,7 +45,8 @@ export const ENEMY_KINDS: EnemyKind[] = [
     weapon: "melee",
     reach: 1,
     spawnRows: [1],
-    hp: 170,
+    /** C2: 170 слишком танково против клинка 20-30 на ур.1. */
+    hp: 140,
     atk: 12,
     cd: 2.3,
     portraitUrl: PORTRAIT_URLS.skeleton_guard,
@@ -96,6 +97,7 @@ export interface SpawnedEnemy {
   /** Уже смасштабированные статы для зоны. */
   hp: number;
   atk: number;
+  elite?: boolean;
 }
 
 export interface RollEncounterOptions {
@@ -103,18 +105,28 @@ export interface RollEncounterOptions {
   countMin?: number;
   countMax?: number;
   itemLevel?: number;
+  /** Шанс элиты на каждого врага. */
+  eliteChance?: number;
   rng?: () => number;
 }
+
+/** Элитный модификатор v1: x1.6 hp, x1.25 atk. */
+export const ELITE_HP_MULT = 1.6;
+export const ELITE_ATK_MULT = 1.25;
 
 export function scaleEnemyStats(
   kind: EnemyKind,
   itemLevel: number,
+  elite = false,
 ): { hp: number; atk: number } {
   const ilvl = Math.max(1, itemLevel);
-  return {
-    hp: Math.round(kind.hp * (0.85 + 0.15 * ilvl)),
-    atk: Math.round(kind.atk * (0.9 + 0.12 * ilvl)),
-  };
+  let hp = Math.round(kind.hp * (0.85 + 0.15 * ilvl));
+  let atk = Math.round(kind.atk * (0.9 + 0.12 * ilvl));
+  if (elite) {
+    hp = Math.round(hp * ELITE_HP_MULT);
+    atk = Math.round(atk * ELITE_ATK_MULT);
+  }
+  return { hp, atk };
 }
 
 function kindsFromPool(pool: string[] | undefined): EnemyKind[] {
@@ -132,6 +144,7 @@ export function rollEncounter(opts: RollEncounterOptions = {}): SpawnedEnemy[] {
   const countMax = Math.max(countMin, opts.countMax ?? 12);
   const count = countMin + Math.floor(rng() * (countMax - countMin + 1));
   const itemLevel = opts.itemLevel ?? 1;
+  const eliteChance = Math.max(0, opts.eliteChance ?? 0);
   const taken = new Set<string>();
   const out: SpawnedEnemy[] = [];
   let guard = 0;
@@ -149,8 +162,9 @@ export function rollEncounter(opts: RollEncounterOptions = {}): SpawnedEnemy[] {
     if (!open.length) continue;
     const cell = open[Math.floor(rng() * open.length)]!;
     taken.add(`${cell.col}:${cell.row}`);
-    const scaled = scaleEnemyStats(kind, itemLevel);
-    out.push({ kind, col: cell.col, row: cell.row, hp: scaled.hp, atk: scaled.atk });
+    const elite = eliteChance > 0 && rng() < eliteChance;
+    const scaled = scaleEnemyStats(kind, itemLevel, elite);
+    out.push({ kind, col: cell.col, row: cell.row, hp: scaled.hp, atk: scaled.atk, elite });
   }
   return out;
 }

@@ -4,7 +4,7 @@ icon: dust_veil.png
 name: "Пыльная пелена"
 aspect: "Воздух"
 aspect_id: air
-status: отказ
+status: одобрено
 ---
 
 # Пыльная пелена

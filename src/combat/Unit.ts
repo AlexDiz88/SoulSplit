@@ -35,6 +35,7 @@ const CARD = 112;
 const PORTRAIT_PAD = 3;
 const FRAME_RADIUS = 1;
 const FRAME_COLOR = 0xffffff;
+const ELITE_FRAME_COLOR = 0xc4a35a;
 
 export interface UnitInit {
   id: string;
@@ -58,6 +59,8 @@ export interface UnitInit {
   inventory?: InventoryBag;
   /** Уровень героя (для UI). У врагов не задаётся. */
   level?: number;
+  /** Элитный враг - золотая рамка и тег. */
+  elite?: boolean;
 }
 
 export class Unit {
@@ -82,6 +85,7 @@ export class Unit {
   inventory: InventoryBag;
   /** Уровень героя; у врагов 0. */
   level: number;
+  readonly elite: boolean;
   autoTimer: number;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
@@ -122,6 +126,7 @@ export class Unit {
     this.equipment = init.equipment ?? {};
     this.inventory = cloneInventory(init.inventory);
     this.level = init.level ?? (init.team === "player" ? 1 : 0);
+    this.elite = init.elite ?? false;
     this.sheetBase = createBaseHeroSheet();
     this.sheet =
       init.sheet === undefined
@@ -193,7 +198,7 @@ export class Unit {
     });
     this.statusText.anchor.set(0.5, 0);
     this.subText = new Text({
-      text: init.subtitle ?? "",
+      text: init.elite ? "Элита" : (init.subtitle ?? ""),
       style: {
         fontFamily: "Exo 2, sans-serif",
         fontSize: 12,
@@ -281,7 +286,7 @@ export class Unit {
       .fill({ color: 0x1a2018, alpha: 0.95 });
     this.frame
       .roundRect(-half, -half, this.cardSize, this.cardSize, FRAME_RADIUS)
-      .stroke({ color: FRAME_COLOR, width: 2 });
+      .stroke({ color: this.elite ? ELITE_FRAME_COLOR : FRAME_COLOR, width: this.elite ? 3 : 2 });
 
     if (!this.portrait) {
       this.frame.roundRect(-22, -28, 44, 20, FRAME_RADIUS).fill({ color: 0x3a4534, alpha: 0.85 });
@@ -292,7 +297,8 @@ export class Unit {
       this.subText.position.set(0, 8);
     } else {
       this.nameText.visible = false;
-      this.subText.visible = false;
+      this.subText.visible = this.elite;
+      if (this.elite) this.subText.position.set(0, -half + 10);
     }
 
     this.hpBarBg.clear().roundRect(-barW / 2, barY, barW, barH, 2).fill({ color: 0x1a2018, alpha: 0.9 });
@@ -315,6 +321,8 @@ export class Unit {
           return "🔥";
         case "atk_buff":
           return "⬆";
+        case "atk_debuff":
+          return "⬇";
         case "slow":
           return "❄";
         case "haste":
@@ -615,8 +623,13 @@ export class Unit {
   }
 
   atkMultiplier(): number {
+    let m = 1;
     const buff = this.statuses.find((s) => s.kind === "atk_buff");
-    return buff ? 1 + buff.potency : 1;
+    if (buff) m *= 1 + buff.potency;
+    const debuff = this.statuses.find((s) => s.kind === "atk_debuff");
+    /** potency = множитель урона (0.7 → ×0.7). */
+    if (debuff) m *= debuff.potency;
+    return m;
   }
 
   autoCdMultiplier(): number {

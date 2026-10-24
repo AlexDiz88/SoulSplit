@@ -12,6 +12,8 @@ export interface ZoneDef {
   enemyPool: string[];
   xpBase: number;
   xpPerKill: number;
+  /** Шанс элитного модификатора на каждого врага (0 = нет). */
+  eliteChance?: number;
 }
 
 export const ZONES: Record<ZoneId, ZoneDef> = {
@@ -21,10 +23,11 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     description: "Редкие патрули у стены. Подходит для первого оружия и брони.",
     minLevel: 1,
     itemLevel: 1,
-    enemyCount: [4, 7],
+    /** C2: [3, 6] - на ур.1 пачка 7+ слишком жирная. */
+    enemyCount: [3, 6],
     enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
-    xpBase: 120,
-    xpPerKill: 35,
+    xpBase: 140,
+    xpPerKill: 40,
   },
   ruins: {
     id: "ruins",
@@ -36,6 +39,8 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
     xpBase: 220,
     xpPerKill: 55,
+    /** Шанс элиты на каждого заспавненного врага. */
+    eliteChance: 0.08,
   },
 };
 

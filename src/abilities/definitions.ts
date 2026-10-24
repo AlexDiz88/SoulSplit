@@ -24,13 +24,16 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "ice-shield": "ice_shield",
   fireball: "fireball",
   "flame-cone": "flame_cone",
-  "hammer-throw": "stun_strike",
+  "hammer-throw": "hammer_throw",
   "titan-might": "titan_might",
+  "demoralizing-shout": "demoralizing_shout",
   "sever-artery": "sever_artery",
   "shadow-strike": "shadow_strike",
   "wind-gust": "wind_gust",
   "wind-speed": "wind_speed",
   squall: "squall",
+  "dust-veil": "dust_veil",
+  "air-pocket": "air_pocket",
   tornado: "tornado",
   "dark-arrow": "dark_arrow",
 };
@@ -88,8 +91,8 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 1,
     effects: { zoneSecondaryRatio: 0.55 },
   },
-  stun_strike: {
-    id: "stun_strike",
+  hammer_throw: {
+    id: "hammer_throw",
     name: "Бросок молота",
     aspect: "light",
     glyph: "⚔",
@@ -113,6 +116,19 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     range: "any",
     reach: 0,
     effects: { atkBuffDuration: 5, atkBuffPotency: 0.35 },
+  },
+  demoralizing_shout: {
+    id: "demoralizing_shout",
+    name: "Деморализующий крик",
+    aspect: "iron",
+    glyph: "📣",
+    cooldown: 7.5,
+    damage: 0,
+    manaCost: 32,
+    targetMode: "all_enemies",
+    range: "any",
+    reach: 0,
+    effects: { atkDebuffDuration: 5, atkDebuffMult: 0.7 },
   },
   sever_artery: {
     id: "sever_artery",
@@ -179,6 +195,32 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 4,
     effects: {},
   },
+  dust_veil: {
+    id: "dust_veil",
+    name: "Пыльная пелена",
+    aspect: "air",
+    glyph: "🌫",
+    cooldown: 8,
+    damage: 0,
+    manaCost: 34,
+    targetMode: "all_enemies",
+    range: "any",
+    reach: 0,
+    effects: { slowDuration: 4, slowPotency: 0.3 },
+  },
+  air_pocket: {
+    id: "air_pocket",
+    name: "Воздушный карман",
+    aspect: "air",
+    glyph: "🫧",
+    cooldown: 9,
+    damage: 0,
+    manaCost: 38,
+    targetMode: "zone",
+    range: "any",
+    reach: 4,
+    effects: { slowDuration: 5, slowPotency: 0.35 },
+  },
   tornado: {
     id: "tornado",
     name: "Смерч",
@@ -239,10 +281,12 @@ export function describeAbility(def: AbilityDef): string {
       return `Наносит ${def.damage} ед. урона огнем и воспламеняет цель, нанося ${fmtNum(e.burnPerSec ?? 0)} ед. урона огнем в секунду в течение ${fmtNum(e.burnDuration ?? 0)} сек.`;
     case "flame_cone":
       return `Выдыхает столб пламени в выбранную клетку, нанося ${def.damage} ед. урона огнем. Клетки выше по зоне получают ${zoneSecondaryDamage(def)} ед. урона огнем.`;
-    case "stun_strike":
+    case "hammer_throw":
       return `Швыряет молот во врага, нанося ${def.damage} ед. урона светом и оглушая цель на ${fmtNum(e.stunDuration ?? 0)} сек.`;
     case "titan_might":
       return `Наполняет вас мощью титана, увеличивая урон от атак на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} сек.`;
+    case "demoralizing_shout":
+      return `Издает устрашающий крик. Урон атаки всех врагов ×${fmtNum(e.atkDebuffMult ?? 0)} на ${fmtNum(e.atkDebuffDuration ?? 0)} сек.`;
     case "sever_artery":
       return `Вскрывает артерию цели, нанося ${def.damage} ед. физического урона и вызывая кровотечение: ${fmtNum(e.bleedPerSec ?? 0)} ед. физического урона в секунду в течение ${fmtNum(e.bleedDuration ?? 0)} сек.`;
     case "shadow_strike":
@@ -253,6 +297,10 @@ export function describeAbility(def: AbilityDef): string {
       return `Обвивает вас быстрым потоком ветра, ускоряя автоатаки: интервал атаки ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
     case "squall":
       return `Рассекает воздух вокруг выбранной клетки. Сам клик пуст: соседние клетки крестом получают ${def.damage} ед. урона воздухом.`;
+    case "dust_veil":
+      return `Поднимает пыль по всему полю. Интервал автоатаки всех врагов ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек.`;
+    case "air_pocket":
+      return `Сжимает воздух в карман на клике и соседних клетках. Интервал автоатаки врагов в зоне ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек.`;
     case "tornado":
       return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
     case "dark_arrow":
@@ -283,12 +331,15 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`клик: ${def.damage} урона огня`);
       lines.push(`каждая клетка ряда выше (до трех): ${zoneSecondaryDamage(def)} урона огня`);
       break;
-    case "stun_strike":
+    case "hammer_throw":
       lines.push(`${def.damage} урона света`);
       lines.push(`стан ${fmtNum(e.stunDuration ?? 0)} с`);
       break;
     case "titan_might":
       lines.push(`урон атаки ×${fmtMult(e.atkBuffPotency ?? 0)} на ${fmtNum(e.atkBuffDuration ?? 0)} с`);
+      break;
+    case "demoralizing_shout":
+      lines.push(`урон атаки всех врагов ×${fmtNum(e.atkDebuffMult ?? 0)} на ${fmtNum(e.atkDebuffDuration ?? 0)} с`);
       break;
     case "sever_artery":
       lines.push(`${def.damage} физического урона`);
@@ -309,6 +360,12 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       break;
     case "squall":
       lines.push(`каждая клетка креста: ${def.damage} урона воздуха`);
+      break;
+    case "dust_veil":
+      lines.push(`интервал автоатаки всех врагов ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      break;
+    case "air_pocket":
+      lines.push(`клик и 3 соседа: интервал автоатаки ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
       break;
     case "tornado":
       lines.push(`${fmtNum(e.tornadoDps ?? def.damage)} урона воздуха в секунду по врагам на клетке смерча`);

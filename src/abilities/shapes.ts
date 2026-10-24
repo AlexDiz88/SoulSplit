@@ -54,3 +54,22 @@ export function orthoNeighbors(pos: GridPos): GridPos[] {
 export function squallCells(origin: GridPos): GridPos[] {
   return orthoNeighbors(origin);
 }
+
+/**
+ * Воздушный карман: клик + влево/вправо + ближе к герою (row+1).
+ * Клетки за краем игнорируются.
+ */
+export function airPocketCells(origin: GridPos): GridPos[] {
+  const deltas = [
+    { col: 0, row: 0 },
+    { col: -1, row: 0 },
+    { col: 1, row: 0 },
+    { col: 0, row: 1 },
+  ];
+  const out: GridPos[] = [];
+  for (const d of deltas) {
+    const p = { col: origin.col + d.col, row: origin.row + d.row };
+    if (inBounds(p)) out.push(p);
+  }
+  return out;
+}

@@ -18,6 +18,8 @@ export interface HeroProfile {
   level: number;
   /** XP внутри текущего уровня. */
   xp: number;
+  /** Золото (скупщик в хабе). */
+  gold: number;
   aspect: Aspect;
   learnedAspects: Aspect[];
   abilityLoadout: AbilityId[];
@@ -63,6 +65,7 @@ export function createNewHeroProfile(): HeroProfile {
     short: "АЙР",
     level: 1,
     xp: 0,
+    gold: 0,
     aspect: "air",
     learnedAspects: ["air"],
     abilityLoadout: ["wind_gust", "wind_speed", "squall", "tornado"],

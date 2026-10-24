@@ -8,7 +8,7 @@ import { playIceArrowVfx } from "./premium/IceArrowVfx";
 import { playIceShieldVfx } from "./premium/IceShieldVfx";
 import { playShadowStrikeVfx } from "./premium/ShadowStrikeVfx";
 import { playSeverArteryVfx } from "./premium/SeverArteryVfx";
-import { playStunStrikeVfx } from "./premium/StunStrikeVfx";
+import { playHammerThrowVfx } from "./premium/HammerThrowVfx";
 
 export class VfxManager {
   readonly layer = new Container();
@@ -185,13 +185,13 @@ export class VfxManager {
     );
   }
 
-  async stunStrike(
+  async hammerThrow(
     from: { x: number; y: number },
     to: { x: number; y: number },
     onCasterLunge?: (t: number) => void,
     onImpact?: () => void,
   ): Promise<void> {
-    await playStunStrikeVfx(
+    await playHammerThrowVfx(
       this.layer,
       this.tweens,
       from,

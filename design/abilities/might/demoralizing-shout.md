@@ -4,7 +4,7 @@ icon: demoralizing_shout.png
 name: "Деморализующий крик"
 aspect: "Сила"
 aspect_id: might
-status: черновик
+status: одобрено
 ---
 
 # Деморализующий крик
