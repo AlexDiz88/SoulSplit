@@ -429,8 +429,17 @@
   text-transform: uppercase;
 }
 
-.create-field-name input[type="text"] {
+.create-name-row {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
   width: min(420px, 100%);
+}
+
+.create-field-name input[type="text"] {
+  flex: 1;
+  min-width: 0;
+  width: auto;
 }
 
 .create-field input[type="text"] {
@@ -451,6 +460,82 @@
   box-shadow:
     inset 0 1px 4px rgba(0, 0, 0, 0.45),
     0 0 16px var(--theme-glow-soft);
+}
+
+.name-dice-btn {
+  appearance: none;
+  flex: 0 0 auto;
+  width: 46px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--theme-border);
+  border-radius: 2px;
+  background: rgba(12, 14, 22, 0.92);
+  color: var(--theme-mist);
+  cursor: var(--cur-default);
+  transition: border-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.name-dice-btn:hover {
+  border-color: var(--theme-border-hover);
+  color: var(--theme-corona);
+  box-shadow: 0 0 12px var(--theme-glow-soft);
+}
+
+.name-dice-btn:focus-visible {
+  outline: none;
+  border-color: var(--theme-border-hover);
+  box-shadow: 0 0 16px var(--theme-glow-soft);
+}
+
+.name-dice-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.gender-toggle {
+  display: inline-grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  width: min(320px, 100%);
+  border: 1px solid var(--theme-border);
+  border-radius: 2px;
+  overflow: hidden;
+  background: rgba(12, 14, 22, 0.92);
+}
+
+.gender-opt {
+  appearance: none;
+  margin: 0;
+  padding: 11px 14px;
+  border: 0;
+  border-right: 1px solid var(--theme-border);
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  cursor: var(--cur-default);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+
+.gender-opt:last-child {
+  border-right: 0;
+}
+
+.gender-opt:hover {
+  color: var(--theme-mist);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.gender-opt.is-active {
+  color: var(--theme-corona);
+  background: rgba(140, 120, 220, 0.16);
+  box-shadow: inset 0 0 0 1px rgba(180, 165, 255, 0.35);
 }
 
 .aspect-grid {

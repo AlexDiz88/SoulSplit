@@ -5,7 +5,8 @@ export type HubLocationId =
   | "town_hall"
   | "forge"
   | "tavern"
-  | "city_gate";
+  | "city_gate"
+  | "stash";
 
 export interface HubLocationDef {
   id: HubLocationId;
@@ -21,6 +22,7 @@ export interface HubLocationDef {
  * При смене арта подкрути x/y.
  */
 export const HUB_LOCATIONS: readonly HubLocationDef[] = [
+  { id: "stash", label: "Тайник", x: 0.36, y: 0.56 },
   { id: "tavern", label: "Таверна", x: 0.46, y: 0.5 },
   { id: "city_gate", label: "Врата", x: 0.2, y: 0.38 },
   { id: "town_hall", label: "Ратуша", x: 0.83, y: 0.47 },

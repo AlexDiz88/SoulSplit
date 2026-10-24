@@ -101,6 +101,13 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   goldEl.append(el("span", "hub-currency-label", "Золото"), goldValue);
   currencies.append(goldEl);
 
+  const fsBtn = el("button", "hub-fs-btn");
+  fsBtn.type = "button";
+  fsBtn.title = "Полный экран (X)";
+  fsBtn.setAttribute("aria-label", "Полный экран");
+  fsBtn.setAttribute("aria-pressed", "false");
+  fsBtn.append(el("span", "hub-fs-icon"));
+
   const menuWrap = el("div", "hub-menu-wrap");
   const menuBtn = el("button", "hub-menu-btn");
   menuBtn.type = "button";
@@ -145,7 +152,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     btnExit,
   );
   menuWrap.append(menuBtn, menu);
-  right.append(currencies, menuWrap);
+  right.append(currencies, fsBtn, menuWrap);
 
   topbar.append(left, right);
   root.append(topbar);
@@ -163,6 +170,34 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     menu.hidden = false;
     menuBtn.setAttribute("aria-expanded", "true");
   };
+
+  const isFullscreen = (): boolean => document.fullscreenElement != null;
+
+  const syncFullscreenBtn = (): void => {
+    const on = isFullscreen();
+    fsBtn.classList.toggle("is-fullscreen", on);
+    fsBtn.setAttribute("aria-pressed", on ? "true" : "false");
+    if (on) {
+      fsBtn.title = "Оконный режим (X)";
+      fsBtn.setAttribute("aria-label", "Оконный режим");
+    } else {
+      fsBtn.title = "Полный экран (X)";
+      fsBtn.setAttribute("aria-label", "Полный экран");
+    }
+  };
+
+  const toggleFullscreen = (): void => {
+    const req = isFullscreen()
+      ? document.exitFullscreen()
+      : document.documentElement.requestFullscreen();
+    void req.catch(() => {
+      /* браузер мог отклонить запрос */
+    });
+  };
+
+  fsBtn.addEventListener("click", () => {
+    toggleFullscreen();
+  });
 
   menuBtn.addEventListener("click", () => {
     if (menu.hidden) openMenu();
@@ -207,12 +242,37 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   };
 
   const onKeyDown = (ev: KeyboardEvent): void => {
+    const target = ev.target;
+    const typing =
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement ||
+      target instanceof HTMLSelectElement;
+
+    if (
+      !typing &&
+      !ev.repeat &&
+      !ev.ctrlKey &&
+      !ev.metaKey &&
+      !ev.altKey &&
+      ev.code === "KeyX"
+    ) {
+      ev.preventDefault();
+      toggleFullscreen();
+      return;
+    }
+
     if (ev.code !== "Escape" || menu.hidden) return;
     closeMenu();
   };
 
+  const onFullscreenChange = (): void => {
+    syncFullscreenBtn();
+  };
+
   document.addEventListener("pointerdown", onPointerDown);
+  document.addEventListener("fullscreenchange", onFullscreenChange);
   window.addEventListener("keydown", onKeyDown);
+  syncFullscreenBtn();
 
   let imageW = 0;
   let imageH = 0;
@@ -290,6 +350,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       resizeObs.disconnect();
       bgImg.removeEventListener("load", onBgLoad);
       document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
       window.removeEventListener("keydown", onKeyDown);
       root.remove();
     },

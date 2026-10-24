@@ -284,6 +284,62 @@
   font-variant-numeric: tabular-nums;
 }
 
+.hub-fs-btn {
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-content: center;
+  border-radius: 2px;
+  border: 1px solid var(--theme-border);
+  background: var(--theme-btn-face);
+  box-shadow: var(--theme-shadow-btn);
+  color: var(--theme-mist);
+  cursor: var(--cur-default);
+  transition: border-color 0.2s ease, box-shadow 0.25s ease;
+}
+
+.hub-fs-btn:hover,
+.hub-fs-btn:focus-visible {
+  border-color: var(--theme-border-hover);
+  box-shadow: var(--theme-shadow-btn-hover);
+}
+
+.hub-fs-btn:focus-visible {
+  outline: 2px solid rgba(180, 165, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.hub-fs-icon {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  display: block;
+  background:
+    linear-gradient(currentColor, currentColor) left top / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) left top / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) right top / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) right top / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) left bottom / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) right bottom / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) right bottom / 2px 5px no-repeat;
+}
+
+.hub-fs-btn.is-fullscreen .hub-fs-icon {
+  background:
+    linear-gradient(currentColor, currentColor) 3px 3px / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 3px 3px / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) calc(100% - 3px) 3px / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) calc(100% - 3px) 3px / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) 3px calc(100% - 3px) / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) 3px calc(100% - 3px) / 2px 5px no-repeat,
+    linear-gradient(currentColor, currentColor) calc(100% - 3px) calc(100% - 3px) / 5px 2px no-repeat,
+    linear-gradient(currentColor, currentColor) calc(100% - 3px) calc(100% - 3px) / 2px 5px no-repeat;
+}
+
 .hub-menu-wrap {
   position: relative;
 }

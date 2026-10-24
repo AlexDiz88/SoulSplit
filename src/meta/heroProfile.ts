@@ -29,8 +29,12 @@ export interface NewHeroOptions {
 export const HERO_NAME_MIN_LENGTH = 2;
 export const HERO_NAME_MAX_LENGTH = 15;
 
-/** Буквы, опционально группы через -/_ , цифры только в самом конце. */
-const HERO_NAME_PATTERN = /^[A-Za-zА-Яа-яЁё]+(?:[-_][A-Za-zА-Яа-яЁё]+)*\d*$/;
+/**
+ * Буквы, группы через -/_ , цифры только суффиксом.
+ * Допустимо: Kai, Kai-Max, Kai13, Kai-13.
+ */
+const HERO_NAME_PATTERN =
+  /^[A-Za-zА-Яа-яЁё]+(?:[-_][A-Za-zА-Яа-яЁё]+)*(?:[-_]\d+|\d*)$/;
 
 /** null если имя ок, иначе текст ошибки для UI. */
 export function validateHeroName(raw: string): string | null {
@@ -41,8 +45,14 @@ export function validateHeroName(raw: string): string | null {
   if (/[^A-Za-zА-Яа-яЁё0-9_-]/.test(name)) {
     return 'Разрешены буквы, цифры и символы "-" и "_".';
   }
+  if (/^[-_]/.test(name)) {
+    return 'Имя не может начинаться с "-" или "_".';
+  }
   if (/[-_]$/.test(name)) {
     return 'Имя не может заканчиваться на "-" или "_".';
+  }
+  if (/[-_]{2,}/.test(name)) {
+    return 'Нельзя ставить несколько символов "-" или "_" подряд.';
   }
   if (!HERO_NAME_PATTERN.test(name)) {
     return "Цифры допустимы только в конце имени.";

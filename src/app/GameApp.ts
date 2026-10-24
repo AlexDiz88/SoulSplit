@@ -379,6 +379,9 @@ export class GameApp {
       case "tavern":
         this.hud.showToast("Таверна - скоро");
         return;
+      case "stash":
+        this.hud.showToast("Тайник - скоро");
+        return;
     }
   }
 
