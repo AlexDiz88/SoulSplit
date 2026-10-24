@@ -4,8 +4,16 @@
   pointer-events: auto;
 }
 
+/* Размеры сумки - окно экипа в режиме тайника совпадает по ширине и стыкуется сверху. */
+#hud {
+  --inv-slot: 76px;
+  --inv-bag-pad-x: 15px;
+  --inv-bag-w: calc(2 * var(--inv-bag-pad-x) + 5 * var(--inv-slot) + 4 * 8px);
+  --inv-bag-stack-h: calc(12px + 14px + 1.1rem + 10px + 5 * var(--inv-slot) + 4 * 8px);
+}
+
 .inv-bag-root {
-  --slot: 76px;
+  --slot: var(--inv-slot, 76px);
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
   --slot-glyph: #c4a874;
@@ -297,11 +305,20 @@ body.inv-dragging .cs-slot.filled {
 }
 
 @media (max-width: 760px) {
+  #hud {
+    --inv-slot: 56px;
+    --inv-bag-pad-x: 10px;
+  }
+
   .inv-bag-root {
-    --slot: 56px;
     right: 8px;
     bottom: 8px;
     padding: 10px;
+  }
+
+  .cs-overlay.cs-mode-gear .cs-window {
+    right: 8px;
+    bottom: calc(8px + var(--inv-bag-stack-h, 360px) + 10px);
   }
 
   .inv-ghost {
@@ -312,8 +329,11 @@ body.inv-dragging .cs-slot.filled {
 }
 
 @media (max-height: 450px) and (min-width: 640px) {
+  #hud {
+    --inv-slot: 44px;
+  }
+
   .inv-bag-root {
-    --slot: 44px;
     right: 10px;
     bottom: 10px;
   }

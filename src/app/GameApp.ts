@@ -6,6 +6,7 @@ import { victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
 import {
   addXpToProfile,
+  ensureHeroStash,
   hydrateCombatUnit,
   sheetBaseFromProfile,
   syncProfileFromUnit,
@@ -379,9 +380,13 @@ export class GameApp {
       case "tavern":
         this.hud.showToast("Таверна - скоро");
         return;
-      case "stash":
-        this.hud.showToast("Тайник - скоро");
+      case "stash": {
+        const state = this.requireState();
+        if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+        ensureHeroStash(state.hero);
+        this.hud.openStash(state.hero.stash);
         return;
+      }
     }
   }
 

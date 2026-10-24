@@ -3,6 +3,8 @@ import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
 import { mountInventoryWindow } from "./inventoryWindow";
 import { mountItemGenerator } from "./itemGenerator";
+import { mountStashWindow } from "./stashWindow";
+import type { InventoryBag } from "../items/inventory";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
 import type { Unit } from "../combat/Unit";
@@ -60,6 +62,8 @@ export interface BattleHudApi {
   setShellMode(mode: HudShellMode): void;
   openCharacter(): void;
   openInventory(): void;
+  /** Тайник: экип без портрета/статов + инвентарь + сетка 10×10. */
+  openStash(bag: InventoryBag): void;
   openBestiary(): void;
   openGrimoire(): void;
   openItemGenerator(): void;
@@ -351,12 +355,27 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   grimoire = mountGrimoire(() => prepareOpen("grimoire"));
   character = mountCharacterSheet(() => prepareOpen("character"));
   const inventory = mountInventoryWindow();
+  const stash = mountStashWindow();
   let heroRef: Unit | null = null;
   inventory.setShowToast(pushToast);
   character.setShowToast(pushToast);
   character.setOnVisibilityChange((open) => {
-    if (open) inventory.open();
-    else inventory.close();
+    if (open) {
+      inventory.open();
+    } else {
+      inventory.close();
+      inventory.setStashBag(null);
+      stash.close();
+    }
+  });
+  character.setOnModeChange((mode) => {
+    if (mode === "full") {
+      inventory.setStashBag(null);
+      stash.close();
+    }
+  });
+  inventory.setOnStashChanged(() => {
+    stash.refresh();
   });
   itemGenerator = mountItemGenerator(() => prepareOpen("item-generator"));
   itemGenerator.setShowToast(pushToast);
@@ -365,6 +384,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     if (!heroRef) return;
     character.setHero(heroRef);
     inventory.setHero(heroRef);
+    stash.refresh();
   };
 
   itemGenerator.setOnInventoryChanged(refreshGearUi);
@@ -563,11 +583,24 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openCharacter() {
+      prepareOpen("character");
+      inventory.setStashBag(null);
+      stash.close();
+      character.setMode("full");
       character.open();
     },
 
     openInventory() {
       inventory.open();
+    },
+
+    openStash(bag) {
+      prepareOpen("character");
+      inventory.setStashBag(bag);
+      stash.setBag(bag);
+      character.setMode("gear");
+      character.open();
+      stash.open();
     },
 
     openBestiary() {
@@ -585,6 +618,8 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     closeOverlays() {
       character.close();
       inventory.close();
+      inventory.setStashBag(null);
+      stash.close();
       if (itemGenerator.isOpen()) itemGenerator.close();
       if (grimoire.isOpen()) grimoire.close();
       bestiary.hidden = true;

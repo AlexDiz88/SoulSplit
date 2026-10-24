@@ -4,7 +4,7 @@ icon: air_pocket.png
 name: "Воздушный карман"
 aspect: "Воздух"
 aspect_id: air
-status: одобрено
+status: под вопросом
 ---
 
 # Воздушный карман

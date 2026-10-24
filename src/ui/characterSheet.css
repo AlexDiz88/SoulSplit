@@ -18,6 +18,48 @@
   display: none;
 }
 
+/* Режим тайника: только кукла экипа справа над инвентарём. */
+.cs-overlay.cs-mode-gear {
+  place-items: unset;
+  background: rgba(4, 6, 4, 0.62);
+}
+
+.cs-overlay.cs-mode-gear .cs-window {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + var(--inv-bag-stack-h, 470px) + 12px);
+  box-sizing: border-box;
+  width: var(--inv-bag-w);
+  height: auto;
+  max-height: calc(100% - 16px - var(--inv-bag-stack-h, 470px) - 28px);
+  padding: 16px var(--inv-bag-pad-x, 14px) 20px;
+}
+
+.cs-overlay.cs-mode-gear .cs-body {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  overflow: auto;
+}
+
+.cs-overlay.cs-mode-gear .cs-identity-host,
+.cs-overlay.cs-mode-gear .cs-stats {
+  display: none;
+}
+
+.cs-overlay.cs-mode-gear .cs-doll-wrap {
+  padding: 0 0 4px;
+  overflow: visible;
+}
+
+.cs-overlay.cs-mode-gear .cs-head {
+  margin-bottom: 10px;
+  min-height: 28px;
+}
+
+.cs-overlay.cs-mode-gear .cs-title {
+  font-size: 1.05rem;
+}
+
 .cs-window {
   --slot: 76px;
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);

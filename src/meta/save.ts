@@ -1,5 +1,5 @@
 import { cloneGameState, createNewGameState, type GameState } from "./gameState";
-import { HERO_PROFILE_VERSION } from "./heroProfile";
+import { ensureHeroStash, HERO_PROFILE_VERSION } from "./heroProfile";
 import type { Aspect } from "../types";
 
 /** Число слотов сохранений (сетка 5x3). */
@@ -51,6 +51,7 @@ function normalizeState(parsed: GameState): GameState {
   if (typeof state.hero.gold !== "number" || !Number.isFinite(state.hero.gold)) {
     state.hero.gold = 0;
   }
+  ensureHeroStash(state.hero);
   return state;
 }
 

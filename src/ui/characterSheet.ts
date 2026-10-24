@@ -29,13 +29,20 @@ interface SlotDef {
   glyph: GlyphId;
 }
 
+/** full - портрет + параметры; gear - только слоты экипа (режим тайника). */
+export type CharacterSheetMode = "full" | "gear";
+
 export interface CharacterSheetApi {
   isOpen(): boolean;
   open(): void;
   close(): void;
+  setMode(mode: CharacterSheetMode): void;
+  getMode(): CharacterSheetMode;
   setHero(hero: Unit): void;
   /** Вызывается при открытии / закрытии (для компаньон-окна инвентаря). */
   setOnVisibilityChange(fn: (open: boolean) => void): void;
+  /** Смена режима при открытом окне (тайник ↔ полный лист). */
+  setOnModeChange(fn: (mode: CharacterSheetMode) => void): void;
   setCanChangeEquipment(fn: () => boolean): void;
   setOnEquipmentChanged(fn: () => void): void;
   setShowToast(fn: (text: string) => void): void;
@@ -137,16 +144,41 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   hud.append(root);
 
   let hero: Unit | null = null;
+  let mode: CharacterSheetMode = "full";
   let onVisibilityChange: ((open: boolean) => void) | null = null;
+  let onModeChange: ((mode: CharacterSheetMode) => void) | null = null;
   let canChangeEquipment: () => boolean = () => true;
   let onEquipmentChanged: (() => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
 
+  const applyMode = (): void => {
+    root.classList.toggle("cs-mode-gear", mode === "gear");
+    title.textContent = mode === "gear" ? "Экипировка" : "Персонаж";
+    identityHost.hidden = mode === "gear";
+    stats.hidden = mode === "gear";
+  };
+
+  const changeMode = (next: CharacterSheetMode, notify: boolean): void => {
+    if (mode === next) {
+      applyMode();
+      return;
+    }
+    mode = next;
+    applyMode();
+    if (notify && !root.hidden) onModeChange?.(mode);
+  };
+
   const render = (): void => {
     tip.hidden = true;
-    identityHost.replaceChildren(renderIdentity(hero));
+    applyMode();
+    if (mode === "full") {
+      identityHost.replaceChildren(renderIdentity(hero));
+      stats.replaceChildren(...renderStats(hero));
+    } else {
+      identityHost.replaceChildren();
+      stats.replaceChildren();
+    }
     dollWrap.replaceChildren(renderDoll(hero));
-    stats.replaceChildren(...renderStats(hero));
   };
 
   const open = (): void => {
@@ -157,6 +189,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const close = (): void => {
     root.hidden = true;
     tip.hidden = true;
+    changeMode("full", false);
     onVisibilityChange?.(false);
   };
 
@@ -218,6 +251,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
   document.getElementById("btn-character")!.addEventListener("click", () => {
     onOpen();
+    changeMode("full", true);
     open();
   });
 
@@ -228,6 +262,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     ev.preventDefault();
     if (root.hidden) {
       onOpen();
+      changeMode("full", false);
       open();
     } else {
       close();
@@ -238,12 +273,20 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     isOpen: () => !root.hidden,
     open,
     close,
+    setMode(next) {
+      changeMode(next, !root.hidden);
+      if (!root.hidden) render();
+    },
+    getMode: () => mode,
     setHero(next: Unit) {
       hero = next;
       if (!root.hidden) render();
     },
     setOnVisibilityChange(fn) {
       onVisibilityChange = fn;
+    },
+    setOnModeChange(fn) {
+      onModeChange = fn;
     },
     setCanChangeEquipment(fn) {
       canChangeEquipment = fn;

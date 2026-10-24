@@ -2,7 +2,13 @@ import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { UnitInit } from "../combat/Unit";
 import type { EquipmentMap } from "../items/equipment";
 import { createStarterWeapon } from "../items/generate";
-import { cloneInventory, createEmptyInventory, type InventoryBag } from "../items/inventory";
+import {
+  cloneInventory,
+  cloneStash,
+  createEmptyInventory,
+  createEmptyStash,
+  type InventoryBag,
+} from "../items/inventory";
 import type { StatId } from "../stats/statIds";
 import { createBaseHeroSheet, type HeroStatSheet } from "../stats/sheet";
 import type { AbilityId, Aspect } from "../types";
@@ -86,6 +92,8 @@ export interface HeroProfile {
   abilityLoadout: AbilityId[];
   equipment: EquipmentMap;
   inventory: InventoryBag;
+  /** Городской тайник 10×10 (не берётся в бой). */
+  stash: InventoryBag;
   /** Накопленные бонусы от level-up (синхронизируются при повышении уровня). */
   levelBonuses: Partial<Record<StatId, number>>;
   /** URL портрета; фиксируется при создании, чтобы не прыгал между боями. */
@@ -108,6 +116,7 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     abilityLoadout: [...src.abilityLoadout],
     equipment: cloneEquipment(src.equipment),
     inventory: cloneInventory(src.inventory).map((cell) => (cell ? structuredClone(cell) : null)),
+    stash: cloneStash(src.stash).map((cell) => (cell ? structuredClone(cell) : null)),
     levelBonuses: { ...src.levelBonuses },
   };
 }
@@ -135,9 +144,15 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     abilityLoadout: [...loadout],
     equipment: { mainhand: weapon },
     inventory: createEmptyInventory(),
+    stash: createEmptyStash(),
     levelBonuses: {},
     portraitUrl: opts?.portraitUrl || pickRandomHeroPortraitUrl(),
   };
+}
+
+/** Дозаполнить stash у старых сейвов без поля. */
+export function ensureHeroStash(profile: HeroProfile): void {
+  profile.stash = cloneStash(profile.stash).map((cell) => (cell ? structuredClone(cell) : null));
 }
 
 /** Данные для `new Unit(...)` из профиля. Экип/инвентарь - глубокие копии. */

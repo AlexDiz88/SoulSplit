@@ -7,10 +7,19 @@ export const INVENTORY_COLS = 5;
 export const INVENTORY_ROWS = 5;
 export const INVENTORY_SIZE = INVENTORY_COLS * INVENTORY_ROWS;
 
+/** Тайник в городе: 10×10. */
+export const STASH_COLS = 10;
+export const STASH_ROWS = 10;
+export const STASH_SIZE = STASH_COLS * STASH_ROWS;
+
 export type InventoryBag = (ItemDef | null)[];
 
 export function createEmptyInventory(size = INVENTORY_SIZE): InventoryBag {
   return Array.from({ length: size }, () => null);
+}
+
+export function createEmptyStash(): InventoryBag {
+  return createEmptyInventory(STASH_SIZE);
 }
 
 export function cloneInventory(src: InventoryBag | undefined | null, size = INVENTORY_SIZE): InventoryBag {
@@ -20,6 +29,27 @@ export function cloneInventory(src: InventoryBag | undefined | null, size = INVE
     out[i] = src[i] ?? null;
   }
   return out;
+}
+
+export function cloneStash(src: InventoryBag | undefined | null): InventoryBag {
+  return cloneInventory(src, STASH_SIZE);
+}
+
+/** Обмен ячеек между двумя сумками (инвентарь ↔ тайник). */
+export function swapBetweenBags(
+  aBag: InventoryBag,
+  aIndex: number,
+  bBag: InventoryBag,
+  bIndex: number,
+): GearChangeResult {
+  if (aBag === bBag) return swapInventoryCells(aBag, aIndex, bIndex);
+  if (aIndex < 0 || bIndex < 0 || aIndex >= aBag.length || bIndex >= bBag.length) {
+    return { ok: false, reason: "bad_slot" };
+  }
+  const tmp = aBag[aIndex] ?? null;
+  aBag[aIndex] = bBag[bIndex] ?? null;
+  bBag[bIndex] = tmp;
+  return { ok: true };
 }
 
 export function findEmptyInventorySlot(inv: InventoryBag): number {

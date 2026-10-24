@@ -1,0 +1,55 @@
+/* Тайник 10×10 по центру. Ячейки как у инвентаря, пустые чуть другого тона. */
+
+#hud .stash-root {
+  pointer-events: auto;
+}
+
+.stash-root {
+  /* Тот же размер и цвет ячеек, что у инвентаря. */
+  --slot: var(--inv-slot, 76px);
+  --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  --slot-glyph: #c4a874;
+  --c-common: #c8c2b2;
+  --c-uncommon: #6fcf6a;
+  --c-magic: #4fa3ff;
+  --c-rare: #e8c84a;
+  --c-epic: #b878ff;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  z-index: 51;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 14px 14px;
+  transform: translate(-50%, -50%);
+  color: var(--text);
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 60%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.38),
+    0 16px 40px rgba(0, 0, 0, 0.55);
+}
+
+.stash-root[hidden] {
+  display: none;
+}
+
+.stash-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--stash-cols, 10), var(--slot));
+  gap: 8px;
+}
+
+@media (max-width: 760px) {
+  .stash-root {
+    left: 50%;
+    top: 42%;
+    padding: 10px;
+  }
+}
