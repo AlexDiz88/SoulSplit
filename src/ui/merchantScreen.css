@@ -507,8 +507,8 @@
 }
 
 .market-compare {
-  position: absolute;
-  z-index: 8;
+  position: fixed;
+  z-index: 60;
   display: flex;
   gap: 12px;
   align-items: flex-start;

@@ -81,9 +81,9 @@ function rollAspectTag(
   return pick ?? undefined;
 }
 
-function makeWeaponImplicit(slot: EquipSlotId, itemLevel: number, rng: () => number): WeaponImplicit {
-  const hand = slot === "offhand" ? "offhand" : "mainhand";
-  const pool = weaponTypesForSlot(hand);
+function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplicit {
+  // Пока без двуручного владения: оружие только из пула основной руки.
+  const pool = weaponTypesForSlot("mainhand");
   const def = pool[randInt(rng, 0, pool.length - 1)]!;
   const stats = scaleWeaponStats(def, itemLevel);
   return {
@@ -133,9 +133,11 @@ function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, we
  */
 export function generateItem(opts: GenerateItemOptions): ItemDef {
   const rng = opts.rng ?? Math.random;
-  const { slot, rarity, itemLevel } = opts;
+  const { rarity, itemLevel } = opts;
+  // Пока без двуручного владения: оружие всегда в основную руку (даже если просили offhand).
+  const slot: EquipSlotId = isWeaponSlot(opts.slot) ? "mainhand" : opts.slot;
   const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
-  const weapon = isWeaponSlot(slot) ? makeWeaponImplicit(slot, itemLevel, rng) : undefined;
+  const weapon = isWeaponSlot(opts.slot) ? makeWeaponImplicit(itemLevel, rng) : undefined;
 
   const count = affixCountForRarity(rarity, rng);
   const pool = poolForSlot(slot, aspectTag);

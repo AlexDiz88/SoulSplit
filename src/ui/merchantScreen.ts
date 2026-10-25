@@ -3,8 +3,8 @@ import { resolveMerchantPortraitUrl } from "../art/menuBackground";
 import { formatRolledAffix } from "../items/affixCatalog";
 import type { EquipmentMap } from "../items/equipment";
 import { addItemToInventory } from "../items/inventory";
-import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
-import { RARITY_LABEL, type ItemDef } from "../items/types";
+import type { EquipSlotId } from "../items/slots";
+import type { ItemDef } from "../items/types";
 import type { GameState } from "../meta/gameState";
 import {
   ensureMarket,
@@ -15,7 +15,12 @@ import {
   type MarketOffer,
 } from "../meta/market";
 import { goldAmountNode } from "./goldIcon";
-import { fillEmptyItemTooltip, fillItemTooltip } from "./itemTooltip";
+import {
+  fillEmptyItemTooltip,
+  fillItemTooltip,
+  formatWeaponDps,
+  itemSlotLabel,
+} from "./itemTooltip";
 import "./merchantScreen.css";
 
 export interface MerchantScreenApi {
@@ -55,10 +60,7 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
     host.append(el("div", lineClass, `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
   }
   if (item.weapon) {
-    host.append(
-      el("div", lineClass, `Урон: ${item.weapon.damageMin}-${item.weapon.damageMax}`),
-      el("div", lineClass, `КД атаки: ${item.weapon.baseCd.toFixed(1)} с`),
-    );
+    host.append(el("div", lineClass, `DPS ${formatWeaponDps(item.weapon)}`));
   }
   const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
   const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
@@ -135,7 +137,6 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   const compare = el("div", "market-compare");
   compare.hidden = true;
-  win.append(compare);
 
   const main = el("div", "market-main");
   const detail = el("aside", "market-detail item-tip");
@@ -157,7 +158,8 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   hints.append(hint);
 
   stage.append(main, hints);
-  root.append(stage);
+  // Вне .market-window: иначе overflow:hidden режет тултип, и он уезжает влево поверх товаров.
+  root.append(stage, compare);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
@@ -209,26 +211,33 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     showDetail(offer);
   }
 
-  function positionCompare(anchor: HTMLElement): void {
-    const winRect = win.getBoundingClientRect();
-    const rect = anchor.getBoundingClientRect();
+  /** Справа и чуть ниже курсора; влево от курсора не уводим. */
+  function positionCompare(clientX: number, clientY: number): void {
     compare.hidden = false;
     const tipRect = compare.getBoundingClientRect();
+    const gap = 16;
+    const margin = 8;
 
-    let left = rect.right - winRect.left + 10;
-    if (left + tipRect.width > winRect.width - 8) {
-      left = rect.left - winRect.left - tipRect.width - 10;
-    }
-    left = Math.max(8, Math.min(left, winRect.width - tipRect.width - 8));
+    let left = clientX + gap;
+    let top = clientY + gap;
 
-    let top = rect.top - winRect.top;
-    top = Math.max(8, Math.min(top, winRect.height - tipRect.height - 8));
+    const maxLeft = window.innerWidth - tipRect.width - margin;
+    const maxTop = window.innerHeight - tipRect.height - margin;
+    if (left > maxLeft) left = Math.max(margin, maxLeft);
+    if (top > maxTop) top = Math.max(margin, maxTop);
+    left = Math.max(margin, left);
+    top = Math.max(margin, top);
 
     compare.style.left = `${left}px`;
     compare.style.top = `${top}px`;
   }
 
-  function showCompare(item: ItemDef, equipment: EquipmentMap, anchor: HTMLElement): void {
+  function showCompare(
+    item: ItemDef,
+    equipment: EquipmentMap,
+    clientX: number,
+    clientY: number,
+  ): void {
     const slots = compareSlotsFor(item);
     compare.replaceChildren();
 
@@ -254,7 +263,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       }
       compare.append(card);
     }
-    positionCompare(anchor);
+    positionCompare(clientX, clientY);
   }
 
   function currentOffers(): MarketOffer[] {
@@ -367,11 +376,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       const info = el("div", "market-offer-info");
       info.append(el("p", "market-offer-name", item.name));
       info.append(
-        el(
-          "p",
-          "market-offer-sub",
-          `${RARITY_LABEL[item.rarity]} - ${SLOT_LABEL[item.slot]} - ур. ${item.itemLevel}`,
-        ),
+        el("p", "market-offer-sub", `${itemSlotLabel(item)} - ур. ${item.itemLevel}`),
       );
       const stats = el("div", "market-offer-stats");
       appendItemStats(stats, item, "market-offer-stat", "market-offer-affix");
@@ -383,13 +388,13 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
       btn.append(iconWrap, info, priceEl);
 
-      btn.addEventListener("pointerenter", () => {
+      btn.addEventListener("pointerenter", (ev) => {
         if (!stateRef) return;
-        showCompare(item, stateRef.hero.equipment, btn);
+        showCompare(item, stateRef.hero.equipment, ev.clientX, ev.clientY);
       });
-      btn.addEventListener("pointermove", () => {
+      btn.addEventListener("pointermove", (ev) => {
         if (compare.hidden) return;
-        positionCompare(btn);
+        positionCompare(ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointerleave", (ev) => {
         const next = ev.relatedTarget;

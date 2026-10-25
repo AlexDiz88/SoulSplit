@@ -1,5 +1,7 @@
 import { remapAspectId } from "../abilities/aspects";
 import { ensureItemIcon } from "../art/itemIcons";
+import { normalizeWeaponItemSlot } from "../items/equipment";
+import { addItemToInventory } from "../items/inventory";
 import type { ItemDef } from "../items/types";
 import type { StatId } from "../stats/statIds";
 import type { Aspect } from "../types";
@@ -33,7 +35,24 @@ function remapItem(item: ItemDef): void {
   for (const affix of item.affixes) {
     affix.statId = remapStatId(String(affix.statId));
   }
+  normalizeWeaponItemSlot(item);
   ensureItemIcon(item);
+}
+
+/** Оружие из offhand переносим в mainhand (пока без двуручного владения). */
+function migrateOffhandWeapons(state: GameState): void {
+  const off = state.hero.equipment.offhand;
+  if (!off?.weapon) return;
+  normalizeWeaponItemSlot(off);
+  if (!state.hero.equipment.mainhand) {
+    state.hero.equipment.mainhand = off;
+    delete state.hero.equipment.offhand;
+    return;
+  }
+  if (addItemToInventory(state.hero.inventory, off) >= 0) {
+    delete state.hero.equipment.offhand;
+  }
+  // Инвентарь полон: оставляем в ячейке offhand, слот предмета уже mainhand.
 }
 
 /** Число слотов сохранений (сетка 5x3). */
@@ -92,6 +111,7 @@ function normalizeState(parsed: GameState): GameState {
   for (const item of Object.values(state.hero.equipment)) {
     if (item) remapItem(item);
   }
+  migrateOffhandWeapons(state);
   for (const cell of state.hero.inventory) {
     if (cell) remapItem(cell);
   }

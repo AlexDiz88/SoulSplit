@@ -3,6 +3,7 @@ import type { StatId } from "../stats/statIds";
 import type { ItemDef } from "./types";
 import type { EquipSlotId } from "./slots";
 import { isWeaponSlot } from "./slots";
+import { WEAPON_TYPE_BY_ID } from "./weaponTypes";
 
 export type EquipmentMap = Partial<Record<EquipSlotId, ItemDef>>;
 
@@ -41,7 +42,22 @@ export function findWeaponImplicit(equipment: EquipmentMap) {
 export function isTwoHandPlaceholder(item: ItemDef): boolean {
   if (!item.weapon) return false;
   if (item.weapon.twoHand) return true;
-  return item.weapon.kind === "bow";
+  if (item.weapon.kind === "bow") return true;
+  const typeId = item.weapon.typeId;
+  if (typeId && WEAPON_TYPE_BY_ID[typeId]?.twoHand) return true;
+  return false;
+}
+
+/**
+ * Пока без двуручного владения: любое оружие занимает основную руку
+ * (двуручное дополнительно блокирует offhand через isTwoHandPlaceholder).
+ */
+export function normalizeWeaponItemSlot(item: ItemDef): void {
+  if (!item.weapon) return;
+  if (item.weapon.kind === "bow" || (item.weapon.typeId && WEAPON_TYPE_BY_ID[item.weapon.typeId]?.twoHand)) {
+    item.weapon.twoHand = true;
+  }
+  item.slot = "mainhand";
 }
 
 export function canEquipInSlot(item: ItemDef, slot: EquipSlotId): boolean {

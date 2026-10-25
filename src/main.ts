@@ -10,6 +10,11 @@ async function boot(): Promise<void> {
   const mount = document.getElementById("game-root");
   if (!mount) throw new Error("game-root not found");
 
+  // Игровой ПКМ (продажа, снятие и т.д.) без системного меню браузера.
+  document.addEventListener("contextmenu", (ev) => {
+    ev.preventDefault();
+  });
+
   await Promise.all([
     document.fonts.load("500 16px \"Exo 2\""),
     document.fonts.load("600 16px \"Exo 2\""),

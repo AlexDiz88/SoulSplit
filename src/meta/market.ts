@@ -1,4 +1,5 @@
 import { ensureItemIcon } from "../art/itemIcons";
+import { normalizeWeaponItemSlot } from "../items/equipment";
 import { generateItem } from "../items/generate";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
@@ -41,7 +42,8 @@ export const MERCHANTS: readonly MerchantDef[] = [
   {
     id: "weaponsmith",
     label: "Оружейник",
-    slots: ["mainhand", "offhand"],
+    // Пока без двуручного владения и щитов: только основная рука.
+    slots: ["mainhand"],
     accent: "#c45a3a",
     portraitStem: "weaponsmith",
   },
@@ -202,10 +204,12 @@ export function ensureMarket(state: GameState): void {
   if (allEmpty) refreshMarketStock(state);
   for (const merchant of MERCHANTS) {
     for (const offer of state.market.stock[merchant.id]) {
+      normalizeWeaponItemSlot(offer.item);
       ensureItemIcon(offer.item);
     }
   }
   for (const offer of state.market.buyback) {
+    normalizeWeaponItemSlot(offer.item);
     ensureItemIcon(offer.item);
   }
 }

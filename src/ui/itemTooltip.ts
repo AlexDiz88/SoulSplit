@@ -1,7 +1,7 @@
 import { formatRolledAffix } from "../items/affixCatalog";
 import { isTwoHandPlaceholder } from "../items/equipment";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
-import { RARITY_LABEL, type ItemDef, type WeaponImplicit } from "../items/types";
+import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { goldTipLine } from "./goldIcon";
 import "./itemTooltip.css";
@@ -36,6 +36,8 @@ function rule(): HTMLElement {
 /** Подпись слота: "Основная рука" / "Левая рука" / "Обе руки". */
 export function itemSlotLabel(item: ItemDef): string {
   if (isTwoHandPlaceholder(item)) return "Обе руки";
+  // Пока без двуручного владения: любое 1H-оружие только в основную руку.
+  if (item.weapon) return SLOT_LABEL.mainhand;
   return SLOT_LABEL[item.slot];
 }
 
@@ -44,16 +46,10 @@ export function weaponDps(weapon: WeaponImplicit): number {
   return weapon.baseCd > 0 ? avg / weapon.baseCd : 0;
 }
 
-function formatDps(value: number): string {
+export function formatWeaponDps(weapon: WeaponImplicit): string {
+  const value = weaponDps(weapon);
   if (!Number.isFinite(value)) return "0.0";
   return (Math.round(value * 10) / 10).toFixed(1);
-}
-
-function baseStatLine(label: string, value: string, valueClass = "item-tip-stat-value"): HTMLElement {
-  const row = el("div", "item-tip-stat");
-  row.append(el("span", "item-tip-stat-label", label), document.createTextNode(" "));
-  row.append(el("span", valueClass, value));
-  return row;
 }
 
 function itemIconNode(item: ItemDef): HTMLElement {
@@ -72,7 +68,8 @@ function itemIconNode(item: ItemDef): HTMLElement {
 
 /**
  * Содержимое тултипа предмета в стиле Hero Siege:
- * название → редкость+слот → база (DPS/урон/КД) → аффиксы → уровень.
+ * название → слот → база (DPS) → аффиксы → уровень.
+ * Редкость видна по цвету названия, отдельной строкой не пишем.
  */
 export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {}): HTMLElement[] {
   const showSell = options.showSellPrice !== false && options.priceAmount === undefined;
@@ -88,7 +85,7 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
 
   nodes.push(
     el("div", "item-tip-name", item.name),
-    el("div", "item-tip-sub", `${RARITY_LABEL[item.rarity]}, ${itemSlotLabel(item)}`),
+    el("div", "item-tip-sub", itemSlotLabel(item)),
   );
 
   const hasBase = Boolean(item.weapon);
@@ -102,17 +99,9 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     dps.append(
       el("span", "item-tip-dps-label", "DPS"),
       document.createTextNode(" "),
-      el("span", "item-tip-dps-value", formatDps(weaponDps(item.weapon))),
+      el("span", "item-tip-dps-value", formatWeaponDps(item.weapon)),
     );
-    base.append(
-      dps,
-      baseStatLine(
-        "Диапазон урона",
-        `${item.weapon.damageMin}-${item.weapon.damageMax}`,
-        "item-tip-stat-value item-tip-stat-damage",
-      ),
-      baseStatLine("Кулдаун атак", `${item.weapon.baseCd.toFixed(1)} с`),
-    );
+    base.append(dps);
     nodes.push(base);
   }
 
