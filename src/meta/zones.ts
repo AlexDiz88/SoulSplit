@@ -1,14 +1,27 @@
 import type { ZoneId } from "./gameState";
 
-/** Точка внутри зоны: свой уровень и пул врагов. */
+/** Обязательный слот пачки (всегда в бою, тратит бюджет угрозы). */
+export interface EncounterGuarantee {
+  id: string;
+  count: number;
+}
+
+/** Правила генерации пачки локации. */
+export interface EncounterDef {
+  /** Диапазон бюджета угрозы; на вход роллится одно значение. */
+  threatBudget: [number, number];
+  /** Пул для добора остатка бюджета. */
+  pool: string[];
+  /** Гарантированный минимум состава. */
+  guarantee?: EncounterGuarantee[];
+}
+
+/** Точка внутри зоны: свой бюджет и пул врагов. */
 export interface ZonePointDef {
   id: string;
   name: string;
-  /** Диапазон уровней врагов для UI. */
-  enemyLevels: [number, number];
-  enemyCount: [number, number];
-  enemyPool: string[];
-  /** Уровень предмета и скейл врагов. */
+  encounter: EncounterDef;
+  /** Уровень предмета и скейл лута. */
   itemLevel: number;
   /** Шанс элитного модификатора на каждого врага (0 = нет). */
   eliteChance?: number;
@@ -30,6 +43,13 @@ export interface ZoneDef {
   points: ZonePointDef[];
 }
 
+const NORTH_BANDITS_CORE = [
+  "bandit_vagabond",
+  "bandit_slinger",
+  "bandit_magpie",
+  "bandit_brigadier",
+] as const;
+
 export const ZONES: Record<ZoneId, ZoneDef> = {
   north_road: {
     id: "north_road",
@@ -44,27 +64,58 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
       {
         id: "wall",
         name: "У стены",
-        enemyLevels: [1, 2],
-        /** C2: [3, 6] - на ур.1 пачка 7+ слишком жирная. */
-        enemyCount: [3, 6],
-        enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
+        encounter: {
+          threatBudget: [3, 6],
+          pool: ["bandit_vagabond", "bandit_slinger", "bandit_magpie"],
+          guarantee: [
+            { id: "bandit_vagabond", count: 1 },
+            { id: "bandit_slinger", count: 1 },
+          ],
+        },
         itemLevel: 1,
       },
       {
         id: "crossroads",
         name: "Перекрёсток",
-        enemyLevels: [2, 3],
-        enemyCount: [4, 7],
-        enemyPool: ["goblin_spear", "huntress", "skeleton_mage"],
+        encounter: {
+          threatBudget: [8, 12],
+          pool: [...NORTH_BANDITS_CORE],
+        },
         itemLevel: 2,
       },
       {
         id: "thicket",
         name: "Перелесок",
-        enemyLevels: [2, 3],
-        enemyCount: [3, 6],
-        enemyPool: ["goblin_spear", "skeleton_guard", "huntress"],
+        encounter: {
+          threatBudget: [10, 14],
+          pool: [
+            "bandit_vagabond",
+            "bandit_slinger",
+            "bandit_magpie",
+            "bandit_brigadier",
+            "bandit_ravager",
+          ],
+          guarantee: [
+            { id: "bandit_brigadier", count: 1 },
+            { id: "bandit_ravager", count: 1 },
+          ],
+        },
         itemLevel: 2,
+      },
+      {
+        id: "bandit_camp",
+        name: "Лагерь бандитов",
+        encounter: {
+          threatBudget: [15, 20],
+          pool: ["bandit_vagabond", "bandit_slinger", "bandit_magpie", "bandit_brigadier", "bandit_ravager"],
+          guarantee: [
+            { id: "bandit_ravager", count: 1 },
+            { id: "bandit_brigadier", count: 1 },
+            { id: "bandit_magpie", count: 2 },
+            { id: "bandit_leader", count: 1 },
+          ],
+        },
+        itemLevel: 3,
       },
     ],
   },
@@ -81,24 +132,33 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
       {
         id: "courtyard",
         name: "Двор",
-        enemyLevels: [3, 4],
-        enemyCount: [5, 9],
-        enemyPool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
+        encounter: {
+          threatBudget: [10, 18],
+          pool: ["goblin_spear", "skeleton_guard", "huntress", "skeleton_mage"],
+        },
         itemLevel: 3,
         eliteChance: 0.05,
       },
       {
         id: "catacombs",
         name: "Катакомбы",
-        enemyLevels: [4, 5],
-        enemyCount: [6, 11],
-        enemyPool: ["skeleton_guard", "skeleton_mage", "huntress"],
+        encounter: {
+          threatBudget: [14, 24],
+          pool: ["skeleton_guard", "skeleton_mage", "huntress"],
+        },
         itemLevel: 4,
         eliteChance: 0.08,
       },
     ],
   },
 };
+
+/** Id врагов локации: пул ∪ guarantee (для UI). */
+export function encounterEnemyIds(point: ZonePointDef): string[] {
+  const ids = new Set(point.encounter.pool);
+  for (const g of point.encounter.guarantee ?? []) ids.add(g.id);
+  return [...ids];
+}
 
 export function getZone(id: ZoneId): ZoneDef {
   return ZONES[id];

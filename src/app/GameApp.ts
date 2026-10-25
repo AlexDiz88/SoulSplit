@@ -476,9 +476,9 @@ export class GameApp {
     this.hud.setShellMode("battle");
 
     const encounter = rollEncounter({
-      pool: point.enemyPool,
-      countMin: point.enemyCount[0],
-      countMax: point.enemyCount[1],
+      threatBudget: point.encounter.threatBudget,
+      pool: point.encounter.pool,
+      guarantee: point.encounter.guarantee,
       eliteChance: point.eliteChance ?? 0,
     });
 

@@ -1,8 +1,14 @@
 import { createWorldMapBackgroundImg } from "../art/menuBackground";
 import { tryResolveRegionArtUrl } from "../art/regionArt";
-import { getEnemyKind } from "../combat/enemies";
+import { enemyLevelRangeForIds, getEnemyKind } from "../combat/enemies";
 import type { GameState, ZoneId } from "../meta/gameState";
-import { getZone, getZonePoint, isZoneUnlocked, type ZonePointDef } from "../meta/zones";
+import {
+  encounterEnemyIds,
+  getZone,
+  getZonePoint,
+  isZoneUnlocked,
+  type ZonePointDef,
+} from "../meta/zones";
 import { coverLayout, projectLocation } from "./hubLocations";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
@@ -157,10 +163,11 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
 
   const fillPointDetails = (point: ZonePointDef): void => {
     openPointId = point.id;
-    enemyLevelEl.textContent = formatEnemyLevels(point.enemyLevels);
+    const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
+    enemyLevelEl.textContent = formatEnemyLevels(levelRange);
 
     enemyRow.replaceChildren();
-    for (const id of point.enemyPool) {
+    for (const id of encounterEnemyIds(point)) {
       const kind = getEnemyKind(id);
       if (!kind) continue;
       const chip = el("div", "wm-zone-enemy");
@@ -215,14 +222,15 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       btn.type = "button";
       btn.dataset.pointId = point.id;
       btn.setAttribute("role", "tab");
+      const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
       const nameSpan = el("span", "wm-zone-point-name", point.name);
       const lvlSpan = el(
         "span",
         "wm-zone-point-lvl",
-        formatPointLevelBadge(point.enemyLevels),
+        formatPointLevelBadge(levelRange),
       );
       btn.append(nameSpan, lvlSpan);
-      btn.title = `${point.name} - ${formatEnemyLevels(point.enemyLevels)}`;
+      btn.title = `${point.name} - ${formatEnemyLevels(levelRange)}`;
       btn.addEventListener("click", () => {
         if (openZoneId !== zoneId) return;
         fillPointDetails(point);

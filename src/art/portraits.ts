@@ -1,7 +1,17 @@
+import banditBrigadierUrl from "../../assets/art/enemies/bandit_brigadier.jpg";
+import banditLeaderUrl from "../../assets/art/enemies/bandit_leader.png";
+import banditMagpieUrl from "../../assets/art/enemies/bandit_magpie.png";
+import banditRavagerUrl from "../../assets/art/enemies/bandit_ravager.png";
+import banditSlingerUrl from "../../assets/art/enemies/bandit_slinger.png";
+import banditVagabondUrl from "../../assets/art/enemies/bandit_vagabond.png";
 import goblinSpearUrl from "../../assets/art/enemies/goblin_spear.png";
 import huntressUrl from "../../assets/art/enemies/huntress.png";
+import scavengerUrl from "../../assets/art/enemies/scavenger.png";
+import skeletonArcherUrl from "../../assets/art/enemies/skeleton_archer.png";
 import skeletonGuardUrl from "../../assets/art/enemies/skeleton_guard.png";
 import skeletonMageUrl from "../../assets/art/enemies/skeleton_mage.png";
+import skeletonSpearmanUrl from "../../assets/art/enemies/skeleton_spearman.png";
+import wanderingUrl from "../../assets/art/enemies/wandering.png";
 import { Assets, type Texture } from "pixi.js";
 
 export type HeroGender = "male" | "female";
@@ -34,6 +44,16 @@ export const PORTRAIT_URLS = {
   skeleton_guard: skeletonGuardUrl,
   huntress: huntressUrl,
   skeleton_mage: skeletonMageUrl,
+  bandit_vagabond: banditVagabondUrl,
+  bandit_slinger: banditSlingerUrl,
+  bandit_brigadier: banditBrigadierUrl,
+  bandit_magpie: banditMagpieUrl,
+  bandit_ravager: banditRavagerUrl,
+  bandit_leader: banditLeaderUrl,
+  wandering: wanderingUrl,
+  skeleton_archer: skeletonArcherUrl,
+  skeleton_spearman: skeletonSpearmanUrl,
+  scavenger: scavengerUrl,
 };
 
 /** Настройки даунскейла: без mipmaps GPU семплит full-res и даёт зерно/кашу. */
