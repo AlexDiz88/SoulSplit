@@ -1328,7 +1328,9 @@ export class Battle {
 
   private spendMana(def: AbilityDef): void {
     const cost = this.abilityManaCost(def);
-    if (cost > 0) this.hero.mana = Math.max(0, this.hero.mana - cost);
+    if (cost <= 0) return;
+    this.hero.mana = Math.max(0, this.hero.mana - cost);
+    this.hero.redraw();
   }
 
   /** Урон/DoT-пакет способности с плоским ability% + aspect%. */
