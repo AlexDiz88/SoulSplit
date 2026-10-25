@@ -22,7 +22,10 @@ export interface EnemyKind {
   baseLevel: number;
   /** Дистанция в рядах: 1 - ближний ряд у героя. */
   reach: number;
-  /** Ряды, где этот враг может появиться. 1 - ближний. */
+  /**
+   * Желаемые ряды формации (1 - ближний). Не жёсткий запрет:
+   * при нехватке мест юнит может встать в ближайший свободный ряд.
+   */
   spawnRows: number[];
   /** Статы на baseLevel. */
   hp: number;
@@ -166,42 +169,138 @@ function kindsFromPool(pool: string[] | undefined): EnemyKind[] {
   return filtered.length ? filtered : ENEMY_KINDS;
 }
 
-/** Случайная пачка; клетка только из рядов вида; уровень = base ±2. */
+const GRID_CELLS = GRID_SIZE * GRID_SIZE;
+
+/** Дистанция ряда (1 у героя) → индекс row на сетке. */
+export function distToGridRow(dist: number): number {
+  return GRID_SIZE - dist;
+}
+
+/** Насколько ряд далёк от желаемых: 0 = желаемый. */
+function distFromPreferred(dist: number, preferred: number[]): number {
+  if (!preferred.length) return Math.abs(dist - 1);
+  if (preferred.includes(dist)) return 0;
+  return Math.min(...preferred.map((p) => Math.abs(dist - p)));
+}
+
+/**
+ * Порядок рядов для постановки: сначала желаемые (ближе к герою),
+ * затем ближайшие к ним (для [1]: 1→2→3→4; для [1,2]: 1→2→3→4; для [3,4]: 3→4→2→1).
+ */
+export function orderedSpawnDists(spawnRows: number[]): number[] {
+  const preferred = spawnRows.length ? spawnRows : [1];
+  const dists: number[] = [];
+  for (let d = 1; d <= GRID_SIZE; d++) dists.push(d);
+  dists.sort((a, b) => {
+    const da = distFromPreferred(a, preferred);
+    const db = distFromPreferred(b, preferred);
+    if (da !== db) return da - db;
+    return a - b;
+  });
+  return dists;
+}
+
+/**
+ * Приоритет формации: ниже reach важнее фронт; при равном reach
+ * уже spawnRows важнее (бригадир [1] бьёт гоблина [1,2]).
+ */
+export function compareFormationPriority(a: EnemyKind, b: EnemyKind): number {
+  if (a.reach !== b.reach) return a.reach - b.reach;
+  if (a.spawnRows.length !== b.spawnRows.length) {
+    return a.spawnRows.length - b.spawnRows.length;
+  }
+  return 0;
+}
+
+function cellKey(col: number, row: number): string {
+  return `${col}:${row}`;
+}
+
+/** Свободные клетки ряда-дистанции; колонка случайная. */
+function pickOpenCellInDist(
+  dist: number,
+  taken: Set<string>,
+  rng: () => number,
+): { col: number; row: number } | null {
+  const row = distToGridRow(dist);
+  const open: { col: number; row: number }[] = [];
+  for (let col = 0; col < GRID_SIZE; col++) {
+    if (!taken.has(cellKey(col, row))) open.push({ col, row });
+  }
+  if (!open.length) return null;
+  return open[Math.floor(rng() * open.length)]!;
+}
+
+/**
+ * Лучшая свободная клетка: желаемые ряды, иначе ближайшие к ним.
+ * Эквивалент вытеснения: юниты с высшим приоритетом ставятся первыми.
+ */
+function pickFormationCell(
+  kind: EnemyKind,
+  taken: Set<string>,
+  rng: () => number,
+): { col: number; row: number } | null {
+  for (const dist of orderedSpawnDists(kind.spawnRows)) {
+    const cell = pickOpenCellInDist(dist, taken, rng);
+    if (cell) return cell;
+  }
+  return null;
+}
+
+/** Случайная пачка; формация по reach / желаемым рядам; уровень = base ±2. */
 export function rollEncounter(opts: RollEncounterOptions = {}): SpawnedEnemy[] {
   const rng = opts.rng ?? Math.random;
   const pool = kindsFromPool(opts.pool);
   const countMin = opts.countMin ?? 3;
   const countMax = Math.max(countMin, opts.countMax ?? 12);
-  const count = countMin + Math.floor(rng() * (countMax - countMin + 1));
+  const wanted = countMin + Math.floor(rng() * (countMax - countMin + 1));
+  const count = Math.min(wanted, GRID_CELLS);
   const eliteChance = Math.max(0, opts.eliteChance ?? 0);
-  const taken = new Set<string>();
-  const out: SpawnedEnemy[] = [];
-  let guard = 0;
-  while (out.length < count && guard < 500) {
-    guard++;
+
+  type Draft = {
+    kind: EnemyKind;
+    level: number;
+    hp: number;
+    atk: number;
+    elite: boolean;
+    tie: number;
+  };
+  const drafts: Draft[] = [];
+  for (let i = 0; i < count; i++) {
     const kind = pool[Math.floor(rng() * pool.length)]!;
-    const open: { col: number; row: number }[] = [];
-    for (const dist of kind.spawnRows) {
-      const row = GRID_SIZE - dist;
-      for (let col = 0; col < GRID_SIZE; col++) {
-        const key = `${col}:${row}`;
-        if (!taken.has(key)) open.push({ col, row });
-      }
-    }
-    if (!open.length) continue;
-    const cell = open[Math.floor(rng() * open.length)]!;
-    taken.add(`${cell.col}:${cell.row}`);
     const elite = eliteChance > 0 && rng() < eliteChance;
     const level = rollEnemyLevel(kind.baseLevel, rng);
     const scaled = scaleEnemyStats(kind, level, elite);
-    out.push({
+    drafts.push({
       kind,
-      col: cell.col,
-      row: cell.row,
       level,
       hp: scaled.hp,
       atk: scaled.atk,
       elite,
+      tie: rng(),
+    });
+  }
+
+  drafts.sort((a, b) => {
+    const byPri = compareFormationPriority(a.kind, b.kind);
+    if (byPri !== 0) return byPri;
+    return a.tie - b.tie;
+  });
+
+  const taken = new Set<string>();
+  const out: SpawnedEnemy[] = [];
+  for (const draft of drafts) {
+    const cell = pickFormationCell(draft.kind, taken, rng);
+    if (!cell) break;
+    taken.add(cellKey(cell.col, cell.row));
+    out.push({
+      kind: draft.kind,
+      col: cell.col,
+      row: cell.row,
+      level: draft.level,
+      hp: draft.hp,
+      atk: draft.atk,
+      elite: draft.elite,
     });
   }
   return out;
