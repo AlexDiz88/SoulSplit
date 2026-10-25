@@ -25,7 +25,7 @@ export const SLOT_LABEL: Record<EquipSlotId, string> = {
   legs: "Ноги",
   feet: "Обувь",
   trinket: "Аксессуар",
-  mainhand: "Основная рука",
+  mainhand: "Оружие",
   offhand: "Левая рука",
 };
 

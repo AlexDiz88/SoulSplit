@@ -125,7 +125,8 @@
   color: #e6dfc8;
 }
 
-.igen-section-params {
+.igen-section-params,
+.igen-section-weapons {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -137,7 +138,8 @@
   background: rgba(14, 18, 14, 0.55);
 }
 
-.igen-section-params .igen-note {
+.igen-section-params .igen-note,
+.igen-section-weapons .igen-note {
   flex-shrink: 0;
   margin-top: 0;
 }
@@ -289,12 +291,22 @@
 
 .igen-card-icon {
   flex: none;
+  box-sizing: border-box;
   width: 64px;
   height: 64px;
-  object-fit: contain;
+  display: grid;
+  place-items: center;
   border-radius: 6px;
   background: #151617;
   border: 1px solid color-mix(in srgb, currentColor 35%, #3a3428);
+  overflow: hidden;
+}
+
+.igen-card-icon-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
 }
 
 .igen-card-head-text {

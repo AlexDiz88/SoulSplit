@@ -98,9 +98,14 @@ function makeWeaponImplicit(
   itemLevel: number,
   rng: () => number,
   slot: "mainhand" | "offhand",
+  forceTypeId?: WeaponTypeId,
 ): WeaponImplicit {
   const pool = weaponTypesForSlot(slot);
-  const def = pool[randInt(rng, 0, pool.length - 1)]!;
+  const forced = forceTypeId ? WEAPON_TYPE_BY_ID[forceTypeId] : undefined;
+  const def =
+    forced && (slot === "mainhand" || forced.grip === "either")
+      ? forced
+      : pool[randInt(rng, 0, pool.length - 1)]!;
   const stats = scaleWeaponStats(def, itemLevel);
   return {
     kind: def.kind,
@@ -227,7 +232,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
 
   if (slot === "mainhand") {
     const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
-    const weapon = makeWeaponImplicit(itemLevel, rng, "mainhand");
+    const weapon = makeWeaponImplicit(itemLevel, rng, "mainhand", opts.forceWeaponType);
     const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng);
     return {
       id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,

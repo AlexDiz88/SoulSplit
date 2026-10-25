@@ -12,6 +12,12 @@ import {
   type ItemRarity,
 } from "../items/types";
 import {
+  WEAPON_TYPES,
+  WEAPON_TYPE_BY_ID,
+  isWeaponTypeId,
+  type WeaponTypeId,
+} from "../items/weaponTypes";
+import {
   CORE_STAT_IDS,
   FAMILY_LABEL,
   STAT_CAPS,
@@ -171,6 +177,25 @@ function buildBench(hooks: {
   }
   slotSelect.value = "feet";
 
+  const weaponSelect = el("select", "igen-select") as HTMLSelectElement;
+  const randomWeaponOpt = el("option", "", "Случайно");
+  randomWeaponOpt.value = "";
+  weaponSelect.append(randomWeaponOpt);
+  for (const type of WEAPON_TYPES) {
+    const opt = el("option", "", type.name);
+    opt.value = type.id;
+    weaponSelect.append(opt);
+  }
+  const weaponField = field("Вид оружия", weaponSelect);
+  weaponField.hidden = true;
+
+  const syncWeaponField = (): void => {
+    const isWeapon = slotSelect.value === "mainhand";
+    weaponField.hidden = !isWeapon;
+    if (!isWeapon) weaponSelect.value = "";
+  };
+  slotSelect.addEventListener("change", syncWeaponField);
+
   const raritySelect = el("select", "igen-select") as HTMLSelectElement;
   for (const rarity of RARITIES) {
     const [lo, hi] = RARITY_AFFIX_COUNT[rarity];
@@ -192,6 +217,7 @@ function buildBench(hooks: {
 
   controls.append(
     field("Слот", slotSelect),
+    weaponField,
     field("Редкость", raritySelect),
     field("Уровень предмета", ilvlInput),
     genBtn,
@@ -221,10 +247,15 @@ function buildBench(hooks: {
     const rarity = raritySelect.value as ItemRarity;
     const itemLevel = Math.max(1, Math.min(100, Number(ilvlInput.value) || 1));
     ilvlInput.value = String(itemLevel);
+    const forceWeaponType: WeaponTypeId | undefined =
+      slot === "mainhand" && isWeaponTypeId(weaponSelect.value)
+        ? weaponSelect.value
+        : undefined;
     pendingItem = generateItem({
       slot,
       rarity,
       itemLevel,
+      forceWeaponType,
       learnedAspects: ["air", "ice"],
     });
     result.replaceChildren(renderItemCard(pendingItem), addBtn);
@@ -263,19 +294,24 @@ function renderItemCard(item: ItemDef): HTMLElement {
 
   const head = el("div", "igen-card-head");
   if (item.icon) {
-    const img = el("img", "igen-card-icon") as HTMLImageElement;
+    const iconFace = el("div", "igen-card-icon");
+    const img = el("img", "igen-card-icon-img") as HTMLImageElement;
     img.src = item.icon;
     img.alt = "";
     img.draggable = false;
-    head.append(img);
+    iconFace.append(img);
+    head.append(iconFace);
   }
   const text = el("div", "igen-card-head-text");
+  const slotMeta = item.weapon?.typeId
+    ? (WEAPON_TYPE_BY_ID[item.weapon.typeId]?.name ?? SLOT_LABEL[item.slot])
+    : SLOT_LABEL[item.slot];
   text.append(
     el("h4", "igen-card-name", item.name),
     el(
       "div",
       "igen-card-meta",
-      `${RARITY_LABEL[item.rarity]} · ${SLOT_LABEL[item.slot]} · ур. ${item.itemLevel}`,
+      `${RARITY_LABEL[item.rarity]} · ${slotMeta} · ур. ${item.itemLevel}`,
     ),
   );
   head.append(text);
@@ -331,9 +367,10 @@ function buildTabs(): HTMLElement {
   const wrap = el("div", "igen-tabs");
   const bar = el("div", "igen-tab-bar");
 
-  type TabId = "params" | "slots" | "rarity";
+  type TabId = "params" | "weapons" | "slots" | "rarity";
   const tabs: { id: TabId; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
+    { id: "weapons", label: "Таблица оружия" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
   ];
@@ -353,6 +390,12 @@ function buildTabs(): HTMLElement {
   panelParams.dataset.panel = "params";
   panelParams.append(buildParamsSection());
   panels.set("params", panelParams);
+
+  const panelWeapons = el("div", "igen-tab-panel");
+  panelWeapons.dataset.panel = "weapons";
+  panelWeapons.hidden = true;
+  panelWeapons.append(buildWeaponsSection());
+  panels.set("weapons", panelWeapons);
 
   const panelSlots = el("div", "igen-tab-panel");
   panelSlots.dataset.panel = "slots";
@@ -381,8 +424,51 @@ function buildTabs(): HTMLElement {
     btn.addEventListener("click", () => setTab(id));
   }
 
-  wrap.append(bar, panelParams, panelSlots, panelRarity);
+  wrap.append(bar, panelParams, panelWeapons, panelSlots, panelRarity);
   return wrap;
+}
+
+function formatBaseWeaponDps(damageMin: number, damageMax: number, baseCd: number): string {
+  if (baseCd <= 0) return "0.0";
+  const dps = (damageMin + damageMax) / 2 / baseCd;
+  return (Math.round(dps * 10) / 10).toFixed(1);
+}
+
+function buildWeaponsSection(): HTMLElement {
+  const section = el("section", "igen-section igen-section-weapons");
+  section.append(
+    el(
+      "p",
+      "igen-note",
+      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован.",
+    ),
+  );
+
+  const scroll = el("div", "igen-table-scroll");
+  const table = el("table", "igen-table");
+  const thead = el("thead");
+  const headRow = el("tr");
+  for (const h of ["Оружие", "Кулдаун", "Урон", "DPS"]) {
+    headRow.append(el("th", "", h));
+  }
+  thead.append(headRow);
+  table.append(thead);
+
+  const tbody = el("tbody");
+  for (const type of WEAPON_TYPES) {
+    const tr = el("tr");
+    tr.append(
+      el("td", "", type.name),
+      el("td", "", `${type.baseCd.toFixed(1)} с`),
+      el("td", "", `${type.damageMin}-${type.damageMax}`),
+      el("td", "", formatBaseWeaponDps(type.damageMin, type.damageMax, type.baseCd)),
+    );
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  scroll.append(table);
+  section.append(scroll);
+  return section;
 }
 
 function buildParamsSection(): HTMLElement {
@@ -524,7 +610,7 @@ function buildRulesSection(): HTMLElement {
     "Аффикс = statId + roll(min, max) по itemLevel (tiers в каталоге).",
     "Prefix / suffix заложены: в v1 любой аффикс может быть обоими.",
     "Базовый урон оружия и бонус атаки оружия - разные сущности.",
-    "Аспектные предметы: основная рука, левая рука, аксессуар.",
+    "Аспектные предметы: оружие, левая рука, аксессуар.",
   ];
   for (const text of bullets) {
     list.append(el("li", "", text));

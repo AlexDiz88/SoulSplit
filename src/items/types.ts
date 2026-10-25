@@ -83,6 +83,8 @@ export interface GenerateItemOptions {
   learnedAspects?: Aspect[];
   /** Принудительный аспект (тесты / крафт). */
   forceAspect?: Aspect;
+  /** Принудительный вид оружия (генератор / крафт). Только для mainhand. */
+  forceWeaponType?: WeaponTypeId;
   rng?: () => number;
   name?: string;
 }
