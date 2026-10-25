@@ -1,7 +1,7 @@
 /* Тултип предмета (стиль Hero Siege): центрированный текст, разделители по редкости. */
 
 .item-tip {
-  --tip-c: #c8c2b2;
+  --tip-c: #b0aaa0;
   /* Иконка = 2x2 ячейки инвентаря. */
   --tip-icon: calc(2 * var(--inv-slot, 76px));
   max-width: max(260px, calc(var(--tip-icon) + 48px));
@@ -26,11 +26,11 @@
   display: none;
 }
 
-.item-tip[data-rarity="common"] { --tip-c: var(--c-common, #c8c2b2); }
-.item-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon, #6fcf6a); }
-.item-tip[data-rarity="magic"] { --tip-c: var(--c-magic, #4fa3ff); }
-.item-tip[data-rarity="rare"] { --tip-c: var(--c-rare, #e8c84a); }
-.item-tip[data-rarity="epic"] { --tip-c: var(--c-epic, #b878ff); }
+.item-tip[data-rarity="common"] { --tip-c: var(--c-common, #b0aaa0); }
+.item-tip[data-rarity="uncommon"] { --tip-c: var(--c-uncommon, #3ad86a); }
+.item-tip[data-rarity="magic"] { --tip-c: var(--c-magic, #3dbcff); }
+.item-tip[data-rarity="rare"] { --tip-c: var(--c-rare, #ffd93b); }
+.item-tip[data-rarity="epic"] { --tip-c: var(--c-epic, #d06bff); }
 .item-tip[data-rarity="legendary"] { --tip-c: var(--c-legendary, #ff9a3c); }
 
 .item-tip-caption {
@@ -43,28 +43,20 @@
 }
 
 .item-tip-icon {
-  --tip-icon-cut: calc(var(--tip-icon) * 0.09);
+  --rar-c: var(--tip-c);
   position: relative;
   width: var(--tip-icon);
   height: var(--tip-icon);
   margin: 0 auto 10px;
   flex-shrink: 0;
-  background: linear-gradient(
-    155deg,
-    var(--tip-c),
-    color-mix(in srgb, var(--tip-c) 25%, #151515) 50%,
-    var(--tip-c)
-  );
-  clip-path: polygon(
-    var(--tip-icon-cut) 0,
-    calc(100% - var(--tip-icon-cut)) 0,
-    100% var(--tip-icon-cut),
-    100% calc(100% - var(--tip-icon-cut)),
-    calc(100% - var(--tip-icon-cut)) 100%,
-    var(--tip-icon-cut) 100%,
-    0 calc(100% - var(--tip-icon-cut)),
-    0 var(--tip-icon-cut)
-  );
+  border-radius: 10px;
+  overflow: visible;
+  background: var(--rar-edge);
+  box-shadow: var(--rar-glow);
+}
+
+.item-tip[data-rarity="common"] .item-tip-icon {
+  box-shadow: var(--rar-glow-common);
 }
 
 .item-tip-icon-face {
@@ -73,10 +65,17 @@
   inset: 3px;
   display: grid;
   place-items: center;
+  border-radius: 7px;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--tip-c) 34%, transparent), transparent 70%),
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint), transparent 68%),
     radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
-  clip-path: inherit;
+}
+
+.item-tip[data-rarity="common"] .item-tip-icon-face {
+  background:
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint-common), transparent 70%),
+    radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
 }
 
 .item-tip-icon-face img {

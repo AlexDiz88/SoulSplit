@@ -26,11 +26,6 @@
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
   --slot-glyph: #c4a874;
-  --c-common: #c8c2b2;
-  --c-uncommon: #6fcf6a;
-  --c-magic: #4fa3ff;
-  --c-rare: #e8c84a;
-  --c-epic: #b878ff;
   position: relative;
   display: flex;
   flex-direction: column;

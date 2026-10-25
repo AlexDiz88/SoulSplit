@@ -21,6 +21,7 @@ import {
   formatWeaponDps,
   itemSlotLabel,
 } from "./itemTooltip";
+import "./itemRarity.css";
 import "./merchantScreen.css";
 
 export interface MerchantScreenApi {

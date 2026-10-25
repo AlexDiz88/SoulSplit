@@ -1,0 +1,37 @@
+{
+  "default": "framed-3x3-v1",
+  "profiles": {
+    "gemini-3x3-v1": {
+      "description": "Gemini 3x3 sheet 1024x1024, typical grey gutters (style tests). Square cells via left/top/side.",
+      "source_size": [1024, 1024],
+      "grid": [3, 3],
+      "cells": [
+        { "left": 39, "top": 38, "side": 286 },
+        { "left": 369, "top": 38, "side": 286 },
+        { "left": 699, "top": 38, "side": 287 },
+        { "left": 39, "top": 369, "side": 286 },
+        { "left": 369, "top": 369, "side": 286 },
+        { "left": 699, "top": 369, "side": 286 },
+        { "left": 39, "top": 699, "side": 286 },
+        { "left": 369, "top": 699, "side": 286 },
+        { "left": 699, "top": 699, "side": 287 }
+      ]
+    },
+    "framed-3x3-v1": {
+      "description": "Gemini 3x3 item cards with stone tile + dark beveled frame on dark sheet (1024x1024). Crops full card including bevel, without sheet gutters.",
+      "source_size": [1024, 1024],
+      "grid": [3, 3],
+      "cells": [
+        { "left": 28, "top": 27, "side": 316 },
+        { "left": 353, "top": 27, "side": 316 },
+        { "left": 679, "top": 27, "side": 316 },
+        { "left": 28, "top": 355, "side": 316 },
+        { "left": 353, "top": 355, "side": 316 },
+        { "left": 679, "top": 355, "side": 316 },
+        { "left": 28, "top": 680, "side": 316 },
+        { "left": 353, "top": 680, "side": 316 },
+        { "left": 679, "top": 680, "side": 316 }
+      ]
+    }
+  }
+}

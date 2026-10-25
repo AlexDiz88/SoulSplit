@@ -43,11 +43,6 @@
   --hand: calc(var(--slot) * 1.35);
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
-  --c-common: #c8c2b2;
-  --c-uncommon: #6fcf6a;
-  --c-magic: #4fa3ff;
-  --c-rare: #e8c84a;
-  --c-epic: #b878ff;
   position: relative;
   box-sizing: border-box;
   width: 100%;
@@ -309,17 +304,11 @@
   width: var(--hand);
   height: var(--hand);
   flex-shrink: 0;
-  background: var(--slot-edge);
-  clip-path: polygon(
-    7px 0,
-    calc(100% - 7px) 0,
-    100% 7px,
-    100% calc(100% - 7px),
-    calc(100% - 7px) 100%,
-    7px 100%,
-    0 calc(100% - 7px),
-    0 7px
-  );
+  border-radius: 10px;
+  overflow: visible;
+  background: var(--rar-edge);
+  box-shadow: var(--rar-glow);
+  transition: box-shadow 0.15s;
 }
 
 .market-offer[data-rarity="common"] { --rar-c: var(--c-common); }
@@ -328,13 +317,8 @@
 .market-offer[data-rarity="rare"] { --rar-c: var(--c-rare); }
 .market-offer[data-rarity="epic"] { --rar-c: var(--c-epic); }
 
-.market-offer-icon {
-  background: linear-gradient(
-    155deg,
-    var(--rar-c),
-    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
-    var(--rar-c)
-  );
+.market-offer[data-rarity="common"] .market-offer-icon {
+  box-shadow: var(--rar-glow-common);
 }
 
 .market-offer-face {
@@ -343,10 +327,17 @@
   inset: 2px;
   display: grid;
   place-items: center;
+  border-radius: 8px;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint), transparent 68%),
     var(--slot-bg);
-  clip-path: inherit;
+}
+
+.market-offer[data-rarity="common"] .market-offer-face {
+  background:
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint-common), transparent 70%),
+    var(--slot-bg);
 }
 
 .market-offer-face img {

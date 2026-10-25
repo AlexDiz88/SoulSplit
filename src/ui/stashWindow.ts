@@ -2,6 +2,7 @@ import { STASH_COLS, STASH_SIZE, type InventoryBag } from "../items/inventory";
 import { SLOT_LABEL } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { fillItemTooltip } from "./itemTooltip";
+import "./itemRarity.css";
 import "./stashWindow.css";
 import "./inventoryWindow.css";
 

@@ -1,0 +1,179 @@
+/* Мини-просмотр заглушек image* - размер ячеек как в инвентаре (76px). */
+
+#hud .iip-root {
+  pointer-events: auto;
+}
+
+.iip-root {
+  --slot: var(--inv-slot, 76px);
+  --iip-cols: 10;
+  --iip-rows: 10;
+  --iip-gap-x: 10px;
+  --iip-gap-y: 8px;
+  --iip-label-h: 14px;
+  --iip-cell-h: calc(var(--slot) + 4px + var(--iip-label-h));
+  --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  z-index: 52;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  padding: 12px 14px 14px;
+  color: var(--text);
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 60%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.38),
+    0 16px 40px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.iip-root[hidden] {
+  display: none;
+}
+
+.iip-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.iip-title {
+  margin: 0;
+  flex: 1;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #f4dfa2, #b08a48);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.iip-count {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.iip-head .ctrl-btn {
+  min-width: 28px;
+  padding: 2px 8px;
+  line-height: 1.2;
+}
+
+.iip-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--iip-cols), var(--slot));
+  gap: var(--iip-gap-y) var(--iip-gap-x);
+  width: max-content;
+  height: calc(
+    var(--iip-rows) * var(--iip-cell-h) + (var(--iip-rows) - 1) * var(--iip-gap-y)
+  );
+  overflow: hidden;
+  align-content: start;
+}
+
+.iip-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: var(--slot);
+  height: var(--iip-cell-h);
+}
+
+.iip-cell-face {
+  position: relative;
+  flex: 0 0 var(--slot);
+  width: var(--slot);
+  height: var(--slot);
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--slot-edge);
+}
+
+.iip-cell-face::before {
+  content: "";
+  position: absolute;
+  inset: 2px;
+  border-radius: 8px;
+  background: var(--slot-bg);
+}
+
+.iip-cell-icon {
+  position: relative;
+  z-index: 1;
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+
+.iip-cell-name {
+  flex: 0 0 var(--iip-label-h);
+  max-width: 100%;
+  height: var(--iip-label-h);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+  font-size: 0.58rem;
+  line-height: var(--iip-label-h);
+  text-align: center;
+}
+
+.iip-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.iip-empty[hidden] {
+  display: none;
+}
+
+.iip-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.iip-pager[hidden] {
+  display: none;
+}
+
+.iip-page-label {
+  min-width: 4.5em;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.iip-page-btn {
+  min-width: 28px;
+  padding: 2px 8px;
+  line-height: 1.2;
+}
+
+.iip-page-btn:disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}

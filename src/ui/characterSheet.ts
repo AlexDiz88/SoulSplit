@@ -6,6 +6,7 @@ import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
 import { fillItemTooltip } from "./itemTooltip";
+import "./itemRarity.css";
 import "./characterSheet.css";
 
 export type { EquipSlotId };

@@ -17,6 +17,7 @@ import type { ItemDef } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { getItemDrag, type ItemDragSource } from "./itemDrag";
 import { fillItemTooltip } from "./itemTooltip";
+import "./itemRarity.css";
 import "./inventoryWindow.css";
 
 export interface InventoryWindowApi {

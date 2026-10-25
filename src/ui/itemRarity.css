@@ -1,0 +1,32 @@
+/* Канон цветов редкости и глянцево-неоновая рамка слота предмета.
+   Common - матовый серебристый обод без свечения.
+   Uncommon+ - яркий цвет, глянцевый градиент и внешний неон. */
+
+:is(.inv-bag-root, .stash-root, .market-window, .cs-window, .item-drag-ghost, .item-tip) {
+  --c-common: #b0aaa0;
+  --c-uncommon: #3ad86a;
+  --c-magic: #3dbcff;
+  --c-rare: #ffd93b;
+  --c-epic: #d06bff;
+  --c-legendary: #ff9a3c;
+}
+
+/* Рецепт рамки на элементе, у которого уже есть --rar-c / --tip-c. */
+:is(.inv-cell.filled, .cs-slot.filled, .market-offer, .item-drag-ghost, .item-tip-icon) {
+  /* Блик → цвет → глубокая тень → цвет → блик */
+  --rar-edge: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--rar-c) 50%, #ffffff) 0%,
+    var(--rar-c) 14%,
+    color-mix(in srgb, var(--rar-c) 18%, #050505) 48%,
+    var(--rar-c) 76%,
+    color-mix(in srgb, var(--rar-c) 58%, #ffffff) 100%
+  );
+  --rar-glow:
+    0 0 0 1px color-mix(in srgb, var(--rar-c) 55%, transparent),
+    0 0 5px color-mix(in srgb, var(--rar-c) 55%, transparent),
+    0 0 10px color-mix(in srgb, var(--rar-c) 28%, transparent);
+  --rar-glow-common: 0 0 0 1px color-mix(in srgb, var(--rar-c) 45%, #1a1a1a);
+  --rar-face-tint: color-mix(in srgb, var(--rar-c) 48%, transparent);
+  --rar-face-tint-common: color-mix(in srgb, var(--rar-c) 12%, transparent);
+}

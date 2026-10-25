@@ -11,6 +11,7 @@ import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
 import { mountInventoryWindow } from "./inventoryWindow";
 import { mountItemGenerator } from "./itemGenerator";
+import { mountItemIconPreview } from "./itemIconPreview";
 import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
 import type { ItemDef } from "../items/types";
@@ -456,6 +457,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   });
   itemGenerator = mountItemGenerator(() => prepareOpen("item-generator"));
   itemGenerator.setShowToast(pushToast);
+  mountItemIconPreview();
 
   const refreshGearUi = (): void => {
     if (!heroRef) return;

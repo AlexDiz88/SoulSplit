@@ -1,5 +1,6 @@
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
+import "./itemRarity.css";
 import "./itemDrag.css";
 
 /** Источник перетаскивания - единый для всех экранов. */

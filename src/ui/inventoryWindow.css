@@ -17,11 +17,6 @@
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
   --slot-glyph: #c4a874;
-  --c-common: #c8c2b2;
-  --c-uncommon: #6fcf6a;
-  --c-magic: #4fa3ff;
-  --c-rare: #e8c84a;
-  --c-epic: #b878ff;
   position: absolute;
   right: 16px;
   bottom: 16px;
@@ -79,27 +74,18 @@
 
 .inv-cell {
   --rar-c: var(--slot-glyph);
-  --cut: 7px;
   position: relative;
   width: var(--slot);
   height: var(--slot);
   padding: 0;
   border: 0;
+  border-radius: 10px;
   background: var(--slot-edge);
   color: inherit;
   font: inherit;
   cursor: var(--cur-default);
-  clip-path: polygon(
-    var(--cut) 0,
-    calc(100% - var(--cut)) 0,
-    100% var(--cut),
-    100% calc(100% - var(--cut)),
-    calc(100% - var(--cut)) 100%,
-    var(--cut) 100%,
-    0 calc(100% - var(--cut)),
-    0 var(--cut)
-  );
-  transition: filter 0.15s;
+  overflow: visible;
+  transition: filter 0.15s, box-shadow 0.15s;
 }
 
 .inv-cell-face {
@@ -107,8 +93,9 @@
   inset: 2px;
   display: grid;
   place-items: center;
+  border-radius: 8px;
+  overflow: hidden;
   background: radial-gradient(circle at 50% 30%, #2a2c2e, #121314 78%);
-  clip-path: inherit;
 }
 
 .inv-cell:not(.filled) {
@@ -128,12 +115,23 @@
 
 .inv-cell.filled {
   cursor: var(--cur-grab);
-  background: linear-gradient(155deg, var(--rar-c), color-mix(in srgb, var(--rar-c) 25%, #151515) 50%, var(--rar-c));
+  background: var(--rar-edge);
+  box-shadow: var(--rar-glow);
+}
+
+.inv-cell[data-rarity="common"].filled {
+  box-shadow: var(--rar-glow-common);
 }
 
 .inv-cell.filled .inv-cell-face {
   background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint), transparent 68%),
+    var(--slot-bg);
+}
+
+.inv-cell[data-rarity="common"].filled .inv-cell-face {
+  background:
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint-common), transparent 70%),
     var(--slot-bg);
 }
 

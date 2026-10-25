@@ -6,6 +6,7 @@ import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { goldTipLine } from "./goldIcon";
+import "./itemRarity.css";
 import "./itemTooltip.css";
 
 export interface ItemTooltipOptions {

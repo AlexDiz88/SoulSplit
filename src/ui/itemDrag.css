@@ -2,13 +2,7 @@
 
 .item-drag-ghost {
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
-  --c-common: #c8c2b2;
-  --c-uncommon: #6fcf6a;
-  --c-magic: #4fa3ff;
-  --c-rare: #e8c84a;
-  --c-epic: #b878ff;
   --rar-c: var(--c-common);
-  --cut: 7px;
   --item-drag-size: var(--inv-slot, 76px);
   position: fixed;
   z-index: 10000;
@@ -19,29 +13,22 @@
   margin: 0;
   padding: 0;
   border: 0;
+  border-radius: 10px;
   opacity: 1;
   transform: translate(-50%, -50%);
-  background: linear-gradient(
-    155deg,
-    var(--rar-c),
-    color-mix(in srgb, var(--rar-c) 25%, #151515) 50%,
-    var(--rar-c)
-  );
-  clip-path: polygon(
-    var(--cut) 0,
-    calc(100% - var(--cut)) 0,
-    100% var(--cut),
-    100% calc(100% - var(--cut)),
-    calc(100% - var(--cut)) 100%,
-    var(--cut) 100%,
-    0 calc(100% - var(--cut)),
-    0 var(--cut)
-  );
+  overflow: visible;
+  background: var(--rar-edge);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, var(--rar-c) 70%, #000),
+    var(--rar-glow),
     0 12px 32px rgba(0, 0, 0, 0.75);
   pointer-events: none;
   filter: none;
+}
+
+.item-drag-ghost[data-rarity="common"] {
+  box-shadow:
+    var(--rar-glow-common),
+    0 12px 32px rgba(0, 0, 0, 0.75);
 }
 
 .item-drag-ghost[data-rarity="common"] { --rar-c: var(--c-common); }
@@ -60,10 +47,17 @@
   display: grid;
   place-items: center;
   opacity: 1;
+  border-radius: 8px;
+  overflow: hidden;
   background:
-    radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--rar-c) 34%, transparent), transparent 70%),
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint), transparent 68%),
     var(--slot-bg);
-  clip-path: inherit;
+}
+
+.item-drag-ghost[data-rarity="common"] .item-drag-face {
+  background:
+    radial-gradient(circle at 50% 45%, var(--rar-face-tint-common), transparent 70%),
+    var(--slot-bg);
 }
 
 .item-drag-icon {

@@ -373,11 +373,11 @@
   max-width: 460px;
 }
 
-.igen-card[data-rarity="common"] { border-color: var(--c-common, #c8c2b2); }
-.igen-card[data-rarity="uncommon"] { border-color: var(--c-uncommon, #6fcf6a); }
-.igen-card[data-rarity="magic"] { border-color: var(--c-magic, #4fa3ff); }
-.igen-card[data-rarity="rare"] { border-color: var(--c-rare, #e8c84a); }
-.igen-card[data-rarity="epic"] { border-color: var(--c-epic, #b878ff); }
+.igen-card[data-rarity="common"] { border-color: var(--c-common, #b0aaa0); }
+.igen-card[data-rarity="uncommon"] { border-color: var(--c-uncommon, #3ad86a); }
+.igen-card[data-rarity="magic"] { border-color: var(--c-magic, #3dbcff); }
+.igen-card[data-rarity="rare"] { border-color: var(--c-rare, #ffd93b); }
+.igen-card[data-rarity="epic"] { border-color: var(--c-epic, #d06bff); }
 
 .igen-card-name {
   margin: 0 0 4px;
@@ -386,11 +386,11 @@
   color: #f2ead2;
 }
 
-.igen-card[data-rarity="common"] .igen-card-name { color: var(--c-common, #c8c2b2); }
-.igen-card[data-rarity="uncommon"] .igen-card-name { color: var(--c-uncommon, #6fcf6a); }
-.igen-card[data-rarity="magic"] .igen-card-name { color: var(--c-magic, #4fa3ff); }
-.igen-card[data-rarity="rare"] .igen-card-name { color: var(--c-rare, #e8c84a); }
-.igen-card[data-rarity="epic"] .igen-card-name { color: var(--c-epic, #b878ff); }
+.igen-card[data-rarity="common"] .igen-card-name { color: var(--c-common, #b0aaa0); }
+.igen-card[data-rarity="uncommon"] .igen-card-name { color: var(--c-uncommon, #3ad86a); }
+.igen-card[data-rarity="magic"] .igen-card-name { color: var(--c-magic, #3dbcff); }
+.igen-card[data-rarity="rare"] .igen-card-name { color: var(--c-rare, #ffd93b); }
+.igen-card[data-rarity="epic"] .igen-card-name { color: var(--c-epic, #d06bff); }
 
 .igen-card-meta {
   color: #8a9280;
