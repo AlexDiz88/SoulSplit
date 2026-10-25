@@ -7,7 +7,7 @@ group: "Нежить"
 group_id: undead
 region: "Руины"
 region_id: ruins
-status: черновик
+status: одобрено
 base_level: 1
 ---
 

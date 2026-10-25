@@ -175,7 +175,10 @@ export function loadEnemyCards(): EnemyCard[] {
     if (path.replaceAll("\\", "/").endsWith("/INDEX.md") || typeof raw !== "string") continue;
     cards.push(presentEnemyCard(parseCard(path, raw)));
   }
-  cached = cards.sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  cached = cards.sort((a, b) => {
+    if (a.baseLevel !== b.baseLevel) return a.baseLevel - b.baseLevel;
+    return a.name.localeCompare(b.name, "ru");
+  });
   return cached;
 }
 

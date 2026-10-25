@@ -7,7 +7,7 @@ group: "Бандиты"
 group_id: bandits
 region: "Северная дорога"
 region_id: north_road
-status: черновик
+status: одобрено
 base_level: 3
 ---
 
