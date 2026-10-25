@@ -435,7 +435,7 @@ textarea,
 
 .skill-tooltip {
   position: absolute;
-  z-index: 30;
+  z-index: 60;
   min-width: 200px;
   max-width: 260px;
   padding: 10px 12px 11px;
@@ -701,6 +701,27 @@ textarea,
   font-weight: 800;
   color: var(--accent);
   text-align: right;
+}
+
+.bestiary-abilities-row {
+  align-items: center;
+}
+
+.bestiary-ability-icons {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* Тот же круг 83px, что у панели способностей героя (.skill-btn.has-art). */
+.bestiary-ability-icons .bestiary-ability-icon {
+  flex: 0 0 auto;
+}
+
+.bestiary-ability-icons .bestiary-ability-icon:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, white);
 }
 
 .bestiary-desc {

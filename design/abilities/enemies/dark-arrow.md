@@ -4,7 +4,7 @@ icon: dark_arrow.png
 name: "Стрела тьмы"
 aspect: "враги"
 aspect_id: enemies
-status: черновик
+status: одобрено
 ---
 
 # Стрела тьмы

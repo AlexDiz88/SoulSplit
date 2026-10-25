@@ -1,3 +1,10 @@
+import {
+  abilityDisplayName,
+  abilityIconUrlForRef,
+  combatAbilityIdForRef,
+  findAbilityCard,
+  type AbilityCard,
+} from "../abilities/catalog";
 import { ABILITIES, ASPECT_HEX, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountCharacterSheet } from "./characterSheet";
 import { mountGrimoire } from "./grimoire";
@@ -117,6 +124,16 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     tooltip.hidden = true;
   };
 
+  const placeTooltip = (anchor: HTMLElement): void => {
+    const rect = anchor.getBoundingClientRect();
+    const tipRect = tooltip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
+    const top = rect.top - tipRect.height - 10;
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${Math.max(8, top)}px`;
+  };
+
   const showTooltip = (btn: HTMLElement, id: AbilityId): void => {
     const def = ABILITIES[id];
     const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
@@ -139,14 +156,45 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       </div>
     `;
     tooltip.hidden = false;
+    placeTooltip(btn);
+  };
 
-    const rect = btn.getBoundingClientRect();
-    const tipRect = tooltip.getBoundingClientRect();
-    let left = rect.left + rect.width / 2 - tipRect.width / 2;
-    left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
-    const top = rect.top - tipRect.height - 10;
-    tooltip.style.left = `${left}px`;
-    tooltip.style.top = `${Math.max(8, top)}px`;
+  const showCardTooltip = (anchor: HTMLElement, card: AbilityCard): void => {
+    const aspectColor =
+      ASPECT_HEX[card.aspectId as keyof typeof ASPECT_HEX] ?? "#c45a4a";
+    const cd = card.cooldown?.trim() || "-";
+    tooltip.className = `skill-tooltip aspect-${card.aspectId || "enemies"}`;
+    tooltip.style.setProperty("--aspect-color", aspectColor);
+    tooltip.innerHTML = `
+      <div class="tt-name">${card.name}</div>
+      <div class="tt-desc">${card.description || "-"}</div>
+      <div class="tt-stats">
+        <div class="tt-stat"><span>Кулдаун</span><b>${cd}</b></div>
+      </div>
+    `;
+    tooltip.hidden = false;
+    placeTooltip(anchor);
+  };
+
+  const showAbilityRefTooltip = (anchor: HTMLElement, ref: string): void => {
+    const combatId = combatAbilityIdForRef(ref);
+    if (combatId) {
+      showTooltip(anchor, combatId);
+      return;
+    }
+    const card = findAbilityCard(ref);
+    if (card) {
+      showCardTooltip(anchor, card);
+      return;
+    }
+    tooltip.className = "skill-tooltip";
+    tooltip.style.removeProperty("--aspect-color");
+    tooltip.innerHTML = `
+      <div class="tt-name">${abilityDisplayName(ref)}</div>
+      <div class="tt-desc">Нет описания способности.</div>
+    `;
+    tooltip.hidden = false;
+    placeTooltip(anchor);
   };
 
   const canHoverTooltip = (): boolean => window.matchMedia(HOVER_TOOLTIP_MQ).matches;
@@ -355,6 +403,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
   /** Перед открытием панели закрывает остальные (хоткеи и меню переключают окна). */
   const prepareOpen = (except: PanelId): void => {
+    hideTooltip();
     closeMenu();
     if (except !== "character" && character.isOpen()) character.close();
     if (except !== "grimoire" && grimoire.isOpen()) grimoire.close();
@@ -410,6 +459,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   };
 
   const showDetail = (card: EnemyCard): void => {
+    hideTooltip();
     bestiaryDetail.replaceChildren();
     const portrait = document.createElement("img");
     portrait.className = "bestiary-detail-portrait";
@@ -440,13 +490,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     if (card.group) bestiaryDetail.append(statLine("Группа", card.group));
     if (card.region) bestiaryDetail.append(statLine("Регион", card.region));
     if (card.abilities && card.abilities !== "-" && card.abilities !== "нет") {
-      const abilityNames = card.abilities
+      const refs = card.abilities
         .split(",")
         .map((part) => part.trim())
-        .map((id) => ABILITIES[id.replace(/-/g, "_") as AbilityId]?.name ?? id)
-        .filter(Boolean);
-      if (abilityNames.length) {
-        bestiaryDetail.append(statLine("Способности", abilityNames.join(", ")));
+        .filter((part) => part && part !== "-" && part !== "нет");
+      if (refs.length) {
+        bestiaryDetail.append(abilityIconsRow(refs, showAbilityRefTooltip, hideTooltip, canHoverTooltip));
       }
     }
     if (card.description) {
@@ -464,6 +513,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   };
 
   const clearDetail = (): void => {
+    hideTooltip();
     bestiaryDetail.textContent = "Выберите врага, чтобы увидеть характеристики.";
   };
 
@@ -516,10 +566,14 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     openBestiary();
   });
   bestiaryClose.addEventListener("click", () => {
+    hideTooltip();
     bestiary.hidden = true;
   });
   bestiary.addEventListener("click", (ev) => {
-    if (ev.target === bestiary) bestiary.hidden = true;
+    if (ev.target === bestiary) {
+      hideTooltip();
+      bestiary.hidden = true;
+    }
   });
   document.addEventListener("pointerdown", (ev) => {
     if (sideMenu.hidden) return;
@@ -703,6 +757,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     closeOverlays() {
+      hideTooltip();
       character.close();
       inventory.close();
       inventory.setStashBag(null);
@@ -724,6 +779,55 @@ function statLine(label: string, value: string): HTMLElement {
   const val = document.createElement("b");
   val.textContent = value;
   row.append(name, val);
+  return row;
+}
+
+function abilityIconsRow(
+  refs: string[],
+  showTip: (anchor: HTMLElement, ref: string) => void,
+  hideTip: () => void,
+  canHover: () => boolean,
+): HTMLElement {
+  const row = document.createElement("div");
+  row.className = "bestiary-stat bestiary-abilities-row";
+  const label = document.createElement("span");
+  label.textContent = "Способности";
+  const icons = document.createElement("div");
+  icons.className = "bestiary-ability-icons";
+
+  for (const ref of refs) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "skill-btn has-art bestiary-ability-icon";
+    btn.setAttribute("aria-label", abilityDisplayName(ref));
+    const img = document.createElement("img");
+    img.className = "skill-icon";
+    img.src = abilityIconUrlForRef(ref);
+    img.alt = "";
+    img.draggable = false;
+    btn.append(img);
+
+    btn.addEventListener("mouseenter", () => {
+      if (!canHover()) return;
+      showTip(btn, ref);
+    });
+    btn.addEventListener("mouseleave", () => {
+      if (!canHover()) return;
+      hideTip();
+    });
+    btn.addEventListener("focus", () => {
+      if (!canHover()) return;
+      showTip(btn, ref);
+    });
+    btn.addEventListener("blur", () => {
+      if (!canHover()) return;
+      hideTip();
+    });
+
+    icons.append(btn);
+  }
+
+  row.append(label, icons);
   return row;
 }
 

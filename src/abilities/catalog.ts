@@ -1,6 +1,7 @@
 import type { AbilityId, Aspect } from "../types";
 import { ALL_ASPECTS, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 import {
+  ABILITIES,
   abilityDefForGrimoireId,
   abilityNumberLines,
   describeAbility,
@@ -213,6 +214,60 @@ export function cardsInAspect(aspectId: string): AbilityCard[] {
   return loadAbilityCards()
     .filter((card) => card.aspectId === aspectId)
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+}
+
+/** Карточка гримуара по id из бестиария / дизайна (`dark-arrow`, `dark_arrow`, либо имя). */
+export function findAbilityCard(ref: string): AbilityCard | undefined {
+  const trimmed = ref.trim();
+  if (!trimmed || trimmed === "-" || trimmed === "нет") return undefined;
+  const kebab = trimmed.replace(/_/g, "-");
+  const snake = trimmed.replace(/-/g, "_");
+  const cards = loadAbilityCards();
+  return (
+    cards.find(
+      (card) => card.id === kebab || card.id === trimmed || card.id.replace(/-/g, "_") === snake,
+    ) ?? cards.find((card) => card.name.toLowerCase() === trimmed.toLowerCase())
+  );
+}
+
+/** URL иконки по ссылке из карточки врага; без арта - `no_image`. */
+export function abilityIconUrlForRef(ref: string): string {
+  const card = findAbilityCard(ref);
+  if (card) return abilityIconUrl(card);
+  const trimmed = ref.trim();
+  const kebab = trimmed.replace(/_/g, "-");
+  const snake = trimmed.replace(/-/g, "_");
+  return ICONS[snake] ?? ICONS[kebab] ?? ICONS[`${snake}.png`] ?? FALLBACK_ICON;
+}
+
+/** Боевой AbilityId, если способность уже в коде. */
+export function combatAbilityIdForRef(ref: string): AbilityId | undefined {
+  const trimmed = ref.trim();
+  if (!trimmed || trimmed === "-" || trimmed === "нет") return undefined;
+  const kebab = trimmed.replace(/_/g, "-");
+  const snake = trimmed.replace(/-/g, "_");
+  return abilityDefForGrimoireId(kebab)?.id ?? (ABILITIES[snake as AbilityId] ? (snake as AbilityId) : undefined);
+}
+
+/** Русское имя по id из дизайн-карточки или боевого кода (`order` → "Приказ"). */
+export function abilityDisplayName(ref: string): string {
+  const trimmed = ref.trim();
+  if (!trimmed || trimmed === "-" || trimmed === "нет") return trimmed;
+  const fromCatalog = findAbilityCard(trimmed);
+  if (fromCatalog?.name) return fromCatalog.name;
+  const fromCombat = combatAbilityIdForRef(trimmed);
+  if (fromCombat) return ABILITIES[fromCombat].name;
+  return trimmed;
+}
+
+/** Список id через запятую → русские имена для бестиария. */
+export function resolveAbilityList(raw: string): string {
+  if (!raw || raw === "-" || raw === "нет") return raw || "-";
+  return raw
+    .split(",")
+    .map((part) => abilityDisplayName(part.trim()))
+    .filter(Boolean)
+    .join(", ");
 }
 
 /** Старые метки прототип/взято считаем одобренными (как в гримуаре). */

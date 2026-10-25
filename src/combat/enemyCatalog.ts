@@ -1,5 +1,3 @@
-import { ABILITIES } from "../abilities/definitions";
-import type { AbilityId } from "../types";
 import { getEnemyKind, rowsLabel } from "./enemies";
 
 export interface EnemyCard {
@@ -139,6 +137,7 @@ function parseCard(path: string, raw: string): EnemyCard {
     spawnRowsLabel,
     weapon: text("Оружие") || kind?.weapon || "-",
     aspect: text("Аспект") || kind?.aspect || "-",
+    /** Сырые id (`order`, `dark-arrow`) - бестиарий сам резолвит иконки/тултипы. */
     abilities: text("Способности") || "-",
     extra: text("Доп"),
     portraitUrl,
@@ -149,9 +148,7 @@ function parseCard(path: string, raw: string): EnemyCard {
 export function presentEnemyCard(card: EnemyCard): EnemyCard {
   const kind = getEnemyKind(card.id.replace(/-/g, "_"));
   if (!kind) return card;
-  const abilityNames = (kind.abilities ?? [])
-    .map((id) => ABILITIES[id as AbilityId]?.name ?? id.replace(/_/g, "-"))
-    .join(", ");
+  const combatAbilities = (kind.abilities ?? []).join(", ");
   return {
     ...card,
     name: kind.name,
@@ -164,7 +161,7 @@ export function presentEnemyCard(card: EnemyCard): EnemyCard {
     spawnRowsLabel: rowsLabel(kind.spawnRows),
     weapon: kind.weapon,
     aspect: kind.aspect,
-    abilities: abilityNames || card.abilities || "-",
+    abilities: combatAbilities || card.abilities || "-",
     portraitUrl: kind.portraitUrl || card.portraitUrl,
   };
 }
