@@ -1,5 +1,7 @@
 import type { Aspect, WeaponKind } from "../types";
 import type { AffixFamily, StatId } from "../stats/statIds";
+import type { ItemGrip } from "./grip";
+import type { OffhandTypeId } from "./offhandTypes";
 import type { EquipSlotId } from "./slots";
 import type { WeaponTypeId } from "./weaponTypes";
 
@@ -44,8 +46,17 @@ export interface WeaponImplicit {
   baseCd: number;
   reach: number;
   range: "melee" | "ranged";
-  /** Двуручное: занимает обе руки (offhand недоступен). */
+  /** Куда можно надеть. Старые сейвы могут не иметь - см. resolveWeaponGrip. */
+  grip?: ItemGrip;
+  /**
+   * @deprecated Используй grip === "twoHand". Читается при миграции сейвов.
+   */
   twoHand?: boolean;
+}
+
+/** Implicit свойства оффхенда (щит / том / сфера / реликвия / колчан). */
+export interface OffhandImplicit {
+  typeId: OffhandTypeId;
 }
 
 export interface ItemDef {
@@ -57,9 +68,11 @@ export interface ItemDef {
   affixes: RolledAffix[];
   /** URL иконки из assets/art/items (префиксы slot_rarity_n). */
   icon?: string;
-  /** Только оружие / аксессуар. */
+  /** Оружие / оффхенд / аксессуар. */
   aspectTag?: Aspect;
   weapon?: WeaponImplicit;
+  /** Взаимоисключает weapon: предмет левой руки без автоатаки. */
+  offhand?: OffhandImplicit;
 }
 
 export interface GenerateItemOptions {

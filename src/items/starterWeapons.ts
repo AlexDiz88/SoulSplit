@@ -1,5 +1,6 @@
 import { getStarterItemIconUrl } from "../art/itemIcons";
 import { WEAPON_REACH } from "../combat/weapons";
+import type { ItemGrip } from "./grip";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
 import {
@@ -8,8 +9,8 @@ import {
   type WeaponTypeId,
 } from "./weaponTypes";
 
-/** Стартовое оружие при создании персонажа (без копья - оно только в дропе/магазине). */
-export type StarterWeaponId = Exclude<WeaponTypeId, "spear">;
+/** Стартовое оружие при создании персонажа (копьё и арбалет - только дроп/магазин). */
+export type StarterWeaponId = Exclude<WeaponTypeId, "spear" | "crossbow">;
 
 export interface StarterWeaponDef {
   id: StarterWeaponId;
@@ -22,7 +23,7 @@ export interface StarterWeaponDef {
   baseCd: number;
   reach: number;
   range: "melee" | "ranged";
-  twoHand?: boolean;
+  grip: ItemGrip;
 }
 
 function toStarterDef(typeId: StarterWeaponId): StarterWeaponDef {
@@ -37,7 +38,7 @@ function toStarterDef(typeId: StarterWeaponId): StarterWeaponDef {
     baseCd: t.baseCd,
     reach: WEAPON_REACH[t.kind],
     range: t.range,
-    twoHand: t.twoHand,
+    grip: t.grip,
   };
 }
 
@@ -50,6 +51,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = (
     "dagger",
     "sword",
     "mace",
+    "axe",
     "wand",
     "bow",
     "2H_axe",
@@ -78,7 +80,8 @@ function toImplicit(def: StarterWeaponDef): WeaponImplicit {
     baseCd: def.baseCd,
     reach: def.reach,
     range: def.range,
-    twoHand: def.twoHand,
+    grip: def.grip,
+    twoHand: def.grip === "twoHand",
   };
 }
 

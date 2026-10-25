@@ -1,19 +1,25 @@
 import type { WeaponKind } from "../types";
 import { WEAPON_REACH } from "../combat/weapons";
+import type { ItemGrip } from "./grip";
 
 /**
  * Визуальный / предметный тип оружия (имя + арт + баланс).
  * Боевой reach берётся из `kind` (WeaponKind).
  *
  * Арт: `assets/art/items/{art}_{rarity}_{n}.png`
- * Двуручные мечи/булавы/топоры: префикс `2H_*`. Лук и посох без `2H`.
+ * Двуручные мечи/булавы/топоры: префикс `2H_*`.
+ * Лук и арбалет без `2H` (grip mainhand под колчан). Посох без `2H` (grip twoHand).
  */
 export type WeaponTypeId =
   | "dagger"
   | "sword"
   | "mace"
+  | "axe"
   | "wand"
   | "bow"
+  | "crossbow"
+  | "2H_sword"
+  | "2H_mace"
   | "2H_axe"
   | "staff"
   | "spear";
@@ -25,7 +31,7 @@ export interface WeaponTypeDef {
   art: string;
   kind: WeaponKind;
   range: "melee" | "ranged";
-  twoHand?: boolean;
+  grip: ItemGrip;
   /** Базовый КД на ilvl 1. */
   baseCd: number;
   /** Базовый урон на ilvl 1. */
@@ -40,6 +46,7 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "dagger",
     kind: "melee",
     range: "melee",
+    grip: "either",
     baseCd: 1.2,
     damageMin: 17,
     damageMax: 21,
@@ -50,6 +57,7 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "sword",
     kind: "melee",
     range: "melee",
+    grip: "either",
     baseCd: 1.6,
     damageMin: 20,
     damageMax: 32,
@@ -60,9 +68,21 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "mace",
     kind: "melee",
     range: "melee",
+    grip: "either",
     baseCd: 1.8,
     damageMin: 23,
     damageMax: 37,
+  },
+  {
+    id: "axe",
+    name: "Топор",
+    art: "axe",
+    kind: "melee",
+    range: "melee",
+    grip: "either",
+    baseCd: 1.7,
+    damageMin: 21,
+    damageMax: 34,
   },
   {
     id: "wand",
@@ -70,6 +90,7 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "wand",
     kind: "staff",
     range: "ranged",
+    grip: "either",
     baseCd: 1.6,
     damageMin: 16,
     damageMax: 22,
@@ -80,18 +101,51 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "bow",
     kind: "bow",
     range: "ranged",
-    twoHand: true,
+    grip: "mainhand",
     baseCd: 2.5,
     damageMin: 26,
     damageMax: 38,
   },
   {
+    id: "crossbow",
+    name: "Арбалет",
+    art: "crossbow",
+    kind: "bow",
+    range: "ranged",
+    grip: "mainhand",
+    baseCd: 2.8,
+    damageMin: 30,
+    damageMax: 44,
+  },
+  {
+    id: "2H_sword",
+    name: "Двуручный меч",
+    art: "2h_sword",
+    kind: "melee",
+    range: "melee",
+    grip: "twoHand",
+    baseCd: 2.1,
+    damageMin: 30,
+    damageMax: 46,
+  },
+  {
+    id: "2H_mace",
+    name: "Двуручная булава",
+    art: "2h_mace",
+    kind: "melee",
+    range: "melee",
+    grip: "twoHand",
+    baseCd: 2.3,
+    damageMin: 32,
+    damageMax: 50,
+  },
+  {
     id: "2H_axe",
-    name: "Большой топор",
+    name: "Двуручный топор",
     art: "2h_axe",
     kind: "melee",
     range: "melee",
-    twoHand: true,
+    grip: "twoHand",
     baseCd: 2.2,
     damageMin: 28,
     damageMax: 48,
@@ -102,7 +156,7 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "staff",
     kind: "staff",
     range: "ranged",
-    twoHand: true,
+    grip: "twoHand",
     baseCd: 2.0,
     damageMin: 20,
     damageMax: 36,
@@ -113,6 +167,7 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     art: "spear",
     kind: "spear",
     range: "melee",
+    grip: "twoHand",
     baseCd: 1.4,
     damageMin: 22,
     damageMax: 34,
@@ -127,10 +182,12 @@ export function isWeaponTypeId(value: string): value is WeaponTypeId {
   return value in WEAPON_TYPE_BY_ID;
 }
 
-/** Типы для слота: двуручные не кладём в offhand. */
+/** Одноручное оружие, которое можно надеть в указанный слот. */
 export function weaponTypesForSlot(slot: "mainhand" | "offhand"): readonly WeaponTypeDef[] {
-  if (slot === "offhand") return WEAPON_TYPES.filter((t) => !t.twoHand);
-  return WEAPON_TYPES;
+  if (slot === "offhand") {
+    return WEAPON_TYPES.filter((t) => t.grip === "either");
+  }
+  return WEAPON_TYPES.filter((t) => t.grip === "mainhand" || t.grip === "either" || t.grip === "twoHand");
 }
 
 /** Урон/КД от базы типа с ростом от itemLevel. */

@@ -87,6 +87,8 @@ export class Unit {
   level: number;
   readonly elite: boolean;
   autoTimer: number;
+  /** Таймер автоатаки оружия в левой руке (dual wield). */
+  offhandAutoTimer = 0;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
   preferredTargetId: string | null = null;
@@ -143,6 +145,7 @@ export class Unit {
     this.hp = this.stats.maxHp;
     this.mana = this.sheet ? getStat(this.sheet, "maxMana") : 0;
     this.autoTimer = Math.random() * init.stats.autoAttackCd * 0.5;
+    this.offhandAutoTimer = Math.random() * (init.equipment?.offhand?.weapon?.baseCd ?? 0) * 0.5;
     this.attackCharge = init.stats.autoAttackCd > 0 ? this.autoTimer / init.stats.autoAttackCd : 0;
 
     for (const a of init.abilities) {
@@ -546,13 +549,16 @@ export class Unit {
   /** Синхронизация боевых stats оружия + пересчёт листа. */
   applyEquipmentChange(base?: HeroStatSheet): void {
     if (base) this.sheetBase = base;
-    const w = equippedWeapon(this.equipment)?.weapon;
+    const main = this.equipment.mainhand?.weapon;
+    const off = this.equipment.offhand?.weapon;
+    const w = main ?? off ?? equippedWeapon(this.equipment)?.weapon;
     if (w) {
       this.stats.atk = w.damageMax;
       this.stats.autoAttackCd = w.baseCd;
       this.stats.reach = w.reach;
       this.stats.range = w.range;
     }
+    if (!off) this.offhandAutoTimer = 0;
     this.rebuildSheetFromEquipment();
   }
 
@@ -590,11 +596,23 @@ export class Unit {
     return result;
   }
 
-  /** Базовый CD автоатаки с учётом AS из листа (для героя) или сырого stats. */
+  /** Базовый CD автоатаки основной руки с учётом AS из листа (для героя) или сырого stats. */
   autoAttackNeed(): number {
-    const baseCd = this.stats.autoAttackCd;
+    const baseCd = this.equipment.mainhand?.weapon?.baseCd ?? this.stats.autoAttackCd;
     if (!this.sheet) return baseCd * this.autoCdMultiplier();
     return autoAttackInterval(baseCd, getStat(this.sheet, "attackSpeed"), this.autoCdMultiplier());
+  }
+
+  /** CD автоатаки левой руки (0 если там нет оружия). */
+  offhandAutoAttackNeed(): number {
+    const baseCd = this.equipment.offhand?.weapon?.baseCd ?? 0;
+    if (baseCd <= 0) return 0;
+    if (!this.sheet) return baseCd * this.autoCdMultiplier();
+    return autoAttackInterval(baseCd, getStat(this.sheet, "attackSpeed"), this.autoCdMultiplier());
+  }
+
+  hasOffhandWeapon(): boolean {
+    return Boolean(this.equipment.offhand?.weapon);
   }
 
   tickResourceRegen(dt: number): void {

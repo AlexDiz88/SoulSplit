@@ -143,6 +143,14 @@
   color: #f2f2f2;
 }
 
+.item-tip-offhand-penalty {
+  margin-top: 6px;
+  color: #c4a35a;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
 .item-tip-dps-value {
   color: #b8b4ff;
 }

@@ -70,7 +70,7 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
   for (const a of suffixes) {
     host.append(el("div", `${affixClass} market-affix-suffix`, formatRolledAffix(a)));
   }
-  if (!item.affixes.length && !item.weapon) {
+  if (!item.affixes.length && !item.weapon && !item.offhand) {
     host.append(el("div", lineClass, "Без аффиксов"));
   }
 }
@@ -257,6 +257,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
           showIcon: true,
           caption: "Экипировано",
           showSellPrice: false,
+          equippedSlot: slot,
         });
       } else {
         fillEmptyItemTooltip(card, slot, "Экипировано");

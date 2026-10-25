@@ -42,8 +42,7 @@ export const MERCHANTS: readonly MerchantDef[] = [
   {
     id: "weaponsmith",
     label: "Оружейник",
-    // Пока без двуручного владения и щитов: только основная рука.
-    slots: ["mainhand"],
+    slots: ["mainhand", "offhand"],
     accent: "#c45a3a",
     portraitStem: "weaponsmith",
   },

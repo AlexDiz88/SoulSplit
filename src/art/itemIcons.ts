@@ -7,7 +7,9 @@ import type { WeaponKind } from "../types";
  * Иконки предметов: `assets/art/items/{slotOrWeapon}_{rarity}_{n}.png`
  * Пример: boots_magic_01.png -> слот feet, редкость magic.
  * Оружие: sword_common_01.png, 2H_axe_uncommon_02.png -> слот mainhand.
- * Двуручные (мечи/булавы/топоры): префикс `2H_*`. Лук и посох без `2H` (всегда двуручные).
+ * Двуручные мечи/булавы/топоры: префикс `2H_*`.
+ * Лук/арбалет без `2H` (grip mainhand). Посох без `2H` (grip twoHand).
+ * Оффхенды: shield_*, tome_*, orb_*, relic_*, quiver_*.
  *
  * `starter_*.png` - фиксированные иконки создания персонажа.
  * Лежат в той же папке, но не попадают в пул `pickItemIconUrl`.
@@ -47,13 +49,11 @@ const SLOT_FILE_ALIASES: Record<string, EquipSlotId | "ring"> = {
   mainhand: "mainhand",
   weapon: "mainhand",
   offhand: "offhand",
-  shield: "offhand",
 };
 
 /**
  * Типы оружия в имени файла -> слот mainhand.
- * Префикс может быть составным (`2H_axe`). Любой `2H_*` тоже оружие
- * (двуручные мечи/булавы/топоры; лук и посох пишутся без `2H`).
+ * Префикс может быть составным (`2H_axe`). Любой `2H_*` тоже оружие.
  */
 const WEAPON_ART_ALIASES: Record<string, true> = {
   sword: true,
@@ -64,10 +64,20 @@ const WEAPON_ART_ALIASES: Record<string, true> = {
   "2h_sword": true,
   "2h_mace": true,
   bow: true,
+  crossbow: true,
   staff: true,
   wand: true,
   spear: true,
   lance: true,
+};
+
+/** Типы оффхенда в имени файла -> слот offhand (+ stem в weaponArt). */
+const OFFHAND_ART_ALIASES: Record<string, true> = {
+  shield: true,
+  tome: true,
+  orb: true,
+  relic: true,
+  quiver: true,
 };
 
 /**
@@ -113,7 +123,7 @@ function resolvePrefix(prefix: string): { slotKey: EquipSlotId | "ring"; weaponA
   const slot = SLOT_FILE_ALIASES[key];
   if (slot) return { slotKey: slot };
   if (WEAPON_ART_ALIASES[key]) return { slotKey: "mainhand", weaponArt: key };
-  // Будущие двуручные: 2H_sword / 2H_mace / ... (кроме лука и посоха).
+  if (OFFHAND_ART_ALIASES[key]) return { slotKey: "offhand", weaponArt: key };
   if (/^2h_[a-z][a-z0-9]*$/.test(key)) return { slotKey: "mainhand", weaponArt: key };
   return null;
 }
@@ -189,24 +199,33 @@ export function listItemIconUrls(slot: EquipSlotId, rarity: ItemRarity): string[
 export interface PickItemIconOptions {
   /** Точный префикс арта (`wand`, `2h_axe`). Чужие типы не подмешиваются. */
   weaponArt?: string;
+  /** Stem оффхенда (`shield`, `quiver`). */
+  offhandArt?: string;
   /** Только если нет weaponArt - узкий fallback по боевому kind. */
   weaponKind?: WeaponKind;
 }
 
-/** Случайная иконка под слот + редкость (+ опционально тип оружия). */
+/** Случайная иконка под слот + редкость (+ опционально тип оружия / оффхенда). */
 export function pickItemIconUrl(
   slot: EquipSlotId,
   rarity: ItemRarity,
   rng: () => number = Math.random,
   opts?: PickItemIconOptions,
 ): string | undefined {
-  // Арт оружия лежит как mainhand (sword_*, bow_* ...); offhand без своих файлов берёт тот же пул.
+  // Арт оружия лежит как mainhand (sword_*, bow_* ...); either в offhand берёт тот же пул.
   const wantsWeaponArt = Boolean(opts?.weaponArt || opts?.weaponKind);
   let pool = entriesFor(slot, rarity);
   if (!pool.length && slot === "offhand" && wantsWeaponArt) {
     pool = entriesFor("mainhand", rarity);
   }
   if (!pool.length) return undefined;
+
+  const offhandKey = opts?.offhandArt?.toLowerCase();
+  if (offhandKey) {
+    const matched = pool.filter((e) => e.weaponArt === offhandKey);
+    if (!matched.length) return undefined;
+    return matched[Math.floor(rng() * matched.length)]?.url;
+  }
 
   const artKey = opts?.weaponArt?.toLowerCase();
   if (artKey) {
@@ -230,6 +249,12 @@ export function pickItemIconUrl(
 /** Дозаполнить отсутствующую иконку у уже сгенерированного предмета (сейвы / рынок). */
 export function ensureItemIcon(item: ItemDef, rng: () => number = Math.random): void {
   if (item.icon) return;
+  if (item.offhand) {
+    item.icon = pickItemIconUrl(item.slot, item.rarity, rng, {
+      offhandArt: item.offhand.typeId,
+    });
+    return;
+  }
   const typeId = item.weapon?.typeId;
   item.icon = pickItemIconUrl(item.slot, item.rarity, rng, {
     weaponArt: typeId ? WEAPON_TYPE_BY_ID[typeId]?.art : undefined,

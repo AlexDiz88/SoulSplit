@@ -86,6 +86,12 @@ cost      = baseCost * (1 - min(manaCostReduction%, 75) / 100)
 - weaponBaseDamage (min-max)
 - weaponBaseCd
 - reach / range / weaponKind
+- grip: mainhand | offhand | either | twoHand
+
+Канон типов и dual wield: `design/items/WEAPONS_AND_OFFHANDS.md`.
+
+Dual wield: у каждой руки свой таймер; урон левой руки ×0.75 после полного расчёта удара.
+Лук / арбалет - grip mainhand (не twoHand), чтобы в offhand можно было надеть колчан.
 
 ## Генератор предметов
 
@@ -114,7 +120,7 @@ Legendary / set - вне генератора v1.
 
 ### Аспектные предметы
 
-Только: `mainhand`, `offhand` (оружие), `trinket` (аксессуар).
+Только: `mainhand`, `offhand` (оружие или оффхенд с aspect-семьёй), `trinket` (аксессуар).
 `aspectTag` и бонус аспекта появляются не раньше rare (на common / uncommon / magic их нет).
 Дроп оружия с `aspectTag` из изученных аспектов героя имеет повышенный вес.
 

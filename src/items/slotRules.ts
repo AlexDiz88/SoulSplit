@@ -34,7 +34,8 @@ export const SLOT_STAT_DENY: Partial<Record<EquipSlotId, ReadonlySet<string>>> =
   waist: new Set(["weaponAttackBonus", "abilityDamage", "attackSpeed"]),
   legs: new Set(["weaponAttackBonus", "abilityDamage", "attackSpeed"]),
   mainhand: new Set(["evasion", "physDamageReduction", "maxHp"]),
-  offhand: new Set(["attackSpeed"]),
+  // attackSpeed разрешён (колчан / dual wield tempo).
+  offhand: new Set(["evasion"]),
 };
 
 export function familiesForSlot(slot: EquipSlotId): AffixFamily[] {

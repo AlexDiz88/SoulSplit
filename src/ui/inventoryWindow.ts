@@ -301,7 +301,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const marketTarget = under?.closest<HTMLElement>(".market-window, .market-detail");
     if ((source.kind === "inv" || source.kind === "stash") && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
-      setDropHighlight(equipTarget, canEquipInSlot(item, slot));
+      setDropHighlight(equipTarget, canEquipInSlot(item, slot, hero?.equipment));
     } else if (
       (source.kind === "equip" || source.kind === "inv" || source.kind === "stash") &&
       (bagTarget || stashTarget)
@@ -309,7 +309,10 @@ export function mountInventoryWindow(): InventoryWindowApi {
       setDropHighlight(bagTarget ?? stashTarget ?? null, true);
     } else if (source.kind === "equip" && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
-      setDropHighlight(equipTarget, slot !== source.slot && canEquipInSlot(item, slot));
+      setDropHighlight(
+        equipTarget,
+        slot !== source.slot && canEquipInSlot(item, slot, hero?.equipment),
+      );
     } else if (
       marketMode &&
       marketTarget &&

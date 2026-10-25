@@ -23,6 +23,8 @@ import { getStat } from "../stats/sheet";
 import { applyProfileHp, hydrateCombatUnit, sheetBaseFromProfile } from "../meta/heroProfile";
 import { cloneInventory } from "../items/inventory";
 import type { EquipmentMap } from "../items/equipment";
+import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
+import type { WeaponImplicit } from "../items/types";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
@@ -30,6 +32,8 @@ import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
 import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
+
+type AutoHand = "mainhand" | "offhand";
 
 export type { BattleConfig, BattleResult, BattleKill } from "./battleTypes";
 
@@ -1371,13 +1375,23 @@ export class Battle {
     return this.units.filter((u) => u.team === "enemy" && u.alive);
   }
 
-  private findAutoTarget(attacker: Unit): Unit | null {
+  private weaponReachForHand(attacker: Unit, hand: AutoHand): number {
+    if (attacker.team !== "player") return attacker.stats.reach ?? 1;
+    const w =
+      hand === "mainhand"
+        ? attacker.equipment.mainhand?.weapon
+        : attacker.equipment.offhand?.weapon;
+    if (w) return w.reach;
+    return WEAPON_REACH[this.weapon];
+  }
+
+  private findAutoTarget(attacker: Unit, hand: AutoHand = "mainhand"): Unit | null {
     if (attacker.team === "enemy") {
       const reach = attacker.stats.reach ?? 1;
       if (!this.hero.alive || this.distanceOf(attacker.pos.row) > reach) return null;
       return this.hero;
     }
-    const reach = WEAPON_REACH[this.weapon];
+    const reach = this.weaponReachForHand(attacker, hand);
     const pool = this.livingEnemies().filter((e) => this.distanceOf(e.pos.row) <= reach);
     if (!pool.length) return null;
     const pref = pool.find((e) => e.id === attacker.preferredTargetId);
@@ -1386,23 +1400,29 @@ export class Battle {
     return pool[0] ?? null;
   }
 
-  private async doAutoAttack(attacker: Unit): Promise<void> {
+  private async doAutoAttack(attacker: Unit, hand: AutoHand = "mainhand"): Promise<void> {
     if (!attacker.alive || attacker.hasStatus("stun") || this.destroyed) return;
-    const target = this.findAutoTarget(attacker);
+    const target = this.findAutoTarget(attacker, hand);
     if (!target) return;
-    const reach = attacker.team === "player" ? WEAPON_REACH[this.weapon] : (attacker.stats.reach ?? 1);
+    const reach = this.weaponReachForHand(attacker, hand);
     await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2);
     if (!target.alive || this.destroyed) return;
 
     let dmg: number;
     let crit = false;
     if (attacker.team === "player" && attacker.sheet) {
-      const w = attacker.equipment.mainhand?.weapon;
+      const w: WeaponImplicit | undefined =
+        hand === "mainhand"
+          ? attacker.equipment.mainhand?.weapon
+          : attacker.equipment.offhand?.weapon;
       const roll = w
         ? rollWeaponDamage(w.damageMin, w.damageMax)
         : attacker.stats.atk;
       crit = rollCrit(attacker.sheet);
       dmg = autoAttackDamage(roll, attacker.sheet, attacker.atkMultiplier(), crit);
+      if (hand === "offhand") {
+        dmg = Math.max(0, Math.round(dmg * OFFHAND_WEAPON_DAMAGE_MULT));
+      }
     } else {
       dmg = Math.round(attacker.stats.atk * attacker.atkMultiplier());
     }
@@ -1569,16 +1589,40 @@ export class Battle {
         if (u.cast) continue;
       }
 
-      u.autoTimer += combatDt;
-      const need = u.autoAttackNeed();
-      if (u.autoTimer < need) continue;
-      if (u.team === "player" && this.casting) continue;
-      if (!this.findAutoTarget(u)) {
-        u.autoTimer = need;
-        continue;
+      if (u.team === "player" && this.casting) {
+        // Во время каста таймеры копятся, удары ждут конца каста.
       }
-      u.autoTimer -= need;
-      void this.doAutoAttack(u);
+
+      const mainWeapon = u.team === "player" ? u.equipment.mainhand?.weapon : true;
+      if (mainWeapon) {
+        u.autoTimer += combatDt;
+        const need = u.autoAttackNeed();
+        if (u.autoTimer >= need) {
+          if (u.team === "player" && this.casting) {
+            // hold
+          } else if (!this.findAutoTarget(u, "mainhand")) {
+            u.autoTimer = need;
+          } else {
+            u.autoTimer -= need;
+            void this.doAutoAttack(u, "mainhand");
+          }
+        }
+      }
+
+      if (u.team === "player" && u.hasOffhandWeapon()) {
+        u.offhandAutoTimer += combatDt;
+        const offNeed = u.offhandAutoAttackNeed();
+        if (offNeed > 0 && u.offhandAutoTimer >= offNeed) {
+          if (this.casting) {
+            // hold
+          } else if (!this.findAutoTarget(u, "offhand")) {
+            u.offhandAutoTimer = offNeed;
+          } else {
+            u.offhandAutoTimer -= offNeed;
+            void this.doAutoAttack(u, "offhand");
+          }
+        }
+      }
     }
 
     this.maybeStartDrop();

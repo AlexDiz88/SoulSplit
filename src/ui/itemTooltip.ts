@@ -1,5 +1,7 @@
 import { formatRolledAffix } from "../items/affixCatalog";
-import { isTwoHandPlaceholder } from "../items/equipment";
+import { gripLabel } from "../items/equipment";
+import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
+import { OFFHAND_TYPE_BY_ID } from "../items/offhandTypes";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
@@ -16,6 +18,8 @@ export interface ItemTooltipOptions {
   /** Кастомная цена в футере вместо продажи (например цена покупки). */
   priceLabel?: string;
   priceAmount?: number;
+  /** Слот, в котором предмет сейчас надет (для штрафа левой руки). */
+  equippedSlot?: EquipSlotId;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -33,21 +37,20 @@ function rule(): HTMLElement {
   return el("div", "item-tip-rule");
 }
 
-/** Подпись слота: "Основная рука" / "Левая рука" / "Обе руки". */
+/** Подпись слота: "Основная рука" / "Левая рука" / "Обе руки" / "Любая рука". */
 export function itemSlotLabel(item: ItemDef): string {
-  if (isTwoHandPlaceholder(item)) return "Обе руки";
-  // Пока без двуручного владения: любое 1H-оружие только в основную руку.
-  if (item.weapon) return SLOT_LABEL.mainhand;
+  const fromGrip = gripLabel(item);
+  if (fromGrip) return fromGrip;
   return SLOT_LABEL[item.slot];
 }
 
-export function weaponDps(weapon: WeaponImplicit): number {
-  const avg = (weapon.damageMin + weapon.damageMax) / 2;
+export function weaponDps(weapon: WeaponImplicit, damageMult = 1): number {
+  const avg = ((weapon.damageMin + weapon.damageMax) / 2) * damageMult;
   return weapon.baseCd > 0 ? avg / weapon.baseCd : 0;
 }
 
-export function formatWeaponDps(weapon: WeaponImplicit): string {
-  const value = weaponDps(weapon);
+export function formatWeaponDps(weapon: WeaponImplicit, damageMult = 1): string {
+  const value = weaponDps(weapon, damageMult);
   if (!Number.isFinite(value)) return "0.0";
   return (Math.round(value * 10) / 10).toFixed(1);
 }
@@ -75,6 +78,9 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   const showSell = options.showSellPrice !== false && options.priceAmount === undefined;
   const showIcon = options.showIcon !== false;
   const nodes: HTMLElement[] = [];
+  const offhandWeapon =
+    Boolean(item.weapon) && options.equippedSlot === "offhand";
+  const damageMult = offhandWeapon ? OFFHAND_WEAPON_DAMAGE_MULT : 1;
 
   if (options.caption) {
     nodes.push(el("div", "item-tip-caption", options.caption));
@@ -88,7 +94,7 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     el("div", "item-tip-sub", itemSlotLabel(item)),
   );
 
-  const hasBase = Boolean(item.weapon);
+  const hasBase = Boolean(item.weapon) || Boolean(item.offhand);
   const hasAffixes = item.affixes.length > 0;
 
   nodes.push(rule());
@@ -99,10 +105,22 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     dps.append(
       el("span", "item-tip-dps-label", "DPS"),
       document.createTextNode(" "),
-      el("span", "item-tip-dps-value", formatWeaponDps(item.weapon)),
+      el("span", "item-tip-dps-value", formatWeaponDps(item.weapon, damageMult)),
     );
     base.append(dps);
+    if (offhandWeapon) {
+      base.append(
+        el(
+          "div",
+          "item-tip-offhand-penalty",
+          `Левая рука: -${Math.round((1 - OFFHAND_WEAPON_DAMAGE_MULT) * 100)}% урона автоатак`,
+        ),
+      );
+    }
     nodes.push(base);
+  } else if (item.offhand) {
+    const typeName = OFFHAND_TYPE_BY_ID[item.offhand.typeId]?.name ?? "Оффхенд";
+    nodes.push(el("div", "item-tip-base", typeName));
   }
 
   if (hasAffixes) {

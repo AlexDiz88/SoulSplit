@@ -8,12 +8,18 @@ import {
   type GenerateItemOptions,
   type ItemDef,
   type ItemRarity,
+  type OffhandImplicit,
   type RolledAffix,
   type WeaponImplicit,
 } from "./types";
 import { AFFIX_CATALOG, rollAffixValue } from "./affixCatalog";
 import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
-import { isAspectItemSlot, isWeaponSlot, type EquipSlotId } from "./slots";
+import { isAspectItemSlot, type EquipSlotId } from "./slots";
+import {
+  OFFHAND_TYPES,
+  OFFHAND_TYPE_BY_ID,
+  type OffhandTypeId,
+} from "./offhandTypes";
 import {
   scaleWeaponStats,
   weaponTypesForSlot,
@@ -42,8 +48,11 @@ function affixCountForRarity(rarity: ItemRarity, rng: () => number): number {
   return randInt(rng, lo, hi);
 }
 
-function poolForSlot(slot: EquipSlotId, aspectTag: Aspect | undefined): AffixDef[] {
-  const families = new Set(familiesForSlot(slot));
+function poolForFamilies(
+  slot: EquipSlotId,
+  families: ReadonlySet<string>,
+  aspectTag: Aspect | undefined,
+): AffixDef[] {
   return AFFIX_CATALOG.filter((a) => {
     if (!families.has(a.family)) return false;
     if (!isStatAllowedOnSlot(slot, a.statId)) return false;
@@ -53,6 +62,10 @@ function poolForSlot(slot: EquipSlotId, aspectTag: Aspect | undefined): AffixDef
     }
     return true;
   });
+}
+
+function poolForSlot(slot: EquipSlotId, aspectTag: Aspect | undefined): AffixDef[] {
+  return poolForFamilies(slot, new Set(familiesForSlot(slot)), aspectTag);
 }
 
 function pickAffixSlot(def: AffixDef, rng: () => number): AffixSlot {
@@ -81,9 +94,12 @@ function rollAspectTag(
   return pick ?? undefined;
 }
 
-function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplicit {
-  // Пока без двуручного владения: оружие только из пула основной руки.
-  const pool = weaponTypesForSlot("mainhand");
+function makeWeaponImplicit(
+  itemLevel: number,
+  rng: () => number,
+  slot: "mainhand" | "offhand",
+): WeaponImplicit {
+  const pool = weaponTypesForSlot(slot);
   const def = pool[randInt(rng, 0, pool.length - 1)]!;
   const stats = scaleWeaponStats(def, itemLevel);
   return {
@@ -94,8 +110,14 @@ function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplici
     baseCd: stats.baseCd,
     reach: stats.reach,
     range: def.range,
-    twoHand: def.twoHand,
+    grip: def.grip,
+    twoHand: def.grip === "twoHand",
   };
+}
+
+function makeOffhandImplicit(rng: () => number): OffhandImplicit {
+  const def = OFFHAND_TYPES[randInt(rng, 0, OFFHAND_TYPES.length - 1)]!;
+  return { typeId: def.id };
 }
 
 function weaponDisplayName(typeId: WeaponTypeId | undefined, kindLabelFallback: string): string {
@@ -103,11 +125,25 @@ function weaponDisplayName(typeId: WeaponTypeId | undefined, kindLabelFallback: 
   return kindLabelFallback;
 }
 
-function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, weapon?: WeaponImplicit): string {
+function offhandDisplayName(typeId: OffhandTypeId | undefined): string {
+  if (typeId && OFFHAND_TYPE_BY_ID[typeId]) return OFFHAND_TYPE_BY_ID[typeId].name;
+  return "Левая рука";
+}
+
+function defaultName(
+  slot: EquipSlotId,
+  _rarity: ItemRarity,
+  aspect?: Aspect,
+  weapon?: WeaponImplicit,
+  offhand?: OffhandImplicit,
+): string {
   const aspectPart = aspect ? ASPECT_LABEL[aspect] + " " : "";
   if (weapon) {
     const base = weaponDisplayName(weapon.typeId, "Оружие");
     return `${aspectPart}${base}`.trim();
+  }
+  if (offhand) {
+    return `${aspectPart}${offhandDisplayName(offhand.typeId)}`.trim();
   }
   const slotNames: Partial<Record<EquipSlotId, string>> = {
     head: "Шлем",
@@ -127,20 +163,18 @@ function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, we
   return `${aspectPart}${slotNames[slot] ?? "Предмет"}`.trim();
 }
 
-/**
- * Генерация предмета white..purple.
- * Легендарки сюда не входят.
- */
-export function generateItem(opts: GenerateItemOptions): ItemDef {
-  const rng = opts.rng ?? Math.random;
-  const { rarity, itemLevel } = opts;
-  // Пока без двуручного владения: оружие всегда в основную руку (даже если просили offhand).
-  const slot: EquipSlotId = isWeaponSlot(opts.slot) ? "mainhand" : opts.slot;
-  const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
-  const weapon = isWeaponSlot(opts.slot) ? makeWeaponImplicit(itemLevel, rng) : undefined;
-
+function rollAffixes(
+  slot: EquipSlotId,
+  rarity: ItemRarity,
+  itemLevel: number,
+  aspectTag: Aspect | undefined,
+  rng: () => number,
+  familyOverride?: ReadonlySet<string>,
+): RolledAffix[] {
   const count = affixCountForRarity(rarity, rng);
-  const pool = poolForSlot(slot, aspectTag);
+  const pool = familyOverride
+    ? poolForFamilies(slot, familyOverride, aspectTag)
+    : poolForSlot(slot, aspectTag);
   const usedStats = new Set<string>();
   const affixes: RolledAffix[] = [];
 
@@ -158,7 +192,6 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     });
   }
 
-  // На аспектном предмете rare+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
   if (aspectTag && rarityAllowsAspectBonus(rarity)) {
     const hasAspect = affixes.some((a) => a.statId === `aspectDamage:${aspectTag}`);
     if (!hasAspect) {
@@ -176,18 +209,80 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     }
   }
 
+  return affixes;
+}
+
+/**
+ * Генерация предмета white..purple.
+ * Легендарки сюда не входят.
+ *
+ * `mainhand` → оружие (любой grip, кроме чистого offhand).
+ * `offhand` → оффхенд-предмет (щит/том/сфера/реликвия/колчан), не dual-wield оружие.
+ * Dual-wield оружие в offhand появляется через экип either-оружия, не через генерацию слота.
+ */
+export function generateItem(opts: GenerateItemOptions): ItemDef {
+  const rng = opts.rng ?? Math.random;
+  const { rarity, itemLevel } = opts;
+  const slot = opts.slot;
+
+  if (slot === "mainhand") {
+    const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
+    const weapon = makeWeaponImplicit(itemLevel, rng, "mainhand");
+    const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng);
+    return {
+      id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
+      name: opts.name ?? defaultName(slot, rarity, aspectTag, weapon),
+      slot,
+      rarity,
+      itemLevel,
+      affixes,
+      icon: pickItemIconUrl(slot, rarity, rng, {
+        weaponArt: weapon.typeId ? WEAPON_TYPE_BY_ID[weapon.typeId].art : undefined,
+        weaponKind: weapon.kind,
+      }),
+      aspectTag,
+      weapon,
+    };
+  }
+
+  if (slot === "offhand") {
+    const offhand = makeOffhandImplicit(rng);
+    const typeDef = OFFHAND_TYPE_BY_ID[offhand.typeId];
+    const allowsAspect = typeDef.families.includes("aspect");
+    const aspectTag = allowsAspect
+      ? rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng)
+      : undefined;
+    const affixes = rollAffixes(
+      slot,
+      rarity,
+      itemLevel,
+      aspectTag,
+      rng,
+      new Set(typeDef.families),
+    );
+    return {
+      id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
+      name: opts.name ?? defaultName(slot, rarity, aspectTag, undefined, offhand),
+      slot,
+      rarity,
+      itemLevel,
+      affixes,
+      icon: pickItemIconUrl(slot, rarity, rng, { offhandArt: typeDef.art }),
+      aspectTag,
+      offhand,
+    };
+  }
+
+  const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
+  const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng);
   return {
     id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
-    name: opts.name ?? defaultName(slot, rarity, aspectTag, weapon),
+    name: opts.name ?? defaultName(slot, rarity, aspectTag),
     slot,
     rarity,
     itemLevel,
     affixes,
-    icon: pickItemIconUrl(slot, rarity, rng, {
-      weaponArt: weapon?.typeId ? WEAPON_TYPE_BY_ID[weapon.typeId].art : undefined,
-      weaponKind: weapon?.kind,
-    }),
+    icon: pickItemIconUrl(slot, rarity, rng),
     aspectTag,
-    weapon,
   };
 }

@@ -205,7 +205,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
         el("div", "item-tip-empty-meta", "Пусто"),
       );
     } else {
-      fillItemTooltip(tip, item);
+      fillItemTooltip(tip, item, { equippedSlot: id });
     }
     tip.hidden = false;
     const winRect = win.getBoundingClientRect();
@@ -372,16 +372,27 @@ function renderStats(hero: Unit | null): HTMLElement[] {
   const sheet = hero?.sheet;
   const s = hero?.stats;
   const reach = s?.reach ?? 1;
-  const weapon = hero?.equipment.mainhand?.weapon;
+  const mainW = hero?.equipment.mainhand?.weapon;
+  const offW = hero?.equipment.offhand?.weapon;
   const asPct = sheet ? getStat(sheet, "attackSpeed") : 0;
-  const baseCd = weapon?.baseCd ?? s?.autoAttackCd ?? 0;
+  const baseCd = mainW?.baseCd ?? s?.autoAttackCd ?? 0;
   const finalCd = sheet ? autoAttackInterval(baseCd, asPct) : baseCd;
+  const offCd = offW
+    ? sheet
+      ? autoAttackInterval(offW.baseCd, asPct)
+      : offW.baseCd
+    : 0;
   const atkBonus = sheet ? getStat(sheet, "weaponAttackBonus") : 0;
-  const weaponLine = weapon
-    ? `${weapon.damageMin}-${weapon.damageMax}${atkBonus ? ` (+${atkBonus})` : ""}`
-    : s
-      ? String(s.atk)
-      : "-";
+  const fmtDmg = (w: { damageMin: number; damageMax: number }) =>
+    `${w.damageMin}-${w.damageMax}${atkBonus ? ` (+${atkBonus})` : ""}`;
+  const weaponLine = mainW
+    ? fmtDmg(mainW)
+    : offW
+      ? fmtDmg(offW)
+      : s
+        ? String(s.atk)
+        : "-";
+  const offWeaponLine = mainW && offW ? `${fmtDmg(offW)} (-25%)` : null;
 
   const aspectRows: [string, string][] = [];
   if (sheet && hero) {
@@ -389,16 +400,26 @@ function renderStats(hero: Unit | null): HTMLElement[] {
     if (dmg > 0) aspectRows.push([`Урон аспекта (${ASPECT_LABEL[hero.aspect]})`, `${dmg}%`]);
   }
 
+  const mainRows: [string, string][] = [
+    ["Здоровье", sheet ? String(getStat(sheet, "maxHp")) : s ? String(s.maxHp) : "-"],
+    ["Мана", sheet ? `${Math.round(hero!.mana)} / ${getStat(sheet, "maxMana")}` : "-"],
+    ["Реген маны", sheet ? formatStatValue("manaRegen", getStat(sheet, "manaRegen")) : "-"],
+    ["Урон оружия", weaponLine],
+  ];
+  if (offWeaponLine) mainRows.push(["Урон левой руки", offWeaponLine]);
+  mainRows.push(
+    ["Интервал атаки", finalCd ? `${finalCd.toFixed(2)} с` : "-"],
+  );
+  if (offWeaponLine && offCd) {
+    mainRows.push(["Интервал левой руки", `${offCd.toFixed(2)} с`]);
+  }
+  mainRows.push(
+    ["Скорость атаки", sheet ? formatStatValue("attackSpeed", asPct) : "-"],
+    ["Дальность", `${reach} ${reach === 1 ? "ряд" : reach < 5 ? "ряда" : "рядов"}`],
+  );
+
   return [
-    statGroup("Основные", [
-      ["Здоровье", sheet ? String(getStat(sheet, "maxHp")) : s ? String(s.maxHp) : "-"],
-      ["Мана", sheet ? `${Math.round(hero!.mana)} / ${getStat(sheet, "maxMana")}` : "-"],
-      ["Реген маны", sheet ? formatStatValue("manaRegen", getStat(sheet, "manaRegen")) : "-"],
-      ["Урон оружия", weaponLine],
-      ["Интервал атаки", finalCd ? `${finalCd.toFixed(2)} с` : "-"],
-      ["Скорость атаки", sheet ? formatStatValue("attackSpeed", asPct) : "-"],
-      ["Дальность", `${reach} ${reach === 1 ? "ряд" : reach < 5 ? "ряда" : "рядов"}`],
-    ]),
+    statGroup("Основные", mainRows),
     statGroup("Защита", [
       ["Снижение физ. урона", pct(sheet, "physDamageReduction")],
       ["Сопротивление магии", pct(sheet, "magicResist")],

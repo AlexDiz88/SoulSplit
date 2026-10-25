@@ -1,4 +1,9 @@
-import { canEquipInSlot, type EquipmentMap } from "./equipment";
+import {
+  canEquipInSlot,
+  getItemGrip,
+  isTwoHandWeapon,
+  type EquipmentMap,
+} from "./equipment";
 import type { EquipSlotId } from "./slots";
 import type { ItemDef } from "./types";
 
@@ -63,15 +68,29 @@ export function addItemToInventory(inv: InventoryBag, item: ItemDef): number {
   return i;
 }
 
-/** Целевой слот экипировки для предмета (кольца - в первую пустую ячейку). */
+/** Целевой слот экипировки для предмета (кольца / either-оружие - в первую пустую ячейку). */
 export function resolveEquipSlot(item: ItemDef, equipment: EquipmentMap): EquipSlotId | null {
   if (item.slot === "ring1" || item.slot === "ring2") {
-    if (!equipment.ring1 && canEquipInSlot(item, "ring1")) return "ring1";
-    if (!equipment.ring2 && canEquipInSlot(item, "ring2")) return "ring2";
+    if (!equipment.ring1 && canEquipInSlot(item, "ring1", equipment)) return "ring1";
+    if (!equipment.ring2 && canEquipInSlot(item, "ring2", equipment)) return "ring2";
     const prefer = item.slot;
-    return canEquipInSlot(item, prefer) ? prefer : null;
+    return canEquipInSlot(item, prefer, equipment) ? prefer : null;
   }
-  return canEquipInSlot(item, item.slot) ? item.slot : null;
+  const grip = getItemGrip(item);
+  if (grip === "either") {
+    if (!equipment.mainhand && canEquipInSlot(item, "mainhand", equipment)) return "mainhand";
+    if (!equipment.offhand && canEquipInSlot(item, "offhand", equipment)) return "offhand";
+    if (canEquipInSlot(item, "mainhand", equipment)) return "mainhand";
+    if (canEquipInSlot(item, "offhand", equipment)) return "offhand";
+    return null;
+  }
+  if (grip === "mainhand" || grip === "twoHand") {
+    return canEquipInSlot(item, "mainhand", equipment) ? "mainhand" : null;
+  }
+  if (grip === "offhand") {
+    return canEquipInSlot(item, "offhand", equipment) ? "offhand" : null;
+  }
+  return canEquipInSlot(item, item.slot, equipment) ? item.slot : null;
 }
 
 export type GearChangeResult =
@@ -100,8 +119,26 @@ export function equipFromInventoryToSlot(
 ): GearChangeResult {
   const item = inventory[invIndex];
   if (!item) return { ok: false, reason: "empty" };
-  if (!canEquipInSlot(item, slot)) return { ok: false, reason: "bad_slot" };
+  if (!canEquipInSlot(item, slot, equipment)) return { ok: false, reason: "bad_slot" };
+
   const previous = equipment[slot] ?? null;
+  const displaceOffhand =
+    isTwoHandWeapon(item) && slot === "mainhand" ? (equipment.offhand ?? null) : null;
+
+  if (displaceOffhand) {
+    if (previous) {
+      const free = inventory.findIndex((cell, i) => i !== invIndex && cell == null);
+      if (free < 0) return { ok: false, reason: "inventory_full" };
+      inventory[free] = displaceOffhand;
+      inventory[invIndex] = previous;
+    } else {
+      inventory[invIndex] = displaceOffhand;
+    }
+    delete equipment.offhand;
+    equipment[slot] = item;
+    return { ok: true };
+  }
+
   equipment[slot] = item;
   inventory[invIndex] = previous;
   return { ok: true };
@@ -131,7 +168,7 @@ export function unequipToInventoryAt(
   if (!item) return { ok: false, reason: "empty" };
   if (invIndex < 0 || invIndex >= inventory.length) return { ok: false, reason: "bad_slot" };
   const previous = inventory[invIndex] ?? null;
-  if (previous && !canEquipInSlot(previous, slot)) {
+  if (previous && !canEquipInSlot(previous, slot, equipment)) {
     return { ok: false, reason: "bad_slot" };
   }
   inventory[invIndex] = item;
@@ -161,9 +198,20 @@ export function swapEquipmentSlots(
   if (from === to) return { ok: true };
   const a = equipment[from];
   if (!a) return { ok: false, reason: "empty" };
-  if (!canEquipInSlot(a, to)) return { ok: false, reason: "bad_slot" };
   const b = equipment[to] ?? null;
-  if (b && !canEquipInSlot(b, from)) return { ok: false, reason: "bad_slot" };
+
+  // Симулируем итог: a → to, b → from (или from пуст).
+  const next: EquipmentMap = { ...equipment };
+  next[to] = a;
+  if (b) next[from] = b;
+  else delete next[from];
+
+  if (!canEquipInSlot(a, to, next)) return { ok: false, reason: "bad_slot" };
+  if (b && !canEquipInSlot(b, from, next)) return { ok: false, reason: "bad_slot" };
+  if (next.mainhand && isTwoHandWeapon(next.mainhand) && next.offhand) {
+    return { ok: false, reason: "bad_slot" };
+  }
+
   equipment[to] = a;
   if (b) equipment[from] = b;
   else delete equipment[from];
