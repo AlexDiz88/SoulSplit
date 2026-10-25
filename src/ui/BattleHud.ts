@@ -7,7 +7,7 @@ import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
 import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
-import { ENEMY_KINDS, rowsLabel, type EnemyKind } from "../combat/enemies";
+import { enemyPortraitUrl, loadEnemyCards, type EnemyCard } from "../combat/enemyCatalog";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
 
@@ -409,20 +409,41 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     menuBtn.setAttribute("aria-expanded", "true");
   };
 
-  const showDetail = (kind: EnemyKind): void => {
+  const showDetail = (card: EnemyCard): void => {
     bestiaryDetail.replaceChildren();
     const title = document.createElement("div");
     title.className = "bestiary-detail-name";
-    title.textContent = kind.name;
+    title.textContent = card.name;
     const role = document.createElement("div");
     role.className = "bestiary-type";
-    role.textContent = kind.role;
-    bestiaryDetail.append(title, role, statLine("Здоровье", String(kind.hp)), statLine("Урон", String(kind.atk)), statLine("Кулдаун", `${kind.cd.toFixed(1)} с`), statLine("Дистанция", String(kind.reach)), statLine("Появление", rowsLabel(kind.spawnRows)));
-    const abilityNames = (kind.abilities ?? [])
-      .map((id) => ABILITIES[id]?.name)
-      .filter((name): name is string => Boolean(name));
-    if (abilityNames.length) {
-      bestiaryDetail.append(statLine("Способности", abilityNames.join(", ")));
+    role.textContent = card.role;
+    const status = document.createElement("span");
+    const statusLabel = displayEnemyStatus(card.status);
+    status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
+    status.textContent = statusLabel;
+    bestiaryDetail.append(
+      title,
+      role,
+      status,
+      statLine("Уровень", String(card.baseLevel)),
+      statLine("Здоровье", String(card.hp)),
+      statLine("Урон", String(card.atk)),
+      statLine("Кулдаун", card.cd),
+      statLine("Дистанция", String(card.reach)),
+      statLine("Появление", card.spawnRowsLabel),
+    );
+    if (card.group) bestiaryDetail.append(statLine("Группа", card.group));
+    if (card.region) bestiaryDetail.append(statLine("Регион", card.region));
+    if (card.description) bestiaryDetail.append(statLine("Описание", card.description));
+    if (card.abilities && card.abilities !== "-" && card.abilities !== "нет") {
+      const abilityNames = card.abilities
+        .split(",")
+        .map((part) => part.trim())
+        .map((id) => ABILITIES[id.replace(/-/g, "_") as AbilityId]?.name ?? id)
+        .filter(Boolean);
+      if (abilityNames.length) {
+        bestiaryDetail.append(statLine("Способности", abilityNames.join(", ")));
+      }
     }
   };
 
@@ -432,25 +453,29 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
   const fillBestiary = (): void => {
     bestiaryList.replaceChildren();
-    for (const kind of ENEMY_KINDS) {
+    for (const card of loadEnemyCards()) {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "bestiary-row";
       const img = document.createElement("img");
-      img.src = kind.portraitUrl;
-      img.alt = kind.name;
+      img.src = enemyPortraitUrl(card);
+      img.alt = card.name;
       const text = document.createElement("span");
       text.className = "bestiary-copy";
       const name = document.createElement("span");
       name.className = "bestiary-name";
-      name.textContent = kind.name;
+      name.textContent = card.name;
+      const status = document.createElement("span");
+      const statusLabel = displayEnemyStatus(card.status);
+      status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
+      status.textContent = statusLabel;
       const type = document.createElement("span");
       type.className = "bestiary-type";
-      type.textContent = `${kind.role} · ${rowsLabel(kind.spawnRows)}`;
-      text.append(name, type);
+      type.textContent = `ур. ${card.baseLevel} · ${card.role} · ${card.spawnRowsLabel}`;
+      text.append(name, status, type);
       row.append(img, text);
-      row.addEventListener("mouseenter", () => showDetail(kind));
-      row.addEventListener("focus", () => showDetail(kind));
+      row.addEventListener("mouseenter", () => showDetail(card));
+      row.addEventListener("focus", () => showDetail(card));
       bestiaryList.append(row);
     }
     clearDetail();
@@ -680,4 +705,17 @@ function statLine(label: string, value: string): HTMLElement {
   val.textContent = value;
   row.append(name, val);
   return row;
+}
+
+function displayEnemyStatus(status: string): string {
+  if (status === "прототип" || status === "взято") return "одобрено";
+  return status;
+}
+
+function enemyStatusClass(status: string): string {
+  if (status === "черновик") return " draft";
+  if (status === "одобрено") return " approved";
+  if (status === "отказ") return " rejected";
+  if (status === "под вопросом") return " review";
+  return "";
 }

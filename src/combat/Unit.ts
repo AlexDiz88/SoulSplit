@@ -57,7 +57,7 @@ export interface UnitInit {
   equipment?: EquipmentMap;
   /** Рюкзак 5×5. Только у героя. */
   inventory?: InventoryBag;
-  /** Уровень героя (для UI). У врагов не задаётся. */
+  /** Уровень героя или итоговый уровень врага в этом бою. */
   level?: number;
   /** Элитный враг - золотая рамка и тег. */
   elite?: boolean;
@@ -83,7 +83,7 @@ export class Unit {
   equipment: EquipmentMap;
   /** Рюкзак 5×5 (один предмет = одна ячейка). */
   inventory: InventoryBag;
-  /** Уровень героя; у врагов 0. */
+  /** Уровень героя или врага в этом бою. */
   level: number;
   readonly elite: boolean;
   autoTimer: number;
@@ -108,6 +108,7 @@ export class Unit {
   private manaBarFg: Graphics;
   private manaText: Text;
   private nameText: Text;
+  private levelText: Text;
   private statusText: Text;
   private subText: Text;
   private flashGfx: Graphics;
@@ -206,6 +207,18 @@ export class Unit {
       },
     });
     this.nameText.anchor.set(0.5);
+    this.levelText = new Text({
+      text: "",
+      style: {
+        fontFamily: "Exo 2, sans-serif",
+        fontSize: 11,
+        fontWeight: "800",
+        fill: 0xe8e2d4,
+        stroke: { color: 0x0c0f0c, width: 3 },
+      },
+    });
+    this.levelText.anchor.set(1, 0);
+    this.levelText.visible = false;
     this.statusText = new Text({
       text: "",
       style: {
@@ -251,6 +264,7 @@ export class Unit {
       this.manaBarFg,
       this.manaText,
       this.nameText,
+      this.levelText,
       this.subText,
       this.statusText,
     );
@@ -325,7 +339,18 @@ export class Unit {
     } else {
       this.nameText.visible = false;
       this.subText.visible = this.elite;
-      if (this.elite) this.subText.position.set(0, -half + 10);
+      if (this.elite) {
+        // Чуть ниже угла с уровнем, чтобы "Элита" и "ур.N" не слипались.
+        this.subText.position.set(0, -half + (this.level > 0 ? 22 : 10));
+      }
+    }
+
+    if (this.team === "enemy" && this.level > 0) {
+      this.levelText.text = `ур.${this.level}`;
+      this.levelText.visible = true;
+      this.levelText.position.set(half - 4, -half + 3);
+    } else {
+      this.levelText.visible = false;
     }
 
     this.hpBarBg.clear().roundRect(-barW / 2, hpY, barW, hpBarH, 2).fill({ color: 0x1a2018, alpha: 0.9 });

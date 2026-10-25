@@ -623,6 +623,19 @@ textarea,
   font-weight: 800;
 }
 
+.bestiary-row .grimoire-status {
+  margin-top: 0;
+  justify-self: start;
+  width: fit-content;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 0.68rem;
+}
+
+.bestiary-detail .grimoire-status {
+  margin: 6px 0 10px;
+}
+
 .bestiary-type {
   color: var(--muted);
   font-size: 0.85rem;

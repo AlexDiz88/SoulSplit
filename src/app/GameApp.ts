@@ -479,7 +479,6 @@ export class GameApp {
       pool: point.enemyPool,
       countMin: point.enemyCount[0],
       countMax: point.enemyCount[1],
-      itemLevel: point.itemLevel,
       eliteChance: point.eliteChance ?? 0,
     });
 

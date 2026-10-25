@@ -494,6 +494,7 @@ export class Battle {
         },
         abilities: kind.abilities ?? [],
         portraitUrl: kind.portraitUrl,
+        level: spawn.level,
         elite,
       });
       this.unitsLayer.addChild(u.view);
