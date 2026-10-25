@@ -6,7 +6,6 @@ export interface EnemyCard {
   id: string;
   name: string;
   short: string;
-  role: string;
   group: string;
   groupId: string;
   region: string;
@@ -125,7 +124,6 @@ function parseCard(path: string, raw: string): EnemyCard {
     id,
     name: front.name || kind?.name || fileId,
     short: front.short || kind?.short || text("Код") || "???",
-    role: front.role || kind?.role || text("Роль") || "-",
     group: front.group || text("Группа") || folder,
     groupId: front.group_id || folder,
     region: front.region || text("Регион") || "",
@@ -158,7 +156,6 @@ export function presentEnemyCard(card: EnemyCard): EnemyCard {
     ...card,
     name: kind.name,
     short: kind.short,
-    role: kind.role,
     baseLevel: kind.baseLevel,
     hp: kind.hp,
     atk: kind.atk,

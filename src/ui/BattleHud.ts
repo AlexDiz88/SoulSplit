@@ -411,19 +411,24 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
   const showDetail = (card: EnemyCard): void => {
     bestiaryDetail.replaceChildren();
+    const portrait = document.createElement("img");
+    portrait.className = "bestiary-detail-portrait";
+    portrait.src = enemyPortraitUrl(card);
+    portrait.alt = card.name;
     const title = document.createElement("div");
     title.className = "bestiary-detail-name";
     title.textContent = card.name;
-    const role = document.createElement("div");
-    role.className = "bestiary-type";
-    role.textContent = card.role;
+    const portraitId = document.createElement("div");
+    portraitId.className = "grimoire-icon-id";
+    portraitId.textContent = card.portrait;
     const status = document.createElement("span");
     const statusLabel = displayEnemyStatus(card.status);
     status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
     status.textContent = statusLabel;
     bestiaryDetail.append(
+      portrait,
       title,
-      role,
+      portraitId,
       status,
       statLine("Уровень", String(card.baseLevel)),
       statLine("Здоровье", String(card.hp)),
@@ -434,7 +439,6 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     );
     if (card.group) bestiaryDetail.append(statLine("Группа", card.group));
     if (card.region) bestiaryDetail.append(statLine("Регион", card.region));
-    if (card.description) bestiaryDetail.append(statLine("Описание", card.description));
     if (card.abilities && card.abilities !== "-" && card.abilities !== "нет") {
       const abilityNames = card.abilities
         .split(",")
@@ -445,10 +449,22 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
         bestiaryDetail.append(statLine("Способности", abilityNames.join(", ")));
       }
     }
+    if (card.description) {
+      const desc = document.createElement("div");
+      desc.className = "bestiary-desc";
+      const label = document.createElement("span");
+      label.className = "bestiary-desc-label";
+      label.textContent = "Описание";
+      const text = document.createElement("div");
+      text.className = "bestiary-desc-text";
+      text.textContent = card.description;
+      desc.append(label, text);
+      bestiaryDetail.append(desc);
+    }
   };
 
   const clearDetail = (): void => {
-    bestiaryDetail.textContent = "Наведите на врага, чтобы увидеть характеристики.";
+    bestiaryDetail.textContent = "Выберите врага, чтобы увидеть характеристики.";
   };
 
   const fillBestiary = (): void => {
@@ -471,11 +487,16 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       status.textContent = statusLabel;
       const type = document.createElement("span");
       type.className = "bestiary-type";
-      type.textContent = `ур. ${card.baseLevel} · ${card.role} · ${card.spawnRowsLabel}`;
+      type.textContent = `уровень ${card.baseLevel}`;
       text.append(name, status, type);
       row.append(img, text);
-      row.addEventListener("mouseenter", () => showDetail(card));
-      row.addEventListener("focus", () => showDetail(card));
+      row.addEventListener("click", () => {
+        for (const other of bestiaryList.querySelectorAll(".bestiary-row")) {
+          other.classList.remove("active");
+        }
+        row.classList.add("active");
+        showDetail(card);
+      });
       bestiaryList.append(row);
     }
     clearDetail();
@@ -500,7 +521,6 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   bestiary.addEventListener("click", (ev) => {
     if (ev.target === bestiary) bestiary.hidden = true;
   });
-  bestiaryList.addEventListener("mouseleave", clearDetail);
   document.addEventListener("pointerdown", (ev) => {
     if (sideMenu.hidden) return;
     const target = ev.target;

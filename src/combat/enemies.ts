@@ -16,7 +16,6 @@ export interface EnemyKind {
   id: string;
   name: string;
   short: string;
-  role: string;
   aspect: Aspect;
   weapon: WeaponKind;
   /** Базовый уровень в бестиарии. В бою может сдвинуться на -2…+2. */
@@ -39,7 +38,6 @@ export const ENEMY_KINDS: EnemyKind[] = [
     id: "goblin_spear",
     name: "Гоблин-копейщик",
     short: "ГБЛ",
-    role: "Копьё",
     aspect: "might",
     weapon: "spear",
     baseLevel: 1,
@@ -54,7 +52,6 @@ export const ENEMY_KINDS: EnemyKind[] = [
     id: "skeleton_guard",
     name: "Скелет-защитник",
     short: "СКЗ",
-    role: "Защитник",
     aspect: "might",
     weapon: "melee",
     baseLevel: 2,
@@ -70,7 +67,6 @@ export const ENEMY_KINDS: EnemyKind[] = [
     id: "huntress",
     name: "Охотница",
     short: "ОХТ",
-    role: "Лук",
     aspect: "stealth",
     weapon: "bow",
     baseLevel: 2,
@@ -85,7 +81,6 @@ export const ENEMY_KINDS: EnemyKind[] = [
     id: "skeleton_mage",
     name: "Скелет-маг",
     short: "СКМ",
-    role: "Жезл",
     aspect: "stealth",
     weapon: "staff",
     baseLevel: 3,
