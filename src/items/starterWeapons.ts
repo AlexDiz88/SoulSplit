@@ -1,24 +1,22 @@
 import { getStarterItemIconUrl } from "../art/itemIcons";
-import type { WeaponKind } from "../types";
+import { WEAPON_REACH } from "../combat/weapons";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
+import {
+  WEAPON_TYPE_BY_ID,
+  type WeaponTypeDef,
+  type WeaponTypeId,
+} from "./weaponTypes";
 
-/** Стартовое оружие при создании персонажа (независимо от аспекта). */
-export type StarterWeaponId =
-  | "dagger"
-  | "sword"
-  | "mace"
-  | "wand"
-  | "bow"
-  | "2H_axe"
-  | "staff";
+/** Стартовое оружие при создании персонажа (без копья - оно только в дропе/магазине). */
+export type StarterWeaponId = Exclude<WeaponTypeId, "spear">;
 
 export interface StarterWeaponDef {
   id: StarterWeaponId;
   name: string;
   /** Stem файла: `assets/art/items/{iconId}.png` (вне пула генерации). */
   iconId: `starter_${StarterWeaponId}`;
-  kind: WeaponKind;
+  kind: WeaponTypeDef["kind"];
   damageMin: number;
   damageMax: number;
   baseCd: number;
@@ -27,92 +25,37 @@ export interface StarterWeaponDef {
   twoHand?: boolean;
 }
 
+function toStarterDef(typeId: StarterWeaponId): StarterWeaponDef {
+  const t = WEAPON_TYPE_BY_ID[typeId];
+  return {
+    id: typeId,
+    name: t.name,
+    iconId: `starter_${typeId}`,
+    kind: t.kind,
+    damageMin: t.damageMin,
+    damageMax: t.damageMax,
+    baseCd: t.baseCd,
+    reach: WEAPON_REACH[t.kind],
+    range: t.range,
+    twoHand: t.twoHand,
+  };
+}
+
 /**
  * Баланс: ближний бой сильнее по DPS; лук (reach 3) и жезл/посох (reach 4)
  * слабее за счёт дальности. Разброс min-max разный по типам.
  */
-export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
-  {
-    id: "dagger",
-    name: "Кинжал",
-    iconId: "starter_dagger",
-    kind: "melee",
-    damageMin: 17,
-    damageMax: 21,
-    baseCd: 1.2,
-    reach: 1,
-    range: "melee",
-  },
-  {
-    id: "sword",
-    name: "Меч",
-    iconId: "starter_sword",
-    kind: "melee",
-    damageMin: 20,
-    damageMax: 32,
-    baseCd: 1.6,
-    reach: 1,
-    range: "melee",
-  },
-  {
-    id: "mace",
-    name: "Булава",
-    iconId: "starter_mace",
-    kind: "melee",
-    damageMin: 23,
-    damageMax: 37,
-    baseCd: 1.8,
-    reach: 1,
-    range: "melee",
-  },
-  {
-    id: "wand",
-    name: "Жезл",
-    iconId: "starter_wand",
-    kind: "staff",
-    damageMin: 16,
-    damageMax: 22,
-    baseCd: 1.6,
-    reach: 4,
-    range: "ranged",
-  },
-  {
-    id: "bow",
-    name: "Лук",
-    iconId: "starter_bow",
-    kind: "bow",
-    damageMin: 26,
-    damageMax: 38,
-    baseCd: 2.5,
-    reach: 3,
-    range: "ranged",
-    twoHand: true,
-  },
-  {
-    id: "2H_axe",
-    name: "Большой топор",
-    iconId: "starter_2H_axe",
-    kind: "melee",
-    damageMin: 28,
-    damageMax: 48,
-    baseCd: 2.2,
-    reach: 1,
-    range: "melee",
-    twoHand: true,
-  },
-  {
-    id: "staff",
-    name: "Посох",
-    iconId: "starter_staff",
-    kind: "staff",
-    damageMin: 20,
-    damageMax: 36,
-    baseCd: 2.0,
-    reach: 4,
-    range: "ranged",
-    twoHand: true,
-  },
-];
+export const STARTER_WEAPONS: readonly StarterWeaponDef[] = (
+  [
+    "dagger",
+    "sword",
+    "mace",
+    "wand",
+    "bow",
+    "2H_axe",
+    "staff",
+  ] as const satisfies readonly StarterWeaponId[]
+).map(toStarterDef);
 
 export const DEFAULT_STARTER_WEAPON: StarterWeaponId = "sword";
 
@@ -129,6 +72,7 @@ export function isStarterWeaponId(value: string): value is StarterWeaponId {
 function toImplicit(def: StarterWeaponDef): WeaponImplicit {
   return {
     kind: def.kind,
+    typeId: def.id,
     damageMin: def.damageMin,
     damageMax: def.damageMax,
     baseCd: def.baseCd,

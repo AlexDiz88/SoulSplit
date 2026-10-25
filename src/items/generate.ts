@@ -1,7 +1,6 @@
 import { pickItemIconUrl } from "../art/itemIcons";
 import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
-import { WEAPON_LABEL, WEAPON_REACH } from "../combat/weapons";
-import type { Aspect, WeaponKind } from "../types";
+import type { Aspect } from "../types";
 import type { AffixDef } from "./types";
 import {
   RARITY_AFFIX_COUNT,
@@ -15,8 +14,12 @@ import {
 import { AFFIX_CATALOG, rollAffixValue } from "./affixCatalog";
 import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
 import { isAspectItemSlot, isWeaponSlot, type EquipSlotId } from "./slots";
-
-const WEAPON_KINDS: WeaponKind[] = ["melee", "spear", "bow", "staff"];
+import {
+  scaleWeaponStats,
+  weaponTypesForSlot,
+  WEAPON_TYPE_BY_ID,
+  type WeaponTypeId,
+} from "./weaponTypes";
 
 function randInt(rng: () => number, min: number, max: number): number {
   return Math.floor(min + rng() * (max - min + 1));
@@ -78,29 +81,34 @@ function rollAspectTag(
   return pick ?? undefined;
 }
 
-function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplicit {
-  const kind = WEAPON_KINDS[randInt(rng, 0, WEAPON_KINDS.length - 1)]!;
-  const reach = WEAPON_REACH[kind];
-  const base = 8 + Math.floor(itemLevel * 1.2);
-  const spread = 2 + Math.floor(itemLevel / 8);
-  const damageMin = base;
-  const damageMax = base + spread;
-  const baseCd = kind === "bow" || kind === "staff" ? 1.6 : kind === "spear" ? 1.4 : 1.2;
+function makeWeaponImplicit(slot: EquipSlotId, itemLevel: number, rng: () => number): WeaponImplicit {
+  const hand = slot === "offhand" ? "offhand" : "mainhand";
+  const pool = weaponTypesForSlot(hand);
+  const def = pool[randInt(rng, 0, pool.length - 1)]!;
+  const stats = scaleWeaponStats(def, itemLevel);
   return {
-    kind,
-    damageMin,
-    damageMax,
-    baseCd,
-    reach,
-    range: kind === "bow" || kind === "staff" ? "ranged" : "melee",
-    // Любой лук занимает обе руки.
-    twoHand: kind === "bow" ? true : undefined,
+    kind: def.kind,
+    typeId: def.id,
+    damageMin: stats.damageMin,
+    damageMax: stats.damageMax,
+    baseCd: stats.baseCd,
+    reach: stats.reach,
+    range: def.range,
+    twoHand: def.twoHand,
   };
+}
+
+function weaponDisplayName(typeId: WeaponTypeId | undefined, kindLabelFallback: string): string {
+  if (typeId && WEAPON_TYPE_BY_ID[typeId]) return WEAPON_TYPE_BY_ID[typeId].name;
+  return kindLabelFallback;
 }
 
 function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, weapon?: WeaponImplicit): string {
   const aspectPart = aspect ? ASPECT_LABEL[aspect] + " " : "";
-  if (weapon) return `${aspectPart}${WEAPON_LABEL[weapon.kind]}`.trim();
+  if (weapon) {
+    const base = weaponDisplayName(weapon.typeId, "Оружие");
+    return `${aspectPart}${base}`.trim();
+  }
   const slotNames: Partial<Record<EquipSlotId, string>> = {
     head: "Шлем",
     chest: "Нагрудник",
@@ -127,7 +135,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
   const rng = opts.rng ?? Math.random;
   const { slot, rarity, itemLevel } = opts;
   const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
-  const weapon = isWeaponSlot(slot) ? makeWeaponImplicit(itemLevel, rng) : undefined;
+  const weapon = isWeaponSlot(slot) ? makeWeaponImplicit(slot, itemLevel, rng) : undefined;
 
   const count = affixCountForRarity(rarity, rng);
   const pool = poolForSlot(slot, aspectTag);
@@ -173,7 +181,10 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     rarity,
     itemLevel,
     affixes,
-    icon: pickItemIconUrl(slot, rarity, rng, { weaponKind: weapon?.kind }),
+    icon: pickItemIconUrl(slot, rarity, rng, {
+      weaponArt: weapon?.typeId ? WEAPON_TYPE_BY_ID[weapon.typeId].art : undefined,
+      weaponKind: weapon?.kind,
+    }),
     aspectTag,
     weapon,
   };

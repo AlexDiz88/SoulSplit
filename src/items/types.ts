@@ -1,6 +1,7 @@
 import type { Aspect, WeaponKind } from "../types";
 import type { AffixFamily, StatId } from "../stats/statIds";
 import type { EquipSlotId } from "./slots";
+import type { WeaponTypeId } from "./weaponTypes";
 
 export type ItemRarity = "common" | "uncommon" | "magic" | "rare" | "epic";
 
@@ -36,6 +37,8 @@ export interface RolledAffix {
 /** Implicit свойства оружия (не аффиксы листа). */
 export interface WeaponImplicit {
   kind: WeaponKind;
+  /** Предметный тип (кинжал/булава/посох...) - имя и арт. Старые сейвы могут не иметь. */
+  typeId?: WeaponTypeId;
   damageMin: number;
   damageMax: number;
   baseCd: number;

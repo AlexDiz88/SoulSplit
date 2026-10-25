@@ -1,5 +1,6 @@
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
+import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import type { WeaponKind } from "../types";
 
 /**
@@ -70,14 +71,14 @@ const WEAPON_ART_ALIASES: Record<string, true> = {
 };
 
 /**
- * Предпочтительный арт по боевому WeaponKind (лейбл генерации:
- * melee=Меч, staff=Жезл, spear=Копьё, bow=Лук).
+ * Fallback по боевому WeaponKind только если нет typeId/weaponArt.
+ * Без подмешивания чужих семейств (кинжал ≠ жезл).
  */
 const WEAPON_KIND_PREFERRED_ART: Record<WeaponKind, readonly string[]> = {
   melee: ["sword"],
   spear: ["spear", "lance"],
   bow: ["bow"],
-  staff: ["wand", "staff"],
+  staff: ["wand"],
 };
 
 /**
@@ -186,7 +187,9 @@ export function listItemIconUrls(slot: EquipSlotId, rarity: ItemRarity): string[
 }
 
 export interface PickItemIconOptions {
-  /** Боевой тип оружия - сужает пул арта (меч/лук/жезл...). */
+  /** Точный префикс арта (`wand`, `2h_axe`). Чужие типы не подмешиваются. */
+  weaponArt?: string;
+  /** Только если нет weaponArt - узкий fallback по боевому kind. */
   weaponKind?: WeaponKind;
 }
 
@@ -198,39 +201,38 @@ export function pickItemIconUrl(
   opts?: PickItemIconOptions,
 ): string | undefined {
   // Арт оружия лежит как mainhand (sword_*, bow_* ...); offhand без своих файлов берёт тот же пул.
+  const wantsWeaponArt = Boolean(opts?.weaponArt || opts?.weaponKind);
   let pool = entriesFor(slot, rarity);
-  const weaponSlot = slot === "mainhand" || slot === "offhand";
-  if (!pool.length && slot === "offhand" && opts?.weaponKind) {
+  if (!pool.length && slot === "offhand" && wantsWeaponArt) {
     pool = entriesFor("mainhand", rarity);
   }
   if (!pool.length) return undefined;
 
-  let candidates = pool;
-  if (opts?.weaponKind && weaponSlot) {
-    const preferred = new Set(WEAPON_KIND_PREFERRED_ART[opts.weaponKind] ?? []);
-    if (preferred.size) {
-      const matched = pool.filter((e) => e.weaponArt && preferred.has(e.weaponArt));
-      if (matched.length) {
-        candidates = matched;
-      } else if (opts.weaponKind === "spear") {
-        // Арта копья ещё нет - клинок ближе, чем лук/жезл.
-        const near = pool.filter((e) => {
-          if (!e.weaponArt) return false;
-          if (e.weaponArt.startsWith("2h_")) return true;
-          return e.weaponArt === "sword" || e.weaponArt === "dagger" || e.weaponArt === "mace" || e.weaponArt === "axe";
-        });
-        if (near.length) candidates = near;
-      }
-    }
+  const artKey = opts?.weaponArt?.toLowerCase();
+  if (artKey) {
+    const matched = pool.filter((e) => e.weaponArt === artKey);
+    // Нет арта этой редкости/типа - пусто, а не чужой кинжал на жезле.
+    if (!matched.length) return undefined;
+    return matched[Math.floor(rng() * matched.length)]?.url;
   }
 
-  return candidates[Math.floor(rng() * candidates.length)]?.url;
+  if (opts?.weaponKind) {
+    const preferred = new Set(WEAPON_KIND_PREFERRED_ART[opts.weaponKind] ?? []);
+    if (!preferred.size) return undefined;
+    const matched = pool.filter((e) => e.weaponArt && preferred.has(e.weaponArt));
+    if (!matched.length) return undefined;
+    return matched[Math.floor(rng() * matched.length)]?.url;
+  }
+
+  return pool[Math.floor(rng() * pool.length)]?.url;
 }
 
 /** Дозаполнить отсутствующую иконку у уже сгенерированного предмета (сейвы / рынок). */
 export function ensureItemIcon(item: ItemDef, rng: () => number = Math.random): void {
   if (item.icon) return;
+  const typeId = item.weapon?.typeId;
   item.icon = pickItemIconUrl(item.slot, item.rarity, rng, {
+    weaponArt: typeId ? WEAPON_TYPE_BY_ID[typeId]?.art : undefined,
     weaponKind: item.weapon?.kind,
   });
 }

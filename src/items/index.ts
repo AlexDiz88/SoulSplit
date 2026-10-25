@@ -4,5 +4,6 @@ export * from "./affixCatalog";
 export * from "./slotRules";
 export * from "./generate";
 export * from "./starterWeapons";
+export * from "./weaponTypes";
 export * from "./equipment";
 export * from "./inventory";
