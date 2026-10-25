@@ -553,22 +553,76 @@
   line-height: 1.2;
 }
 
+.create-field-weapons {
+  position: relative;
+}
+
 .weapon-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
 }
 
 .weapon-opt {
-  font-size: 0.8rem;
-  padding: 10px 8px;
-  line-height: 1.25;
+  appearance: none;
+  margin: 0;
+  padding: 0;
+  width: 72px;
+  height: 72px;
+  border: 2px solid var(--theme-border);
+  border-radius: 2px;
+  background: rgba(12, 14, 22, 0.92);
+  box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.45);
+  cursor: var(--cur-default);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-@media (max-width: 720px) {
-  .weapon-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.weapon-opt:hover {
+  border-color: var(--theme-border-hover);
+}
+
+.weapon-opt.is-active {
+  border-color: var(--theme-corona);
+  box-shadow:
+    inset 0 1px 4px rgba(0, 0, 0, 0.45),
+    0 0 16px var(--theme-glow-soft);
+}
+
+.weapon-opt:focus-visible {
+  outline: none;
+  border-color: var(--theme-corona);
+  box-shadow: 0 0 16px var(--theme-glow-soft);
+}
+
+.weapon-opt-face {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.weapon-opt-face img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.weapon-opt-fallback {
+  padding: 4px 6px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.create-weapon-tip {
+  position: absolute;
+  z-index: 5;
 }
 
 .create-field-portraits {

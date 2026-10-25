@@ -334,12 +334,15 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
         xpFill.style.width = `${pct}%`;
       }
 
-      const nextBg = pickRandomTownBackgroundUrl();
-      if (currentTownBgUrl !== nextBg) {
-        currentTownBgUrl = nextBg;
-        imageW = 0;
-        imageH = 0;
-        bgImg.src = nextBg;
+      // Новый фон только при входе в город, не при обновлении UI (рынок, золото, экип).
+      if (root.hidden) {
+        const nextBg = pickRandomTownBackgroundUrl();
+        if (currentTownBgUrl !== nextBg) {
+          currentTownBgUrl = nextBg;
+          imageW = 0;
+          imageH = 0;
+          bgImg.src = nextBg;
+        }
       }
 
       closeMenu();

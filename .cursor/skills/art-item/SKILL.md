@@ -2,12 +2,14 @@
 name: art-item
 description: >-
   Writes ready-to-paste Gemini image prompts for Soul Split inventory item icons
-  (equipment loot) using hard-toon canon with an extremely thin paper-hairline
-  white sticker outline (thinner than portraits/ability icons). Requires slot
-  and rarity. Higher rarity means more complex, unusual, detailed icons.
-  Fantasy-first (not historical medieval catalog, not steampunk). Use when the
-  user invokes art-item (e.g. art-item голова, редкая), or asks for item / loot /
-  equipment / inventory icon prompts.
+  (equipment loot) using stylized cartoon / game-toon illustration (clearly
+  drawn cartoon soft volume, clean silhouette, crisp graphic detail - NOT
+  photoreal, NOT semi-realistic, no noise/blur) and a LOCKED richly textured
+  dark gunmetal forge-steel backdrop with soft central radial (#262A30 core ->
+  #1A1E24 edges, no heavy corner crush). Requires slot and rarity. Rarity
+  ladder is strict: magic = only minor gems / mild design quirk, not epic FX.
+  Fantasy-first. Use when the user invokes art-item (e.g. art-item голова,
+  редкая), or asks for item / loot / equipment / inventory icon prompts.
 disable-model-invocation: true
 ---
 
@@ -16,9 +18,17 @@ disable-model-invocation: true
 ## When to use
 
 User wants Gemini prompts for **inventory item icons** (weapons, armor, jewelry,
-trinkets). Visual language: hard toon, fine dark lines, **extremely thin**
-(paper-thin hairline) white sticker outline, flat solid backdrop **exactly
-`#151617`** (locked - never random).
+trinkets). Visual language: **stylized cartoon / game-toon illustration** (see
+Style Lock) - lean cartoon, not "almost real". **LOCKED textured dark gunmetal
+backdrop** (see Backdrop Lock).
+
+Canon references (attach when useful; always describe in the prompt):
+
+- Style: [`assets/art/approved/item_icon_style_example.png`](../../../assets/art/approved/item_icon_style_example.png)
+- Backdrop: [`assets/art/approved/item_icon_backdrop_example.png`](../../../assets/art/approved/item_icon_backdrop_example.png)
+
+Legacy flat fill (`item_icon_backdrop_example_flat_legacy.png`) is history only -
+do **not** use.
 
 This is a **loot ARPG** - many items. Prefer **batch sheets** that invent many
 distinct pieces for one slot + rarity, not one-off one-item prompts, unless the
@@ -42,6 +52,7 @@ art-item mainhand, легендарная, огненный клинок
 art-item кольцо, эпическая
 art-item туловище, сет, костяной комплект ворона
 art-item offhand, магическая, рунный щит
+art-item штаны, магический
 ```
 
 Leading `/` is optional (`/art-item` = `art-item`).
@@ -55,6 +66,8 @@ Leading `/` is optional (`/art-item` = `art-item`).
    - **Param 3+** = optional theme / item name / material / set motif (join if more commas)
 3. If slot or rarity is missing or unknown - **ask once**; do not invent either.
 4. Do **not** draft the prompt until both required params resolve.
+5. Remember the **exact user word** for the slot (e.g. `штаны` vs `поножи`) - it
+   drives the Subject silhouette lock (see Slot silhouette hints).
 
 ### Slot aliases -> canonical id
 
@@ -69,8 +82,8 @@ Map Russian / English / paperdoll labels to one id (from `src/ui/characterSheet.
 | `hands` | перчатки, руки, hands, gloves, gauntlets |
 | `ring` | палец, кольцо, ring, ring1, ring2 |
 | `waist` | пояс, belt, waist |
-| `legs` | ноги, поножи, штаны, legs, greaves, pants |
-| `feet` | обувь, сапоги, feet, boots |
+| `legs` | ноги, поножи, штаны, legs, greaves, pants, trousers |
+| `feet` | обувь, сапоги, ботинки, feet, boots, sabatons |
 | `trinket` | аксессуар, тринкет, реликвия, trinket, accessory |
 | `mainhand` | основная рука, оружие, меч, mainhand, weapon, sword |
 | `offhand` | левая рука, щит, offhand, shield |
@@ -79,17 +92,22 @@ If the user says a weapon type that implies a hand (`меч`, `лук`, `кин�
 an explicit hand slot, default slot to `mainhand` and put the weapon type into the
 optional theme. If they say `щит` alone, default to `offhand`.
 
+**CRITICAL - `legs` vs `feet`:** never mix. Boots / sabatons / footwear belong
+**only** to `feet`. Pants / trousers / greaves (shin/thigh armor without boot
+soles) belong to `legs`. If the user said `штаны` / `pants` / `trousers`, every
+panel must be **pants/trousers** - never boots, never sabatons, never footwear.
+
 ### Rarity aliases -> canonical id
 
 | Canonical | RU | UI frame color | Accepts |
 |-----------|----|----------------|---------|
-| `common` | обычная | white | обычная, common, white, белая |
-| `uncommon` | необычная | green | необычная, uncommon, green, зеленая, зелёная |
-| `magic` | магическая | blue | магическая, magic, magical, blue, синяя |
-| `rare` | редкая | yellow | редкая, rare, yellow, желтая, жёлтая |
-| `epic` | эпическая | purple | эпическая, epic, purple, фиолетовая |
-| `legendary` | легендарная | orange | легендарная, legendary, orange, оранжевая |
-| `set` | сет / комплект | turquoise | сет, комплект, set, turquoise, бирюзовая |
+| `common` | обычная | white | обычная, обычный, common, white, белая, белый |
+| `uncommon` | необычная | green | необычная, необычный, uncommon, green, зеленая, зелёная, зеленый, зелёный |
+| `magic` | магическая | blue | магическая, магический, magic, magical, blue, синяя, синий |
+| `rare` | редкая | yellow | редкая, редкий, rare, yellow, желтая, жёлтая, желтый, жёлтый |
+| `epic` | эпическая | purple | эпическая, эпический, epic, purple, фиолетовая, фиолетовый |
+| `legendary` | легендарная | orange | легендарная, легендарный, legendary, orange, оранжевая, оранжевый |
+| `set` | сет / комплект | turquoise | сет, комплект, set, turquoise, бирюзовая, бирюзовый |
 
 **UI frame colors** belong to inventory chrome. Do **not** draw colored rarity
 frames, borders, or rarity badges inside the generated icon. Rarity only drives
@@ -97,9 +115,12 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 
 ## Before writing prompts
 
-1. Parse -> resolve `slot` + `rarity` (+ optional theme).
-2. Read [`assets/art/STYLE_BIBLE.md`](../../../assets/art/STYLE_BIBLE.md) for the
-   shared toon / extremely-thin white-outline canon (item icons section).
+1. Parse -> resolve `slot` + `rarity` (+ optional theme) + exact slot word for
+   silhouette.
+2. Read [`assets/art/STYLE_BIBLE.md`](../../../assets/art/STYLE_BIBLE.md) item
+   icons section. Prefer attaching
+   `approved/item_icon_style_example.png` +
+   `approved/item_icon_backdrop_example.png` as visual refs when the tool allows.
 3. Pick mode:
    - **Batch (DEFAULT):** no specific named item, or theme is a broad motif
      ("bone", "frost", "raven cult") -> invent **9 different items**, all same
@@ -120,12 +141,18 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
   inside that prompt.
 - Default **3x3 contact sheet**; even gutters; no labels, numbers, captions.
 - Item fully inside each panel with a small safe margin.
-- White sticker outline must be **extremely thin / paper-thin hairline**
-  (see Style Lock) - thinner than portrait/ability icons; never chunky, never
-  a readable thick rim.
-- Flat solid backdrop **exactly `#151617`** on every panel and the sheet
-  (inventory icon - no scene). Never invent another gray/brown/blue/green tint.
-  Gutters: same `#151617` or solid `#0A0B0C` only - no random gutter colors.
+- Style is **LOCKED stylized cartoon / game-toon illustration** - clearly drawn
+  cartoon soft volume, bold readable shapes, clean silhouette, crisp graphic
+  detail - **not** photoreal, **not** semi-realistic, **not** product photo /
+  PBR metal. Soft volume OK; look must read as cartoon game art at a glance.
+  **No** noise grain mush, **no** soft blurry "soap" rendering.
+- Backdrop is **LOCKED** richly textured dark gunmetal forge-steel surface with
+  a **very soft** central radial (see Backdrop Lock) - identical recipe on every
+  panel. **No** flat solid `#1E1F21` void. **No** heavy crushed corner vignette.
+  **No** scenic environments. Gutters: solid `#0A0B0C` only.
+- Slot silhouette must match the user's word exactly (pants stay pants; boots
+  stay boots). Wrong prop type = failed sheet.
+- Rarity complexity must match the ladder - magic must **not** look epic.
 - No characters, faces, hands holding the item as a figure, no mannequins, no UI.
 - **Fantasy-first:** classic / dark fantasy game loot. Not historical museum
   medieval, not steampunk / Victorian industrial. Alchemy vials, engineer tools,
@@ -138,16 +165,21 @@ frames, borders, or rarity badges inside the generated icon. Rarity only drives
 
 ## Style Lock (always include)
 
+Lean **cartoon**, not "soft semi-real". Models drift realistic if the lock sounds
+halfway - push illustrated game-toon hard every time.
+
 ```
-Style lock - FANTASY INVENTORY ITEM ICONS: stylized 2D dark-fantasy game inventory item icons, hard toon/cel shading with clear flat light-shadow planes, CLEAN FINE dark internal outlines (crisp comic ink, thin not fat) PLUS an EXTREMELY THIN paper-thin HAIRLINE even WHITE sticker outer outline around the item silhouette - CRITICAL: the white outline must be as thin as possible, a barely-there fine thread at most ~0.5px relative to each panel (thinner preferred), tight to the edge like a razor die-cut sticker edge - NEVER ~1-2px or thicker, NEVER a visible white rim/halo, NEVER a thick heavy white border, NEVER a chunky marker stroke, NEVER a 2-6px fat outline - if the white edge reads as a bold contour at a glance it is TOO THICK - single centered readable item LARGE in frame, RICH clear local fantasy materials and strong contrast for ~64px inventory readability, flat solid backdrop exactly hex #151617 (no scene, no environment, no gradient, no noise) - entire item silhouette and hairline white outline FULLY INSIDE each panel with a small safe margin - no photoreal, no 3D render, no soft anime shading without outlines, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Only the item designs change.
+Style lock - FANTASY INVENTORY ITEM ICONS (CARTOON FIRST): stylized cartoon / game-toon 2D dark-fantasy inventory item icons - CLEARLY DRAWN cartoon illustration, not a photo and not almost-real. Soft readable cartoon volume with smooth gentle cel-shaded / painterly toon gradients (NOT hard flat poster comic, NOT photoreal, NOT semi-realistic, NOT PBR). Bold simplified readable shapes, CLEAN dark silhouette contour and confident graphic linework, crisp stylized material cues (toon metal sheen, painted leather, graphic cloth) with NO photographic micro-detail, NO digital noise, NO blurry soap softening. Single centered readable item LARGE in frame, RICH clear local fantasy materials and strong contrast for ~64px inventory readability - entire item silhouette FULLY INSIDE each panel with a small safe margin. CRITICAL: at a glance each panel must look like a cartoon game inventory icon, not a product photo or 3D render. No photoreal, no semi-realistic, no hyperrealistic metal/leather, no studio product photography, no 3D CGI product render, no hard realism, no muddy grain, no soft focus haze on the item, no neon candy glow, no text, no watermark, no UI, no rarity-colored frames or borders. Only the item designs change; backdrop stays the same locked textured gunmetal recipe.
 ```
 
 ## Backdrop Lock (always include - CRITICAL)
 
-Same hex every generation. Do not paraphrase into "dark gray" / "charcoal" without the hex.
+Use this description **verbatim** (or extremely close) in every prompt. Soft radial
+only - **not** strong corner blackout. Match
+`assets/art/approved/item_icon_backdrop_example.png`.
 
 ```
-Backdrop lock (CRITICAL - identical every generation): every panel background AND the sheet field behind gutters is a FLAT SOLID fill of exactly hex #151617 (RGB 21, 22, 23). No other shade. No warm brown, olive, blue, purple, or green cast. No gradient, vignette, texture, noise, fog, or per-panel color variation. Gutters may be the same #151617 or solid #0A0B0C only.
+Backdrop lock (CRITICAL - identical every panel): A standalone, richly textured background surface of exceptionally dark, desaturated gunmetal gray. It is not a solid color but features a subtle, hammered and brushed industrial dark metal texture with minor scuffs and patina variations, reminiscent of a weathered weapon forge steel surface. It has a very soft, centrally focused radial illumination gradient, where the core samples around a dark, neutral cool gray (#262A30), deepening to an even darker value near the extreme edges (#1A1E24), providing a clean, premium-grade item inventory asset look. The surface is uniform and viewed top-down. CRITICAL: keep the radial VERY SOFT - gentle falloff only, NO heavy crushed black corners, NO strong vignette blackout, NO spotlight hole, NO flat solid #1E1F21 void fill, NO scenic environment, NO props behind the item. Same locked backdrop recipe on every panel. Gutters between panels: solid #0A0B0C only.
 ```
 
 ## Setting (always weave in)
@@ -159,34 +191,34 @@ Setting: classic dark fantasy game world - enchanted adventurer loot, magic mate
 ## Layout Lock
 
 ```
-Layout: single square image, clean 3x3 contact sheet of NINE equal panels with thin even gutters (#151617 or #0A0B0C only), no labels, no numbers, no captions. Each panel reads as a clear ~64px game inventory item icon on solid #151617.
+Layout: single square image, clean 3x3 contact sheet of NINE equal panels with thin even gutters (#0A0B0C only), no labels, no numbers, no captions. Each panel reads as a clear ~64px game inventory item icon on the SAME locked textured dark gunmetal forge-steel backdrop.
 ```
 
 ## Framing Lock
 
 ```
-Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 product view, EXTREMELY THIN paper-thin hairline white sticker outline (max ~0.5px, barely visible thread, never ~1px+, never chunky, never a bold white rim), hard toon-shaded fantasy materials, flat solid backdrop exactly #151617, no character, no hands, no mannequin, no text, no rarity frame.
+Framing per panel: one clear equipment item centered and large, orthographic or slight 3/4 view, stylized cartoon / game-toon materials (clearly drawn, not photoreal) with clean dark silhouette contour and bold readable shapes, crisp graphic detail (no noise, no blur, no photo micro-texture), SAME locked textured gunmetal backdrop with very soft central radial (#262A30 -> #1A1E24, no heavy corner crush, no scenic fill), no character, no hands, no mannequin, no text, no rarity frame.
 ```
 
 ## Rarity -> complexity ladder (REQUIRED - bake into every prompt)
 
-Translate the resolved rarity into a **Rarity lock** paragraph. Higher rarity =
-more complex, unusual, and detailed - still readable at ~64px (silhouette first).
+Translate the resolved rarity into a **Rarity lock** paragraph. Stay inside the
+band - overshooting (magic looking epic) is a failed sheet.
 
 | Rarity | Complexity in the icon |
 |--------|------------------------|
-| `common` | Plain functional **fantasy** starter gear. Simple silhouette. Minimal ornament. Ordinary materials (iron, leather, cloth) with a light fantasy adventurer feel - not museum replicas. Almost no magic glow. |
-| `uncommon` | Slightly better craft. One modest accent (stitching, small gem, etched mark). Still mostly mundane. |
-| `magic` | Clear magical identity: runes, mild glow veins, enchanted gem, subtle aura wisps on the prop. Distinct from plain iron. |
-| `rare` | Richer materials and a memorable silhouette twist. Multiple readable details (inlays, crystals, carved relief). Strong magical motif, still clean. |
-| `epic` | Elaborate craftsmanship. Layered materials, unusual shape language, bold fantasy identity. Dense but organized detail; striking magical effects. |
-| `legendary` | Peak uniqueness. Iconic one-of-a-kind silhouette, extreme but readable detail, dramatic magical presence (flames, void cracks, living metal, relic light) - never muddy clutter. |
-| `set` | Same complexity band as epic-leaning rare/epic, plus a **shared set motif** (repeating inlay pattern, signature gem cut, turquoise-family accent accents on the prop itself - not a UI frame). Pieces should feel like they belong to a named set family. |
+| `common` | Very simple, primitive fantasy starter gear. Plain silhouette. Minimal or no ornament. Ordinary materials (iron, leather, cloth). Often worn / scuffed / slightly ragged. Almost no polish. **No** gems, runes, glow. |
+| `uncommon` | Same basic silhouette language as common, but tidy and reliable. Clean craft, neat stitching/rivets, intact edges. Still mostly mundane. At most one tiny non-magical accent (stitch line, small stud). **No** glow, **no** runes, **no** magical aura. |
+| `magic` | Still mostly mundane gear with **MINOR** magical tells only: a small gem inset, a slight design quirk, faint unusual material hint. **Not** dramatic. **No** heavy rune fields, **no** strong glow, **no** aura clouds, **no** lava cracks, **no** multiple big gems. If it looks epic at a glance, it is wrong. |
+| `rare` | High-quality advanced look - reliable and refined. Medium amount of small details. More magical presence than magic tier: occasional light glow OR light runes (not both stacked heavily). Clean silhouette, still readable at ~64px. |
+| `epic` | Unique design language. Several visual effects (including glow and/or runes). Large amount of fine detail, still organized and readable - not muddy clutter. |
+| `legendary` | Extraordinary one-of-a-kind design. Peak fantasy identity, dramatic but readable magical presence - never muddy clutter. |
+| `set` | Same complexity band as legendary/epic peak, plus a **shared set motif** (repeating inlay pattern, signature gem cut, turquoise-family accents on the prop itself - not a UI frame). Pieces must feel like one named set family. |
 
 Always include a Rarity lock like:
 
 ```
-Rarity lock ({canonical} / {RU label}): {ladder sentence for that tier}. Every panel must match this complexity band - do not make common look legendary or legendary look plain. Silhouette must stay readable at small size.
+Rarity lock ({canonical} / {RU label}): {ladder sentence for that tier}. Every panel must match this complexity band STRICTLY - do not make magic look epic/rare, do not make common look magical. Silhouette must stay readable at small size.
 ```
 
 ## Creative Freedom / Diversity
@@ -194,11 +226,11 @@ Rarity lock ({canonical} / {RU label}): {ladder sentence for that tier}. Every p
 ### Batch mode (DEFAULT - loot packing)
 
 ```
-Creative freedom (CRITICAL): YOU invent every item freely within the required equipment slot and rarity band - fantasy materials, silhouette twists, ornaments, damage/wear, magical motifs (if rarity allows), and color stories. Prefer classic fantasy game loot over historical armor catalogs. On EVERY generation of this prompt, invent a brand-new set of items from scratch. Maximize novelty across panels and regenerations. Never recycle the same silhouette formula with only a recolor.
+Creative freedom (CRITICAL): YOU invent every ITEM freely within the required equipment slot and rarity band - fantasy materials, silhouette twists, ornaments, damage/wear, and magical motifs ONLY if the rarity ladder allows them. Prefer classic fantasy game loot over historical armor catalogs. Backdrop is LOCKED identical on every panel (same textured gunmetal forge-steel recipe with soft radial) - do NOT invent new backdrop hues, flat fills, scenic washes, or per-panel backdrop recipes. On EVERY generation of this prompt, invent a brand-new set of items from scratch. Maximize novelty across item panels and regenerations. Never recycle the same silhouette formula with only a recolor.
 ```
 
 ```
-Diversity: EVERY panel must show a DIFFERENT unique item of the SAME slot and SAME rarity - unique silhouette, unique materials/ornament, unique magical accents (when rarity allows). No twins, no near-duplicates, no same shape recolored.
+Diversity: EVERY panel must show a DIFFERENT unique item of the SAME slot and SAME rarity - unique silhouette, unique materials/ornament, unique magical accents ONLY when rarity allows. Backdrop stays the SAME locked textured gunmetal recipe on every panel. No twins, no near-duplicates, no same shape recolored, no wrong prop type for the slot.
 ```
 
 ### Named-item mode
@@ -206,27 +238,31 @@ Diversity: EVERY panel must show a DIFFERENT unique item of the SAME slot and SA
 Skip Creative Freedom inventing different items. Use:
 
 ```
-Diversity: same named item concept in every panel; only angle, wear, and ornament/effect intensity vary within the rarity band.
+Diversity: same named item concept in every panel; only angle, wear, and ornament/effect intensity vary within the rarity band. Backdrop stays the same locked textured gunmetal recipe on every panel.
 ```
 
 ## Slot silhouette hints (Subject)
 
-Keep the prop type obvious for inventory scanning:
+Keep the prop type obvious for inventory scanning. Bake the correct row into
+Subject / Panel brief. If the user's exact word is listed, prefer that row's
+**Show** over the generic canonical row.
 
-| Slot | Show |
-|------|------|
-| `head` | helmet / hood / crown / circlet - headwear only |
-| `chest` | chest armor / robe torso piece - no full body |
-| `neck` | amulet / pendant / torc - jewelry scale, large in frame |
-| `shoulders` | pauldron / shoulder armor pair or single clear pauldron |
-| `hands` | gloves / gauntlets |
-| `ring` | ring with readable gem/band |
-| `waist` | belt / sash with buckle focus |
-| `legs` | greaves / leg armor / pants piece |
-| `feet` | boots / sabatons |
-| `trinket` | compact relic / charm / odd magical device |
-| `mainhand` | weapon (sword, axe, mace, bow, staff, dagger...) - blade/haft readable |
-| `offhand` | shield, focus, off-hand blade, tome - clearly off-hand prop |
+| Slot / user word | Show | NEVER show |
+|------------------|------|------------|
+| `head` | helmet / hood / crown / circlet - headwear only | - |
+| `chest` | chest armor / robe torso piece - no full body | full body |
+| `neck` | amulet / pendant / torc - jewelry scale, large in frame | - |
+| `shoulders` | pauldron / shoulder armor pair or single clear pauldron | - |
+| `hands` | gloves / gauntlets | - |
+| `ring` | ring with readable gem/band | - |
+| `waist` | belt / sash with buckle focus | - |
+| `legs` + `штаны` / `pants` / `trousers` | **pants / trousers / hose only** - cloth or leather legwear, waist-to-ankle (or cropped), belt loops/pockets OK | boots, sabatons, footwear, shoe soles, greaves-as-boots |
+| `legs` + `поножи` / `greaves` | shin/thigh greaves or leg plate - armor pieces, not footwear | boots with soles, shoes |
+| `legs` (generic `ноги` / `legs`) | pants OR greaves (mix OK across panels) - still **no footwear** | boots, sabatons, shoes |
+| `feet` | boots / sabatons only | pants, trousers |
+| `trinket` | compact relic / charm / odd magical device | - |
+| `mainhand` | weapon (sword, axe, mace, bow, staff, dagger...) - blade/haft readable | - |
+| `offhand` | shield, focus, off-hand blade, tome - clearly off-hand prop | - |
 
 ## Output format (CRITICAL)
 
@@ -247,45 +283,58 @@ Setting: classic dark fantasy game world - enchanted adventurer loot, magic mate
 
 {Rarity lock}
 
-Subject / theme: fantasy game inventory item icons - equipment slot {canonical slot} ({RU label}); rarity {canonical} ({RU}); optional motif: {theme or "open fantasy loot"}. Nine different items, all that slot, all that rarity band.
+Subject / theme: fantasy game inventory item icons - equipment slot {canonical slot} ({RU / user word}); rarity {canonical} ({RU}); optional motif: {theme or "open fantasy loot"}. Nine different items, all that slot, all that rarity band. Silhouette lock: {exact Show from slot table for the user word}.
 
 {Creative freedom lock}
 
 {Batch Diversity lock}
 
-Panel brief: freely invent NINE unique {slot} items at {rarity} complexity - distinct fantasy silhouettes and materials; keep each readable as a ~64px inventory icon.
+Panel brief: freely invent NINE unique {exact prop type} at {rarity} complexity ONLY - stay inside the rarity ladder; distinct fantasy silhouettes and materials; stylized cartoon / game-toon illustration (clearly drawn cartoon, NOT photoreal, NOT semi-realistic); bold readable shapes; crisp graphic detail with no noise and no blur; every panel on the SAME locked textured gunmetal backdrop with very soft radial (#262A30 -> #1A1E24, no heavy corner crush); keep each readable as a ~64px inventory icon.
 
-Negatives: photorealistic, semi-realistic, 3d, cgi, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, any backdrop color other than exact #151617, random dark gray, warm brown backdrop, olive backdrop, blue-tinted backdrop, purple-tinted backdrop, green-tinted backdrop, gradient backdrop, vignette backdrop, textured backdrop, different background color per panel, missing white sticker outline, thick white outline, medium white outline, ~1px white outline, ~2px white outline, heavy white border, bold white rim, white halo around item, chunky sticker stroke, fat 2-6px outline, wide white contour, oversized white stroke, historical medieval museum replica, steampunk, Victorian industrial, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, muddy grey-brown palette, soft anime shading without outlines, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped outline, elements crossing gutters
+Negatives: photorealistic, semi-realistic, almost-realistic, hyperrealistic, hard realism, realistic product photo, studio product photography, photographic metal reflections, PBR materials, hyperdetailed micro-scratches, pore-level leather, 3d cgi product render, Unreal Engine render, octane render, character, face, hands holding as a person, mannequin, full-body figure, busy environment scene, landscape backdrop, scenic backdrop, forest, trees, cave, ruins, moon, sky, fire scene, architecture, props in background, treasure chest backdrop, coin pile backdrop, flat solid #1E1F21 void fill, flat solid charcoal void, painterly cloudy wash backdrop, grainy smoke backdrop, textured abstract colorful backdrop, heavy crushed black corner vignette, strong vignette blackout, spotlight hole, harsh radial, pale gray backdrop, light gray backdrop, whitish backdrop, white haze, colorful blue/green/purple fills, brown backdrop, different backdrop recipe per panel, digital noise on item, film grain mush, blurry soap softening, soft focus on item, washed-out muddy detail, historical medieval museum replica, steampunk, Victorian industrial, industrial gears as default, brass clockwork default look, rarity-colored UI frame, rarity border, rarity badge, text, watermark, UI, neon candy glow, candy oversaturation, washed-out colors, hard flat poster comic with zero volume, blurry, uneven panel sizes, labels, numbers, captions, collage with white borders, same item repeated, near-duplicate silhouettes, recolor-only twins, wrong equipment slot, boots when pants requested, sabatons when pants requested, footwear in legs slot, pants in feet slot, epic glow on magic rarity, heavy rune fields on magic rarity, lava cracks on magic rarity, multiple large gems on magic rarity, aura clouds on magic rarity, legendary clutter on common rarity, plain iron on legendary rarity, item overflowing panel edges, clipped silhouette, elements crossing gutters
 ```
 
 ### Named-item mode
 
 Same scaffold, but Subject names the item; use Named Diversity lock; Panel brief =
-nine variations of that one item within the rarity band.
+nine variations of that one item within the rarity band (backdrop stays locked
+textured gunmetal recipe on every panel).
 
 ## Subject writing tips
 
-- Lead with **slot + rarity** so the model cannot drift into the wrong prop type or
-  complexity band.
+- Lead with **slot + rarity + exact prop type** so the model cannot drift into the
+  wrong silhouette or complexity band.
+- For `штаны` / pants: write explicitly "nine different pants/trousers - NEVER
+  boots".
+- For `magic`: write explicitly "MINOR magical tells only - small gems / mild
+  design quirk - NOT epic FX".
+- Say **stylized cartoon / game-toon** (clearly drawn, not photoreal / not
+  semi-realistic) and **crisp graphic detail, no noise, no blur** so the model
+  does not drift into realism, product photo, hard poster flats, or mushy soft-focus.
 - **Never** write project names ("Soul Split", internal docs, "match our portraits").
-  Describe look only via Style / Framing locks.
+  Describe look only via Style / Framing locks. Optionally note "match the attached
+  style/backdrop references" when those files are attached.
 - For loot volume: keep Batch mode; give only a light motif ("swamp witch",
   "frost cult", "blood raven") when useful.
 - For a hero drop or unique: Named-item mode + short English identity clause.
 - Prefer clear fantasy material words (lacquered leather, frost crystal, void
   glass, rune-etched steel, ember iron) over vague "cool epic item" or dry
-  historical armor catalog names (avoid defaulting to kettle hat / nasal helm /
-  museum sallet unless the theme asks).
-- Magical FX sit **on the prop** (rune glow, ember cracks), not as a full spell
-  explosion that hides the silhouette.
+  historical armor catalog names - but only at rarities that allow that density.
+- Magical FX sit **on the prop** and must match the rarity ladder - never a full
+  spell explosion that hides the silhouette.
 - Set rarity: name the set motif once ("raven-bone inlay, turquoise cabochons")
   and require every panel to share that family language.
 - Workflow note (NOT in the reply): models do not remember past sheets; to avoid
-  repeats, attach prior contact sheets as "avoid these designs".
+  repeats, attach prior contact sheets as "avoid these designs". Attach
+  `item_icon_style_example.png` + `item_icon_backdrop_example.png` as positive
+  refs when possible. Do **not** attach the flat legacy backdrop as canon.
 
 ## After user approves / corrects style
 
 1. Save crops under `assets/art/items/{slot}/{id}.png`.
-2. If an item-icon master reference is approved later, put it in `assets/art/approved/`
-   and update STYLE_BIBLE + this skill together.
+2. Style canon: stylized cartoon / game-toon illustration (cartoon-first, not
+   semi-real) - `approved/item_icon_style_example.png`.
+   Backdrop canon: textured gunmetal + soft radial -
+   `approved/item_icon_backdrop_example.png` (core `#262A30`, edges `#1A1E24`,
+   no heavy corner crush). Flat legacy file is not active.
 3. Do not mass-regenerate old assets unless asked.

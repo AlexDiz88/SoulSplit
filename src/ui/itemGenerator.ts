@@ -421,7 +421,7 @@ function buildParamsSection(): HTMLElement {
     el(
       "td",
       "igen-desc",
-      "Только на оружии и аксессуаре. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных аспектов весит выше.",
+      "Только на оружии и аксессуаре, и только с редкости rare+. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных аспектов весит выше.",
     ),
   );
   tbody.append(aspectRow);
@@ -502,9 +502,9 @@ function buildRulesSection(): HTMLElement {
   const notes: Record<ItemRarity, string> = {
     common: "Белый. Только implicit оружия, если слот оружейный.",
     uncommon: "Один ролл. Prefix или suffix случайно.",
-    magic: "Два ролла. На аспектном предмете с magic+ стараемся дать aspect-аффикс.",
-    rare: "3-4 ролла.",
-    epic: "4-5 роллов. Легендарки в генератор не входят.",
+    magic: "Два ролла. Без бонуса аспекта.",
+    rare: "3-4 ролла. На оружии/аксессуаре появляется aspectTag и aspect-аффикс.",
+    epic: "4-5 роллов. Aspect как у rare. Легендарки в генератор не входят.",
   };
   for (const rarity of RARITIES) {
     const [lo, hi] = RARITY_AFFIX_COUNT[rarity];

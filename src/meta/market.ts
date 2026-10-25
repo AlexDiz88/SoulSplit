@@ -71,11 +71,12 @@ export const MERCHANT_BY_ID: Record<MerchantId, MerchantDef> = Object.fromEntrie
   MERCHANTS.map((m) => [m.id, m]),
 ) as Record<MerchantId, MerchantDef>;
 
-/** В основном необычные, реже магические, редко редкие. Эпик+ никогда. */
+/** Чаще обычные, реже необычные, еще реже магические, крайне редко редкие. Эпик+ никогда. */
 const SHOP_RARITY: { rarity: ItemRarity; weight: number }[] = [
-  { rarity: "uncommon", weight: 68 },
-  { rarity: "magic", weight: 27 },
-  { rarity: "rare", weight: 5 },
+  { rarity: "common", weight: 55 },
+  { rarity: "uncommon", weight: 30 },
+  { rarity: "magic", weight: 13 },
+  { rarity: "rare", weight: 2 },
 ];
 
 const STOCK_MIN = 3;

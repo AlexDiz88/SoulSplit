@@ -4,6 +4,9 @@ import type { ItemRarity } from "../items/types";
 /**
  * Иконки предметов: `assets/art/items/{slotAlias}_{rarityAlias}_{n}.png`
  * Пример: boots_magic_01.png -> слот feet, редкость magic.
+ *
+ * `starter_*.png` - фиксированные иконки создания персонажа.
+ * Лежат в той же папке, но не попадают в пул `pickItemIconUrl`.
  */
 const itemIconModules = import.meta.glob<{ default: string }>(
   "../../assets/art/items/**/*.{png,webp}",
@@ -72,6 +75,8 @@ function parseIconPath(modulePath: string, url: string): ItemIconEntry | null {
   const file = modulePath.split(/[/\\]/).pop() ?? "";
   const base = file.replace(/\.(png|webp)$/i, "");
   if (!base || base === "no_image") return null;
+  // starter_* - фиксированные иконки создания персонажа, не в пуле генерации.
+  if (base.toLowerCase().startsWith("starter_")) return null;
 
   const parts = base.split("_");
   if (parts.length < 2) return null;
@@ -84,7 +89,16 @@ function parseIconPath(modulePath: string, url: string): ItemIconEntry | null {
 }
 
 const CATALOG: ItemIconEntry[] = [];
+/** `starter_dagger` → URL. Не участвует в pickItemIconUrl. */
+const STARTER_ICON_BY_ID = new Map<string, string>();
+
 for (const [path, mod] of Object.entries(itemIconModules)) {
+  const file = path.split(/[/\\]/).pop() ?? "";
+  const base = file.replace(/\.(png|webp)$/i, "");
+  if (base && base.toLowerCase().startsWith("starter_")) {
+    STARTER_ICON_BY_ID.set(base, mod.default);
+    continue;
+  }
   const entry = parseIconPath(path, mod.default);
   if (entry) CATALOG.push(entry);
 }
@@ -112,5 +126,10 @@ export function pickItemIconUrl(
 }
 
 export function getItemIconUrlById(id: string): string | undefined {
-  return CATALOG.find((e) => e.id === id)?.url;
+  return STARTER_ICON_BY_ID.get(id) ?? CATALOG.find((e) => e.id === id)?.url;
+}
+
+/** URL фиксированной стартовой иконки (`starter_dagger` и т.д.). */
+export function getStarterItemIconUrl(stem: string): string | undefined {
+  return STARTER_ICON_BY_ID.get(stem);
 }

@@ -115,6 +115,7 @@ Legendary / set - вне генератора v1.
 ### Аспектные предметы
 
 Только: `mainhand`, `offhand` (оружие), `trinket` (аксессуар).
+`aspectTag` и бонус аспекта появляются не раньше rare (на common / uncommon / magic их нет).
 Дроп оружия с `aspectTag` из изученных аспектов героя имеет повышенный вес.
 
 ### Prefix / suffix

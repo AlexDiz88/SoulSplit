@@ -58,13 +58,20 @@ function pickAffixSlot(def: AffixDef, rng: () => number): AffixSlot {
   return rng() < 0.5 ? "prefix" : "suffix";
 }
 
+/** Бонус аспекта (и aspectTag) только на rare+. */
+function rarityAllowsAspectBonus(rarity: ItemRarity): boolean {
+  return rarity === "rare" || rarity === "epic";
+}
+
 function rollAspectTag(
   slot: EquipSlotId,
+  rarity: ItemRarity,
   learned: Aspect[] | undefined,
   force: Aspect | undefined,
   rng: () => number,
 ): Aspect | undefined {
   if (!isAspectItemSlot(slot)) return undefined;
+  if (!rarityAllowsAspectBonus(rarity)) return undefined;
   if (force) return force;
   const learnedSet = new Set(learned ?? []);
   const pick = pickWeighted(ALL_ASPECTS, (s) => (learnedSet.has(s) ? 3 : 1), rng);
@@ -117,7 +124,7 @@ function defaultName(slot: EquipSlotId, _rarity: ItemRarity, aspect?: Aspect, we
 export function generateItem(opts: GenerateItemOptions): ItemDef {
   const rng = opts.rng ?? Math.random;
   const { slot, rarity, itemLevel } = opts;
-  const aspectTag = rollAspectTag(slot, opts.learnedAspects, opts.forceAspect, rng);
+  const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
   const weapon = isWeaponSlot(slot) ? makeWeaponImplicit(itemLevel, rng) : undefined;
 
   const count = affixCountForRarity(rarity, rng);
@@ -139,8 +146,8 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     });
   }
 
-  // На аспектном предмете magic+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
-  if (aspectTag && rarity !== "common" && rarity !== "uncommon") {
+  // На аспектном предмете rare+ гарантируем хотя бы один aspect-ролл, если пул позволяет.
+  if (aspectTag && rarityAllowsAspectBonus(rarity)) {
     const hasAspect = affixes.some((a) => a.statId === `aspectDamage:${aspectTag}`);
     if (!hasAspect) {
       const aspectAffix = pool.find((a) => a.statId === `aspectDamage:${aspectTag}`);

@@ -1,3 +1,4 @@
+import { getStarterItemIconUrl } from "../art/itemIcons";
 import type { WeaponKind } from "../types";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
@@ -15,6 +16,8 @@ export type StarterWeaponId =
 export interface StarterWeaponDef {
   id: StarterWeaponId;
   name: string;
+  /** Stem файла: `assets/art/items/{iconId}.png` (вне пула генерации). */
+  iconId: `starter_${StarterWeaponId}`;
   kind: WeaponKind;
   damageMin: number;
   damageMax: number;
@@ -32,6 +35,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "dagger",
     name: "Кинжал",
+    iconId: "starter_dagger",
     kind: "melee",
     damageMin: 14,
     damageMax: 19,
@@ -42,6 +46,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "sword",
     name: "Меч",
+    iconId: "starter_sword",
     kind: "melee",
     damageMin: 20,
     damageMax: 30,
@@ -52,6 +57,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "mace",
     name: "Булава",
+    iconId: "starter_mace",
     kind: "melee",
     damageMin: 25,
     damageMax: 35,
@@ -62,6 +68,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "wand",
     name: "Жезл",
+    iconId: "starter_wand",
     kind: "staff",
     damageMin: 22,
     damageMax: 31,
@@ -72,6 +79,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "bow",
     name: "Лук",
+    iconId: "starter_bow",
     kind: "bow",
     damageMin: 22,
     damageMax: 31,
@@ -82,6 +90,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "great_axe",
     name: "Двуручный топор",
+    iconId: "starter_great_axe",
     kind: "melee",
     damageMin: 28,
     damageMax: 39,
@@ -93,6 +102,7 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
   {
     id: "staff",
     name: "Посох (двуручный)",
+    iconId: "starter_staff",
     kind: "staff",
     damageMin: 25,
     damageMax: 35,
@@ -134,12 +144,13 @@ export function createStarterWeapon(
 ): ItemDef {
   const def = STARTER_WEAPON_BY_ID[id] ?? STARTER_WEAPON_BY_ID[DEFAULT_STARTER_WEAPON];
   return {
-    id: `starter_${def.id}`,
+    id: def.iconId,
     name: def.name,
     slot,
     rarity: "common",
     itemLevel: 1,
     affixes: [],
+    icon: getStarterItemIconUrl(def.iconId),
     weapon: toImplicit(def),
   };
 }

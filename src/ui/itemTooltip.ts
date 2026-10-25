@@ -9,7 +9,7 @@ import "./itemTooltip.css";
 export interface ItemTooltipOptions {
   /** Показать цену продажи внизу. По умолчанию true. */
   showSellPrice?: boolean;
-  /** Иконка предмета над названием. */
+  /** Крупная иконка над названием (2x2 ячейки инвентаря). По умолчанию true. */
   showIcon?: boolean;
   /** Подпись над иконкой/названием ("В продаже", "Экипировано"). */
   caption?: string;
@@ -77,12 +77,13 @@ function itemIconNode(item: ItemDef): HTMLElement {
  */
 export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {}): HTMLElement[] {
   const showSell = options.showSellPrice !== false && options.priceAmount === undefined;
+  const showIcon = options.showIcon !== false;
   const nodes: HTMLElement[] = [];
 
   if (options.caption) {
     nodes.push(el("div", "item-tip-caption", options.caption));
   }
-  if (options.showIcon) {
+  if (showIcon) {
     nodes.push(itemIconNode(item));
   }
 

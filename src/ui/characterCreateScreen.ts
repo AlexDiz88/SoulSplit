@@ -1,6 +1,7 @@
 import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { listHeroPortraitUrls, type HeroGender } from "../art/portraits";
 import {
+  createStarterWeapon,
   DEFAULT_STARTER_WEAPON,
   STARTER_WEAPONS,
   type StarterWeaponId,
@@ -12,8 +13,10 @@ import {
   validateHeroName,
 } from "../meta/heroProfile";
 import type { Aspect } from "../types";
+import { fillItemTooltip } from "./itemTooltip";
 import "./hubScreen.css";
 import "./startMenu.css";
+import "./itemTooltip.css";
 
 export interface CharacterCreateScreenApi {
   show(slotIndex: number): void;
@@ -136,21 +139,71 @@ export function mountCharacterCreateScreen(
   aspectField.append(aspectGrid);
   body.append(aspectField);
 
-  const weaponField = el("div", "create-field");
+  const weaponField = el("div", "create-field create-field-weapons");
   weaponField.append(el("label", undefined, "Стартовое оружие"));
   const weaponGrid = el("div", "weapon-grid");
+  weaponGrid.setAttribute("role", "group");
+  weaponGrid.setAttribute("aria-label", "Стартовое оружие");
+  const weaponTip = el("div", "item-tip create-weapon-tip");
+  weaponTip.hidden = true;
   const weaponButtons = new Map<StarterWeaponId, HTMLButtonElement>();
+  const weaponItems = new Map(
+    STARTER_WEAPONS.map((def) => [def.id, createStarterWeapon(def.id)] as const),
+  );
+
+  const showWeaponTip = (btn: HTMLButtonElement, id: StarterWeaponId): void => {
+    const item = weaponItems.get(id);
+    if (!item) return;
+    fillItemTooltip(weaponTip, item, { showSellPrice: false });
+    weaponTip.hidden = false;
+    const fieldRect = weaponField.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const tipRect = weaponTip.getBoundingClientRect();
+    let left = btnRect.right - fieldRect.left + 10;
+    if (left + tipRect.width > fieldRect.width - 4) {
+      left = btnRect.left - fieldRect.left - tipRect.width - 10;
+    }
+    const top = Math.min(
+      Math.max(0, btnRect.top - fieldRect.top),
+      Math.max(0, fieldRect.height - tipRect.height),
+    );
+    weaponTip.style.left = `${Math.max(0, left)}px`;
+    weaponTip.style.top = `${top}px`;
+  };
+
   for (const def of STARTER_WEAPONS) {
-    const btn = el("button", "aspect-opt weapon-opt", def.name);
+    const item = weaponItems.get(def.id)!;
+    const btn = el("button", "weapon-opt");
     btn.type = "button";
+    btn.dataset.weapon = def.id;
+    btn.setAttribute("aria-label", def.name);
+    const face = el("span", "weapon-opt-face");
+    if (item.icon) {
+      const img = el("img");
+      img.src = item.icon;
+      img.alt = "";
+      img.draggable = false;
+      face.append(img);
+    } else {
+      face.append(el("span", "weapon-opt-fallback", def.name));
+    }
+    btn.append(face);
     btn.addEventListener("click", () => {
       starterWeapon = def.id;
       for (const [id, b] of weaponButtons) b.classList.toggle("is-active", id === starterWeapon);
     });
+    btn.addEventListener("pointerenter", () => showWeaponTip(btn, def.id));
+    btn.addEventListener("pointerleave", () => {
+      weaponTip.hidden = true;
+    });
+    btn.addEventListener("focus", () => showWeaponTip(btn, def.id));
+    btn.addEventListener("blur", () => {
+      weaponTip.hidden = true;
+    });
     weaponButtons.set(def.id, btn);
     weaponGrid.append(btn);
   }
-  weaponField.append(weaponGrid);
+  weaponField.append(weaponGrid, weaponTip);
   body.append(weaponField);
 
   const portraitField = el("div", "create-field create-field-portraits");
@@ -253,6 +306,7 @@ export function mountCharacterCreateScreen(
       nameInput.focus();
     },
     hide() {
+      weaponTip.hidden = true;
       root.hidden = true;
     },
     isOpen() {
