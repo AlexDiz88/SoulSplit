@@ -249,6 +249,15 @@ export function combatAbilityIdForRef(ref: string): AbilityId | undefined {
   return abilityDefForGrimoireId(kebab)?.id ?? (ABILITIES[snake as AbilityId] ? (snake as AbilityId) : undefined);
 }
 
+/** Пассив: `targetMode: "passive"` в бою или тип применения "пассив" в карточке. */
+export function isPassiveAbilityRef(ref: string): boolean {
+  const combatId = combatAbilityIdForRef(ref);
+  if (combatId && ABILITIES[combatId]?.targetMode === "passive") return true;
+  const card = findAbilityCard(ref);
+  if (!card) return false;
+  return /пассив/i.test(card.application);
+}
+
 /** Русское имя по id из дизайн-карточки или боевого кода (`order` → "Приказ"). */
 export function abilityDisplayName(ref: string): string {
   const trimmed = ref.trim();

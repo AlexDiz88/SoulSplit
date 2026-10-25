@@ -3,6 +3,7 @@ import {
   abilityIconUrlForRef,
   combatAbilityIdForRef,
   findAbilityCard,
+  isPassiveAbilityRef,
   type AbilityCard,
 } from "../abilities/catalog";
 import { ABILITIES, ASPECT_HEX, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
@@ -139,6 +140,9 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     tooltip.style.top = `${Math.max(8, top)}px`;
   };
 
+  const passiveLabelHtml = (passive: boolean): string =>
+    passive ? `<div class="tt-passive">Пассивное</div>` : "";
+
   const showTooltip = (btn: HTMLElement, id: AbilityId): void => {
     const def = ABILITIES[id];
     const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
@@ -148,11 +152,13 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
           ? `${def.damage} / выше ${zoneSecondaryDamage(def)}`
           : String(def.damage)
         : "-";
+    const passive = def.targetMode === "passive";
 
     tooltip.className = `skill-tooltip aspect-${def.aspect}`;
     tooltip.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
     tooltip.innerHTML = `
       <div class="tt-name">${def.name}</div>
+      ${passiveLabelHtml(passive)}
       <div class="tt-desc">${describeAbility(def)}</div>
       <div class="tt-stats">
         <div class="tt-stat"><span>Урон</span><b>${damageLabel}</b></div>
@@ -172,6 +178,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     tooltip.style.setProperty("--aspect-color", aspectColor);
     tooltip.innerHTML = `
       <div class="tt-name">${card.name}</div>
+      ${passiveLabelHtml(isPassiveAbilityRef(card.id))}
       <div class="tt-desc">${card.description || "-"}</div>
       <div class="tt-stats">
         <div class="tt-stat"><span>Кулдаун</span><b>${cd}</b></div>
@@ -196,6 +203,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     tooltip.style.removeProperty("--aspect-color");
     tooltip.innerHTML = `
       <div class="tt-name">${abilityDisplayName(ref)}</div>
+      ${passiveLabelHtml(isPassiveAbilityRef(ref))}
       <div class="tt-desc">Нет описания способности.</div>
     `;
     tooltip.hidden = false;
@@ -869,7 +877,8 @@ function abilityIconsRow(
   for (const ref of refs) {
     const btn = document.createElement("button");
     btn.type = "button";
-    btn.className = "skill-btn has-art bestiary-ability-icon";
+    const passive = isPassiveAbilityRef(ref);
+    btn.className = `skill-btn has-art bestiary-ability-icon${passive ? " skill-passive" : ""}`;
     btn.setAttribute("aria-label", abilityDisplayName(ref));
     const img = document.createElement("img");
     img.className = "skill-icon";

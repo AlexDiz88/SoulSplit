@@ -348,6 +348,16 @@ textarea,
   -webkit-user-drag: none;
 }
 
+/* Пассивы: ромб вместо круга. Только форма, без бейджей. */
+.skill-btn.has-art.skill-passive {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+}
+
+.skill-btn.has-art.skill-passive .skill-icon {
+  border-radius: 0;
+}
+
 .skill-btn.has-art .gcd-overlay,
 .skill-btn.has-art .cd-overlay {
   border-radius: 50%;
@@ -458,6 +468,18 @@ textarea,
   font-weight: 700;
   color: var(--accent);
   margin-bottom: 4px;
+}
+
+.skill-tooltip .tt-passive {
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #e8c84a;
+  margin: -2px 0 6px;
+}
+
+.skill-tooltip .tt-name:has(+ .tt-passive) {
+  margin-bottom: 2px;
 }
 
 .skill-tooltip .tt-desc {
@@ -773,6 +795,11 @@ textarea,
 .bestiary-ability-icons .bestiary-ability-icon:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 70%, white);
+}
+
+.bestiary-ability-icons .bestiary-ability-icon.skill-passive:focus-visible {
+  box-shadow: none;
+  filter: drop-shadow(0 0 3px color-mix(in srgb, var(--accent) 85%, white));
 }
 
 .bestiary-desc {
