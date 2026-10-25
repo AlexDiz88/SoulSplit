@@ -39,7 +39,10 @@ export type AbilityId =
   | "dust_veil"
   | "air_pocket"
   | "tornado"
-  | "dark_arrow";
+  | "dark_arrow"
+  | "rejuvenation"
+  | "root_grasp"
+  | "poison_bush";
 
 /** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток; all_enemies - мгновенно по всем. */
 export type TargetMode =
@@ -60,7 +63,19 @@ export interface GridPos {
 
 export interface StatusEffect {
   id: string;
-  kind: "stun" | "shield" | "bleed" | "burn" | "atk_buff" | "atk_debuff" | "slow" | "haste" | "invuln";
+  kind:
+    | "stun"
+    | "shield"
+    | "bleed"
+    | "burn"
+    | "poison"
+    | "regen"
+    | "root"
+    | "atk_buff"
+    | "atk_debuff"
+    | "slow"
+    | "haste"
+    | "invuln";
   remaining: number;
   potency: number;
 }
@@ -108,6 +123,12 @@ export interface AbilityEffects {
   castTime?: number;
   /** Срывает подготовку цели (молчание, контрзаклинание). Обычный урон каст не срывает. */
   interruptsCast?: boolean;
+  /** Удержание на клетке (блок перемещения, каст не блокирует). */
+  rootDuration?: number;
+  poisonPerSec?: number;
+  poisonDuration?: number;
+  regenPerSec?: number;
+  regenDuration?: number;
 }
 
 export interface AbilityDef {

@@ -73,3 +73,19 @@ export function airPocketCells(origin: GridPos): GridPos[] {
   }
   return out;
 }
+
+/** Ядовитый куст: клик без эффекта, четыре диагонали. */
+export function poisonBushCells(origin: GridPos): GridPos[] {
+  const deltas = [
+    { col: -1, row: -1 },
+    { col: 1, row: -1 },
+    { col: -1, row: 1 },
+    { col: 1, row: 1 },
+  ];
+  const out: GridPos[] = [];
+  for (const d of deltas) {
+    const p = { col: origin.col + d.col, row: origin.row + d.row };
+    if (inBounds(p)) out.push(p);
+  }
+  return out;
+}

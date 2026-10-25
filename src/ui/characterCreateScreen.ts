@@ -1,9 +1,9 @@
+import { approvedAbilitiesForAspect } from "../abilities/catalog";
 import {
   ABILITIES,
   ALL_ASPECTS,
   ASPECT_HEX,
   ASPECT_LABEL,
-  abilitiesForAspect,
   describeAbility,
   zoneSecondaryDamage,
 } from "../abilities/definitions";
@@ -326,7 +326,7 @@ export function mountCharacterCreateScreen(
 
   const rebuildAbilities = (): void => {
     hideAbilityTip();
-    const ids = abilitiesForAspect(aspect);
+    const ids = approvedAbilitiesForAspect(aspect);
     abilityGrid.replaceChildren();
     if (ids.length === 0) {
       starterAbility = null;
@@ -410,7 +410,7 @@ export function mountCharacterCreateScreen(
       error.textContent = "Нет доступных портретов.";
       return;
     }
-    const aspectAbilities = abilitiesForAspect(aspect);
+    const aspectAbilities = approvedAbilitiesForAspect(aspect);
     if (aspectAbilities.length > 0 && !starterAbility) {
       error.textContent = "Выберите стартовую способность.";
       return;

@@ -319,6 +319,12 @@ export class Unit {
           return "🩸";
         case "burn":
           return "🔥";
+        case "poison":
+          return "☠";
+        case "regen":
+          return "💚";
+        case "root":
+          return "🌱";
         case "atk_buff":
           return "⬆";
         case "atk_debuff":
@@ -645,10 +651,14 @@ export class Unit {
   tickStatuses(dt: number): boolean {
     let bleedDot = 0;
     let burnDot = 0;
+    let poisonDot = 0;
+    let regenAmt = 0;
     for (const s of this.statuses) {
       s.remaining -= dt;
       if (s.kind === "bleed") bleedDot += s.potency * dt;
       if (s.kind === "burn") burnDot += s.potency * dt;
+      if (s.kind === "poison") poisonDot += s.potency * dt;
+      if (s.kind === "regen") regenAmt += s.potency * dt;
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
     let castBroken = false;
@@ -658,6 +668,10 @@ export class Unit {
     if (burnDot > 0) {
       castBroken = this.applyDamage(burnDot, { channel: "magical" }).castBroken || castBroken;
     }
+    if (poisonDot > 0) {
+      castBroken = this.applyDamage(poisonDot, { channel: "magical" }).castBroken || castBroken;
+    }
+    if (regenAmt > 0) this.heal(regenAmt);
     this.redraw();
     return castBroken;
   }

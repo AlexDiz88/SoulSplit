@@ -4,7 +4,7 @@ icon: poison_bush.png
 name: "Ядовитый куст"
 aspect: "Природа"
 aspect_id: nature
-status: черновик
+status: одобрено
 ---
 
 # Ядовитый куст

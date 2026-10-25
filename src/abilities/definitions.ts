@@ -1,4 +1,4 @@
-import type { AbilityDef, AbilityId, Aspect } from "../types";
+import type { AbilityDef, AbilityId } from "../types";
 export { ALL_ASPECTS, ASPECT_COLOR, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 
 /** id карточки гримуара (design/abilities) → AbilityId боя. */
@@ -19,6 +19,9 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "air-pocket": "air_pocket",
   tornado: "tornado",
   "dark-arrow": "dark_arrow",
+  rejuvenation: "rejuvenation",
+  "root-grasp": "root_grasp",
+  "poison-bush": "poison_bush",
 };
 
 export const ABILITIES: Record<AbilityId, AbilityDef> = {
@@ -230,20 +233,55 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 4,
     effects: { castTime: 2 },
   },
+  rejuvenation: {
+    id: "rejuvenation",
+    name: "Омоложение",
+    aspect: "nature",
+    glyph: "🌿",
+    cooldown: 8,
+    damage: 0,
+    manaCost: 32,
+    targetMode: "self",
+    range: "any",
+    reach: 0,
+    effects: { regenPerSec: 10, regenDuration: 5 },
+  },
+  root_grasp: {
+    id: "root_grasp",
+    name: "Хватка корней",
+    aspect: "nature",
+    glyph: "🌱",
+    cooldown: 12,
+    damage: 0,
+    manaCost: 30,
+    targetMode: "enemy",
+    range: "ranged",
+    reach: 4,
+    effects: {
+      rootDuration: 5,
+      poisonPerSec: 8,
+      poisonDuration: 5,
+      slowDuration: 5,
+      slowPotency: 1,
+    },
+  },
+  poison_bush: {
+    id: "poison_bush",
+    name: "Ядовитый куст",
+    aspect: "nature",
+    glyph: "🥀",
+    cooldown: 7.5,
+    damage: 0,
+    manaCost: 36,
+    targetMode: "zone",
+    range: "any",
+    reach: 4,
+    effects: { poisonPerSec: 8, poisonDuration: 4 },
+  },
 };
 
 /** Слоты панели героя (песочница). */
 export const ALL_ABILITY_IDS: AbilityId[] = ["wind_gust", "wind_speed", "squall", "tornado"];
-
-/** Только для врагов - не предлагаем герою при создании / в лоадауте. */
-const ENEMY_ABILITY_IDS = new Set<AbilityId>(["dark_arrow"]);
-
-/** Существующие способности аспекта (без вражеских). */
-export function abilitiesForAspect(aspect: Aspect): AbilityId[] {
-  return (Object.keys(ABILITIES) as AbilityId[]).filter(
-    (id) => ABILITIES[id].aspect === aspect && !ENEMY_ABILITY_IDS.has(id),
-  );
-}
 
 function fmtNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
@@ -298,6 +336,12 @@ export function describeAbility(def: AbilityDef): string {
       return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
     case "dark_arrow":
       return `Враг готовит стрелу тьмы и выпускает ее в героя. Пока идет подготовка, он не атакует.`;
+    case "rejuvenation":
+      return `Сила природы омолаживает вас, восстанавливая ${fmtNum(e.regenPerSec ?? 0)} ед. здоровья в секунду в течение ${fmtNum(e.regenDuration ?? 0)} сек.`;
+    case "root_grasp":
+      return `Корни смыкаются вокруг врага и удерживают его на клетке на ${fmtNum(e.rootDuration ?? 0)} сек. Цель получает ${fmtNum(e.poisonPerSec ?? 0)} ед. урона природы в секунду и замедляет автоатаки: интервал ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек. Мгновенного урона нет.`;
+    case "poison_bush":
+      return `Отмечает клетку. На четырёх диагоналях всходит ядовитый куст: враги там получают ${fmtNum(e.poisonPerSec ?? 0)} ед. урона ядом в секунду в течение ${fmtNum(e.poisonDuration ?? 0)} сек. Клетка клика без эффекта.`;
   }
 }
 
@@ -370,6 +414,22 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`${def.damage} урона по герою, если подготовка дошла до конца`);
       lines.push("на время подготовки автоатаки этого врага не проходят, шкала автоатаки стоит");
       lines.push("после завершенной подготовки кулдаун автоатаки начинается с нуля и заполняется заново");
+      break;
+    case "rejuvenation":
+      lines.push(
+        `лечение ${fmtNum(e.regenPerSec ?? 0)} в секунду, ${fmtNum(e.regenDuration ?? 0)} с (итого ${fmtNum((e.regenPerSec ?? 0) * (e.regenDuration ?? 0))})`,
+      );
+      break;
+    case "root_grasp":
+      lines.push(`удержание на клетке ${fmtNum(e.rootDuration ?? 0)} с`);
+      lines.push(
+        `${fmtNum(e.poisonPerSec ?? 0)} урона природы в секунду, ${fmtNum(e.poisonDuration ?? 0)} с (итого ${fmtNum((e.poisonPerSec ?? 0) * (e.poisonDuration ?? 0))})`,
+      );
+      lines.push(`интервал автоатаки ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      lines.push("каст не блокирует, перемещение блокирует");
+      break;
+    case "poison_bush":
+      lines.push(`каждая диагональ: яд ${fmtNum(e.poisonPerSec ?? 0)} в секунду, ${fmtNum(e.poisonDuration ?? 0)} с`);
       break;
   }
   return lines;

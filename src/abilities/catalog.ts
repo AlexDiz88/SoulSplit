@@ -1,3 +1,4 @@
+import type { AbilityId, Aspect } from "../types";
 import { ALL_ASPECTS, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 import {
   abilityDefForGrimoireId,
@@ -212,6 +213,29 @@ export function cardsInAspect(aspectId: string): AbilityCard[] {
   return loadAbilityCards()
     .filter((card) => card.aspectId === aspectId)
     .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+}
+
+/** Старые метки прототип/взято считаем одобренными (как в гримуаре). */
+function isApprovedStatus(status: string): boolean {
+  return status === "одобрено" || status === "прототип" || status === "взято";
+}
+
+/**
+ * Способности аспекта для создания персонажа:
+ * только `одобрено` (+ старые прототип/взято) и уже есть в боевом коде.
+ */
+export function approvedAbilitiesForAspect(aspect: Aspect): AbilityId[] {
+  const out: AbilityId[] = [];
+  const seen = new Set<AbilityId>();
+  for (const card of cardsInAspect(aspect)) {
+    if (!isApprovedStatus(card.status)) continue;
+    const def = abilityDefForGrimoireId(card.id);
+    if (!def || def.aspect !== aspect) continue;
+    if (seen.has(def.id)) continue;
+    seen.add(def.id);
+    out.push(def.id);
+  }
+  return out;
 }
 
 export function abilityIconUrl(card: AbilityCard): string {

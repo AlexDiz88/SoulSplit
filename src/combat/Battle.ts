@@ -6,6 +6,7 @@ import {
   GRID_SIZE,
   inBounds,
   orthoNeighbors,
+  poisonBushCells,
   squallCells,
 } from "../abilities/shapes";
 import { getBackgroundTexture, pickRandomBackgroundUrl } from "../art/backgrounds";
@@ -802,7 +803,9 @@ export class Battle {
           ? squallCells(cell)
           : def.id === "air_pocket"
             ? airPocketCells(cell)
-            : [cell];
+            : def.id === "poison_bush"
+              ? poisonBushCells(cell)
+              : [cell];
     const centers = hits.map((pos) => {
       const c = this.cellCenter(pos);
       return { x: c.x, y: c.y, size: CELL - 6 };
@@ -1101,6 +1104,58 @@ export class Battle {
         await this.vfx.ring(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.air, CELL * 0.55, 0.4);
         break;
       }
+      case "rejuvenation": {
+        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.nature, caster.cardSize * 0.7, 0.4);
+        const regenPerSec = def.effects?.regenPerSec ?? 10;
+        const regenDur = def.effects?.regenDuration ?? 5;
+        caster.addStatus({ id: "regen", kind: "regen", remaining: regenDur, potency: regenPerSec });
+        this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ОМОЛОЖЕНИЕ", ASPECT_COLOR.nature);
+        break;
+      }
+      case "root_grasp": {
+        if (!clicked || !clicked.alive) return;
+        const aim = { ...clicked.pos };
+        const target = clicked;
+        const to = this.cellCenter(aim);
+        const rootDur = def.effects?.rootDuration ?? 5;
+        const poisonDur = def.effects?.poisonDuration ?? 5;
+        const poisonPot = this.scaleDotPotency(caster, def.aspect, def.effects?.poisonPerSec ?? 8);
+        const slowDur = def.effects?.slowDuration ?? 5;
+        const slowPot = def.effects?.slowPotency ?? 1;
+        await this.vfx.projectile(from, to, ASPECT_COLOR.nature, {
+          size: 10,
+          trail: true,
+          arc: 12,
+          duration: 0.28,
+          onArrive: () => {
+            if (this.destroyed) return;
+            if (!this.sameEnemyOnCell(target, aim, to)) return;
+            target.addStatus({ id: "root", kind: "root", remaining: rootDur, potency: 1 });
+            target.addStatus({ id: "poison", kind: "poison", remaining: poisonDur, potency: poisonPot });
+            target.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
+            this.vfx.floatingText(target.center.x, target.center.y - 20, "КОРНИ", ASPECT_COLOR.nature);
+          },
+        });
+        break;
+      }
+      case "poison_bush": {
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        const hits = poisonBushCells(aim);
+        await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.nature, CELL * 0.45, 0.28);
+        const poisonDur = def.effects?.poisonDuration ?? 4;
+        const poisonBase = def.effects?.poisonPerSec ?? 8;
+        for (const pos of hits) {
+          const c = this.cellCenter(pos);
+          void this.vfx.ring(c.x, c.y, ASPECT_COLOR.nature, CELL * 0.38, 0.35);
+          const u = this.unitAtCell(pos);
+          if (!u) continue;
+          const poisonPot = this.scaleDotPotency(caster, def.aspect, poisonBase);
+          u.addStatus({ id: "poison", kind: "poison", remaining: poisonDur, potency: poisonPot });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "ЯД", ASPECT_COLOR.nature);
+        }
+        break;
+      }
       default:
         break;
     }
@@ -1108,7 +1163,7 @@ export class Battle {
 
   /** Отброс на 1 клетку дальше от героя. Если занято или за краем - без сдвига. */
   private tryKnockbackAway(u: Unit): void {
-    if (!u.alive) return;
+    if (!u.alive || u.hasStatus("root")) return;
     const next = { col: u.pos.col, row: u.pos.row - 1 };
     if (!inBounds(next) || this.unitAtCell(next)) return;
     u.pos = next;
@@ -1372,7 +1427,23 @@ export class Battle {
 
   private maybeStartDrop(depth = 0): void {
     if (depth > GRID_SIZE || this.collapsing || !this.frontClear()) return;
-    const movers = this.livingEnemies().filter((u) => u.pos.row < GRID_SIZE - 1);
+    const living = this.livingEnemies();
+    const reserved = new Set<string>();
+    for (const u of living) {
+      if (u.hasStatus("root") || u.pos.row === GRID_SIZE - 1) {
+        reserved.add(`${u.pos.col},${u.pos.row}`);
+      }
+    }
+    const movers: Unit[] = [];
+    const candidates = living
+      .filter((u) => u.pos.row < GRID_SIZE - 1 && !u.hasStatus("root"))
+      .sort((a, b) => b.pos.row - a.pos.row);
+    for (const u of candidates) {
+      const destKey = `${u.pos.col},${u.pos.row + 1}`;
+      if (reserved.has(destKey)) continue;
+      movers.push(u);
+      reserved.add(destKey);
+    }
     if (!movers.length) return;
     for (const u of this.units) {
       if (u.team === "enemy" && !u.alive) {

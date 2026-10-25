@@ -15,6 +15,9 @@ import airPocketIconUrl from "../../assets/art/skills/air_pocket.png";
 import tornadoIconUrl from "../../assets/art/skills/tornado.png";
 import darkArrowIconUrl from "../../assets/art/skills/dark_arrow.png";
 import demoralizingShoutIconUrl from "../../assets/art/skills/demoralizing_shout.png";
+import rejuvenationIconUrl from "../../assets/art/skills/rejuvenation.png";
+import rootGraspIconUrl from "../../assets/art/skills/root_grasp.png";
+import poisonBushIconUrl from "../../assets/art/skills/poison_bush.png";
 import type { AbilityId } from "../types";
 
 /** Круглый плейсхолдер пустого слота панели способностей. */
@@ -38,4 +41,7 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   air_pocket: airPocketIconUrl,
   tornado: tornadoIconUrl,
   dark_arrow: darkArrowIconUrl,
+  rejuvenation: rejuvenationIconUrl,
+  root_grasp: rootGraspIconUrl,
+  poison_bush: poisonBushIconUrl,
 };
