@@ -1,10 +1,26 @@
 import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import { aspectDamageStat, formatAffixBonus, type AffixFamily, type StatId } from "../stats/statIds";
 import type { AffixDef, AffixTierRange, RolledAffix } from "./types";
+import {
+  rollTierIndex,
+  sampleAffixQuality,
+  TIER_COUNT,
+  TIER_IDS,
+  type AffixTierId,
+} from "./tiers";
 
-function tiers(scales: [number, number, number][]): AffixTierRange[] {
-  // scales: [minIlvl, min, max]
-  return scales.map(([minIlvl, min, max]) => ({ minIlvl, min, max }));
+/** [min, max] на каждый из 10 тиров F…A5. */
+type TierScales = readonly [number, number][];
+
+function tiers10(scales: TierScales): AffixTierRange[] {
+  if (scales.length !== TIER_COUNT) {
+    throw new Error(`affix tiers: expected ${TIER_COUNT}, got ${scales.length}`);
+  }
+  return scales.map(([min, max], i) => ({
+    id: TIER_IDS[i]!,
+    min,
+    max,
+  }));
 }
 
 function affix(
@@ -12,7 +28,7 @@ function affix(
   statId: StatId,
   family: AffixFamily,
   label: string,
-  scale: [number, number, number][],
+  scale: TierScales,
   weight = 10,
 ): AffixDef {
   return {
@@ -21,112 +37,264 @@ function affix(
     family,
     label,
     allowedAffixSlots: ["prefix", "suffix"],
-    tiers: tiers(scale),
+    tiers: tiers10(scale),
     weight,
   };
 }
 
+/**
+ * Диапазоны: avg растёт; соседнее перекрытие ≤ ~10% ширины;
+ * max(T) < avg(T+2). Кап контента ilvl 20.
+ */
 const CORE: AffixDef[] = [
   affix("max_hp", "maxHp", "defense", "здоровья", [
-    [1, 22, 44],
-    [4, 32, 58],
-    [10, 40, 80],
-    [20, 80, 140],
-    [30, 120, 200],
+    [22, 30],
+    [28, 38],
+    [36, 48],
+    [45, 60],
+    [56, 74],
+    [70, 92],
+    [86, 112],
+    [105, 136],
+    [128, 166],
+    [156, 200],
   ]),
-  affix("hp_regen", "hpRegen", "resource", "здоровья/сек", [
-    [1, 1, 2],
-    [10, 2, 4],
-    [20, 3, 6],
-  ], 6),
+  affix(
+    "hp_regen",
+    "hpRegen",
+    "resource",
+    "здоровья/сек",
+    [
+      [1, 1],
+      [1, 2],
+      [1, 2],
+      [2, 3],
+      [2, 3],
+      [2, 4],
+      [3, 4],
+      [3, 5],
+      [4, 6],
+      [4, 6],
+    ],
+    6,
+  ),
   affix("phys_dr", "physDamageReduction", "defense", "снижения физ. урона", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 5, 9],
-    [30, 6, 12],
+    [2, 3],
+    [2, 4],
+    [3, 5],
+    [4, 6],
+    [5, 7],
+    [6, 8],
+    [7, 9],
+    [8, 10],
+    [9, 12],
+    [10, 13],
   ]),
   affix("magic_res", "magicResist", "defense", "сопротивления магии", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 5, 9],
-    [30, 6, 12],
+    [2, 3],
+    [2, 4],
+    [3, 5],
+    [4, 6],
+    [5, 7],
+    [6, 8],
+    [7, 9],
+    [8, 10],
+    [9, 12],
+    [10, 13],
   ]),
-  affix("evasion", "evasion", "defense", "уклонения", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 4, 8],
-    [30, 5, 10],
-  ], 8),
-  affix("block", "blockChance", "defense", "шанса блока", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 4, 8],
-  ], 5),
-  affix("parry", "parryChance", "defense", "шанса парирования", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 4, 8],
-  ], 5),
+  affix(
+    "evasion",
+    "evasion",
+    "defense",
+    "уклонения",
+    [
+      [2, 3],
+      [2, 4],
+      [3, 4],
+      [3, 5],
+      [4, 6],
+      [5, 7],
+      [6, 8],
+      [7, 9],
+      [8, 11],
+      [9, 12],
+    ],
+    8,
+  ),
+  affix(
+    "block",
+    "blockChance",
+    "defense",
+    "шанса блока",
+    [
+      [2, 3],
+      [2, 4],
+      [3, 4],
+      [3, 5],
+      [4, 6],
+      [5, 7],
+      [6, 8],
+      [7, 9],
+      [8, 10],
+      [9, 12],
+    ],
+    5,
+  ),
+  affix(
+    "parry",
+    "parryChance",
+    "defense",
+    "шанса парирования",
+    [
+      [2, 3],
+      [2, 4],
+      [3, 4],
+      [3, 5],
+      [4, 6],
+      [5, 7],
+      [6, 8],
+      [7, 9],
+      [8, 10],
+      [9, 12],
+    ],
+    5,
+  ),
 
   affix("max_mana", "maxMana", "resource", "маны", [
-    [1, 10, 20],
-    [10, 20, 35],
-    [20, 30, 50],
+    [10, 16],
+    [14, 22],
+    [18, 28],
+    [24, 36],
+    [30, 44],
+    [38, 54],
+    [46, 66],
+    [56, 80],
+    [68, 96],
+    [82, 116],
   ]),
   affix("mana_regen", "manaRegen", "resource", "маны/сек", [
-    [1, 1, 2],
-    [10, 2, 3],
-    [20, 2, 5],
+    [1, 1],
+    [1, 2],
+    [1, 2],
+    [2, 2],
+    [2, 3],
+    [2, 3],
+    [3, 4],
+    [3, 4],
+    [3, 5],
+    [4, 5],
   ]),
-  affix("mana_cost_red", "manaCostReduction", "resource", "снижения стоимости маны", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 4, 8],
-  ], 7),
+  affix(
+    "mana_cost_red",
+    "manaCostReduction",
+    "resource",
+    "снижения стоимости маны",
+    [
+      [2, 3],
+      [2, 4],
+      [3, 5],
+      [4, 6],
+      [5, 7],
+      [5, 8],
+      [6, 9],
+      [7, 10],
+      [8, 11],
+      [9, 12],
+    ],
+    7,
+  ),
 
   affix("weapon_atk", "weaponAttackBonus", "offense", "бонуса атаки оружия", [
-    [1, 3, 6],
-    [4, 4, 8],
-    [10, 4, 9],
-    [20, 7, 14],
-    [30, 10, 18],
+    [3, 5],
+    [4, 6],
+    [5, 8],
+    [6, 9],
+    [7, 11],
+    [8, 13],
+    [10, 15],
+    [12, 18],
+    [14, 20],
+    [16, 24],
   ]),
   affix("ability_dmg", "abilityDamage", "offense", "урона способностей", [
-    [1, 4, 7],
-    [4, 5, 9],
-    [10, 5, 10],
-    [20, 8, 14],
-    [30, 10, 18],
+    [4, 6],
+    [5, 8],
+    [6, 9],
+    [7, 11],
+    [8, 12],
+    [10, 14],
+    [11, 16],
+    [13, 18],
+    [15, 21],
+    [17, 24],
   ]),
   affix("crit_chance", "critChance", "offense", "шанса крита", [
-    [1, 1, 3],
-    [10, 2, 4],
-    [20, 3, 6],
-    [30, 4, 8],
+    [1, 2],
+    [1, 3],
+    [2, 3],
+    [2, 4],
+    [3, 5],
+    [3, 5],
+    [4, 6],
+    [4, 7],
+    [5, 8],
+    [6, 9],
   ]),
-  affix("crit_dmg", "critDamage", "offense", "урона крита", [
-    [1, 5, 10],
-    [10, 8, 15],
-    [20, 10, 20],
-    [30, 12, 25],
-  ], 8),
+  affix(
+    "crit_dmg",
+    "critDamage",
+    "offense",
+    "урона крита",
+    [
+      [5, 9],
+      [7, 12],
+      [8, 14],
+      [10, 16],
+      [12, 18],
+      [14, 22],
+      [16, 24],
+      [18, 28],
+      [20, 32],
+      [24, 36],
+    ],
+    8,
+  ),
 
   affix("attack_speed", "attackSpeed", "tempo", "скорости атаки", [
-    [1, 3, 6],
-    [10, 5, 9],
-    [20, 7, 12],
-    [30, 8, 14],
+    [3, 5],
+    [4, 6],
+    [5, 7],
+    [5, 8],
+    [6, 9],
+    [7, 11],
+    [8, 12],
+    [9, 13],
+    [10, 14],
+    [11, 16],
   ]),
   affix("cast_speed", "castSpeed", "tempo", "скорости каста", [
-    [1, 3, 6],
-    [10, 5, 9],
-    [20, 7, 12],
+    [3, 5],
+    [4, 6],
+    [5, 7],
+    [5, 8],
+    [6, 9],
+    [7, 11],
+    [8, 12],
+    [9, 13],
+    [10, 14],
+    [11, 16],
   ]),
   affix("cdr", "cooldownReduction", "tempo", "скорости перезарядки", [
-    [1, 2, 4],
-    [10, 3, 6],
-    [20, 4, 8],
-    [30, 5, 10],
+    [2, 3],
+    [2, 4],
+    [3, 5],
+    [4, 6],
+    [4, 7],
+    [5, 8],
+    [6, 9],
+    [7, 10],
+    [8, 11],
+    [9, 12],
   ]),
 ];
 
@@ -138,10 +306,16 @@ function aspectAffixes(): AffixDef[] {
       "aspect",
       `урона аспекта (${ASPECT_LABEL[aspect]})`,
       [
-        [1, 4, 8],
-        [10, 6, 12],
-        [20, 8, 16],
-        [30, 10, 20],
+        [4, 7],
+        [5, 9],
+        [6, 10],
+        [7, 12],
+        [8, 14],
+        [10, 16],
+        [11, 18],
+        [13, 20],
+        [15, 23],
+        [17, 26],
       ],
       8,
     ),
@@ -154,22 +328,53 @@ export const AFFIX_BY_ID: Record<string, AffixDef> = Object.fromEntries(
   AFFIX_CATALOG.map((a) => [a.id, a]),
 );
 
+export function tierRangeAt(def: AffixDef, tierIndex: number): AffixTierRange {
+  return def.tiers[Math.max(0, Math.min(TIER_COUNT - 1, tierIndex))]!;
+}
+
+/** @deprecated Используй rollAffix. Оставлен для совместимости вызовов. */
 export function pickTier(def: AffixDef, itemLevel: number): AffixTierRange {
-  let best = def.tiers[0]!;
-  for (const t of def.tiers) {
-    if (itemLevel >= t.minIlvl) best = t;
+  const idx = Math.min(TIER_COUNT - 1, Math.max(0, Math.ceil(itemLevel / 2) - 1));
+  return tierRangeAt(def, idx);
+}
+
+export interface RolledAffixValues {
+  value: number;
+  tierId: AffixTierId;
+  tierMin: number;
+  tierMax: number;
+}
+
+/** Тир (с оффсетом) + значение внутри диапазона (чаще середина). */
+export function rollAffix(def: AffixDef, itemLevel: number, rng: () => number): RolledAffixValues {
+  const tierIndex = rollTierIndex(itemLevel, rng);
+  const t = tierRangeAt(def, tierIndex);
+  if (t.max <= t.min) {
+    return { value: t.min, tierId: t.id, tierMin: t.min, tierMax: t.max };
   }
-  return best;
+  const q = sampleAffixQuality(rng);
+  const value = Math.round(t.min + q * (t.max - t.min));
+  return { value, tierId: t.id, tierMin: t.min, tierMax: t.max };
 }
 
+/** @deprecated → rollAffix */
 export function rollAffixValue(def: AffixDef, itemLevel: number, rng: () => number): number {
-  const t = pickTier(def, itemLevel);
-  if (t.max <= t.min) return t.min;
-  return Math.round(t.min + rng() * (t.max - t.min));
+  return rollAffix(def, itemLevel, rng).value;
 }
 
-/** Текст аффикса на карточке предмета (label берём из каталога, если есть). */
+/**
+ * Текст аффикса: "+52 здоровья [48-66] D"
+ * Старые сейвы без tier* показывают только бонус.
+ */
 export function formatRolledAffix(a: RolledAffix): string {
   const label = AFFIX_BY_ID[a.affixId]?.label ?? a.label;
-  return formatAffixBonus(a.statId, a.value, label);
+  const bonus = formatAffixBonus(a.statId, a.value, label);
+  if (
+    a.tierId !== undefined &&
+    a.tierMin !== undefined &&
+    a.tierMax !== undefined
+  ) {
+    return `${bonus} [${a.tierMin}-${a.tierMax}] ${a.tierId}`;
+  }
+  return bonus;
 }

@@ -3,6 +3,7 @@ import type { AffixFamily, StatId } from "../stats/statIds";
 import type { ItemGrip } from "./grip";
 import type { OffhandTypeId } from "./offhandTypes";
 import type { EquipSlotId } from "./slots";
+import type { AffixTierId } from "./tiers";
 import type { WeaponTypeId } from "./weaponTypes";
 
 export type ItemRarity = "common" | "uncommon" | "magic" | "rare" | "epic";
@@ -10,9 +11,9 @@ export type ItemRarity = "common" | "uncommon" | "magic" | "rare" | "epic";
 /** Position of a rolled mod on the item. v1: any affix may be either. */
 export type AffixSlot = "prefix" | "suffix";
 
+/** Одна ступень тира (F…A5). Порядок в AffixDef.tiers = TIER_IDS. */
 export interface AffixTierRange {
-  /** Inclusive itemLevel lower bound. */
-  minIlvl: number;
+  id: AffixTierId;
   min: number;
   max: number;
 }
@@ -24,6 +25,7 @@ export interface AffixDef {
   label: string;
   /** v1: both. Later can restrict. */
   allowedAffixSlots: AffixSlot[];
+  /** Ровно 10 записей: F…A5. */
   tiers: AffixTierRange[];
   weight?: number;
 }
@@ -34,6 +36,11 @@ export interface RolledAffix {
   value: number;
   affixSlot: AffixSlot;
   label: string;
+  /** Тир ролла; старые сейвы могут не иметь. */
+  tierId?: AffixTierId;
+  /** Диапазон тира на момент ролла (для тултипа [min-max]). */
+  tierMin?: number;
+  tierMax?: number;
 }
 
 /** Implicit свойства оружия (не аффиксы листа). */

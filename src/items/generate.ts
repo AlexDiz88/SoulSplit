@@ -12,7 +12,7 @@ import {
   type RolledAffix,
   type WeaponImplicit,
 } from "./types";
-import { AFFIX_CATALOG, rollAffixValue } from "./affixCatalog";
+import { AFFIX_CATALOG, rollAffix } from "./affixCatalog";
 import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
 import { isAspectItemSlot, type EquipSlotId } from "./slots";
 import {
@@ -188,12 +188,16 @@ function rollAffixes(
     const picked = pickWeighted(candidates, (a) => a.weight ?? 10, rng);
     if (!picked) break;
     usedStats.add(picked.statId);
+    const rolled = rollAffix(picked, itemLevel, rng);
     affixes.push({
       affixId: picked.id,
       statId: picked.statId,
-      value: rollAffixValue(picked, itemLevel, rng),
+      value: rolled.value,
       affixSlot: pickAffixSlot(picked, rng),
       label: picked.label,
+      tierId: rolled.tierId,
+      tierMin: rolled.tierMin,
+      tierMax: rolled.tierMax,
     });
   }
 
@@ -203,12 +207,16 @@ function rollAffixes(
       const aspectAffix = pool.find((a) => a.statId === `aspectDamage:${aspectTag}`);
       if (aspectAffix) {
         if (affixes.length >= count && affixes.length > 0) affixes.pop();
+        const rolled = rollAffix(aspectAffix, itemLevel, rng);
         affixes.push({
           affixId: aspectAffix.id,
           statId: aspectAffix.statId,
-          value: rollAffixValue(aspectAffix, itemLevel, rng),
+          value: rolled.value,
           affixSlot: pickAffixSlot(aspectAffix, rng),
           label: aspectAffix.label,
+          tierId: rolled.tierId,
+          tierMin: rolled.tierMin,
+          tierMax: rolled.tierMax,
         });
       }
     }

@@ -1,5 +1,6 @@
 export * from "./slots";
 export * from "./types";
+export * from "./tiers";
 export * from "./affixCatalog";
 export * from "./slotRules";
 export * from "./generate";
