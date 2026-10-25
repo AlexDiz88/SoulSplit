@@ -149,6 +149,11 @@ export function presentEnemyCard(card: EnemyCard): EnemyCard {
   const kind = getEnemyKind(card.id.replace(/-/g, "_"));
   if (!kind) return card;
   const combatAbilities = (kind.abilities ?? []).join(", ");
+  const designAbilities = card.abilities?.trim();
+  const abilities =
+    designAbilities && designAbilities !== "-" && designAbilities !== "нет"
+      ? designAbilities
+      : combatAbilities || "-";
   return {
     ...card,
     name: kind.name,
@@ -161,7 +166,7 @@ export function presentEnemyCard(card: EnemyCard): EnemyCard {
     spawnRowsLabel: rowsLabel(kind.spawnRows),
     weapon: kind.weapon,
     aspect: kind.aspect,
-    abilities: combatAbilities || card.abilities || "-",
+    abilities,
     portraitUrl: kind.portraitUrl || card.portraitUrl,
   };
 }
@@ -180,6 +185,16 @@ export function loadEnemyCards(): EnemyCard[] {
     return a.name.localeCompare(b.name, "ru");
   });
   return cached;
+}
+
+/** Карточка бестиария по боевому id (`bandit_leader`) или kebab (`bandit-leader`). */
+export function getEnemyCardById(id: string): EnemyCard | undefined {
+  const combatId = id.replace(/-/g, "_");
+  const kebabId = id.replace(/_/g, "-");
+  return loadEnemyCards().find((card) => {
+    const cardCombat = card.id.replace(/-/g, "_");
+    return card.id === id || card.id === kebabId || cardCombat === combatId;
+  });
 }
 
 export function enemyPortraitUrl(card: EnemyCard): string {

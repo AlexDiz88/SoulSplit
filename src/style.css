@@ -26,7 +26,8 @@
   --cur-grab: var(--cur-default);
   --cur-grabbing: var(--cur-default);
   --cur-move: url("../assets/ui/cursors/move.svg") 16 16, move;
-  --cur-help: url("../assets/ui/cursors/help.svg") 4 2, help;
+  /* Подсказки без вопросика: тот же кастомный default */
+  --cur-help: var(--cur-default);
   --cur-ew-resize: url("../assets/ui/cursors/ew-resize.svg") 16 16, ew-resize;
   --cur-ns-resize: url("../assets/ui/cursors/ns-resize.svg") 16 16, ns-resize;
   --cur-nwse-resize: url("../assets/ui/cursors/nwse-resize.svg") 16 16, nwse-resize;

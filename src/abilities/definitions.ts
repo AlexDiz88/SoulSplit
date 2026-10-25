@@ -19,6 +19,7 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "air-pocket": "air_pocket",
   tornado: "tornado",
   "dark-arrow": "dark_arrow",
+  "behind-backs": "behind_backs",
   rejuvenation: "rejuvenation",
   "root-grasp": "root_grasp",
   "poison-bush": "poison_bush",
@@ -233,6 +234,19 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 4,
     effects: { castTime: 2 },
   },
+  behind_backs: {
+    id: "behind_backs",
+    name: "За спинами",
+    aspect: "might",
+    glyph: "🛡",
+    cooldown: 0,
+    damage: 0,
+    manaCost: 0,
+    targetMode: "passive",
+    range: "any",
+    reach: 0,
+    effects: { rearDamageTakenMult: 0.5 },
+  },
   rejuvenation: {
     id: "rejuvenation",
     name: "Омоложение",
@@ -336,6 +350,8 @@ export function describeAbility(def: AbilityDef): string {
       return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
     case "dark_arrow":
       return `Враг готовит стрелу тьмы и выпускает ее в героя. Пока идет подготовка, он не атакует.`;
+    case "behind_backs":
+      return `Пока носитель стоит не в ближнем ряду, любой входящий урон снижается вдвое. В первом ряду прикрытие срывается.`;
     case "rejuvenation":
       return `Сила природы омолаживает вас, восстанавливая ${fmtNum(e.regenPerSec ?? 0)} ед. здоровья в секунду в течение ${fmtNum(e.regenDuration ?? 0)} сек.`;
     case "root_grasp":
@@ -414,6 +430,10 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`${def.damage} урона по герою, если подготовка дошла до конца`);
       lines.push("на время подготовки автоатаки этого врага не проходят, шкала автоатаки стоит");
       lines.push("после завершенной подготовки кулдаун автоатаки начинается с нуля и заполняется заново");
+      break;
+    case "behind_backs":
+      lines.push(`вне 1 ряда: входящий урон ×${fmtNum(e.rearDamageTakenMult ?? 0.5)}`);
+      lines.push("в 1 ряду: входящий урон без снижения");
       break;
     case "rejuvenation":
       lines.push(

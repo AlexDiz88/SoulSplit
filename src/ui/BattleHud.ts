@@ -14,6 +14,7 @@ import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
 import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
+import { enemyAtkRange } from "../combat/enemies";
 import { enemyPortraitUrl, loadEnemyCards, type EnemyCard } from "../combat/enemyCatalog";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
@@ -479,6 +480,9 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     const statusLabel = displayEnemyStatus(card.status);
     status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
     status.textContent = statusLabel;
+    const atkRange = enemyAtkRange(card.atk);
+    const atkLabel =
+      atkRange.min === atkRange.max ? String(atkRange.min) : `${atkRange.min}-${atkRange.max}`;
     bestiaryDetail.append(
       portrait,
       title,
@@ -486,7 +490,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       status,
       statLine("Уровень", String(card.baseLevel)),
       statLine("Здоровье", String(card.hp)),
-      statLine("Урон", String(card.atk)),
+      statLine("Урон", atkLabel),
       statLine("Кулдаун", card.cd),
       statLine("Дистанция", String(card.reach)),
       statLine("Появление", card.spawnRowsLabel),

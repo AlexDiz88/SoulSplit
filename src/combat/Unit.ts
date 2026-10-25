@@ -1,5 +1,6 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { ABILITIES } from "../abilities/definitions";
+import { GRID_SIZE } from "../abilities/shapes";
 import { sharpenPortraitTexture } from "../art/portraits";
 import type { EquipmentMap } from "../items/equipment";
 import { computeHeroSheet, equippedWeapon } from "../items/equipment";
@@ -651,6 +652,23 @@ export class Unit {
     }
   }
 
+  /** Дистанция ряда: 1 - ближний у героя, 4 - дальний. */
+  rowDistance(): number {
+    return GRID_SIZE - this.pos.row;
+  }
+
+  /** Множитель входящего урона от пассивок (например "За спинами"). */
+  incomingDamageMult(): number {
+    let m = 1;
+    for (const id of this.abilities) {
+      const def = ABILITIES[id];
+      const mult = def?.effects?.rearDamageTakenMult;
+      if (mult == null || def.targetMode !== "passive") continue;
+      if (this.rowDistance() > 1) m *= mult;
+    }
+    return m;
+  }
+
   applyDamage(
     raw: number,
     opts?: { channel?: DamageChannel },
@@ -663,7 +681,7 @@ export class Unit {
     }
     const channel = opts?.channel ?? "physical";
     const wasCasting = this.cast !== null;
-    let dmg = Math.round(mitigateIncoming(raw, this.sheet, channel));
+    let dmg = Math.round(mitigateIncoming(raw, this.sheet, channel) * this.incomingDamageMult());
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
     if (shield) {

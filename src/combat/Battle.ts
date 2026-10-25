@@ -31,6 +31,7 @@ import { CELL, GAP } from "./board";
 import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
+import { ENEMY_CRIT_DAMAGE, enemyAutoAttackDamage, rollEnemyCrit } from "./enemies";
 import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
 
 type AutoHand = "mainhand" | "offhand";
@@ -1193,7 +1194,7 @@ export class Battle {
     for (const id of u.abilities) {
       if ((u.abilityCd[id] ?? 0) > 0) continue;
       const def = ABILITIES[id];
-      if (!def) continue;
+      if (!def || def.targetMode === "passive") continue;
       u.abilityCd[id] = def.cooldown;
       const castTime = def.effects?.castTime ?? 0;
       if (castTime <= 0) {
@@ -1341,7 +1342,10 @@ export class Battle {
   /** Урон/DoT-пакет способности с плоским ability% + aspect%. */
   private scaleAbilityPacket(attacker: Unit, aspect: Aspect, base: number): { dmg: number; crit: boolean } {
     if (!attacker.sheet) {
-      return { dmg: Math.round(base * attacker.atkMultiplier()), crit: false };
+      const crit = rollEnemyCrit();
+      let dmg = base * attacker.atkMultiplier();
+      if (crit) dmg *= ENEMY_CRIT_DAMAGE / 100;
+      return { dmg: Math.max(0, Math.round(dmg)), crit };
     }
     const crit = rollCrit(attacker.sheet);
     const dmg = abilityPacketDamage(base, attacker.sheet, aspect, attacker.atkMultiplier(), crit);
@@ -1359,7 +1363,9 @@ export class Battle {
     }
     if (dealt > 0) {
       const label = crit ? `${dealt}!` : `${dealt}`;
-      this.vfx.floatingText(target.center.x, target.center.y - 10, label, crit ? 0xffb060 : 0xffe6a0);
+      this.vfx.floatingText(target.center.x, target.center.y - 10, label, crit ? 0xffb060 : 0xffe6a0, {
+        crit,
+      });
     }
     if (!target.alive) this.vfx.floatingText(target.center.x, target.center.y, "ПАЛ", 0xc45a4a);
     if (castBroken) this.showCastInterrupted(target);
@@ -1425,7 +1431,8 @@ export class Battle {
         dmg = Math.max(0, Math.round(dmg * OFFHAND_WEAPON_DAMAGE_MULT));
       }
     } else {
-      dmg = Math.round(attacker.stats.atk * attacker.atkMultiplier());
+      crit = rollEnemyCrit();
+      dmg = enemyAutoAttackDamage(attacker.stats.atk, attacker.atkMultiplier(), crit);
     }
 
     const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
@@ -1435,7 +1442,9 @@ export class Battle {
     }
     if (dealt > 0) {
       const label = crit ? `${dealt}!` : `${dealt}`;
-      this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4);
+      this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4, {
+        crit,
+      });
     }
     if (castBroken) this.showCastInterrupted(target);
   }

@@ -40,11 +40,12 @@ export type AbilityId =
   | "air_pocket"
   | "tornado"
   | "dark_arrow"
+  | "behind_backs"
   | "rejuvenation"
   | "root_grasp"
   | "poison_bush";
 
-/** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток; all_enemies - мгновенно по всем. */
+/** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток; all_enemies - мгновенно по всем; passive - не кастуется. */
 export type TargetMode =
   | "enemy"
   | "ally"
@@ -54,7 +55,8 @@ export type TargetMode =
   | "enemy_blast"
   | "zone"
   | "cell"
-  | "all_enemies";
+  | "all_enemies"
+  | "passive";
 
 export interface GridPos {
   col: number;
@@ -129,6 +131,11 @@ export interface AbilityEffects {
   poisonDuration?: number;
   regenPerSec?: number;
   regenDuration?: number;
+  /**
+   * Множитель входящего урона, пока юнит не в ближнем ряду (дистанция > 1).
+   * 0.5 → половина урона. В 1 ряду не применяется.
+   */
+  rearDamageTakenMult?: number;
 }
 
 export interface AbilityDef {

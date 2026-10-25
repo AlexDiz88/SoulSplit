@@ -1,6 +1,8 @@
+import { ASPECT_HEX } from "../abilities/definitions";
 import { createWorldMapBackgroundImg } from "../art/menuBackground";
 import { tryResolveRegionArtUrl } from "../art/regionArt";
-import { enemyLevelRangeForIds, getEnemyKind } from "../combat/enemies";
+import { getEnemyCardById } from "../combat/enemyCatalog";
+import { enemyLevelRangeForIds, getEnemyKind, type EnemyKind } from "../combat/enemies";
 import type { GameState, ZoneId } from "../meta/gameState";
 import {
   encounterEnemyIds,
@@ -12,6 +14,8 @@ import {
 import { coverLayout, projectLocation } from "./hubLocations";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
+
+const HOVER_TOOLTIP_MQ = "(hover: hover) and (pointer: fine)";
 
 export interface WorldMapApi {
   show(state: GameState): void;
@@ -28,12 +32,62 @@ export interface WorldMapHandlers {
 
 function formatEnemyLevels(levels: [number, number]): string {
   const [lvlMin, lvlMax] = levels;
-  return lvlMin === lvlMax ? `уровень ${lvlMin}` : `уровень ${lvlMin}-${lvlMax}`;
+  return lvlMin === lvlMax ? `уровни ${lvlMin}` : `уровни ${lvlMin}-${lvlMax}`;
 }
 
-function formatPointLevelBadge(levels: [number, number]): string {
-  const [lvlMin, lvlMax] = levels;
-  return lvlMin === lvlMax ? `${lvlMin}` : `${lvlMin}-${lvlMax}`;
+/** Средний уровень угрозы локации (середина бюджета пачки). */
+function averageThreat(budget: [number, number]): number {
+  return Math.round((budget[0] + budget[1]) / 2);
+}
+
+const THREAT_TOOLTIP =
+  "Уровень опасности локации. Чем выше число, тем тяжелее схватка: больше и/или сильнее враги. Показано усредненное значение.";
+
+function createThreatIcon(): SVGSVGElement {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "wm-zone-threat-icon");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute(
+    "d",
+    "M8 1.2c-.9 1.4-2.6 2.3-4.4 2.5.2 3.4 1.6 5.8 4.4 7.6 2.8-1.8 4.2-4.2 4.4-7.6C10.6 3.5 8.9 2.6 8 1.2zm0 3.1c.7 0 1.3.6 1.3 1.3S8.7 6.9 8 6.9 6.7 6.3 6.7 5.6 7.3 4.3 8 4.3zm-2.1 4.2c.5.4 1.2.7 2.1.7s1.6-.3 2.1-.7c-.2.9-.8 1.6-2.1 2.1-1.3-.5-1.9-1.2-2.1-2.1z",
+  );
+  path.setAttribute("fill", "currentColor");
+  svg.append(path);
+  return svg;
+}
+
+/** Корона / рогатая голова для бейджа босса. */
+function createBossIcon(): SVGSVGElement {
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("class", "wm-zone-enemy-boss-icon");
+  svg.setAttribute("viewBox", "0 0 16 16");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("focusable", "false");
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute(
+    "d",
+    "M3.2 13.2h9.6v1.2H3.2zm.6-1.6 1.1-5.2 2.1 2.4L8 4.4l1 4.4 2.1-2.4 1.1 5.2H3.8zM8 2.2l1.1 1.5L8 5.1 6.9 3.7 8 2.2zm-4.4 1.6.9 1.6-.4 1.8-1.6-1.2 1.1-2.2zm8.8 0 1.1 2.2-1.6 1.2-.4-1.8.9-1.6z",
+  );
+  path.setAttribute("fill", "currentColor");
+  svg.append(path);
+  return svg;
+}
+
+function canHoverTooltip(): boolean {
+  return window.matchMedia(HOVER_TOOLTIP_MQ).matches;
+}
+
+function fillEnemyUnitTooltip(host: HTMLElement, kind: EnemyKind): void {
+  const card = getEnemyCardById(kind.id);
+  const description = card?.description?.trim() || kind.name;
+
+  host.replaceChildren();
+  host.className = `skill-tooltip wm-zone-enemy-tip aspect-${kind.aspect}`;
+  host.style.setProperty("--aspect-color", ASPECT_HEX[kind.aspect]);
+  host.append(el("div", "tt-desc", description));
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -129,11 +183,23 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   const questList = el("ul", "wm-zone-quest-list");
   questsBlock.append(questList);
 
-  const enemiesBlock = el("section", "wm-zone-block");
+  const enemiesBlock = el("section", "wm-zone-block wm-zone-enemies-block");
   const enemiesHead = el("div", "wm-zone-enemies-head");
   enemiesHead.append(el("h3", "wm-zone-block-title", "Возможные враги"));
+  const enemiesMeta = el("div", "wm-zone-enemies-meta");
+  const threatBtn = el("button", "wm-zone-threat");
+  threatBtn.type = "button";
+  threatBtn.setAttribute("aria-label", "Угроза локации");
+  const threatValueEl = el("span", "wm-zone-threat-value");
+  const threatTip = el("span", "wm-zone-threat-tip");
+  threatTip.id = "wm-zone-threat-tip";
+  const tipBody = el("span", "wm-zone-threat-tip-body", THREAT_TOOLTIP);
+  threatTip.append(el("span", "wm-zone-threat-tip-title", "Угроза"), tipBody);
+  threatBtn.setAttribute("aria-describedby", threatTip.id);
+  threatBtn.append(threatValueEl, createThreatIcon(), threatTip);
   const enemyLevelEl = el("span", "wm-zone-enemy-levels");
-  enemiesHead.append(enemyLevelEl);
+  enemiesMeta.append(threatBtn, enemyLevelEl);
+  enemiesHead.append(enemiesMeta);
   const enemyRow = el("div", "wm-zone-enemy-row");
   enemiesBlock.append(enemiesHead, enemyRow);
 
@@ -153,29 +219,107 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   overlay.append(panel);
   root.append(overlay);
 
+  const enemyTip = el("div", "skill-tooltip wm-zone-enemy-tip");
+  enemyTip.hidden = true;
+
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
-  hud.append(root);
+  hud.append(root, enemyTip);
 
   let openZoneId: ZoneId | null = null;
   let openPointId: string | null = null;
   let panelClosing = false;
 
+  const hideEnemyTip = (): void => {
+    enemyTip.hidden = true;
+  };
+
+  const placeEnemyTip = (anchor: HTMLElement): void => {
+    const rect = anchor.getBoundingClientRect();
+    const tipRect = enemyTip.getBoundingClientRect();
+    let left = rect.left + rect.width / 2 - tipRect.width / 2;
+    left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
+    let top = rect.top - tipRect.height - 10;
+    if (top < 8) top = rect.bottom + 10;
+    enemyTip.style.left = `${left}px`;
+    enemyTip.style.top = `${Math.max(8, top)}px`;
+  };
+
+  const showEnemyTip = (anchor: HTMLElement, kind: EnemyKind): void => {
+    fillEnemyUnitTooltip(enemyTip, kind);
+    enemyTip.hidden = false;
+    placeEnemyTip(anchor);
+  };
+
+  const bindEnemyPortraitTip = (anchor: HTMLElement, kind: EnemyKind): void => {
+    anchor.addEventListener("pointerenter", () => {
+      if (!canHoverTooltip()) return;
+      showEnemyTip(anchor, kind);
+    });
+    anchor.addEventListener("pointerleave", () => {
+      if (!canHoverTooltip()) return;
+      hideEnemyTip();
+    });
+    anchor.addEventListener("focus", () => {
+      if (!canHoverTooltip()) return;
+      showEnemyTip(anchor, kind);
+    });
+    anchor.addEventListener("blur", () => {
+      if (!canHoverTooltip()) return;
+      hideEnemyTip();
+    });
+  };
+
   const fillPointDetails = (point: ZonePointDef): void => {
     openPointId = point.id;
+    hideEnemyTip();
     const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
+    const threat = averageThreat(point.encounter.threatBudget);
     enemyLevelEl.textContent = formatEnemyLevels(levelRange);
+    threatValueEl.textContent = String(threat);
+    threatBtn.setAttribute("aria-label", `Угроза ${threat}`);
 
     enemyRow.replaceChildren();
     for (const id of encounterEnemyIds(point)) {
       const kind = getEnemyKind(id);
       if (!kind) continue;
       const chip = el("div", "wm-zone-enemy");
-      chip.title = kind.name;
+      const portrait = el("div", "wm-zone-enemy-portrait");
+      portrait.tabIndex = 0;
+      portrait.setAttribute("role", "img");
+      portrait.setAttribute("aria-label", kind.name);
       const img = el("img", "wm-zone-enemy-img");
       img.src = kind.portraitUrl;
-      img.alt = kind.name;
+      img.alt = "";
       img.draggable = false;
+      portrait.append(img);
+
+      if (kind.boss) {
+        const badge = el("button", "wm-zone-enemy-boss");
+        badge.type = "button";
+        badge.setAttribute("aria-label", "Босс");
+        const bossTip = el("span", "wm-zone-enemy-boss-tip", "Босс");
+        badge.append(createBossIcon(), bossTip);
+        badge.addEventListener("pointerenter", () => {
+          hideEnemyTip();
+        });
+        badge.addEventListener("pointerleave", (ev) => {
+          const next = ev.relatedTarget;
+          if (next instanceof Node && portrait.contains(next) && canHoverTooltip()) {
+            showEnemyTip(portrait, kind);
+          }
+        });
+        badge.addEventListener("focus", () => {
+          hideEnemyTip();
+        });
+        badge.addEventListener("blur", () => {
+          if (document.activeElement === portrait && canHoverTooltip()) {
+            showEnemyTip(portrait, kind);
+          }
+        });
+        portrait.append(badge);
+      }
+
       const nameEl = el("span", "wm-zone-enemy-name");
       // Перенос только после "-" (например "Гоблин-копейщик").
       const parts = kind.name.split("-");
@@ -186,7 +330,8 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         }
         nameEl.append(part);
       });
-      chip.append(img, nameEl);
+      chip.append(portrait, nameEl);
+      bindEnemyPortraitTip(portrait, kind);
       enemyRow.append(chip);
     }
 
@@ -222,15 +367,9 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       btn.type = "button";
       btn.dataset.pointId = point.id;
       btn.setAttribute("role", "tab");
-      const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
       const nameSpan = el("span", "wm-zone-point-name", point.name);
-      const lvlSpan = el(
-        "span",
-        "wm-zone-point-lvl",
-        formatPointLevelBadge(levelRange),
-      );
-      btn.append(nameSpan, lvlSpan);
-      btn.title = `${point.name} - ${formatEnemyLevels(levelRange)}`;
+      btn.append(nameSpan);
+      btn.title = point.name;
       btn.addEventListener("click", () => {
         if (openZoneId !== zoneId) return;
         fillPointDetails(point);
@@ -273,6 +412,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       return;
     }
     panelClosing = true;
+    hideEnemyTip();
     overlay.classList.remove("is-open");
     const finish = (): void => {
       overlay.hidden = true;
@@ -416,6 +556,8 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       resizeObs.disconnect();
       bgImg.removeEventListener("load", onBgLoad);
       window.removeEventListener("keydown", onKeyDown);
+      hideEnemyTip();
+      enemyTip.remove();
       root.remove();
     },
   };

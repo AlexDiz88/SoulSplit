@@ -100,12 +100,12 @@
 
 .wm-zone-panel {
   box-sizing: border-box;
-  width: min(720px, 100%);
-  max-height: min(900px, calc(100vh - 40px));
+  width: min(880px, 100%);
+  max-height: min(1040px, calc(100vh - 20px));
   overflow: auto;
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 16px;
   padding: 22px;
   border: 1px solid var(--theme-border, #6a5a3a);
   border-radius: 6px;
@@ -278,23 +278,30 @@
   white-space: nowrap;
 }
 
-.wm-zone-point-lvl {
-  font-size: 0.88rem;
-  font-weight: 700;
-  color: var(--theme-corona, #e8d9a8);
-  opacity: 0.9;
-  white-space: nowrap;
-}
-
-.wm-zone-point-btn:not(.is-active) .wm-zone-point-lvl {
-  color: var(--muted, #b8b2a4);
+.wm-zone-enemies-block {
+  gap: 8px;
+  padding-top: 6px;
+  padding-bottom: 12px;
 }
 
 .wm-zone-enemies-head {
   display: flex;
-  align-items: baseline;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 10px;
+  min-height: 0;
+}
+
+.wm-zone-enemies-head .wm-zone-block-title {
+  padding-top: 10px;
+}
+
+.wm-zone-enemies-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+  margin-top: -4px;
 }
 
 .wm-zone-enemy-levels {
@@ -304,18 +311,114 @@
   white-space: nowrap;
 }
 
+.wm-zone-threat {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 1px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--theme-corona, #e8d9a8);
+  font: inherit;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: var(--cur-default);
+}
+
+.wm-zone-threat:hover,
+.wm-zone-threat:focus-visible {
+  outline: none;
+  background: rgba(196, 163, 90, 0.12);
+}
+
+.wm-zone-threat-icon {
+  width: 45px;
+  height: 45px;
+  margin-left: -5px;
+  margin-top: 5px;
+  flex: 0 0 auto;
+  display: block;
+  color: #c45a4a;
+}
+
+.wm-zone-threat-value {
+  min-width: 0;
+  text-align: right;
+  line-height: 1;
+}
+
+.wm-zone-threat-tip {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + 8px);
+  z-index: 8;
+  width: max-content;
+  max-width: 260px;
+  padding: 10px 12px;
+  border: 1px solid rgba(196, 163, 90, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #1a1c1e, #0e1012);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+  color: var(--theme-mist, #e8e2d4);
+  font-size: 0.88rem;
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: 0;
+  text-align: left;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+}
+
+.wm-zone-threat:hover .wm-zone-threat-tip,
+.wm-zone-threat:focus-visible .wm-zone-threat-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wm-zone-threat-tip-title {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 700;
+  color: var(--theme-corona, #e8d9a8);
+}
+
+.wm-zone-threat-tip-body {
+  display: block;
+}
+
 .wm-zone-enemy-row {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-wrap: nowrap;
+  gap: 20px;
 }
 
 .wm-zone-enemy {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  width: 128px;
+  gap: 6px;
+  width: 112px;
+  flex: 0 0 112px;
+}
+
+.wm-zone-enemy-portrait {
+  position: relative;
+  width: 112px;
+  height: 112px;
+  outline: none;
+  cursor: var(--cur-default);
+}
+
+.wm-zone-enemy-portrait:focus-visible {
+  box-shadow: 0 0 0 2px rgba(196, 163, 90, 0.85);
+  border-radius: 3px;
 }
 
 .wm-zone-enemy-img {
@@ -325,14 +428,96 @@
   border: 1px solid rgba(106, 90, 58, 0.75);
   border-radius: 3px;
   background: #111213;
+  display: block;
+  pointer-events: none;
+}
+
+.wm-zone-enemy-boss {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  padding: 0;
+  border: 1px solid rgba(196, 163, 90, 0.85);
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, rgba(72, 48, 18, 0.95), rgba(28, 18, 10, 0.96)),
+    #1a1208;
+  color: #e8c76a;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  cursor: var(--cur-default);
+}
+
+.wm-zone-enemy-boss:hover,
+.wm-zone-enemy-boss:focus-visible {
+  outline: none;
+  color: #f3df9a;
+  border-color: #f0d78a;
+}
+
+.wm-zone-enemy-boss-icon {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+.wm-zone-enemy-boss-tip {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 8;
+  padding: 5px 8px;
+  border: 1px solid rgba(196, 163, 90, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #1a1c1e, #0e1012);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  color: var(--theme-corona, #e8d9a8);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.12s ease,
+    visibility 0.12s ease;
+}
+
+.wm-zone-enemy-boss:hover .wm-zone-enemy-boss-tip,
+.wm-zone-enemy-boss:focus-visible .wm-zone-enemy-boss-tip {
+  opacity: 1;
+  visibility: visible;
+}
+
+.wm-zone-enemy-tip {
+  z-index: 70;
+  max-width: 340px;
+  min-width: 200px;
+}
+
+.wm-zone-enemy-tip .tt-desc {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.45;
+  color: var(--theme-mist, #e8e2d4);
 }
 
 .wm-zone-enemy-name {
+  box-sizing: border-box;
+  height: 2.5em;
   font-size: 0.92rem;
   line-height: 1.25;
   text-align: center;
   color: var(--muted, #b8b2a4);
   max-width: 100%;
+  overflow: hidden;
   overflow-wrap: normal;
   word-break: normal;
   hyphens: manual;

@@ -257,20 +257,47 @@ export class VfxManager {
     }
   }
 
-  floatingText(x: number, y: number, text: string, color: number): void {
+  floatingText(
+    x: number,
+    y: number,
+    text: string,
+    color: number,
+    opts?: { crit?: boolean },
+  ): void {
+    const crit = opts?.crit ?? false;
     const label = new Text({
       text,
       style: {
         fontFamily: "Exo 2, sans-serif",
-        fontSize: 18,
+        fontSize: crit ? 32 : 18,
         fontWeight: "800",
         fill: color,
-        stroke: { color: 0x000000, width: 3 },
+        stroke: { color: 0x000000, width: crit ? 5 : 3 },
       },
     });
     label.anchor.set(0.5);
     label.position.set(x, y);
     this.layer.addChild(label);
+
+    if (crit) {
+      // Ударный поп: крупный старт → резкий settle, быстрый подъём.
+      label.scale.set(2.25);
+      void this.tweens
+        .to(
+          0.62,
+          (t) => {
+            const punchT = Math.min(1, t / 0.16);
+            const punch = easeOutCubic(punchT);
+            label.scale.set(2.25 + (1.22 - 2.25) * punch);
+            label.y = y - 62 * easeOutCubic(t);
+            label.alpha = t < 0.48 ? 1 : 1 - (t - 0.48) / 0.52;
+          },
+          { ease: (t) => t },
+        )
+        .then(() => label.destroy());
+      return;
+    }
+
     void this.tweens
       .to(0.8, (t) => {
         label.y = y - 40 * t;

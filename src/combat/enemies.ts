@@ -1,5 +1,6 @@
 import { GRID_SIZE } from "../abilities/shapes";
 import { PORTRAIT_URLS } from "../art/portraits";
+import { rollWeaponDamage } from "../stats/formulas";
 import type { AbilityId, Aspect, WeaponKind } from "../types";
 
 export const ENEMY_LEVEL_MIN = 1;
@@ -11,6 +12,12 @@ export const ENEMY_LEVEL_OFFSET_MAX = 2;
 export const ENEMY_HP_PER_LEVEL = 0.12;
 /** Доля атаки за каждый уровень относительно baseLevel. */
 export const ENEMY_ATK_PER_LEVEL = 0.1;
+/** Разброс автоатаки вокруг `atk` (±доля, минимум ±1). Среднее ≈ atk. */
+export const ENEMY_ATK_SPREAD_FRAC = 0.1;
+/** Базовый шанс крита врагов, %. */
+export const ENEMY_CRIT_CHANCE = 2;
+/** Урон крита врагов, % от базового (150 = x1.5). */
+export const ENEMY_CRIT_DAMAGE = 150;
 
 export interface EnemyKind {
   id: string;
@@ -27,6 +34,8 @@ export interface EnemyKind {
   threat?: number;
   /** Множитель угрозы (босс / мини-босс), напр. 1.5 у главаря. */
   threatMult?: number;
+  /** Босс локации: корона на портрете в окне региона. */
+  boss?: boolean;
   /** Дистанция в рядах: 1 - ближний ряд у героя. */
   reach: number;
   /**
@@ -168,7 +177,7 @@ export const ENEMY_KINDS: EnemyKind[] = [
     reach: 1,
     spawnRows: [1],
     hp: 78,
-    atk: 10,
+    atk: 11,
     cd: 1.9,
     portraitUrl: PORTRAIT_URLS.bandit_ravager,
   },
@@ -180,12 +189,14 @@ export const ENEMY_KINDS: EnemyKind[] = [
     weapon: "melee",
     baseLevel: 3,
     threatMult: 1.5,
+    boss: true,
     reach: 1,
     spawnRows: [4],
     hp: 240,
     atk: 18,
     cd: 2.6,
     portraitUrl: PORTRAIT_URLS.bandit_leader,
+    abilities: ["behind_backs"],
   },
   {
     id: "wandering",
@@ -247,6 +258,30 @@ export const ENEMY_KINDS: EnemyKind[] = [
 
 export function getEnemyKind(id: string): EnemyKind | undefined {
   return ENEMY_KINDS.find((k) => k.id === id);
+}
+
+/** Диапазон автоатаки: `atk` остаётся средним (включительный ±spread). */
+export function enemyAtkRange(atk: number): { min: number; max: number } {
+  const center = Math.max(1, Math.round(atk));
+  const spread = Math.max(1, Math.round(center * ENEMY_ATK_SPREAD_FRAC));
+  return { min: Math.max(1, center - spread), max: center + spread };
+}
+
+export function rollEnemyCrit(rng: () => number = Math.random): boolean {
+  return rng() * 100 < ENEMY_CRIT_CHANCE;
+}
+
+/** Автоатака врага: разброс вокруг atk + опциональный крит. */
+export function enemyAutoAttackDamage(
+  atk: number,
+  atkBuffMult: number,
+  crit: boolean,
+  rng: () => number = Math.random,
+): number {
+  const { min, max } = enemyAtkRange(atk);
+  let dmg = rollWeaponDamage(min, max, rng) * atkBuffMult;
+  if (crit) dmg *= ENEMY_CRIT_DAMAGE / 100;
+  return Math.max(0, Math.round(dmg));
 }
 
 export function rowsLabel(rows: number[]): string {
