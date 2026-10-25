@@ -35,6 +35,23 @@
               <h2 id="bestiary-title">Бестиарий</h2>
               <button type="button" id="bestiary-close" class="ctrl-btn">Закрыть</button>
             </div>
+            <div class="bestiary-filters" role="search" aria-label="Фильтры бестиария">
+              <label class="bestiary-filter">
+                <span>Группа</span>
+                <select id="bestiary-filter-group" class="bestiary-filter-select"></select>
+              </label>
+              <label class="bestiary-filter">
+                <span>Уровень</span>
+                <select id="bestiary-filter-level" class="bestiary-filter-select"></select>
+              </label>
+              <label class="bestiary-filter">
+                <span>Регион</span>
+                <select id="bestiary-filter-region" class="bestiary-filter-select"></select>
+              </label>
+              <button type="button" id="bestiary-filter-reset" class="ctrl-btn bestiary-filter-reset">
+                Сброс фильтров
+              </button>
+            </div>
             <div class="bestiary-body">
               <div id="bestiary-list" class="bestiary-list"></div>
               <aside id="bestiary-detail" class="bestiary-detail">Выберите врага, чтобы увидеть характеристики.</aside>

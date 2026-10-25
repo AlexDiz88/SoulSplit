@@ -100,6 +100,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const bestiaryList = document.getElementById("bestiary-list")!;
   const bestiaryDetail = document.getElementById("bestiary-detail")!;
   const bestiaryClose = document.getElementById("bestiary-close")!;
+  const bestiaryFilterGroup = document.getElementById("bestiary-filter-group") as HTMLSelectElement;
+  const bestiaryFilterLevel = document.getElementById("bestiary-filter-level") as HTMLSelectElement;
+  const bestiaryFilterRegion = document.getElementById("bestiary-filter-region") as HTMLSelectElement;
+  const bestiaryFilterReset = document.getElementById("bestiary-filter-reset")!;
 
   let toastTimer = 0;
   let startHandler: (() => void) | null = null;
@@ -517,9 +521,58 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     bestiaryDetail.textContent = "Выберите врага, чтобы увидеть характеристики.";
   };
 
+  const fillSelectOptions = (
+    select: HTMLSelectElement,
+    values: string[],
+    allLabel: string,
+  ): void => {
+    const prev = select.value;
+    select.replaceChildren();
+    const all = document.createElement("option");
+    all.value = "";
+    all.textContent = allLabel;
+    select.append(all);
+    for (const value of values) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = value;
+      select.append(opt);
+    }
+    select.value = values.includes(prev) ? prev : "";
+  };
+
+  const syncBestiaryFilterOptions = (): void => {
+    const cards = loadEnemyCards();
+    const groups = [...new Set(cards.map((c) => c.group).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, "ru"),
+    );
+    const levels = [...new Set(cards.map((c) => String(c.baseLevel)))].sort(
+      (a, b) => Number(a) - Number(b),
+    );
+    const regions = [...new Set(cards.map((c) => c.region).filter(Boolean))].sort((a, b) =>
+      a.localeCompare(b, "ru"),
+    );
+    fillSelectOptions(bestiaryFilterGroup, groups, "Все");
+    fillSelectOptions(bestiaryFilterLevel, levels, "Все");
+    fillSelectOptions(bestiaryFilterRegion, regions, "Все");
+  };
+
+  const filteredEnemyCards = (): EnemyCard[] => {
+    const group = bestiaryFilterGroup.value;
+    const level = bestiaryFilterLevel.value;
+    const region = bestiaryFilterRegion.value;
+    return loadEnemyCards().filter((card) => {
+      if (group && card.group !== group) return false;
+      if (level && String(card.baseLevel) !== level) return false;
+      if (region && card.region !== region) return false;
+      return true;
+    });
+  };
+
   const fillBestiary = (): void => {
+    syncBestiaryFilterOptions();
     bestiaryList.replaceChildren();
-    for (const card of loadEnemyCards()) {
+    for (const card of filteredEnemyCards()) {
       const row = document.createElement("button");
       row.type = "button";
       row.className = "bestiary-row";
@@ -551,6 +604,20 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     }
     clearDetail();
   };
+
+  const onBestiaryFilterChange = (): void => {
+    fillBestiary();
+  };
+
+  bestiaryFilterGroup.addEventListener("change", onBestiaryFilterChange);
+  bestiaryFilterLevel.addEventListener("change", onBestiaryFilterChange);
+  bestiaryFilterRegion.addEventListener("change", onBestiaryFilterChange);
+  bestiaryFilterReset.addEventListener("click", () => {
+    bestiaryFilterGroup.value = "";
+    bestiaryFilterLevel.value = "";
+    bestiaryFilterRegion.value = "";
+    fillBestiary();
+  });
 
   menuBtn.addEventListener("click", () => {
     if (sideMenu.hidden) openMenu();
