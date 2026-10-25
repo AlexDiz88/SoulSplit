@@ -1,9 +1,12 @@
 import type { EquipSlotId } from "../items/slots";
-import type { ItemRarity } from "../items/types";
+import type { ItemDef, ItemRarity } from "../items/types";
+import type { WeaponKind } from "../types";
 
 /**
- * Иконки предметов: `assets/art/items/{slotAlias}_{rarityAlias}_{n}.png`
+ * Иконки предметов: `assets/art/items/{slotOrWeapon}_{rarity}_{n}.png`
  * Пример: boots_magic_01.png -> слот feet, редкость magic.
+ * Оружие: sword_common_01.png, 2H_axe_uncommon_02.png -> слот mainhand.
+ * Двуручные (мечи/булавы/топоры): префикс `2H_*`. Лук и посох без `2H` (всегда двуручные).
  *
  * `starter_*.png` - фиксированные иконки создания персонажа.
  * Лежат в той же папке, но не попадают в пул `pickItemIconUrl`.
@@ -47,6 +50,37 @@ const SLOT_FILE_ALIASES: Record<string, EquipSlotId | "ring"> = {
 };
 
 /**
+ * Типы оружия в имени файла -> слот mainhand.
+ * Префикс может быть составным (`2H_axe`). Любой `2H_*` тоже оружие
+ * (двуручные мечи/булавы/топоры; лук и посох пишутся без `2H`).
+ */
+const WEAPON_ART_ALIASES: Record<string, true> = {
+  sword: true,
+  dagger: true,
+  mace: true,
+  axe: true,
+  "2h_axe": true,
+  "2h_sword": true,
+  "2h_mace": true,
+  bow: true,
+  staff: true,
+  wand: true,
+  spear: true,
+  lance: true,
+};
+
+/**
+ * Предпочтительный арт по боевому WeaponKind (лейбл генерации:
+ * melee=Меч, staff=Жезл, spear=Копьё, bow=Лук).
+ */
+const WEAPON_KIND_PREFERRED_ART: Record<WeaponKind, readonly string[]> = {
+  melee: ["sword"],
+  spear: ["spear", "lance"],
+  bow: ["bow"],
+  staff: ["wand", "staff"],
+};
+
+/**
  * Алиасы редкости в имени файла -> ItemRarity.
  * magic/blue = магический, rare/yellow = редкий.
  */
@@ -69,6 +103,18 @@ interface ItemIconEntry {
   url: string;
   slotKey: EquipSlotId | "ring";
   rarity: ItemRarity;
+  /** Stem типа оружия из имени файла (`sword`, `2h_axe`), если это оружие. */
+  weaponArt?: string;
+}
+
+function resolvePrefix(prefix: string): { slotKey: EquipSlotId | "ring"; weaponArt?: string } | null {
+  const key = prefix.toLowerCase();
+  const slot = SLOT_FILE_ALIASES[key];
+  if (slot) return { slotKey: slot };
+  if (WEAPON_ART_ALIASES[key]) return { slotKey: "mainhand", weaponArt: key };
+  // Будущие двуручные: 2H_sword / 2H_mace / ... (кроме лука и посоха).
+  if (/^2h_[a-z][a-z0-9]*$/.test(key)) return { slotKey: "mainhand", weaponArt: key };
+  return null;
 }
 
 function parseIconPath(modulePath: string, url: string): ItemIconEntry | null {
@@ -78,14 +124,33 @@ function parseIconPath(modulePath: string, url: string): ItemIconEntry | null {
   // starter_* - фиксированные иконки создания персонажа, не в пуле генерации.
   if (base.toLowerCase().startsWith("starter_")) return null;
 
-  const parts = base.split("_");
+  const parts = base.toLowerCase().split("_");
   if (parts.length < 2) return null;
 
-  const slotKey = SLOT_FILE_ALIASES[parts[0]!.toLowerCase()];
-  const rarity = RARITY_FILE_ALIASES[parts[1]!.toLowerCase()];
-  if (!slotKey || !rarity) return null;
+  // Редкость может быть не вторым токеном: 2H_axe_common_01.
+  let rarityIdx = -1;
+  for (let i = 1; i < parts.length; i++) {
+    if (RARITY_FILE_ALIASES[parts[i]!]) {
+      rarityIdx = i;
+      break;
+    }
+  }
+  if (rarityIdx < 1) return null;
 
-  return { id: base, url, slotKey, rarity };
+  const prefix = parts.slice(0, rarityIdx).join("_");
+  const rarity = RARITY_FILE_ALIASES[parts[rarityIdx]!];
+  if (!rarity) return null;
+
+  const resolved = resolvePrefix(prefix);
+  if (!resolved) return null;
+
+  return {
+    id: base,
+    url,
+    slotKey: resolved.slotKey,
+    rarity,
+    weaponArt: resolved.weaponArt,
+  };
 }
 
 const CATALOG: ItemIconEntry[] = [];
@@ -96,7 +161,9 @@ for (const [path, mod] of Object.entries(itemIconModules)) {
   const file = path.split(/[/\\]/).pop() ?? "";
   const base = file.replace(/\.(png|webp)$/i, "");
   if (base && base.toLowerCase().startsWith("starter_")) {
+    // Ключ как в файле + lower (2H vs 2h) - lookup без сюрпризов регистра.
     STARTER_ICON_BY_ID.set(base, mod.default);
+    STARTER_ICON_BY_ID.set(base.toLowerCase(), mod.default);
     continue;
   }
   const entry = parseIconPath(path, mod.default);
@@ -109,27 +176,74 @@ function slotMatches(entrySlot: EquipSlotId | "ring", slot: EquipSlotId): boolea
   return false;
 }
 
-/** URL иконок для слота и редкости (пустой массив, если арта ещё нет). */
-export function listItemIconUrls(slot: EquipSlotId, rarity: ItemRarity): string[] {
-  return CATALOG.filter((e) => e.rarity === rarity && slotMatches(e.slotKey, slot)).map((e) => e.url);
+function entriesFor(slot: EquipSlotId, rarity: ItemRarity): ItemIconEntry[] {
+  return CATALOG.filter((e) => e.rarity === rarity && slotMatches(e.slotKey, slot));
 }
 
-/** Случайная иконка под слот + редкость. */
+/** URL иконок для слота и редкости (пустой массив, если арта ещё нет). */
+export function listItemIconUrls(slot: EquipSlotId, rarity: ItemRarity): string[] {
+  return entriesFor(slot, rarity).map((e) => e.url);
+}
+
+export interface PickItemIconOptions {
+  /** Боевой тип оружия - сужает пул арта (меч/лук/жезл...). */
+  weaponKind?: WeaponKind;
+}
+
+/** Случайная иконка под слот + редкость (+ опционально тип оружия). */
 export function pickItemIconUrl(
   slot: EquipSlotId,
   rarity: ItemRarity,
   rng: () => number = Math.random,
+  opts?: PickItemIconOptions,
 ): string | undefined {
-  const urls = listItemIconUrls(slot, rarity);
-  if (!urls.length) return undefined;
-  return urls[Math.floor(rng() * urls.length)];
+  // Арт оружия лежит как mainhand (sword_*, bow_* ...); offhand без своих файлов берёт тот же пул.
+  let pool = entriesFor(slot, rarity);
+  const weaponSlot = slot === "mainhand" || slot === "offhand";
+  if (!pool.length && slot === "offhand" && opts?.weaponKind) {
+    pool = entriesFor("mainhand", rarity);
+  }
+  if (!pool.length) return undefined;
+
+  let candidates = pool;
+  if (opts?.weaponKind && weaponSlot) {
+    const preferred = new Set(WEAPON_KIND_PREFERRED_ART[opts.weaponKind] ?? []);
+    if (preferred.size) {
+      const matched = pool.filter((e) => e.weaponArt && preferred.has(e.weaponArt));
+      if (matched.length) {
+        candidates = matched;
+      } else if (opts.weaponKind === "spear") {
+        // Арта копья ещё нет - клинок ближе, чем лук/жезл.
+        const near = pool.filter((e) => {
+          if (!e.weaponArt) return false;
+          if (e.weaponArt.startsWith("2h_")) return true;
+          return e.weaponArt === "sword" || e.weaponArt === "dagger" || e.weaponArt === "mace" || e.weaponArt === "axe";
+        });
+        if (near.length) candidates = near;
+      }
+    }
+  }
+
+  return candidates[Math.floor(rng() * candidates.length)]?.url;
+}
+
+/** Дозаполнить отсутствующую иконку у уже сгенерированного предмета (сейвы / рынок). */
+export function ensureItemIcon(item: ItemDef, rng: () => number = Math.random): void {
+  if (item.icon) return;
+  item.icon = pickItemIconUrl(item.slot, item.rarity, rng, {
+    weaponKind: item.weapon?.kind,
+  });
 }
 
 export function getItemIconUrlById(id: string): string | undefined {
-  return STARTER_ICON_BY_ID.get(id) ?? CATALOG.find((e) => e.id === id)?.url;
+  return (
+    STARTER_ICON_BY_ID.get(id) ??
+    STARTER_ICON_BY_ID.get(id.toLowerCase()) ??
+    CATALOG.find((e) => e.id === id)?.url
+  );
 }
 
-/** URL фиксированной стартовой иконки (`starter_dagger` и т.д.). */
+/** URL фиксированной стартовой иконки (`starter_dagger`, `starter_2H_axe` и т.д.). */
 export function getStarterItemIconUrl(stem: string): string | undefined {
-  return STARTER_ICON_BY_ID.get(stem);
+  return STARTER_ICON_BY_ID.get(stem) ?? STARTER_ICON_BY_ID.get(stem.toLowerCase());
 }

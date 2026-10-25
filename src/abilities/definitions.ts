@@ -1,4 +1,4 @@
-import type { AbilityDef, AbilityId } from "../types";
+import type { AbilityDef, AbilityId, Aspect } from "../types";
 export { ALL_ASPECTS, ASPECT_COLOR, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 
 /** id карточки гримуара (design/abilities) → AbilityId боя. */
@@ -234,6 +234,16 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
 
 /** Слоты панели героя (песочница). */
 export const ALL_ABILITY_IDS: AbilityId[] = ["wind_gust", "wind_speed", "squall", "tornado"];
+
+/** Только для врагов - не предлагаем герою при создании / в лоадауте. */
+const ENEMY_ABILITY_IDS = new Set<AbilityId>(["dark_arrow"]);
+
+/** Существующие способности аспекта (без вражеских). */
+export function abilitiesForAspect(aspect: Aspect): AbilityId[] {
+  return (Object.keys(ABILITIES) as AbilityId[]).filter(
+    (id) => ABILITIES[id].aspect === aspect && !ENEMY_ABILITY_IDS.has(id),
+  );
+}
 
 function fmtNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");

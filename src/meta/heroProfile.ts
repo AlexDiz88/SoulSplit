@@ -50,6 +50,8 @@ export interface NewHeroOptions {
   portraitUrl: string;
   /** Стартовое оружие; экипируется в mainhand при создании. */
   starterWeapon?: StarterWeaponId;
+  /** Стартовая способность аспекта; если задана - единственный слот лоадаута. */
+  starterAbility?: AbilityId;
 }
 
 export const HERO_NAME_MIN_LENGTH = 2;
@@ -158,7 +160,9 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
   const weapon = createStarterWeapon(starterId, "mainhand");
   const name = (opts?.name?.trim() || "Айра").slice(0, HERO_NAME_MAX_LENGTH);
   const aspect = opts?.aspect ?? "air";
-  const loadout = STARTER_LOADOUT_BY_ASPECT[aspect];
+  const loadout = opts?.starterAbility
+    ? [opts.starterAbility]
+    : STARTER_LOADOUT_BY_ASPECT[aspect];
   return {
     version: HERO_PROFILE_VERSION,
     id: opts ? makeHeroId() : "aira",

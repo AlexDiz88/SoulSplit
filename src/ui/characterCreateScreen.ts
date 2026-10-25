@@ -1,4 +1,13 @@
-import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
+import {
+  ABILITIES,
+  ALL_ASPECTS,
+  ASPECT_HEX,
+  ASPECT_LABEL,
+  abilitiesForAspect,
+  describeAbility,
+  zoneSecondaryDamage,
+} from "../abilities/definitions";
+import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { listHeroPortraitUrls, type HeroGender } from "../art/portraits";
 import {
   createStarterWeapon,
@@ -12,7 +21,7 @@ import {
   type NewHeroOptions,
   validateHeroName,
 } from "../meta/heroProfile";
-import type { Aspect } from "../types";
+import type { AbilityId, Aspect } from "../types";
 import { fillItemTooltip } from "./itemTooltip";
 import "./hubScreen.css";
 import "./startMenu.css";
@@ -63,6 +72,7 @@ export function mountCharacterCreateScreen(
   let aspect: Aspect = "air";
   let gender: HeroGender = "male";
   let starterWeapon: StarterWeaponId = DEFAULT_STARTER_WEAPON;
+  let starterAbility: AbilityId | null = null;
   let portraitUrl = "";
 
   const root = el("div", "meta-screen create-screen");
@@ -129,15 +139,28 @@ export function mountCharacterCreateScreen(
   for (const id of ALL_ASPECTS) {
     const btn = el("button", "aspect-opt", ASPECT_LABEL[id]);
     btn.type = "button";
-    btn.addEventListener("click", () => {
-      aspect = id;
-      for (const [a, b] of aspectButtons) b.classList.toggle("is-active", a === aspect);
-    });
+    btn.addEventListener("click", () => setAspect(id));
     aspectButtons.set(id, btn);
     aspectGrid.append(btn);
   }
   aspectField.append(aspectGrid);
   body.append(aspectField);
+
+  const abilityField = el("div", "create-field create-field-abilities");
+  abilityField.append(el("label", undefined, "Стартовая способность"));
+  const abilityEmpty = el(
+    "p",
+    "create-ability-empty",
+    "Для этого аспекта пока нет способностей.",
+  );
+  abilityEmpty.hidden = true;
+  const abilityGrid = el("div", "ability-grid");
+  abilityGrid.setAttribute("role", "group");
+  abilityGrid.setAttribute("aria-label", "Стартовая способность");
+  const abilityTip = el("div", "skill-tooltip create-ability-tip");
+  abilityTip.hidden = true;
+  abilityField.append(abilityEmpty, abilityGrid, abilityTip);
+  body.append(abilityField);
 
   const weaponField = el("div", "create-field create-field-weapons");
   weaponField.append(el("label", undefined, "Стартовое оружие"));
@@ -251,8 +274,100 @@ export function mountCharacterCreateScreen(
     });
   };
 
+  const showAbilityTip = (btn: HTMLButtonElement, id: AbilityId): void => {
+    const def = ABILITIES[id];
+    const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
+    const damageLabel =
+      def.damage > 0
+        ? def.targetMode === "zone"
+          ? `${def.damage} / выше ${zoneSecondaryDamage(def)}`
+          : String(def.damage)
+        : "-";
+
+    abilityTip.className = `skill-tooltip create-ability-tip aspect-${def.aspect}`;
+    abilityTip.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
+    abilityTip.innerHTML = `
+      <div class="tt-name">${def.name}</div>
+      <div class="tt-desc">${describeAbility(def)}</div>
+      <div class="tt-stats">
+        <div class="tt-stat"><span>Урон</span><b>${damageLabel}</b></div>
+        <div class="tt-stat"><span>Кулдаун</span><b>${def.cooldown.toFixed(1)} с</b></div>
+        <div class="tt-stat"><span>Радиус</span><b>${reachLabel}</b></div>
+      </div>
+    `;
+    abilityTip.hidden = false;
+
+    const fieldRect = abilityField.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const tipRect = abilityTip.getBoundingClientRect();
+    let left = btnRect.right - fieldRect.left + 10;
+    if (left + tipRect.width > fieldRect.width - 4) {
+      left = btnRect.left - fieldRect.left - tipRect.width - 10;
+    }
+    const top = Math.min(
+      Math.max(0, btnRect.top - fieldRect.top),
+      Math.max(0, fieldRect.height - tipRect.height),
+    );
+    abilityTip.style.left = `${Math.max(0, left)}px`;
+    abilityTip.style.top = `${top}px`;
+  };
+
+  const hideAbilityTip = (): void => {
+    abilityTip.hidden = true;
+  };
+
+  const setStarterAbility = (id: AbilityId | null): void => {
+    starterAbility = id;
+    for (const child of abilityGrid.children) {
+      const btn = child as HTMLButtonElement;
+      btn.classList.toggle("is-active", btn.dataset.ability === id);
+    }
+  };
+
+  const rebuildAbilities = (): void => {
+    hideAbilityTip();
+    const ids = abilitiesForAspect(aspect);
+    abilityGrid.replaceChildren();
+    if (ids.length === 0) {
+      starterAbility = null;
+      abilityEmpty.hidden = false;
+      abilityGrid.hidden = true;
+      return;
+    }
+    abilityEmpty.hidden = true;
+    abilityGrid.hidden = false;
+    starterAbility = ids[0]!;
+    for (const id of ids) {
+      const def = ABILITIES[id];
+      const btn = el("button", "ability-opt");
+      btn.type = "button";
+      btn.dataset.ability = id;
+      btn.setAttribute("aria-label", def.name);
+      if (id === starterAbility) btn.classList.add("is-active");
+      const face = el("span", "ability-opt-face");
+      const img = el("img");
+      img.src = ABILITY_ICON_URLS[id] ?? EMPTY_SKILL_ICON_URL;
+      img.alt = "";
+      img.draggable = false;
+      face.append(img);
+      btn.append(face);
+      btn.addEventListener("click", () => setStarterAbility(id));
+      btn.addEventListener("pointerenter", () => showAbilityTip(btn, id));
+      btn.addEventListener("pointerleave", hideAbilityTip);
+      btn.addEventListener("focus", () => showAbilityTip(btn, id));
+      btn.addEventListener("blur", hideAbilityTip);
+      abilityGrid.append(btn);
+    }
+  };
+
   const syncGenderButtons = (): void => {
     for (const [g, b] of genderButtons) b.classList.toggle("is-active", g === gender);
+  };
+
+  const setAspect = (next: Aspect): void => {
+    aspect = next;
+    for (const [a, b] of aspectButtons) b.classList.toggle("is-active", a === aspect);
+    rebuildAbilities();
   };
 
   const setGender = (next: HeroGender): void => {
@@ -267,10 +382,12 @@ export function mountCharacterCreateScreen(
     aspect = "air";
     gender = "male";
     starterWeapon = DEFAULT_STARTER_WEAPON;
+    starterAbility = null;
     error.textContent = "";
     syncGenderButtons();
     for (const [a, b] of aspectButtons) b.classList.toggle("is-active", a === aspect);
     for (const [id, b] of weaponButtons) b.classList.toggle("is-active", id === starterWeapon);
+    rebuildAbilities();
     rebuildPortraits();
   };
 
@@ -293,8 +410,23 @@ export function mountCharacterCreateScreen(
       error.textContent = "Нет доступных портретов.";
       return;
     }
+    const aspectAbilities = abilitiesForAspect(aspect);
+    if (aspectAbilities.length > 0 && !starterAbility) {
+      error.textContent = "Выберите стартовую способность.";
+      return;
+    }
+    if (starterAbility && !aspectAbilities.includes(starterAbility)) {
+      error.textContent = "Выберите способность выбранного аспекта.";
+      return;
+    }
     error.textContent = "";
-    handlers.onCreate(slotIndex, { name, aspect, portraitUrl, starterWeapon });
+    handlers.onCreate(slotIndex, {
+      name,
+      aspect,
+      portraitUrl,
+      starterWeapon,
+      ...(starterAbility ? { starterAbility } : {}),
+    });
   });
 
   return {
@@ -307,6 +439,7 @@ export function mountCharacterCreateScreen(
     },
     hide() {
       weaponTip.hidden = true;
+      hideAbilityTip();
       root.hidden = true;
     },
     isOpen() {

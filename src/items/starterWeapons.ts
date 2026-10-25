@@ -10,7 +10,7 @@ export type StarterWeaponId =
   | "mace"
   | "wand"
   | "bow"
-  | "great_axe"
+  | "2H_axe"
   | "staff";
 
 export interface StarterWeaponDef {
@@ -89,9 +89,9 @@ export const STARTER_WEAPONS: readonly StarterWeaponDef[] = [
     twoHand: true,
   },
   {
-    id: "great_axe",
+    id: "2H_axe",
     name: "Большой топор",
-    iconId: "starter_great_axe",
+    iconId: "starter_2H_axe",
     kind: "melee",
     damageMin: 28,
     damageMax: 48,

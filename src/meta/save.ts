@@ -1,4 +1,5 @@
 import { remapAspectId } from "../abilities/aspects";
+import { ensureItemIcon } from "../art/itemIcons";
 import type { ItemDef } from "../items/types";
 import type { StatId } from "../stats/statIds";
 import type { Aspect } from "../types";
@@ -32,6 +33,7 @@ function remapItem(item: ItemDef): void {
   for (const affix of item.affixes) {
     affix.statId = remapStatId(String(affix.statId));
   }
+  ensureItemIcon(item);
 }
 
 /** Число слотов сохранений (сетка 5x3). */

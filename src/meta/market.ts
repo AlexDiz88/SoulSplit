@@ -1,3 +1,4 @@
+import { ensureItemIcon } from "../art/itemIcons";
 import { generateItem } from "../items/generate";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
@@ -199,6 +200,14 @@ export function ensureMarket(state: GameState): void {
   state.market = cloneMarketState(state.market);
   const allEmpty = MERCHANTS.every((m) => state.market.stock[m.id].length === 0);
   if (allEmpty) refreshMarketStock(state);
+  for (const merchant of MERCHANTS) {
+    for (const offer of state.market.stock[merchant.id]) {
+      ensureItemIcon(offer.item);
+    }
+  }
+  for (const offer of state.market.buyback) {
+    ensureItemIcon(offer.item);
+  }
 }
 
 export function isMerchantId(id: string): id is MerchantId {

@@ -173,7 +173,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     rarity,
     itemLevel,
     affixes,
-    icon: pickItemIconUrl(slot, rarity, rng),
+    icon: pickItemIconUrl(slot, rarity, rng, { weaponKind: weapon?.kind }),
     aspectTag,
     weapon,
   };
