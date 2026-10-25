@@ -93,6 +93,8 @@ function makeWeaponImplicit(itemLevel: number, rng: () => number): WeaponImplici
     baseCd,
     reach,
     range: kind === "bow" || kind === "staff" ? "ranged" : "melee",
+    // Любой лук занимает обе руки.
+    twoHand: kind === "bow" ? true : undefined,
   };
 }
 

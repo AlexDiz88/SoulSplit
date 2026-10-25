@@ -37,9 +37,11 @@ export function findWeaponImplicit(equipment: EquipmentMap) {
   return equippedWeapon(equipment)?.weapon ?? null;
 }
 
-/** Двуручное оружие (показывает слот "Обе руки", блокирует offhand). */
+/** Двуручное оружие (показывает слот "Обе руки", блокирует offhand). Лук всегда двуручный. */
 export function isTwoHandPlaceholder(item: ItemDef): boolean {
-  return Boolean(item.weapon?.twoHand);
+  if (!item.weapon) return false;
+  if (item.weapon.twoHand) return true;
+  return item.weapon.kind === "bow";
 }
 
 export function canEquipInSlot(item: ItemDef, slot: EquipSlotId): boolean {

@@ -45,9 +45,8 @@ export function weaponDps(weapon: WeaponImplicit): number {
 }
 
 function formatDps(value: number): string {
-  if (!Number.isFinite(value)) return "0";
-  const rounded = Math.round(value * 10) / 10;
-  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(1);
+  if (!Number.isFinite(value)) return "0.0";
+  return (Math.round(value * 10) / 10).toFixed(1);
 }
 
 function baseStatLine(label: string, value: string, valueClass = "item-tip-stat-value"): HTMLElement {
