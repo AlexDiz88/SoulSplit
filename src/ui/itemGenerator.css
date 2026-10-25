@@ -234,6 +234,10 @@
   color: var(--muted, #8a9280);
 }
 
+.igen-field[hidden] {
+  display: none !important;
+}
+
 .igen-select,
 .igen-input {
   box-sizing: border-box;
@@ -454,6 +458,30 @@
   top: 0;
   background: #141914;
   z-index: 1;
+}
+
+.igen-sort-th {
+  cursor: var(--cur-default);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.igen-sort-th:hover,
+.igen-sort-th:focus-visible {
+  color: #f0e2b0;
+  outline: none;
+}
+
+.igen-sort-th.sorted {
+  color: #f0e2b0;
+}
+
+.igen-sort-mark {
+  display: inline-block;
+  min-width: 0.9em;
+  margin-left: 4px;
+  font-size: 0.72em;
+  opacity: 0.85;
 }
 
 .igen-table td {

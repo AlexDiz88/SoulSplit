@@ -1,10 +1,9 @@
 import type { WeaponKind } from "../types";
-import { WEAPON_REACH } from "../combat/weapons";
 import type { ItemGrip } from "./grip";
 
 /**
  * Визуальный / предметный тип оружия (имя + арт + баланс).
- * Боевой reach берётся из `kind` (WeaponKind).
+ * Reach задаётся на типе (лук 3, арбалет/посох 4), не только через WeaponKind.
  *
  * Арт: `assets/art/items/{art}_{rarity}_{n}.png`
  * Двуручные мечи/булавы/топоры: префикс `2H_*`.
@@ -32,6 +31,8 @@ export interface WeaponTypeDef {
   kind: WeaponKind;
   range: "melee" | "ranged";
   grip: ItemGrip;
+  /** Дистанция атаки (ряды). */
+  reach: number;
   /** Базовый КД на ilvl 1. */
   baseCd: number;
   /** Базовый урон на ilvl 1. */
@@ -39,6 +40,12 @@ export interface WeaponTypeDef {
   damageMax: number;
 }
 
+/**
+ * База ilvl 1 / common.
+ * DPS падает с reach: 1H ~16.5, 2H ~18.5, spear(2) ~14.5, bow(3) ~12.5, reach 4 ~11-11.5.
+ * Разброс min-max: малый (кинжал/меч/жезл), средний (топор/булава/копье/лук/посох),
+ * большой (2H меч/топор/булава, арбалет).
+ */
 export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
   {
     id: "dagger",
@@ -47,9 +54,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "either",
+    reach: 1,
     baseCd: 1.2,
     damageMin: 17,
-    damageMax: 21,
+    damageMax: 22,
   },
   {
     id: "sword",
@@ -58,9 +66,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "either",
+    reach: 1,
     baseCd: 1.6,
-    damageMin: 20,
-    damageMax: 32,
+    damageMin: 23,
+    damageMax: 30,
   },
   {
     id: "mace",
@@ -69,8 +78,9 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "either",
+    reach: 1,
     baseCd: 1.8,
-    damageMin: 23,
+    damageMin: 22,
     damageMax: 37,
   },
   {
@@ -80,9 +90,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "either",
+    reach: 1,
     baseCd: 1.7,
     damageMin: 21,
-    damageMax: 34,
+    damageMax: 35,
   },
   {
     id: "wand",
@@ -91,9 +102,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "staff",
     range: "ranged",
     grip: "either",
-    baseCd: 1.6,
-    damageMin: 16,
-    damageMax: 22,
+    reach: 4,
+    baseCd: 1.5,
+    damageMin: 14,
+    damageMax: 19,
   },
   {
     id: "bow",
@@ -102,8 +114,9 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "bow",
     range: "ranged",
     grip: "mainhand",
+    reach: 3,
     baseCd: 2.5,
-    damageMin: 26,
+    damageMin: 24,
     damageMax: 38,
   },
   {
@@ -113,9 +126,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "bow",
     range: "ranged",
     grip: "mainhand",
+    reach: 4,
     baseCd: 2.8,
-    damageMin: 30,
-    damageMax: 44,
+    damageMin: 20,
+    damageMax: 42,
   },
   {
     id: "2H_sword",
@@ -124,9 +138,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "twoHand",
+    reach: 1,
     baseCd: 2.1,
-    damageMin: 30,
-    damageMax: 46,
+    damageMin: 26,
+    damageMax: 52,
   },
   {
     id: "2H_mace",
@@ -135,9 +150,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "twoHand",
+    reach: 1,
     baseCd: 2.3,
-    damageMin: 32,
-    damageMax: 50,
+    damageMin: 28,
+    damageMax: 57,
   },
   {
     id: "2H_axe",
@@ -146,9 +162,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "melee",
     range: "melee",
     grip: "twoHand",
+    reach: 1,
     baseCd: 2.2,
-    damageMin: 28,
-    damageMax: 48,
+    damageMin: 26,
+    damageMax: 54,
   },
   {
     id: "staff",
@@ -157,9 +174,10 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "staff",
     range: "ranged",
     grip: "twoHand",
+    reach: 4,
     baseCd: 2.0,
-    damageMin: 20,
-    damageMax: 36,
+    damageMin: 17,
+    damageMax: 29,
   },
   {
     id: "spear",
@@ -168,8 +186,9 @@ export const WEAPON_TYPES: readonly WeaponTypeDef[] = [
     kind: "spear",
     range: "melee",
     grip: "twoHand",
-    baseCd: 1.4,
-    damageMin: 22,
+    reach: 2,
+    baseCd: 1.9,
+    damageMin: 21,
     damageMax: 34,
   },
 ];
@@ -203,6 +222,6 @@ export function scaleWeaponStats(
     damageMin,
     damageMax,
     baseCd: def.baseCd,
-    reach: WEAPON_REACH[def.kind],
+    reach: def.reach,
   };
 }

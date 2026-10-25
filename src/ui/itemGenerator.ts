@@ -434,40 +434,129 @@ function formatBaseWeaponDps(damageMin: number, damageMax: number, baseCd: numbe
   return (Math.round(dps * 10) / 10).toFixed(1);
 }
 
+function baseWeaponDps(damageMin: number, damageMax: number, baseCd: number): number {
+  if (baseCd <= 0) return 0;
+  return (damageMin + damageMax) / 2 / baseCd;
+}
+
+type WeaponSortKey = "name" | "baseCd" | "damage" | "dps" | "reach";
+
+function compareWeapons(
+  a: (typeof WEAPON_TYPES)[number],
+  b: (typeof WEAPON_TYPES)[number],
+  key: WeaponSortKey,
+  dir: 1 | -1,
+): number {
+  let cmp = 0;
+  switch (key) {
+    case "name":
+      cmp = a.name.localeCompare(b.name, "ru");
+      break;
+    case "baseCd":
+      cmp = a.baseCd - b.baseCd;
+      break;
+    case "damage":
+      cmp = (a.damageMin + a.damageMax) / 2 - (b.damageMin + b.damageMax) / 2;
+      break;
+    case "dps":
+      cmp =
+        baseWeaponDps(a.damageMin, a.damageMax, a.baseCd) -
+        baseWeaponDps(b.damageMin, b.damageMax, b.baseCd);
+      break;
+    case "reach":
+      cmp = a.reach - b.reach;
+      break;
+  }
+  if (cmp === 0) cmp = a.name.localeCompare(b.name, "ru");
+  return cmp * dir;
+}
+
 function buildWeaponsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-weapons");
   section.append(
     el(
       "p",
       "igen-note",
-      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован.",
+      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован. Клик по заголовку - сортировка.",
     ),
   );
 
   const scroll = el("div", "igen-table-scroll");
-  const table = el("table", "igen-table");
+  const table = el("table", "igen-table igen-table-sortable");
   const thead = el("thead");
   const headRow = el("tr");
-  for (const h of ["Оружие", "Кулдаун", "Урон", "DPS"]) {
-    headRow.append(el("th", "", h));
+
+  const columns: { key: WeaponSortKey; label: string }[] = [
+    { key: "name", label: "Оружие" },
+    { key: "baseCd", label: "Кулдаун" },
+    { key: "damage", label: "Урон" },
+    { key: "dps", label: "DPS" },
+    { key: "reach", label: "Дистанция" },
+  ];
+
+  let sortKey: WeaponSortKey = "name";
+  let sortDir: 1 | -1 = 1;
+  const headerCells = new Map<WeaponSortKey, HTMLTableCellElement>();
+
+  const syncHeaderMarks = (): void => {
+    for (const [key, th] of headerCells) {
+      const active = key === sortKey;
+      th.classList.toggle("sorted", active);
+      th.dataset.sortDir = active ? (sortDir === 1 ? "asc" : "desc") : "";
+      const mark = th.querySelector(".igen-sort-mark");
+      if (mark) mark.textContent = active ? (sortDir === 1 ? "▲" : "▼") : "";
+    }
+  };
+
+  for (const col of columns) {
+    const th = el("th", "igen-sort-th") as HTMLTableCellElement;
+    th.tabIndex = 0;
+    th.setAttribute("role", "button");
+    th.title = "Сортировать";
+    th.append(document.createTextNode(col.label), el("span", "igen-sort-mark"));
+    headerCells.set(col.key, th);
+    th.addEventListener("click", () => {
+      if (sortKey === col.key) sortDir = sortDir === 1 ? -1 : 1;
+      else {
+        sortKey = col.key;
+        sortDir = 1;
+      }
+      renderRows();
+    });
+    th.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter" || ev.key === " ") {
+        ev.preventDefault();
+        th.click();
+      }
+    });
+    headRow.append(th);
   }
   thead.append(headRow);
   table.append(thead);
 
   const tbody = el("tbody");
-  for (const type of WEAPON_TYPES) {
-    const tr = el("tr");
-    tr.append(
-      el("td", "", type.name),
-      el("td", "", `${type.baseCd.toFixed(1)} с`),
-      el("td", "", `${type.damageMin}-${type.damageMax}`),
-      el("td", "", formatBaseWeaponDps(type.damageMin, type.damageMax, type.baseCd)),
-    );
-    tbody.append(tr);
-  }
+
+  const renderRows = (): void => {
+    const rows = [...WEAPON_TYPES].sort((a, b) => compareWeapons(a, b, sortKey, sortDir));
+    tbody.replaceChildren();
+    for (const type of rows) {
+      const tr = el("tr");
+      tr.append(
+        el("td", "", type.name),
+        el("td", "", `${type.baseCd.toFixed(1)} с`),
+        el("td", "", `${type.damageMin}-${type.damageMax}`),
+        el("td", "", formatBaseWeaponDps(type.damageMin, type.damageMax, type.baseCd)),
+        el("td", "", String(type.reach)),
+      );
+      tbody.append(tr);
+    }
+    syncHeaderMarks();
+  };
+
   table.append(tbody);
   scroll.append(table);
   section.append(scroll);
+  renderRows();
   return section;
 }
 

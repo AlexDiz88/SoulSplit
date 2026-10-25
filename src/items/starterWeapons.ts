@@ -1,5 +1,4 @@
 import { getStarterItemIconUrl } from "../art/itemIcons";
-import { WEAPON_REACH } from "../combat/weapons";
 import type { ItemGrip } from "./grip";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
@@ -36,7 +35,7 @@ function toStarterDef(typeId: StarterWeaponId): StarterWeaponDef {
     damageMin: t.damageMin,
     damageMax: t.damageMax,
     baseCd: t.baseCd,
-    reach: WEAPON_REACH[t.kind],
+    reach: t.reach,
     range: t.range,
     grip: t.grip,
   };
