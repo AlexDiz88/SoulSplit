@@ -4,7 +4,8 @@ description: >-
   Writes ready-to-paste Gemini image prompts for Soul Split using the locked
   Style Bible. Use when the user asks for art prompts, Gemini prompts, unit
   portraits, ability icons, character cards, enemy portraits, or visual asset
-  generation text.
+  generation text. Portrait/unit backdrops follow the given region + location
+  (e.g. Ruins-Courtyard) for lore and atmosphere.
 ---
 
 # Gemini Art Prompts — Soul Split
@@ -17,8 +18,9 @@ User wants prompts for Gemini (or similar) to generate game art. Always follow t
 
 1. Read [`assets/art/STYLE_BIBLE.md`](../../../assets/art/STYLE_BIBLE.md).
 2. Confirm asset type: `unit_card` | `portrait` | `ability_icon` | `environment`.
-3. For **enemies / units / bestiary / any `unit_card`**: style is **LOCKED** to [`assets/art/approved/enemy_portrait_example.jpg`](../../../assets/art/approved/enemy_portrait_example.jpg) — waist-up portraits, NOT full-body.
+3. For **enemies / units / bestiary / any `unit_card`**: style is **LOCKED** to [`assets/art/approved/enemy_portrait_example.jpg`](../../../assets/art/approved/enemy_portrait_example.jpg) - waist-up portraits, NOT full-body.
 4. Do **not** invent a competing stylization slant that drifts from the locked enemy portrait look.
+5. For **portraits / unit_card / enemies / bestiary** (and for `environment` when the place matters): resolve **region + location** before writing the prompt (see Place lock below).
 
 ## Hard rules
 
@@ -46,11 +48,46 @@ Bake this block into **every** prompt (portrait, unit_card, ability_icon, enviro
 Text lock (CRITICAL): ZERO text anywhere in the image - no letters, no numbers, no words, no readable runes, no signage, no shop signs, no posters, no banners with writing, no book pages with script, no stone inscriptions, no engraved lettering, no logos, no watermarks, no UI strings, no panel labels, no captions, no title cards, no fake scribbles that look like language. Blank sign boards / unmarked banners / abstract non-linguistic glyphs only if needed for silhouette. If a prop would normally have writing, leave it blank or use pure abstract ornament.
 ```
 
+## Place lock - region + location (lore / atmosphere)
+
+World hierarchy (canon): **Province → Region → Location**. See `design/meta/WORLD_HIERARCHY.md` and `.cursor/rules/world-hierarchy.mdc`.
+
+- **Region** - large map area (e.g. "Руины", "Северная дорога").
+- **Location** - sortie spot inside that region (e.g. "Двор", "У стены", "Катакомбы").
+- User shorthand like **"Руины-Двор"** means region **Руины** + location **Двор**.
+
+### When it applies
+
+- **Required** for `portrait` / `unit_card` / enemies / bestiary: place drives the **simplified thematic backdrop** behind the character (lore + atmosphere), not just a generic cave/dungeon/forest.
+- **Required** for `environment` / battle backdrops tied to a sortie: subject must match that region + location.
+- **Not required** for `ability_icon` (flat dark magic backdrop stays as-is) unless the user explicitly asks for place flavor.
+
+### Workflow
+
+1. If the user names a place (Russian name, English id, or `Region-Location`), use it.
+2. If they only name a region, pick or ask for the **location** when backdrops matter; do not invent a wrong spot that contradicts known zone content.
+3. If neither is given for enemy/unit portraits, **ask** before generating, or state a temporary place in the prompt only when the user already implied biome/faction strongly enough.
+4. Weave place into **Setting** and **Subject / theme** in English visual terms (broken courtyard masonry, frost-bitten road verge, catacomb arches…). Do **not** put Russian labels or readable place names in the image (Text Lock).
+5. Backdrops stay **secondary and graphic** (Style Lock). Place lock constrains *what kind of place*, not a photoreal landscape.
+6. Panel diversity: still invent unique angles / props / weather-of-mood per panel, but **all panels stay inside the same region + location visual grammar** (e.g. Ruins courtyard variants: cracked flagstones, collapsed arcade, dry fountain - not a swamp then a forest then a volcano).
+
+### Prompt bake-in (character sheets when place is known)
+
+Add a short Place line after Setting, for example:
+
+```
+Place lock: region "Ruins" / location "Courtyard" - every panel backdrop is a simplified stylized variant of that ruined courtyard (broken stone court, collapsed walls, dry fountain, arcade rubble); secondary to the character; no unrelated biomes.
+```
+
+Use the user's real names translated into clear English scene language. Keep Creative Freedom for characters/gear; **do not** freely invent unrelated backdrop biomes when Place lock is set.
+
 ## Setting (always weave into the prompt)
 
 ### Character sheets / environments
 
 Pure medieval / dark fantasy. No steampunk lore or aesthetic. Fantasy craft is allowed when the subject needs it (alchemy, siege engineering, powder bombs, forge tools) - still read as classic fantasy, never Victorian steampunk / brass-gear fashion.
+
+When region + location are known, append Place lock (above) so portrait backgrounds match lore.
 
 ```
 Setting: medieval dark-fantasy game world; pure fantasy - no steampunk, no Victorian industrial, no clockwork-as-fashion.
@@ -74,7 +111,7 @@ Locked look = `enemy_portrait_example.jpg` (thin white sticker stroke + fine cle
 - **Waist-up / torso mid-portrait** — head and upper body LARGE in frame (weapons readable at chest/shoulder)
 - Expressive stylized faces (NOT photoreal, NOT extreme chibi)
 - Rich readable local color and strong contrast
-- **Simplified thematic background per panel** matching the unit (cave, dungeon, forest, fire, swamp, castle, crypt…) — stylized graphic environment, secondary to the character
+- **Simplified thematic background per panel** matching the unit **and** the given **region + location** when provided (e.g. Ruins courtyard, not a random cave/swamp) - stylized graphic environment, secondary to the character
 - NOT tiny full-body stickers on empty panels
 - NOT grey-green unstructured smoke wash
 - NOT thick / heavy / chunky white borders
@@ -100,7 +137,7 @@ Style: STRONGLY stylized 2D game skill icon - hard toon/cel shading with clear f
 Always include for character sheets unless the user explicitly requested a fixed roster:
 
 ```
-Creative freedom (CRITICAL): do NOT follow a fixed cast list. YOU invent every design freely — face, body type, pose (within the required framing), costume, armor, cloth colors, markings, accessories, weapons/props, and a matching thematic backdrop. On EVERY generation of this prompt, invent a brand-new set of subjects from scratch — new faces, new silhouettes, new gear, new weapons, new color stories, new backdrops. Treat each run as a unique unrepeatable pack. Maximize novelty and variety across panels and across regenerations. Never recycle the same archetype, outfit formula, weapon type, or backdrop formula across a sheet.
+Creative freedom (CRITICAL): do NOT follow a fixed cast list. YOU invent every design freely - face, body type, pose (within the required framing), costume, armor, cloth colors, markings, accessories, weapons/props, and a matching thematic backdrop. On EVERY generation of this prompt, invent a brand-new set of subjects from scratch - new faces, new silhouettes, new gear, new weapons, new color stories, new backdrop angles within the Place lock. Treat each run as a unique unrepeatable pack. Maximize novelty and variety across panels and across regenerations. Never recycle the same archetype, outfit formula, or weapon type across a sheet. If a Place lock is set, keep every backdrop inside that region+location; vary composition and local props, do NOT jump to unrelated biomes.
 ```
 
 ### Ability icons — no cast inventing
@@ -112,7 +149,7 @@ Keep ability_icon sheets locked to **one** ability concept; only composition/ang
 ### Character sheets (`portrait` / `unit_card` / enemies / bestiary)
 
 ```
-Diversity: EVERY panel must show a DIFFERENT unique character/creature — unique face, unique costume/body details, unique clothing or markings, unique weapon or props, unique accessories, and a unique matching thematic backdrop. Do not repeat the same subject with only pose changes. No twins, no near-duplicates, no same armor set recolored.
+Diversity: EVERY panel must show a DIFFERENT unique character/creature - unique face, unique costume/body details, unique clothing or markings, unique weapon or props, unique accessories, and a unique matching thematic backdrop. Do not repeat the same subject with only pose changes. No twins, no near-duplicates, no same armor set recolored. When Place lock is set, backdrop variety stays inside that region+location only.
 ```
 
 ### Ability icons
@@ -188,11 +225,13 @@ Reply with **only** one prompt.
 
 Setting: medieval dark-fantasy game world; pure fantasy - no steampunk, no Victorian industrial, no clockwork-as-fashion.
 
+{Place lock - region + location in English scene language; required when known}
+
 {Layout}
 
 {Framing - waist-up for enemies/units}
 
-Subject / theme: {user theme / faction / mood - high-level only; do NOT list nine fixed designs}
+Subject / theme: {user theme / faction / mood + place - high-level only; do NOT list nine fixed designs}
 
 {Creative freedom lock}
 
@@ -258,10 +297,11 @@ Negatives: {environment extras} + ANY text, letters, numbers, words, readable ru
 
 ## Subject writing tips
 
-- For enemies/units/bestiary: always **waist-up portraits**, large heads/torsos — say this explicitly.
+- For enemies/units/bestiary: always **waist-up portraits**, large heads/torsos - say this explicitly.
 - Always state **full containment**: entire silhouette + outline + props inside the panel with a small safe margin; no overflow past the frame.
-- **Theme only, not cast list:** describe faction/biome/mood (e.g. “desert warrior unit roster”, “swamp cult bestiary”) and optional color accents. Do **not** prescribe nine specific characters, weapons, or backdrops unless the user asked for a fixed roster.
-- Require Gemini to invent pose, clothing, gear, weapons, and matching simplified thematic backdrops freely — still **one unique backdrop per panel**, invented by the model.
+- **Region + location for lore:** when the user gives a place (e.g. "Руины-Двор"), bake Place lock into Setting/Subject so every portrait backdrop reads as that spot. Look up zone/location flavor from project content if needed; do not use a generic crypt if the sortie is a ruined courtyard.
+- **Theme only, not cast list:** describe faction / region+location mood (e.g. "Ruins courtyard undead pack", "North Road roadside bandits") and optional color accents. Do **not** prescribe nine specific characters, weapons, or backdrops unless the user asked for a fixed roster.
+- Require Gemini to invent pose, clothing, gear, weapons freely; backdrops stay **one unique variant per panel of the same place** when Place lock is set.
 - Unique designs per panel; clear color identity; maximize novelty across regenerations of the same prompt.
 - Pure fantasy on **characters/environments**; alchemy / engineer / bomb props only when the subject needs them, and never as steampunk genre.
 - **Environments / backgrounds (LOCKED):** always **16:9** and **four** variations in a 2×2 contact sheet. Prefer clickable-hub town/plaza language (distinct buildings: shop, forge, town hall, etc.) when the user asks for hub / starting zone / town. Match world mood of menu key art when a reference is attached. Do **not** default to empty dual-soul wasteland key art unless the user asks for menu/title art.
