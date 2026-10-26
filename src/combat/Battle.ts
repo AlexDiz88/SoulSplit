@@ -120,6 +120,7 @@ export class Battle {
   private readonly statsTracker = new BattleStatsTracker();
   private battleElapsed = 0;
   private completed = false;
+  private levelTipShown = false;
 
   constructor(app: Application, hud: BattleHudApi, config: BattleConfig) {
     this.app = app;
@@ -182,10 +183,12 @@ export class Battle {
 
   private readonly onPointerMove = (ev: PointerEvent): void => {
     this.updateAbilityHover(ev);
+    this.updateLevelBadgeTip(ev);
   };
 
   private readonly onPointerLeave = (): void => {
     this.clearHoverTelegraph();
+    this.hideLevelBadgeTip();
   };
 
   private pointerLocal(ev: PointerEvent): { x: number; y: number } {
@@ -194,6 +197,47 @@ export class Battle {
       x: (ev.clientX - bounds.left - this.board.x) / this.board.scale.x,
       y: (ev.clientY - bounds.top - this.board.y) / this.board.scale.y,
     };
+  }
+
+  private boardToClient(x: number, y: number): { x: number; y: number } {
+    const bounds = this.app.canvas.getBoundingClientRect();
+    return {
+      x: bounds.left + this.board.x + x * this.board.scale.x,
+      y: bounds.top + this.board.y + y * this.board.scale.y,
+    };
+  }
+
+  private static readonly LEVEL_TIP_TITLE = "Уровень юнита";
+  private static readonly LEVEL_TIP_DESC =
+    "Чем выше - тем лучше его показатели атаки, защиты, здоровья и других параметров.";
+
+  private hideLevelBadgeTip(): void {
+    if (!this.levelTipShown) return;
+    this.levelTipShown = false;
+    this.hud.hideScreenTooltip();
+  }
+
+  private updateLevelBadgeTip(ev: PointerEvent): void {
+    const local = this.pointerLocal(ev);
+    for (let i = this.units.length - 1; i >= 0; i--) {
+      const u = this.units[i]!;
+      if (!u.alive || !u.view.visible) continue;
+      if (!u.hitLevelBadge(local.x, local.y)) continue;
+      const c = u.levelBadgeLocalCenter();
+      if (!c) continue;
+      if (!this.levelTipShown) {
+        const screen = this.boardToClient(u.view.x + c.x, u.view.y + c.y);
+        this.hud.showScreenTooltip(
+          screen.x,
+          screen.y,
+          Battle.LEVEL_TIP_TITLE,
+          Battle.LEVEL_TIP_DESC,
+        );
+        this.levelTipShown = true;
+      }
+      return;
+    }
+    this.hideLevelBadgeTip();
   }
 
   private readonly onContextMenu = (ev: MouseEvent): void => {
@@ -236,6 +280,7 @@ export class Battle {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
+    this.hideLevelBadgeTip();
     this.clearTornados();
     this.app.ticker.remove(this.onTick);
     this.app.canvas.removeEventListener("pointerdown", this.onPointer);
@@ -1712,8 +1757,23 @@ export class Battle {
     this.mark.clear();
     const target = this.findAutoTarget(this.hero);
     if (!target) return;
-    const r = target.cardSize / 2 + 8;
-    this.mark.circle(target.view.x, target.view.y, r).stroke({ color: 0xc45a4a, width: 3, alpha: 0.95 });
+    const cx = target.view.x;
+    const cy = target.view.y;
+    // Отступ от рамки, полосы HP и КД автоатаки.
+    const r = target.cardSize / 2 - 18;
+    const color = 0xc45a4a;
+    this.mark.circle(cx, cy, r).stroke({ color, width: 2.5, alpha: 0.95 });
+    // Черточки мишени на 12 / 3 / 6 / 9 (только внутрь круга).
+    const tickLen = 8;
+    for (let i = 0; i < 4; i++) {
+      const a = (i * Math.PI) / 2;
+      const cos = Math.cos(a);
+      const sin = Math.sin(a);
+      this.mark
+        .moveTo(cx + cos * r, cy + sin * r)
+        .lineTo(cx + cos * (r - tickLen), cy + sin * (r - tickLen))
+        .stroke({ color, width: 2.5, alpha: 0.95 });
+    }
   }
 
   private applyPause(paused: boolean): void {

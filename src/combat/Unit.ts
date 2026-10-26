@@ -37,6 +37,10 @@ const PORTRAIT_PAD = 3;
 const FRAME_RADIUS = 1;
 const FRAME_COLOR = 0xffffff;
 const ELITE_FRAME_COLOR = 0xc4a35a;
+/** Кружок уровня врага (слева сверху). */
+const LEVEL_BADGE_R = 11;
+const LEVEL_BADGE_PAD = 4;
+const LEVEL_BADGE_GAP = 4;
 
 export interface UnitInit {
   id: string;
@@ -109,6 +113,7 @@ export class Unit {
   private manaBarFg: Graphics;
   private manaText: Text;
   private nameText: Text;
+  private levelBadge: Graphics;
   private levelText: Text;
   private statusText: Text;
   private subText: Text;
@@ -208,17 +213,20 @@ export class Unit {
       },
     });
     this.nameText.anchor.set(0.5);
+    this.levelBadge = new Graphics();
+    this.levelBadge.eventMode = "none";
+    this.levelBadge.visible = false;
     this.levelText = new Text({
       text: "",
       style: {
         fontFamily: "Exo 2, sans-serif",
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: "800",
         fill: 0xe8e2d4,
         stroke: { color: 0x0c0f0c, width: 3 },
       },
     });
-    this.levelText.anchor.set(1, 0);
+    this.levelText.anchor.set(0.5);
     this.levelText.visible = false;
     this.statusText = new Text({
       text: "",
@@ -265,7 +273,6 @@ export class Unit {
       this.manaBarFg,
       this.manaText,
       this.nameText,
-      this.levelText,
       this.subText,
       this.statusText,
     );
@@ -273,7 +280,14 @@ export class Unit {
     if (this.portraitUrl) {
       this.mountPortrait(this.portraitUrl);
     }
-    this.view.addChild(this.cdBarGlow, this.cdBarBg, this.cdBarFg, this.castLabel);
+    this.view.addChild(
+      this.cdBarGlow,
+      this.cdBarBg,
+      this.cdBarFg,
+      this.castLabel,
+      this.levelBadge,
+      this.levelText,
+    );
 
     this.redraw();
   }
@@ -312,6 +326,26 @@ export class Unit {
     return this.cardSize / 2;
   }
 
+  /** Центр кружка уровня в локальных координатах юнита (относительно view). */
+  levelBadgeLocalCenter(): { x: number; y: number } | null {
+    if (this.team !== "enemy" || this.level <= 0) return null;
+    const half = this.half;
+    return {
+      x: -half + LEVEL_BADGE_PAD + LEVEL_BADGE_R,
+      y: -half + LEVEL_BADGE_PAD + LEVEL_BADGE_R,
+    };
+  }
+
+  /** Попадание в кружок уровня (координаты доски). */
+  hitLevelBadge(boardX: number, boardY: number): boolean {
+    const c = this.levelBadgeLocalCenter();
+    if (!c) return false;
+    const dx = boardX - (this.view.x + c.x);
+    const dy = boardY - (this.view.y + c.y);
+    const r = LEVEL_BADGE_R + 2;
+    return dx * dx + dy * dy <= r * r;
+  }
+
   redraw(): void {
     const half = this.half;
     const barW = this.cardSize - 6;
@@ -341,16 +375,26 @@ export class Unit {
       this.nameText.visible = false;
       this.subText.visible = this.elite;
       if (this.elite) {
-        // Чуть ниже угла с уровнем, чтобы "Элита" и "ур.N" не слипались.
-        this.subText.position.set(0, -half + (this.level > 0 ? 22 : 10));
+        // Ниже кружка уровня, чтобы "Элита" не наезжала на бейдж.
+        this.subText.position.set(0, -half + (this.level > 0 ? 28 : 10));
       }
     }
 
     if (this.team === "enemy" && this.level > 0) {
-      this.levelText.text = `ур.${this.level}`;
+      const cx = -half + LEVEL_BADGE_PAD + LEVEL_BADGE_R;
+      const cy = -half + LEVEL_BADGE_PAD + LEVEL_BADGE_R;
+      this.levelBadge
+        .clear()
+        .circle(cx, cy, LEVEL_BADGE_R)
+        .fill({ color: 0x1a2018, alpha: 0.92 })
+        .stroke({ color: this.elite ? ELITE_FRAME_COLOR : FRAME_COLOR, width: 1.5 });
+      this.levelBadge.visible = true;
+      this.levelText.text = String(this.level);
       this.levelText.visible = true;
-      this.levelText.position.set(half - 4, -half + 3);
+      this.levelText.position.set(cx, cy);
     } else {
+      this.levelBadge.clear();
+      this.levelBadge.visible = false;
       this.levelText.visible = false;
     }
 
@@ -491,6 +535,17 @@ export class Unit {
     });
   }
 
+  /** Левый край полосы КД: справа от кружка уровня, если он есть. */
+  private attackChargeLeft(rightPad: number): { x: number; w: number } {
+    const half = this.half;
+    const right = half - rightPad;
+    const left =
+      this.level > 0
+        ? -half + LEVEL_BADGE_PAD + LEVEL_BADGE_R * 2 + LEVEL_BADGE_GAP
+        : -half + rightPad;
+    return { x: left, w: Math.max(8, right - left) };
+  }
+
   private drawAttackCharge(): void {
     this.cdBarGlow.clear();
     this.cdBarBg.clear();
@@ -500,9 +555,8 @@ export class Unit {
 
     const fill = Math.max(0, Math.min(1, this.attackCharge));
     if (this.cast) {
-      const w = this.cardSize - 8;
+      const { x, w } = this.attackChargeLeft(4);
       const h = 12;
-      const x = -w / 2;
       const y = -this.half + 4;
       const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.012);
       const neon = 0x1cf0ff;
@@ -525,15 +579,14 @@ export class Unit {
       }
       const name = ABILITIES[this.cast.id]?.name ?? this.cast.id;
       this.castLabel.text = name;
-      this.castLabel.position.set(0, y + h / 2);
+      this.castLabel.position.set(x + w / 2, y + h / 2);
       this.castLabel.alpha = 0.85 + 0.15 * pulse;
       this.castLabel.visible = true;
       return;
     }
 
-    const w = this.cardSize - 18;
+    const { x, w } = this.attackChargeLeft(9);
     const h = 3;
-    const x = -w / 2;
     const y = -this.half + 7;
     this.cdBarBg.roundRect(x, y, w, h, 1).fill({ color: 0x1a2018, alpha: 0.92 });
     if (fill > 0) {

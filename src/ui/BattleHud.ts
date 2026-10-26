@@ -62,6 +62,9 @@ export interface BattleHudApi {
   syncSkills(unit: Unit, state: SkillBarState): void;
   setHint(text: string): void;
   showToast(text: string): void;
+  /** Простой тултип у точки экрана (например кружок уровня на канвасе). */
+  showScreenTooltip(clientX: number, clientY: number, title: string, desc: string): void;
+  hideScreenTooltip(): void;
   setPause(paused: boolean): void;
   setSpeed(mult: number): void;
   setBattleBanner(mode: BattleBannerMode): void;
@@ -718,6 +721,28 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     showToast(text: string) {
       pushToast(text);
+    },
+
+    showScreenTooltip(clientX: number, clientY: number, title: string, desc: string) {
+      if (!canHoverTooltip()) return;
+      tooltip.className = "skill-tooltip";
+      tooltip.style.removeProperty("--aspect-color");
+      tooltip.innerHTML = `
+        <div class="tt-name">${title}</div>
+        <div class="tt-desc">${desc}</div>
+      `;
+      tooltip.hidden = false;
+      const tipRect = tooltip.getBoundingClientRect();
+      let left = clientX - tipRect.width / 2;
+      left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
+      let top = clientY - tipRect.height - 12;
+      if (top < 8) top = clientY + 16;
+      tooltip.style.left = `${left}px`;
+      tooltip.style.top = `${top}px`;
+    },
+
+    hideScreenTooltip() {
+      hideTooltip();
     },
 
     setPause(paused: boolean) {

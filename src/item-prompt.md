@@ -57,4 +57,3 @@ If a design looks like "same pants but fewer buckles" - REJECT it and invent a d
 
 Keep: fantasy-RPG readability, centered one item per tile, no characters, no text.
 Do not change frames, stone plates, grid, gutters, or background at all.
-
