@@ -1,6 +1,10 @@
 в таком же стиле нарисуй луки. Редкость - простые. Фон, плашки и стилистику cartoon - не трогай
 
-сделай их cartoon. Фон и плашки не трогай и не меняй!
+в идентичной на 100% стилистике рисовки, нарисуй головные уборы (материалы разные -ткань, кожа, железо итд). Редкость - простые. Фон, плашки и стилистику cartoon - не трогай
+
+сделай каждое изображение/предмет в cartoon стилистике. Фон и плашки не трогай и не меняй!
+
+теперь слегка улучшенные (новый дизайн, форма и вариация для каждого изображения - соблюдай стиль fantasy-RPG)
 
 A 3x3 grid of 9 different game icons featuring [ITEMS], RPG item icon style, clean vector-style digital art, bold dark outlines, soft hand-drawn textures, smooth gradient shading, stylized fantasy design. Materials can be different. Background 100% same as on reference image. Clean composition, centering the object, 2D game asset, high quality, casual mobile game art, cartoon style.
 
