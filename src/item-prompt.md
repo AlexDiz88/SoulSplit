@@ -8,6 +8,10 @@
 
 pocket talismans / charm tokens / fetish objects as freestanding inventory icons —
 NOT necklaces, NOT pendants, NOT amulets-on-cord
+
+magical orbs / mage focus orbs (handheld crystal sphere off-hand items)
+
+off-hand sacred relics (reliquaries, mini-idols, sealed urns, ritual caskets)
 ----
 
 This is NOT an edit, NOT a retouch, NOT a "simpler version" of the previous items.
