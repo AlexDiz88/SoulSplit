@@ -30,8 +30,18 @@ ANTI-DRIFT RULE: do NOT add more surface detail than the cleanest glossy sheet i
 
 IGNORE and DISCARD every item silhouette, shape, cut, strap layout, and ornament from the previous image. Do NOT reuse those designs with small changes.
 
-Task: invent 9 BRAND-NEW lower-body gear icons (pants / greaves / skirts / wraps) from scratch.
-Rarity: simple / common only - rustic, humble, early-game.
+RARITY POWER LADDER (visual coolness only - stay INSIDE the active tier; leave headroom for higher tiers):
+- common: rustic early-game basics. Cloth, rope, rough leather, dull iron/wood. Plain shapes, almost no ornament, no glow, no gems, no gold trim. Humble militia / traveler gear.
+- uncommon: same humble materials, but slightly cleaner craft - neater seams, one small buckle or stud row. Still no magic glow, no fancy metals. Only a small step above common.
+- magic: still mostly practical gear - NOT "wow epic". Cleaner cut, slightly better leather/steel, at most ONE quiet enchanted cue total (tiny soft tint OR one small gem OR a faint edge shimmer). No big auras, no ornate filigree, no legendary silhouettes. Must look only mildly nicer than uncommon.
+- rare: clearly superior adventurer gear. Polished steel / quality leather, purposeful shape, modest ornament (etched lines, small gems, short tassels). Soft controlled magical accent OK. Still not throne-room / endgame flashy.
+- epic: high-end hero piece. Stronger silhouette, richer materials (fine steel, lacquered leather, limited gold/silver inlay), clear magical presence (colored glow / crystal accents) but readable and not overloaded. Save true maximalism for higher tiers.
+- set: themed matching fantasy set-piece look - shared motif / color family / emblem language across the item, coordinated ornament. Cool and distinctive, but not more extreme than epic in raw flash; identity comes from theme unity, not chaos of effects.
+- legendary: top of the ladder - unique mythic silhouette, bold magical materials (rare metals, vivid crystals, strong but still glossy-cartoon glow). Ornate and unforgettable, yet still a clean icon (no micro-texture, no photoreal). This is the ceiling; never use this energy on lower tiers.
+
+Task: invent 9 BRAND-NEW shoulders gear icons from scratch.
+Rarity: common
+(Use ONLY the matching tier from RARITY POWER LADDER. Do not borrow look from any higher tier.)
 Fantasy-RPG inventory icons with MAXIMUM cartoon gloss - never drift toward realism.
 
 HARD RULE - silhouette diversity:
