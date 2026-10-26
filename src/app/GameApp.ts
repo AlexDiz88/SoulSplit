@@ -162,7 +162,7 @@ export class GameApp {
         this.persist();
       },
       onDone: () => this.closeRewardToMap(),
-      onOpenInventory: () => this.hud.openInventory(),
+      onOpenInventory: () => this.hud.toggleInventory(),
       showToast: (t) => this.hud.showToast(t),
     });
 

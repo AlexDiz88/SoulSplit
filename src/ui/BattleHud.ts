@@ -73,6 +73,9 @@ export interface BattleHudApi {
   setShellMode(mode: HudShellMode): void;
   openCharacter(): void;
   openInventory(): void;
+  closeInventory(): void;
+  isInventoryOpen(): boolean;
+  toggleInventory(): void;
   /** Тайник: экип без портрета/статов + инвентарь + сетка 10×10. */
   openStash(bag: InventoryBag): void;
   isStashOpen(): boolean;
@@ -788,6 +791,19 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     openInventory() {
       inventory.open();
+    },
+
+    closeInventory() {
+      inventory.close();
+    },
+
+    isInventoryOpen() {
+      return inventory.isOpen();
+    },
+
+    toggleInventory() {
+      if (inventory.isOpen()) inventory.close();
+      else inventory.open();
     },
 
     openStash(bag) {

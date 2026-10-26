@@ -1,14 +1,18 @@
-import { ABILITIES, ASPECT_LABEL } from "../abilities/definitions";
+import { ABILITIES } from "../abilities/definitions";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import type { BattleStats } from "../combat/battleStats";
 import { createEmptyBattleStats } from "../combat/battleStats";
 import { getEnemyKind } from "../combat/enemies";
+import type { EquipmentMap } from "../items/equipment";
 import { addItemToInventory } from "../items/inventory";
-import { RARITY_LABEL, type ItemDef } from "../items/types";
-import { SLOT_LABEL } from "../items/slots";
+import type { EquipSlotId } from "../items/slots";
+import type { ItemDef } from "../items/types";
 import type { HeroProfile } from "../meta/heroProfile";
+import { fillEmptyItemTooltip, fillItemTooltip } from "./itemTooltip";
 import "./hubScreen.css";
 import "./itemRarity.css";
+import "./itemTooltip.css";
+import "./inventoryWindow.css";
 import "./rewardScreen.css";
 
 export interface RewardScreenPayload {
@@ -59,6 +63,22 @@ function formatNum(n: number): string {
   return Math.round(n).toLocaleString("ru-RU");
 }
 
+/** Русское склонение: 1 попадание, 2 попадания, 5 попаданий. */
+function pluralRu(n: number, one: string, few: string, many: string): string {
+  const abs = Math.abs(Math.round(n)) % 100;
+  const last = abs % 10;
+  if (abs > 10 && abs < 20) return many;
+  if (last === 1) return one;
+  if (last >= 2 && last <= 4) return few;
+  return many;
+}
+
+function compareSlotsFor(item: ItemDef): EquipSlotId[] {
+  if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
+  if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
+  return [item.slot];
+}
+
 export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenApi {
   const root = el("div", "reward-screen");
   root.id = "reward-screen";
@@ -85,12 +105,15 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
 
   const body = el("div", "reward-body");
 
-  const lootCol = el("section", "reward-col");
+  const lootCol = el("section", "reward-col reward-col-loot");
   lootCol.append(el("h2", "reward-col-title", "Добыча"));
-  const lootScroll = el("div", "reward-scroll");
-  lootCol.append(lootScroll);
+  const lootGrid = el("div", "reward-loot-grid");
+  lootCol.append(lootGrid);
+  const lootEmpty = el("p", "reward-empty", "Предметов нет - только опыт и золото.");
+  lootEmpty.hidden = true;
+  lootCol.append(lootEmpty);
 
-  const statsCol = el("section", "reward-col");
+  const statsCol = el("section", "reward-col reward-col-stats");
   statsCol.append(el("h2", "reward-col-title", "Статистика"));
   const statsScroll = el("div", "reward-scroll");
   statsCol.append(statsScroll);
@@ -100,18 +123,21 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
   const foot = el("footer", "reward-foot");
   const footLeft = el("div", "reward-foot-left");
   const footRight = el("div", "reward-foot-right");
-  const btnTakeAll = el("button", "meta-btn", "Взять всё");
-  btnTakeAll.type = "button";
   const btnInv = el("button", "meta-btn", "Инвентарь");
   btnInv.type = "button";
-  const btnClose = el("button", "meta-btn meta-btn-primary", "Закрыть");
+  const btnTakeAll = el("button", "meta-btn", "Забрать всё");
+  btnTakeAll.type = "button";
+  const btnClose = el("button", "meta-btn", "Закрыть");
   btnClose.type = "button";
-  footLeft.append(btnTakeAll, btnInv);
-  footRight.append(btnClose);
+  footLeft.append(btnInv);
+  footRight.append(btnTakeAll, btnClose);
   foot.append(footLeft, footRight);
 
+  const compare = el("div", "reward-compare");
+  compare.hidden = true;
+
   panel.append(head, body, foot);
-  root.append(panel);
+  root.append(panel, compare);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
@@ -119,40 +145,13 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
 
   let heroRef: HeroProfile | null = null;
   let currentItems: ItemDef[] = [];
-  const taken = new Set<string>();
-  const rowTakeBtns = new Map<string, HTMLButtonElement>();
-  const rowSkipBtns = new Map<string, HTMLButtonElement>();
 
   btnInv.addEventListener("click", () => handlers.onOpenInventory());
   btnClose.addEventListener("click", () => handlers.onDone());
-  btnTakeAll.addEventListener("click", () => {
-    if (!heroRef) return;
-    let took = 0;
-    let blocked = false;
-    for (const item of currentItems) {
-      if (taken.has(item.id)) continue;
-      const slot = addItemToInventory(heroRef.inventory, item);
-      if (slot < 0) {
-        blocked = true;
-        break;
-      }
-      taken.add(item.id);
-      took += 1;
-      const takeBtn = rowTakeBtns.get(item.id);
-      const skipBtn = rowSkipBtns.get(item.id);
-      if (takeBtn) {
-        takeBtn.textContent = "Взято";
-        takeBtn.disabled = true;
-      }
-      if (skipBtn) skipBtn.disabled = true;
-    }
-    if (took > 0) handlers.onTaken();
-    if (blocked) handlers.showToast("Инвентарь полон");
-    else if (took === 0 && currentItems.every((i) => taken.has(i.id))) {
-      handlers.showToast("Всё уже разобрано");
-    }
-    refreshTakeAll();
-  });
+  btnTakeAll.addEventListener("click", () => takeAll());
+
+  root.addEventListener("pointerleave", () => hideCompare());
+  compare.addEventListener("pointerenter", () => hideCompare());
 
   function makeChip(label: string, value: string, extraClass = "") {
     const rootChip = el("div", `reward-chip${extraClass ? ` ${extraClass}` : ""}`);
@@ -168,68 +167,146 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
   }
 
   function refreshTakeAll(): void {
-    const pending = currentItems.some((i) => !taken.has(i.id));
-    btnTakeAll.disabled = !pending || currentItems.length === 0;
+    btnTakeAll.disabled = currentItems.length === 0;
   }
 
-  function renderLootRow(profile: HeroProfile, item: ItemDef): HTMLElement {
-    const row = el("div", "reward-loot-row");
-    row.dataset.rarity = item.rarity;
+  function hideCompare(): void {
+    compare.hidden = true;
+    compare.replaceChildren();
+  }
 
-    const iconWrap = el("div", "reward-loot-icon");
-    const face = el("div", "reward-loot-face");
-    const img = document.createElement("img");
-    img.src = item.icon ?? "";
-    img.alt = item.name;
-    face.append(img);
-    iconWrap.append(face);
+  function positionCompare(clientX: number, clientY: number): void {
+    compare.hidden = false;
+    const tipRect = compare.getBoundingClientRect();
+    const gap = 16;
+    const margin = 8;
+    let left = clientX + gap;
+    let top = clientY + gap;
+    const maxLeft = window.innerWidth - tipRect.width - margin;
+    const maxTop = window.innerHeight - tipRect.height - margin;
+    if (left > maxLeft) left = Math.max(margin, maxLeft);
+    if (top > maxTop) top = Math.max(margin, maxTop);
+    compare.style.left = `${Math.max(margin, left)}px`;
+    compare.style.top = `${Math.max(margin, top)}px`;
+  }
 
-    const info = el("div", "reward-loot-info");
-    const aspect = item.aspectTag ? ` - ${ASPECT_LABEL[item.aspectTag]}` : "";
-    info.append(el("div", "reward-loot-name", item.name));
-    info.append(
-      el(
-        "div",
-        "reward-loot-sub",
-        `${RARITY_LABEL[item.rarity]} - ${SLOT_LABEL[item.slot]} - ур. ${item.itemLevel}${aspect}`,
-      ),
-    );
+  function showCompare(item: ItemDef, equipment: EquipmentMap, clientX: number, clientY: number): void {
+    const slots = compareSlotsFor(item);
+    compare.replaceChildren();
 
-    const btns = el("div", "reward-loot-actions");
-    const take = el("button", "is-primary", taken.has(item.id) ? "Взято" : "Взять");
-    take.type = "button";
-    take.disabled = taken.has(item.id);
-    const skip = el("button", undefined, "Оставить");
-    skip.type = "button";
-    skip.disabled = taken.has(item.id);
+    const lootCard = el("div", "item-tip reward-tip");
+    fillItemTooltip(lootCard, item, {
+      showIcon: true,
+      caption: "Добыча",
+      showSellPrice: false,
+    });
+    compare.append(lootCard);
 
-    take.addEventListener("click", () => {
-      if (taken.has(item.id) || !heroRef) return;
-      const slot = addItemToInventory(profile.inventory, item);
-      if (slot < 0) {
-        handlers.showToast("Инвентарь полон");
-        return;
+    for (const slot of slots) {
+      const card = el("div", "item-tip reward-tip");
+      const equipped = equipment[slot] ?? null;
+      if (equipped) {
+        fillItemTooltip(card, equipped, {
+          showIcon: true,
+          caption: "Экипировано",
+          showSellPrice: false,
+          equippedSlot: slot,
+        });
+      } else {
+        fillEmptyItemTooltip(card, slot, "Экипировано");
       }
-      taken.add(item.id);
-      take.textContent = "Взято";
-      take.disabled = true;
-      skip.disabled = true;
-      handlers.onTaken();
-      refreshTakeAll();
+      compare.append(card);
+    }
+    positionCompare(clientX, clientY);
+  }
+
+  function takeItem(item: ItemDef): boolean {
+    if (!heroRef) return false;
+    const slot = addItemToInventory(heroRef.inventory, item);
+    if (slot < 0) {
+      handlers.showToast("Инвентарь полон");
+      return false;
+    }
+    currentItems = currentItems.filter((i) => i.id !== item.id);
+    handlers.onTaken();
+    renderLoot();
+    return true;
+  }
+
+  function takeAll(): void {
+    if (!heroRef) return;
+    let took = 0;
+    let blocked = false;
+    const remaining: ItemDef[] = [];
+    for (const item of currentItems) {
+      if (blocked) {
+        remaining.push(item);
+        continue;
+      }
+      const slot = addItemToInventory(heroRef.inventory, item);
+      if (slot < 0) {
+        blocked = true;
+        remaining.push(item);
+        continue;
+      }
+      took += 1;
+    }
+    currentItems = remaining;
+    if (took > 0) handlers.onTaken();
+    if (blocked) handlers.showToast("Инвентарь полон");
+    renderLoot();
+  }
+
+  function renderLootCell(item: ItemDef): HTMLElement {
+    const cell = el("button", "reward-loot-cell inv-cell filled");
+    cell.type = "button";
+    cell.dataset.rarity = item.rarity;
+    cell.title = item.name;
+
+    const face = el("div", "inv-cell-face");
+    if (item.icon) {
+      const img = document.createElement("img");
+      img.src = item.icon;
+      img.alt = item.name;
+      img.draggable = false;
+      face.append(img);
+    }
+    cell.append(face);
+
+    cell.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      hideCompare();
+      takeItem(item);
     });
-    skip.addEventListener("click", () => {
-      taken.add(item.id);
-      take.disabled = true;
-      skip.disabled = true;
-      take.textContent = "Пропущено";
-      refreshTakeAll();
+    cell.addEventListener("pointerenter", (ev) => {
+      if (!heroRef) return;
+      showCompare(item, heroRef.equipment, ev.clientX, ev.clientY);
+    });
+    cell.addEventListener("pointermove", (ev) => {
+      if (compare.hidden || !heroRef) return;
+      positionCompare(ev.clientX, ev.clientY);
+    });
+    cell.addEventListener("pointerleave", (ev) => {
+      const next = ev.relatedTarget;
+      if (next instanceof Node && compare.contains(next)) return;
+      hideCompare();
     });
 
-    rowTakeBtns.set(item.id, take);
-    rowSkipBtns.set(item.id, skip);
-    btns.append(take, skip);
-    row.append(iconWrap, info, btns);
-    return row;
+    return cell;
+  }
+
+  function renderLoot(): void {
+    hideCompare();
+    lootGrid.replaceChildren();
+    if (!currentItems.length) {
+      lootGrid.hidden = true;
+      lootEmpty.hidden = false;
+    } else {
+      lootGrid.hidden = false;
+      lootEmpty.hidden = true;
+      lootGrid.append(...currentItems.map((item) => renderLootCell(item)));
+    }
+    refreshTakeAll();
   }
 
   function renderStatCard(
@@ -254,7 +331,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       renderStatCard("Получено", formatNum(stats.damageTaken), "is-taken"),
       renderStatCard("Лечение", formatNum(stats.healingDone), "is-heal"),
       renderStatCard("Криты", formatNum(stats.critsLanded), "is-crit"),
-      renderStatCard("Уклоны", formatNum(stats.dodges), "is-dodge"),
+      renderStatCard("Уклонения", formatNum(stats.dodges), "is-dodge"),
       renderStatCard("Блок", formatNum(stats.blockedDamage), "is-block", "скоро"),
     );
     statsScroll.append(grid);
@@ -276,9 +353,18 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     autoRow.append(el("div", "reward-auto-icon", "АА"));
     const autoInfo = el("div");
     autoInfo.append(el("div", "reward-row-name", "Автоатака"));
-    const autoParts = [`${formatNum(auto.hits)} удар.`];
-    if (auto.crits > 0) autoParts.push(`${formatNum(auto.crits)} крит.`);
-    if (auto.dodged > 0) autoParts.push(`${formatNum(auto.dodged)} уклон.`);
+    const hitWord = pluralRu(auto.hits, "попадание", "попадания", "попаданий");
+    const autoParts = [`${formatNum(auto.hits)} ${hitWord}`];
+    if (auto.crits > 0) {
+      autoParts.push(
+        `${formatNum(auto.crits)} ${pluralRu(auto.crits, "крит", "крита", "критов")}`,
+      );
+    }
+    if (auto.dodged > 0) {
+      autoParts.push(
+        `${formatNum(auto.dodged)} ${pluralRu(auto.dodged, "уклонение", "уклонения", "уклонений")}`,
+      );
+    }
     autoInfo.append(el("div", "reward-row-sub", autoParts.join(" · ")));
     const autoDmg = el("div", "reward-row-nums", formatNum(auto.damage));
     autoRow.append(autoInfo, autoDmg);
@@ -327,26 +413,25 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     statsScroll.append(abilitySec);
 
     const killSec = el("div", "reward-section");
-    killSec.append(el("h3", "reward-section-title", "Поверженные"));
+    killSec.append(el("h3", "reward-section-title", "Убитые противники"));
     if (!stats.killsByKind.length) {
       killSec.append(el("p", "reward-empty", "Нет убийств."));
     } else {
+      const row = el("div", "reward-kills-row");
       for (const k of stats.killsByKind) {
         const kind = getEnemyKind(k.kindId);
-        const row = el("div", "reward-kill-row");
+        const chip = el("div", "reward-kill-chip");
+        chip.title = kind?.name ?? k.kindId;
         const icon = el("div", "reward-kill-icon");
         const img = document.createElement("img");
         img.src = kind?.portraitUrl ?? "";
         img.alt = kind?.name ?? k.kindId;
         icon.append(img);
-        const info = el("div");
-        info.append(el("div", "reward-row-name", kind?.name ?? k.kindId));
-        info.append(el("div", "reward-row-sub", `повержено`));
-        const nums = el("div", "reward-row-nums", `×${formatNum(k.count)}`);
-        nums.style.color = "#e8d7a2";
-        row.append(icon, info, nums);
-        killSec.append(row);
+        const count = el("span", "reward-kill-count", `x${formatNum(k.count)}`);
+        chip.append(icon, count);
+        row.append(chip);
       }
+      killSec.append(row);
     }
     statsScroll.append(killSec);
   }
@@ -354,10 +439,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
   return {
     show(profile, payload) {
       heroRef = profile;
-      currentItems = payload.items;
-      taken.clear();
-      rowTakeBtns.clear();
-      rowSkipBtns.clear();
+      currentItems = [...payload.items];
 
       const placeBits = [payload.zoneName];
       if (payload.pointName) placeBits.push(payload.pointName);
@@ -380,17 +462,12 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
         levelup.hidden = true;
       }
 
-      lootScroll.replaceChildren();
-      if (!payload.items.length) {
-        lootScroll.append(el("p", "reward-empty", "Предметов нет - только опыт и золото."));
-      } else {
-        lootScroll.append(...payload.items.map((item) => renderLootRow(profile, item)));
-      }
-      refreshTakeAll();
+      renderLoot();
       renderStats(stats);
       root.hidden = false;
     },
     hide() {
+      hideCompare();
       root.hidden = true;
       heroRef = null;
       currentItems = [];
@@ -399,6 +476,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       return !root.hidden;
     },
     destroy() {
+      hideCompare();
       root.remove();
     },
   };
