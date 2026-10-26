@@ -6,6 +6,45 @@
 
 теперь слегка улучшенные (новый дизайн, форма и вариация для каждого изображения - соблюдай стиль fantasy-RPG)
 
+----
+
+This is NOT an edit, NOT a retouch, NOT a "simpler version" of the previous items.
+
+FRAME + GRID LOCK (CRITICAL - copy 100%, do not restyle):
+Use the attached image ONLY to lock identical 3x3 layout, stone inventory frames / bezels, inner stone plates, gutters, sheet backdrop, tile lighting. Do NOT redraw, clean, simplify, or "improve" frames or background. They must look pixel-identical in language to the reference tiles.
+
+ITEM SURFACE LOCK (CRITICAL - glossy cartoon, ZERO micro-texture):
+Every item must look like a clean polished 2D mobile-game sticker / glossy vector-painted icon (same finish language as simple sword icons):
+- heavy consistent bold dark outlines
+- chunky readable silhouettes
+- SMOOTH GLOSSY surfaces only: large flat color fills + soft 2-3 tone cel gradients
+- volume from clean shape shading and 1-2 crisp specular streaks on metal/leather - not from texture
+- materials = solid color blocks (cloth, leather, metal, wood read by hue/value only)
+
+ABSOLUTELY FORBIDDEN on item surfaces (even subtle / "quiet" / "worn" versions):
+grain, noise, grit, speckles, pores, weave, crosshatch, canvas/paper brush texture, fabric thread detail, leather grain, metal scratch maps, nicks, dents, battle damage marks, rust spots, dirt smudges, wear patches as texture, hair-strand fur noise, tiny chainmail ring fields, quilt diamond micro-stitch dense patterns, bump/normal-map look, PBR/photoreal shading, 3D CGI, soft airbrush realism.
+
+If fur/chain/quilt/stitches are needed: huge simplified cartoon symbols only (2-3 fur tufts on edge; 5-12 large chain loops; a few big stitch lines) - never dense micro-detail.
+
+ANTI-DRIFT RULE: do NOT add more surface detail than the cleanest glossy sheet in this chat. Redesign silhouettes only; keep the same glossy finish. New design ≠ more texture.
+
+IGNORE and DISCARD every item silhouette, shape, cut, strap layout, and ornament from the previous image. Do NOT reuse those designs with small changes.
+
+Task: invent 9 BRAND-NEW lower-body gear icons (pants / greaves / skirts / wraps) from scratch.
+Rarity: simple / common only - rustic, humble, early-game.
+Fantasy-RPG inventory icons with MAXIMUM cartoon gloss - never drift toward realism.
+
+HARD RULE - silhouette diversity:
+Each of the 9 panels must have a clearly DIFFERENT outer silhouette from the others AND from the previous sheet.
+Change construction type per panel (examples of allowed families, invent freely):
+rope-tied cloth, wrapped loincloth, short kilt, patched trousers, laced leather chaps, shin wraps only, knee pads + cloth, light chain fringe, simple iron greaves, etc.
+If a design looks like "same pants but fewer buckles" - REJECT it and invent a different garment type.
+
+Keep: fantasy-RPG readability, centered one item per tile, no characters, no text.
+Do not change frames, stone plates, grid, gutters, or background at all.
+
+----
+
 A 3x3 grid of 9 different game icons featuring [ITEMS], RPG item icon style, clean vector-style digital art, bold dark outlines, soft hand-drawn textures, smooth gradient shading, stylized fantasy design. Materials can be different. Background 100% same as on reference image. Clean composition, centering the object, 2D game asset, high quality, casual mobile game art, cartoon style.
 
 
