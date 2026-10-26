@@ -1,17 +1,13 @@
-в таком же стиле нарисуй луки. Редкость - простые. Фон, плашки и стилистику cartoon - не трогай
-
-в идентичной на 100% стилистике рисовки, нарисуй головные уборы (материалы разные -ткань, кожа, железо итд). Редкость - простые. Фон, плашки и стилистику cartoon - не трогай
-
-сделай каждое изображение/предмет в cartoon стилистике. Фон и плашки не трогай и не меняй!
-
-теперь слегка улучшенные (новый дизайн, форма и вариация для каждого изображения - соблюдай стиль fantasy-RPG)
-
 pocket talismans / charm tokens / fetish objects as freestanding inventory icons —
 NOT necklaces, NOT pendants, NOT amulets-on-cord
 
 magical orbs / mage focus orbs (handheld crystal sphere off-hand items)
 
 off-hand sacred relics (reliquaries, mini-idols, sealed urns, ritual caskets)
+
+leg protection (NO boots, NO shoes, NO feet)
+
+torso armor / upper-body armor pieces (chestpiece slot only)
 ----
 
 This is NOT an edit, NOT a retouch, NOT a "simpler version" of the previous items.
@@ -45,7 +41,7 @@ RARITY POWER LADDER (visual coolness only - stay INSIDE the active tier; leave h
 - set: themed matching fantasy set-piece look - shared motif / color family / emblem language across the item, coordinated ornament. Cool and distinctive, but not more extreme than epic in raw flash; identity comes from theme unity, not chaos of effects.
 - legendary: top of the ladder - unique mythic silhouette, bold magical materials (rare metals, vivid crystals, strong but still glossy-cartoon glow). Ornate and unforgettable, yet still a clean icon (no micro-texture, no photoreal). This is the ceiling; never use this energy on lower tiers.
 
-Task: invent 9 BRAND-NEW shoulders gear icons from scratch.
+Task: invent 9 BRAND-NEW [torso armor / upper-body armor pieces (chestpiece slot only)] gear icons from scratch.
 Rarity: common
 (Use ONLY the matching tier from RARITY POWER LADDER. Do not borrow look from any higher tier.)
 Fantasy-RPG inventory icons with MAXIMUM cartoon gloss - never drift toward realism.
