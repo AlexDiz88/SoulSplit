@@ -3,7 +3,10 @@ import type { InventoryBag } from "../items/inventory";
 import type { ZoneId } from "../meta/gameState";
 import type { HeroProfile } from "../meta/heroProfile";
 import type { ZoneDef } from "../meta/zones";
+import type { BattleStats } from "./battleStats";
 import type { SpawnedEnemy } from "./enemies";
+
+export type { BattleStats, AbilityBattleStats, AutoAttackBattleStats, EnemyKillStat } from "./battleStats";
 
 export interface BattleKill {
   enemyId: string;
@@ -21,6 +24,7 @@ export interface BattleResult {
   heroHp: number;
   equipment: EquipmentMap;
   inventory: InventoryBag;
+  stats: BattleStats;
 }
 
 export interface BattleConfig {

@@ -80,6 +80,8 @@ export interface StatusEffect {
     | "invuln";
   remaining: number;
   potency: number;
+  /** Способность-источник (для DoT / регена на экране статистики). */
+  sourceAbilityId?: AbilityId;
 }
 
 export type WeaponKind = "melee" | "spear" | "bow" | "staff";

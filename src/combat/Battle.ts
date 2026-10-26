@@ -29,6 +29,7 @@ import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
 import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
+import { BattleStatsTracker } from "./battleStats";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
 import { ENEMY_CRIT_DAMAGE, enemyAutoAttackDamage, rollEnemyCrit } from "./enemies";
@@ -116,6 +117,7 @@ export class Battle {
   private readonly config: BattleConfig;
   private readonly killed: BattleKill[] = [];
   private readonly killLogged = new Set<string>();
+  private readonly statsTracker = new BattleStatsTracker();
   private battleElapsed = 0;
   private completed = false;
 
@@ -519,6 +521,7 @@ export class Battle {
     this.killLogged.add(u.id);
     const kindId = u.id.replace(/-\d+$/, "") || u.id;
     this.killed.push({ enemyId: u.id, kindId });
+    this.statsTracker.noteKill(kindId);
   }
 
   private cloneGear(): { equipment: EquipmentMap; inventory: ReturnType<typeof cloneInventory> } {
@@ -554,6 +557,7 @@ export class Battle {
       heroHp: Math.max(0, Math.ceil(this.hero.hp)),
       equipment: gear.equipment,
       inventory: gear.inventory,
+      stats: this.statsTracker.finalize(this.battleElapsed),
     };
     if (outcome === "victory") {
       this.hud.showToast("Победа!");
@@ -869,6 +873,7 @@ export class Battle {
     this.pendingCast = null;
     this.selectedAbility = null;
     this.clearAbilityTelegraph();
+    this.statsTracker.noteAbilityCast(def.id);
     const cdr = this.hero.sheet ? getStat(this.hero.sheet, "cooldownReduction") : 0;
     this.hero.abilityCd[def.id] = abilityCooldown(def.cooldown, cdr);
     this.refreshSkillBar();
@@ -942,7 +947,13 @@ export class Battle {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
           this.dealAbilityDamage(caster, hit, def.damage, def);
-          hit.addStatus({ id: "burn", kind: "burn", remaining: burnDur, potency: burnPot });
+          hit.addStatus({
+            id: "burn",
+            kind: "burn",
+            remaining: burnDur,
+            potency: burnPot,
+            sourceAbilityId: def.id,
+          });
           this.vfx.floatingText(hit.center.x, hit.center.y - 20, "ГОРЕНИЕ", 0xff7a3d);
         });
         break;
@@ -1009,7 +1020,13 @@ export class Battle {
         const bleedDur = def.effects?.bleedDuration ?? 5;
         const bleedPot = this.scaleDotPotency(caster, def.aspect, def.effects?.bleedPerSec ?? 12);
         this.dealAbilityDamage(caster, clicked, def.damage, def);
-        clicked.addStatus({ id: "bleed", kind: "bleed", remaining: bleedDur, potency: bleedPot });
+        clicked.addStatus({
+          id: "bleed",
+          kind: "bleed",
+          remaining: bleedDur,
+          potency: bleedPot,
+          sourceAbilityId: def.id,
+        });
         this.vfx.floatingText(clicked.center.x, clicked.center.y - 20, "КРОВОТЕЧЕНИЕ", 0xc45a4a);
         await this.vfx.severArtery(clicked.center.x, clicked.center.y);
         break;
@@ -1114,7 +1131,13 @@ export class Battle {
         await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.nature, caster.cardSize * 0.7, 0.4);
         const regenPerSec = def.effects?.regenPerSec ?? 10;
         const regenDur = def.effects?.regenDuration ?? 5;
-        caster.addStatus({ id: "regen", kind: "regen", remaining: regenDur, potency: regenPerSec });
+        caster.addStatus({
+          id: "regen",
+          kind: "regen",
+          remaining: regenDur,
+          potency: regenPerSec,
+          sourceAbilityId: def.id,
+        });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ОМОЛОЖЕНИЕ", ASPECT_COLOR.nature);
         break;
       }
@@ -1137,7 +1160,13 @@ export class Battle {
             if (this.destroyed) return;
             if (!this.sameEnemyOnCell(target, aim, to)) return;
             target.addStatus({ id: "root", kind: "root", remaining: rootDur, potency: 1 });
-            target.addStatus({ id: "poison", kind: "poison", remaining: poisonDur, potency: poisonPot });
+            target.addStatus({
+              id: "poison",
+              kind: "poison",
+              remaining: poisonDur,
+              potency: poisonPot,
+              sourceAbilityId: def.id,
+            });
             target.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
             this.vfx.floatingText(target.center.x, target.center.y - 20, "КОРНИ", ASPECT_COLOR.nature);
           },
@@ -1157,7 +1186,13 @@ export class Battle {
           const u = this.unitAtCell(pos);
           if (!u) continue;
           const poisonPot = this.scaleDotPotency(caster, def.aspect, poisonBase);
-          u.addStatus({ id: "poison", kind: "poison", remaining: poisonDur, potency: poisonPot });
+          u.addStatus({
+            id: "poison",
+            kind: "poison",
+            remaining: poisonDur,
+            potency: poisonPot,
+            sourceAbilityId: def.id,
+          });
           this.vfx.floatingText(u.center.x, u.center.y - 20, "ЯД", ASPECT_COLOR.nature);
         }
         break;
@@ -1355,11 +1390,19 @@ export class Battle {
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number, def?: AbilityDef): void {
     const aspect = def?.aspect ?? attacker.aspect;
     const { dmg, crit } = this.scaleAbilityPacket(attacker, aspect, base);
-    const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "magical" });
+    const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "magical" });
     target.flash(0xffffff);
     if (evaded) {
       this.vfx.floatingText(target.center.x, target.center.y - 10, "УКЛОН", 0x9aa3a0);
+      if (attacker.team === "player") this.statsTracker.noteHeroAbilityDodged();
+      else if (target.team === "player") this.statsTracker.noteHeroDodged();
       return;
+    }
+    if (attacker.team === "player" && def) {
+      this.statsTracker.noteHeroAbilityHit(def.id, dealt, crit);
+    }
+    if (target.team === "player") {
+      this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
     }
     if (dealt > 0) {
       const label = crit ? `${dealt}!` : `${dealt}`;
@@ -1435,10 +1478,18 @@ export class Battle {
       dmg = enemyAutoAttackDamage(attacker.stats.atk, attacker.atkMultiplier(), crit);
     }
 
-    const { dealt, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
+    const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
     if (evaded) {
       this.vfx.floatingText(target.center.x, target.center.y - 8, "УКЛОН", 0x9aa3a0);
+      if (attacker.team === "player") this.statsTracker.noteHeroAutoDodged();
+      else if (target.team === "player") this.statsTracker.noteHeroDodged();
       return;
+    }
+    if (attacker.team === "player") {
+      this.statsTracker.noteHeroAutoHit(dealt, crit);
+    }
+    if (target.team === "player") {
+      this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
     }
     if (dealt > 0) {
       const label = crit ? `${dealt}!` : `${dealt}`;
@@ -1568,12 +1619,28 @@ export class Battle {
 
     for (const u of this.units) {
       if (!u.alive) continue;
-      u.tickResourceRegen(combatDt);
+      const passiveHeal = u.tickResourceRegen(combatDt);
+      if (u.team === "player" && passiveHeal > 0) this.statsTracker.notePassiveHeal(passiveHeal);
       const needPreview = u.autoAttackNeed();
       if (u.team === "enemy" && !u.cast) {
         u.attackCharge = needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : 1;
       }
-      if (u.tickStatuses(combatDt)) this.showCastInterrupted(u);
+      const statusTick = u.tickStatuses(combatDt);
+      if (statusTick.castBroken) this.showCastInterrupted(u);
+      if (u.team === "player") {
+        for (const heal of statusTick.healed) {
+          if (heal.sourceAbilityId) this.statsTracker.noteHeroAbilityHeal(heal.sourceAbilityId, heal.amount);
+          else this.statsTracker.notePassiveHeal(heal.amount);
+        }
+        for (const dot of statusTick.dots) {
+          this.statsTracker.noteHeroDamageTaken(dot.dealt, dot.absorbed);
+        }
+      } else {
+        for (const dot of statusTick.dots) {
+          if (dot.sourceAbilityId) this.statsTracker.noteHeroAbilityDot(dot.sourceAbilityId, dot.dealt);
+          else this.statsTracker.noteHeroDamage(dot.dealt);
+        }
+      }
       for (const key of Object.keys(u.abilityCd)) {
         u.abilityCd[key] = Math.max(0, (u.abilityCd[key] ?? 0) - combatDt);
       }

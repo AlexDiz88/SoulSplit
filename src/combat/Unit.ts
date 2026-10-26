@@ -641,15 +641,18 @@ export class Unit {
     return Boolean(this.equipment.offhand?.weapon);
   }
 
-  tickResourceRegen(dt: number): void {
-    if (!this.alive || !this.sheet) return;
+  /** Возвращает фактически восстановленное HP от регена листа. */
+  tickResourceRegen(dt: number): number {
+    if (!this.alive || !this.sheet) return 0;
     const hpR = getStat(this.sheet, "hpRegen");
     const manaR = getStat(this.sheet, "manaRegen");
-    if (hpR > 0) this.heal(hpR * dt);
+    let healed = 0;
+    if (hpR > 0) healed = this.heal(hpR * dt);
     if (manaR > 0) {
       const maxMana = getStat(this.sheet, "maxMana");
       this.mana = Math.min(maxMana, this.mana + manaR * dt);
     }
+    return healed;
   }
 
   /** Дистанция ряда: 1 - ближний у героя, 4 - дальний. */
@@ -702,15 +705,21 @@ export class Unit {
     return { dealt: dmg, absorbed, castBroken: wasCasting && !this.alive };
   }
 
-  heal(amount: number): void {
-    if (!this.alive) return;
+  /** Фактически восстановленное HP (с учётом потолка). */
+  heal(amount: number): number {
+    if (!this.alive || amount <= 0) return 0;
+    const before = this.hp;
     this.hp = Math.min(this.stats.maxHp, this.hp + amount);
     this.redraw();
+    return this.hp - before;
   }
 
   addStatus(status: StatusEffect): void {
     const existing = this.statuses.find((s) => s.kind === status.kind);
     if (existing) {
+      if (status.potency >= existing.potency) {
+        existing.sourceAbilityId = status.sourceAbilityId ?? existing.sourceAbilityId;
+      }
       existing.remaining = Math.max(existing.remaining, status.remaining);
       existing.potency = Math.max(existing.potency, status.potency);
     } else {
@@ -749,33 +758,69 @@ export class Unit {
     return m;
   }
 
-  /** true - каст сорван смертью от DoT. */
-  tickStatuses(dt: number): boolean {
-    let bleedDot = 0;
-    let burnDot = 0;
-    let poisonDot = 0;
-    let regenAmt = 0;
+  /**
+   * Тик статусов. DoT/реген атрибутируются по sourceAbilityId.
+   * castBroken - каст сорван смертью от DoT.
+   */
+  tickStatuses(dt: number): {
+    castBroken: boolean;
+    dots: { dealt: number; absorbed: number; sourceAbilityId?: AbilityId }[];
+    healed: { amount: number; sourceAbilityId?: AbilityId }[];
+  } {
+    type DotBucket = { amount: number; sourceAbilityId?: AbilityId };
+    const bleed: DotBucket = { amount: 0 };
+    const burn: DotBucket = { amount: 0 };
+    const poison: DotBucket = { amount: 0 };
+    const regenBuckets = new Map<string, DotBucket>();
+
     for (const s of this.statuses) {
       s.remaining -= dt;
-      if (s.kind === "bleed") bleedDot += s.potency * dt;
-      if (s.kind === "burn") burnDot += s.potency * dt;
-      if (s.kind === "poison") poisonDot += s.potency * dt;
-      if (s.kind === "regen") regenAmt += s.potency * dt;
+      if (s.kind === "bleed") {
+        bleed.amount += s.potency * dt;
+        bleed.sourceAbilityId = s.sourceAbilityId ?? bleed.sourceAbilityId;
+      } else if (s.kind === "burn") {
+        burn.amount += s.potency * dt;
+        burn.sourceAbilityId = s.sourceAbilityId ?? burn.sourceAbilityId;
+      } else if (s.kind === "poison") {
+        poison.amount += s.potency * dt;
+        poison.sourceAbilityId = s.sourceAbilityId ?? poison.sourceAbilityId;
+      } else if (s.kind === "regen") {
+        const key = s.sourceAbilityId ?? "";
+        const bucket = regenBuckets.get(key) ?? { amount: 0, sourceAbilityId: s.sourceAbilityId };
+        bucket.amount += s.potency * dt;
+        regenBuckets.set(key, bucket);
+      }
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
+
+    const dots: { dealt: number; absorbed: number; sourceAbilityId?: AbilityId }[] = [];
     let castBroken = false;
-    if (bleedDot > 0) {
-      castBroken = this.applyDamage(bleedDot, { channel: "physical" }).castBroken || castBroken;
+
+    const applyDot = (bucket: DotBucket, channel: "physical" | "magical") => {
+      if (bucket.amount <= 0) return;
+      const result = this.applyDamage(bucket.amount, { channel });
+      castBroken = castBroken || result.castBroken;
+      if (!result.evaded) {
+        dots.push({
+          dealt: result.dealt,
+          absorbed: result.absorbed,
+          sourceAbilityId: bucket.sourceAbilityId,
+        });
+      }
+    };
+
+    applyDot(bleed, "physical");
+    applyDot(burn, "magical");
+    applyDot(poison, "magical");
+
+    const healed: { amount: number; sourceAbilityId?: AbilityId }[] = [];
+    for (const bucket of regenBuckets.values()) {
+      const amount = this.heal(bucket.amount);
+      if (amount > 0) healed.push({ amount, sourceAbilityId: bucket.sourceAbilityId });
     }
-    if (burnDot > 0) {
-      castBroken = this.applyDamage(burnDot, { channel: "magical" }).castBroken || castBroken;
-    }
-    if (poisonDot > 0) {
-      castBroken = this.applyDamage(poisonDot, { channel: "magical" }).castBroken || castBroken;
-    }
-    if (regenAmt > 0) this.heal(regenAmt);
+
     this.redraw();
-    return castBroken;
+    return { castBroken, dots, healed };
   }
 
   flash(color: number): void {

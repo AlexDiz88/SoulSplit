@@ -17,8 +17,15 @@ import "./worldMapScreen.css";
 
 const HOVER_TOOLTIP_MQ = "(hover: hover) and (pointer: fine)";
 
+export interface WorldMapShowOptions {
+  /** Сразу открыть окно региона (после боя и т.п.). */
+  openZoneId?: ZoneId;
+  /** Подсветить локацию внутри региона. */
+  openPointId?: string;
+}
+
 export interface WorldMapApi {
-  show(state: GameState): void;
+  show(state: GameState, opts?: WorldMapShowOptions): void;
   hide(): void;
   isOpen(): boolean;
   destroy(): void;
@@ -343,7 +350,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     }
   };
 
-  const fillZonePanel = (zoneId: ZoneId): void => {
+  const fillZonePanel = (zoneId: ZoneId, pointId?: string): void => {
     const zone = getZone(zoneId);
     openZoneId = zoneId;
     titleEl.textContent = zone.name;
@@ -387,13 +394,13 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       }
     }
 
-    fillPointDetails(getZonePoint(zone));
+    fillPointDetails(getZonePoint(zone, pointId));
     panel.setAttribute("aria-labelledby", "wm-zone-title");
   };
 
-  const openZonePanel = (zoneId: ZoneId): void => {
+  const openZonePanel = (zoneId: ZoneId, pointId?: string): void => {
     panelClosing = false;
-    fillZonePanel(zoneId);
+    fillZonePanel(zoneId, pointId);
     overlay.hidden = false;
     overlay.setAttribute("aria-hidden", "false");
     // Два кадра: сначала mount, потом класс анимации.
@@ -515,7 +522,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   resizeObs.observe(root);
 
   return {
-    show(state) {
+    show(state, opts) {
       closeZonePanel();
       for (const spot of WORLD_MAP_SPOTS) {
         const btn = spotButtons.get(spot.id);
@@ -543,6 +550,13 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       }
       root.hidden = false;
       scheduleLayout();
+      const openId = opts?.openZoneId;
+      if (
+        openId &&
+        isZoneUnlocked(openId, state.hero.level, state.unlockedZones)
+      ) {
+        openZonePanel(openId, opts?.openPointId);
+      }
     },
     hide() {
       closeZonePanel();

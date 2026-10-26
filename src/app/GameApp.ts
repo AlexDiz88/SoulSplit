@@ -54,6 +54,8 @@ export class GameApp {
   private battle: Battle | null = null;
   private hubUnit: Unit | null = null;
   private prevUnlocked = new Set<ZoneId>();
+  /** Куда вернуть игрока с экрана награды (карта + окно региона). */
+  private rewardReturn: { zoneId: ZoneId; pointId: string } | null = null;
 
   private readonly app: Application;
   private readonly hud: BattleHudApi;
@@ -159,7 +161,7 @@ export class GameApp {
         this.rebuildHubUnit();
         this.persist();
       },
-      onDone: () => this.goHub(),
+      onDone: () => this.closeRewardToMap(),
       onOpenInventory: () => this.hud.openInventory(),
       showToast: (t) => this.hud.showToast(t),
     });
@@ -387,7 +389,7 @@ export class GameApp {
     this.prevUnlocked = new Set(state.unlockedZones);
   }
 
-  goWorldMap(): void {
+  goWorldMap(opts?: { openZoneId?: ZoneId; openPointId?: string }): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.hideAll();
@@ -396,7 +398,15 @@ export class GameApp {
     this.hud.setShellMode("hub");
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
-    this.worldMap.show(state);
+    this.worldMap.show(state, opts);
+  }
+
+  /** Закрыть экран награды: карта мира с открытым окном региона. */
+  private closeRewardToMap(): void {
+    const ret = this.rewardReturn;
+    this.rewardReturn = null;
+    if (ret) this.goWorldMap({ openZoneId: ret.zoneId, openPointId: ret.pointId });
+    else this.goWorldMap({ openZoneId: this.state?.lastZoneId ?? undefined });
   }
 
   private onTownLocation(id: HubLocationId): void {
@@ -551,6 +561,7 @@ export class GameApp {
 
     this.noteNewZones();
 
+    this.rewardReturn = { zoneId: result.zoneId, pointId: result.pointId };
     this.reward.show(state.hero, {
       items,
       xpGained: xp,
@@ -559,6 +570,8 @@ export class GameApp {
       newLevel: state.hero.level,
       kills,
       zoneName: zone.name,
+      pointName: point.name,
+      stats: result.stats,
     });
   }
 }

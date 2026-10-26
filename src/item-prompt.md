@@ -42,7 +42,7 @@ RARITY POWER LADDER (visual coolness only - stay INSIDE the active tier; leave h
 - set: themed matching fantasy set-piece look - shared motif / color family / emblem language across the item, coordinated ornament. Cool and distinctive, but not more extreme than epic in raw flash; identity comes from theme unity, not chaos of effects.
 - legendary: top of the ladder - unique mythic silhouette, bold magical materials (rare metals, vivid crystals, strong but still glossy-cartoon glow). Ornate and unforgettable, yet still a clean icon (no micro-texture, no photoreal). This is the ceiling; never use this energy on lower tiers.
 
-Task: invent 9 BRAND-NEW [1-handed sword] gear icons from scratch.
+Task: invent 9 BRAND-NEW [2-handed sword] gear icons from scratch.
 Rarity: common
 (Use ONLY the matching tier from RARITY POWER LADDER. Do not borrow look from any higher tier.)
 Fantasy-RPG inventory icons with MAXIMUM cartoon gloss - never drift toward realism.
