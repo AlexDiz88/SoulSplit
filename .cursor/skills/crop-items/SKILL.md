@@ -2,24 +2,38 @@
 name: crop-items
 description: >-
   Crops Soul Split item-icon style sheets (usually 3x3 Gemini grids) into square
-  PNGs under assets/art/items/ (image-NN.png or {prefix}_NN.png). Use when the
-  user invokes crop-items /crop-items, asks to cut/crop/вырезать item icons from
-  a sheet, passes a name prefix like boots_uncommon, or continues a style-test
-  batch ("теперь эти 9").
+  PNGs under assets/art/items/{weapons|offhand|slot}/ with full names
+  ({type}_{rarity}_NN.png). Use when the user invokes crop-items /crop-items,
+  asks to cut/crop/вырезать item icons from a sheet, passes a name prefix like
+  boots_uncommon or dagger_common, or continues a style-test batch ("теперь эти 9").
 disable-model-invocation: true
 ---
 
 # Crop Items - Soul Split
 
-Вырезает квадратные иконки из листа (обычно 3x3) в `assets/art/items/`.
+Вырезает квадратные иконки из листа (обычно 3x3) в нужную папку под `assets/art/items/`.
 Координаты берутся из **профилей** (разная ширина серых рамок = другой профиль).
 
-Имена файлов:
+## Дерево папок
 
-- без текста: `image-NN.png` (как раньше)
-- с префиксом (например `boots_uncommon`): `boots_uncommon_NN.png`
+```
+assets/art/items/
+  weapons/{dagger,sword,mace,axe,wand,bow,crossbow,2h_sword,2h_mace,2h_axe,staff,spear}/
+  offhand/{shield,tome,orb,relic,quiver}/
+  head/ chest/ neck/ shoulders/ hands/ ring/ waist/ legs/ feet/ trinket/
+  _inbox/      <- сырые кропы без типа (image-NN) и листы до разбора
+  _starters/   <- starter_*.png вне пула дропа
+```
 
-Нумерация **своя для каждого префикса**: следующий свободный индекс после max уже существующих файлов с этим префиксом.
+Имена файлов **полные** (тип в имени, даже если уже в пути папки):
+
+- без префикса: `_inbox/image-NN.png`
+- с префиксом: `weapons/dagger/dagger_common_01.png`, `feet/boots_uncommon_02.png`
+- стартеры: `_starters/starter_dagger.png`
+
+Нумерация **своя для каждого префикса** по всему `assets/art/items/`: следующий свободный индекс после max уже существующих файлов с этим префиксом.
+
+Папку скрипт выбирает сам из `--prefix` (см. ниже). Ручной `--out` только если нужно обойти авто-маршрут.
 
 ## Когда вызывать
 
@@ -35,19 +49,21 @@ disable-model-invocation: true
 1. Найди путь к исходному листу (вложение в чате или файл в проекте).
 2. Если в сообщении есть префикс (см. ниже) - передай `--prefix`.
 3. Запусти скрипт из корня репо (Pillow обязателен).
-4. Ответь коротко: какие файлы записаны, какой префикс и какой профиль.
+4. Ответь коротко: какие файлы записаны, какая папка, какой префикс и какой профиль.
 
 ```bash
 python .cursor/skills/crop-items/scripts/crop_items.py "PATH/TO/SHEET.jpg"
+python .cursor/skills/crop-items/scripts/crop_items.py "SHEET.jpg" --prefix dagger_common
 python .cursor/skills/crop-items/scripts/crop_items.py "SHEET.jpg" --prefix boots_uncommon
+python .cursor/skills/crop-items/scripts/crop_items.py "SHEET.jpg" --prefix 2H_axe_magic
 ```
 
 По умолчанию:
 
 - профиль: `framed-3x3-v1` (см. [profiles.json](profiles.json))
-- выход: `assets/art/items/`
-- префикс: `image` → `image-NN.png`
-- нумерация: следующий свободный NN для этого префикса
+- префикс: `image` → `_inbox/image-NN.png`
+- с префиксом типа: папка по типу/слоту + `{prefix}_NN.png`
+- нумерация: следующий свободный NN для этого префикса во всём `items/`
 
 ### С профилем / стартом / префиксом
 
@@ -59,7 +75,19 @@ python .cursor/skills/crop-items/scripts/crop_items.py "SHEET.jpg" --prefix dagg
 python .cursor/skills/crop-items/scripts/crop_items.py --list-profiles
 ```
 
-Пример: уже есть `boots_uncommon_01.png` … `boots_uncommon_03.png` → новый лист даст `boots_uncommon_04` … `boots_uncommon_12`.
+Пример: уже есть `weapons/dagger/dagger_common_01.png` … `03` → новый лист даст `dagger_common_04` … `12` в ту же папку.
+
+### Куда кладёт `--prefix`
+
+| Префикс | Папка |
+|---|---|
+| `image` (default) | `_inbox/` |
+| `starter_*` | `_starters/` |
+| `dagger_common`, `sword_rare`, `2H_axe_magic`, … | `weapons/{type}/` (`2h_*` lowercase в пути) |
+| `shield_common`, `tome_rare`, … | `offhand/{type}/` |
+| `boots_uncommon`, `helmet_common`, `ring_magic`, … | слот (`feet/`, `head/`, `ring/`, …) |
+
+Алиасы слотов: `boots`→`feet`, `gloves`→`hands`, `belt`→`waist`, `amulet`→`neck`, и т.д. (как в `itemIcons.ts`).
 
 ## Профили
 
@@ -106,14 +134,15 @@ python .cursor/skills/crop-items/scripts/crop_items.py "SHEET.jpg" --calibrate
 - Исходник 1024x1024 + текущий default-профиль - не пересчитывай координаты заново без нужды
 - После кропа пользователь смотрит результат в просмотрщике на **B** (нужен refresh страницы / HMR)
 - Кастомный префикс: только `[A-Za-z0-9_]`, формат файла `{prefix}_{NN}.png` (два знака: `01`, `02` …)
-- Дефолтный префикс `image` сохраняет старый формат `image-NN.png` (дефис)
+- Дефолтный префикс `image` сохраняет старый формат `image-NN.png` (дефис) в `_inbox/`
+- Имена всегда полные: в `weapons/sword/` лежит `sword_common_01.png`, не `common_01.png`
 
 ## Разбор вызова
 
 ```
 crop-items
 crop-items boots_uncommon
-/crop-items boots_uncommon
+/crop-items dagger_common
 crop-items SHEET.jpg
 crop-items SHEET.jpg, boots_uncommon
 crop-items SHEET.jpg, profile gemini-3x3-v1
@@ -123,7 +152,7 @@ crop-items SHEET.jpg, profile gemini-3x3-v1
 
 1. Убери ведущий `/crop-items` или `crop-items`.
 2. Путь к листу: аргумент-файл, вложение чата, или единственный свежий `image-*.jpg/png` в assets чата.
-3. **Префикс имени:** токен вида `snake_case` / `item_rarity` (буквы, цифры, `_`), не являющийся путём к файлу и не флагом профиля. Примеры: `boots_uncommon`, `dagger_common`, `2H_axe_magic`. Передай как `--prefix TOKEN`. Если префикса нет - оставь default `image`.
+3. **Префикс имени:** токен вида `snake_case` / `item_rarity` (буквы, цифры, `_`), не являющийся путём к файлу и не флагом профиля. Примеры: `boots_uncommon`, `dagger_common`, `2H_axe_magic`. Передай как `--prefix TOKEN`. Если префикса нет - оставь default `image` → `_inbox/`.
 4. `profile X` / `--profile X` - явный профиль; иначе default.
 5. "по тем же координатам" - тот же профиль, что в этой серии (обычно default).
 6. Префикс из прошлой серии **не** наследуй автоматически: только если пользователь снова его написал (или явно сказал "с тем же именем / префиксом").

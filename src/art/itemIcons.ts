@@ -4,20 +4,27 @@ import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import type { WeaponKind } from "../types";
 
 /**
- * Иконки предметов: `assets/art/items/{slotOrWeapon}_{rarity}_{n}.png`
- * Пример: boots_magic_01.png -> слот feet, редкость magic.
- * Оружие: sword_common_01.png, 2H_axe_uncommon_02.png -> слот mainhand.
- * Двуручные мечи/булавы/топоры: префикс `2H_*`.
- * Лук/арбалет без `2H` (grip mainhand). Посох без `2H` (grip twoHand).
- * Оффхенды: shield_*, tome_*, orb_*, relic_*, quiver_*.
+ * Иконки предметов (имя файла полное, папка по типу/слоту):
+ *   assets/art/items/weapons/{type}/{type}_{rarity}_{n}.png
+ *   assets/art/items/offhand/{type}/{type}_{rarity}_{n}.png
+ *   assets/art/items/{slot}/{alias}_{rarity}_{n}.png
+ * Пример: weapons/sword/sword_common_01.png, feet/boots_magic_01.png.
+ * Оружие: слот mainhand в каталоге; either в offhand берёт тот же пул.
+ * Двуручные: префикс файла `2H_*`, папка `weapons/2h_*`.
+ * Оффхенды: shield_*, tome_*, orb_*, relic_*, quiver_* в `offhand/{type}/`.
  *
- * `starter_*.png` - фиксированные иконки создания персонажа.
- * Лежат в той же папке, но не попадают в пул `pickItemIconUrl`.
+ * `starter_*.png` в `_starters/` - создание персонажа, вне `pickItemIconUrl`.
+ * `_inbox/`, `_crop_*` и прочие папки с `_` в каталог не попадают.
  */
 const itemIconModules = import.meta.glob<{ default: string }>(
   "../../assets/art/items/**/*.{png,webp}",
   { eager: true },
 );
+
+/** Служебные деревья (`_inbox`, `_starters`, `_crop_probe`) - не в пул дропа. */
+function isServiceItemArtPath(modulePath: string): boolean {
+  return modulePath.split(/[/\\]/).some((part) => part.startsWith("_"));
+}
 
 /** Алиасы в имени файла -> слот экипировки. `ring` подходит и ring1, и ring2. */
 const SLOT_FILE_ALIASES: Record<string, EquipSlotId | "ring"> = {
@@ -169,10 +176,19 @@ const CATALOG: ItemIconEntry[] = [];
 const STARTER_ICON_BY_ID = new Map<string, string>();
 
 for (const [path, mod] of Object.entries(itemIconModules)) {
+  if (isServiceItemArtPath(path)) {
+    const file = path.split(/[/\\]/).pop() ?? "";
+    const base = file.replace(/\.(png|webp)$/i, "");
+    // Стартеры только из `_starters/` (и legacy flat starter_* на всякий случай).
+    if (base && base.toLowerCase().startsWith("starter_")) {
+      STARTER_ICON_BY_ID.set(base, mod.default);
+      STARTER_ICON_BY_ID.set(base.toLowerCase(), mod.default);
+    }
+    continue;
+  }
   const file = path.split(/[/\\]/).pop() ?? "";
   const base = file.replace(/\.(png|webp)$/i, "");
   if (base && base.toLowerCase().startsWith("starter_")) {
-    // Ключ как в файле + lower (2H vs 2h) - lookup без сюрпризов регистра.
     STARTER_ICON_BY_ID.set(base, mod.default);
     STARTER_ICON_BY_ID.set(base.toLowerCase(), mod.default);
     continue;

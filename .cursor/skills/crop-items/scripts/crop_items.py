@@ -17,8 +17,72 @@ except ImportError:
 
 SKILL_DIR = Path(__file__).resolve().parents[1]
 PROFILES_PATH = SKILL_DIR / "profiles.json"
-DEFAULT_OUT = Path("assets/art/items")
+ITEMS_ROOT = Path("assets/art/items")
 DEFAULT_PREFIX = "image"
+
+RARITY_TOKENS = frozenset(
+    {
+        "common",
+        "uncommon",
+        "magic",
+        "magical",
+        "rare",
+        "epic",
+        "white",
+        "green",
+        "blue",
+        "yellow",
+        "purple",
+    }
+)
+
+WEAPON_TYPES = frozenset(
+    {
+        "dagger",
+        "sword",
+        "mace",
+        "axe",
+        "wand",
+        "bow",
+        "crossbow",
+        "2h_sword",
+        "2h_mace",
+        "2h_axe",
+        "staff",
+        "spear",
+    }
+)
+
+OFFHAND_TYPES = frozenset({"shield", "tome", "orb", "relic", "quiver"})
+
+# File stem alias -> folder under assets/art/items/
+SLOT_FOLDERS: dict[str, str] = {
+    "head": "head",
+    "helmet": "head",
+    "chest": "chest",
+    "body": "chest",
+    "armor": "chest",
+    "neck": "neck",
+    "amulet": "neck",
+    "necklace": "neck",
+    "shoulders": "shoulders",
+    "pauldrons": "shoulders",
+    "hands": "hands",
+    "gloves": "hands",
+    "gauntlets": "hands",
+    "ring": "ring",
+    "ring1": "ring",
+    "ring2": "ring",
+    "waist": "waist",
+    "belt": "waist",
+    "legs": "legs",
+    "greaves": "legs",
+    "pants": "legs",
+    "feet": "feet",
+    "boots": "feet",
+    "trinket": "trinket",
+    "accessory": "trinket",
+}
 
 
 def load_profiles() -> dict:
@@ -42,9 +106,50 @@ def normalize_prefix(raw: str) -> str:
     if not re.fullmatch(r"[A-Za-z0-9_]+", prefix):
         raise SystemExit(
             f"bad prefix {raw!r}: use letters, digits, underscore "
-            "(e.g. boots_uncommon)"
+            "(e.g. boots_uncommon, dagger_common, 2H_axe_magic)"
         )
     return prefix
+
+
+def art_key_from_prefix(prefix: str) -> str:
+    """`dagger_common` / `2H_axe_magic` / `boots_uncommon` -> art key before rarity."""
+    parts = prefix.lower().split("_")
+    for i in range(1, len(parts)):
+        if parts[i] in RARITY_TOKENS:
+            return "_".join(parts[:i])
+    return "_".join(parts)
+
+
+def resolve_out_dir(prefix: str) -> Path:
+    """
+    Map filename prefix to folder:
+      image*              -> _inbox/
+      starter_*           -> _starters/
+      dagger_common       -> weapons/dagger/
+      2H_axe_magic        -> weapons/2h_axe/
+      shield_rare         -> offhand/shield/
+      boots_uncommon      -> feet/
+      ring_common         -> ring/
+    """
+    if prefix == DEFAULT_PREFIX:
+        return ITEMS_ROOT / "_inbox"
+    if prefix.lower().startswith("starter"):
+        return ITEMS_ROOT / "_starters"
+
+    key = art_key_from_prefix(prefix)
+    if key in WEAPON_TYPES:
+        return ITEMS_ROOT / "weapons" / key
+    if key in OFFHAND_TYPES:
+        return ITEMS_ROOT / "offhand" / key
+    slot = SLOT_FOLDERS.get(key)
+    if slot:
+        return ITEMS_ROOT / slot
+
+    raise SystemExit(
+        f"cannot resolve folder for prefix {prefix!r} (art key {key!r}). "
+        "Use type_rarity (dagger_common, boots_uncommon, 2H_axe_magic) "
+        "or --out PATH."
+    )
 
 
 def file_stem(prefix: str, index: int) -> str:
@@ -63,11 +168,17 @@ def name_re(prefix: str) -> re.Pattern[str]:
     )
 
 
-def next_image_index(out_dir: Path, prefix: str = DEFAULT_PREFIX) -> int:
+def next_image_index(search_root: Path, prefix: str = DEFAULT_PREFIX) -> int:
+    """Next free NN for this prefix anywhere under search_root (usually items/)."""
     highest = 0
     pattern = name_re(prefix)
-    if out_dir.is_dir():
-        for p in out_dir.iterdir():
+    if search_root.is_dir():
+        for p in search_root.rglob("*"):
+            if not p.is_file():
+                continue
+            # Skip probe / temp trees
+            if any(part.startswith("_crop") for part in p.parts):
+                continue
             m = pattern.match(p.name)
             if m:
                 highest = max(highest, int(m.group(1)))
@@ -113,7 +224,7 @@ def crop_with_profile(
         path = out_dir / f"{file_stem(prefix, start + i)}.png"
         crop.save(path)
         saved.append(path)
-        print(f"{path.name} {crop.size} @ ({left},{top})")
+        print(f"{path.as_posix()} {crop.size} @ ({left},{top})")
     return saved
 
 
@@ -202,7 +313,10 @@ def cmd_list(data: dict) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser(
-        description="Crop item icon sheets into assets/art/items/{prefix}_NN.png",
+        description=(
+            "Crop item icon sheets into assets/art/items/{slot|weapons/type}/"
+            "{prefix}_NN.png"
+        ),
     )
     ap.add_argument("src", nargs="?", type=Path, help="Source sheet image")
     ap.add_argument(
@@ -214,20 +328,23 @@ def main() -> None:
         "--prefix",
         default=DEFAULT_PREFIX,
         help=(
-            "Filename stem prefix (default: image -> image-NN.png; "
-            "e.g. boots_uncommon -> boots_uncommon_NN.png)"
+            "Filename stem prefix (default: image -> _inbox/image-NN.png; "
+            "e.g. dagger_common -> weapons/dagger/dagger_common_NN.png)"
         ),
     )
     ap.add_argument(
         "--out",
         type=Path,
-        default=DEFAULT_OUT,
-        help=f"Output directory (default: {DEFAULT_OUT})",
+        default=None,
+        help=(
+            "Override output directory. Default: resolved from --prefix "
+            f"(under {ITEMS_ROOT.as_posix()}/)"
+        ),
     )
     ap.add_argument(
         "--start",
         type=int,
-        help="First NN index for this prefix (default: next free in --out)",
+        help="First NN index for this prefix (default: next free under items/)",
     )
     ap.add_argument(
         "--list-profiles",
@@ -293,25 +410,26 @@ def main() -> None:
         raise SystemExit(1)
 
     prefix = normalize_prefix(args.prefix)
+    out_dir = args.out if args.out is not None else resolve_out_dir(prefix)
     name, profile = resolve_profile(data, args.profile)
     start = (
         args.start
         if args.start is not None
-        else next_image_index(args.out, prefix)
+        else next_image_index(ITEMS_ROOT, prefix)
     )
     first = file_stem(prefix, start)
-    print(f"profile={name} prefix={prefix} start={first} out={args.out}")
+    print(f"profile={name} prefix={prefix} start={first} out={out_dir.as_posix()}")
 
     if args.dry_run:
         for i, cell in enumerate(profile["cells"]):
             stem = file_stem(prefix, start + i)
             print(
-                f"{stem}.png "
+                f"{(out_dir / f'{stem}.png').as_posix()} "
                 f"({cell['side']}x{cell['side']}) @ ({cell['left']},{cell['top']})"
             )
         return
 
-    crop_with_profile(args.src, args.out, profile, start, prefix)
+    crop_with_profile(args.src, out_dir, profile, start, prefix)
 
 
 if __name__ == "__main__":
