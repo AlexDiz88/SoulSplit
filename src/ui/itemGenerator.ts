@@ -512,7 +512,7 @@ function buildWeaponsSection(): HTMLElement {
     const th = el("th", "igen-sort-th") as HTMLTableCellElement;
     th.tabIndex = 0;
     th.setAttribute("role", "button");
-    th.title = "Сортировать";
+    th.setAttribute("aria-label", `Сортировать: ${col.label}`);
     th.append(document.createTextNode(col.label), el("span", "igen-sort-mark"));
     headerCells.set(col.key, th);
     th.addEventListener("click", () => {

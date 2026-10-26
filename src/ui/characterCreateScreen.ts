@@ -105,7 +105,6 @@ export function mountCharacterCreateScreen(
   nameInput.spellcheck = false;
   const btnDice = el("button", "name-dice-btn");
   btnDice.type = "button";
-  btnDice.title = "Случайное имя";
   btnDice.setAttribute("aria-label", "Случайное имя");
   btnDice.append(diceIconSvg());
   nameRow.append(nameInput, btnDice);

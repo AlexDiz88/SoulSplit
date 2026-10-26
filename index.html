@@ -12,21 +12,21 @@
       <div id="hud">
         <!-- Боевой хром скрыт до setShellMode("battle"): иначе FOUC при обновлении вкладки -->
         <header class="hud-top" hidden>
-          <button type="button" id="btn-menu" class="menu-btn" title="Меню" aria-label="Меню" aria-expanded="false" aria-controls="side-menu" hidden>
+          <button type="button" id="btn-menu" class="menu-btn" aria-label="Меню" aria-expanded="false" aria-controls="side-menu" hidden>
             <span></span><span></span><span></span>
           </button>
           <div class="controls" hidden>
-            <button type="button" id="btn-flee" class="ctrl-btn" title="Белый флаг - сбежать без лута" aria-label="Белый флаг">⚐</button>
-            <button type="button" id="btn-pause" class="ctrl-btn" title="Пробел - пауза">❚❚</button>
-            <button type="button" id="btn-speed" class="ctrl-btn" title="Скорость">×1</button>
+            <button type="button" id="btn-flee" class="ctrl-btn" aria-label="Белый флаг - сбежать без лута">⚐</button>
+            <button type="button" id="btn-pause" class="ctrl-btn" aria-label="Пробел - пауза">❚❚</button>
+            <button type="button" id="btn-speed" class="ctrl-btn" aria-label="Скорость">×1</button>
           </div>
         </header>
 
         <nav id="side-menu" class="side-menu" hidden>
-          <button type="button" id="btn-character" class="menu-item" title="C">Персонаж</button>
-          <button type="button" id="btn-bestiary" class="menu-item" title="H">Бестиарий</button>
-          <button type="button" id="btn-grimoire" class="menu-item" title="V">Гримуар</button>
-          <button type="button" id="btn-item-generator" class="menu-item" title="G">Генератор (debug)</button>
+          <button type="button" id="btn-character" class="menu-item" aria-keyshortcuts="C">Персонаж</button>
+          <button type="button" id="btn-bestiary" class="menu-item" aria-keyshortcuts="H">Бестиарий</button>
+          <button type="button" id="btn-grimoire" class="menu-item" aria-keyshortcuts="V">Гримуар</button>
+          <button type="button" id="btn-item-generator" class="menu-item" aria-keyshortcuts="G">Генератор (debug)</button>
         </nav>
 
         <div id="bestiary" class="bestiary-overlay" hidden>

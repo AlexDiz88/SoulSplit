@@ -130,7 +130,6 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     anchor.dataset.spot = spot.id;
     const btn = el("button", "title-btn world-map-spot-btn", spot.label);
     btn.type = "button";
-    btn.title = spot.label;
     btn.setAttribute("aria-label", spot.label);
     btn.addEventListener("click", () => {
       if (spot.kind === "town") {
@@ -376,7 +375,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       btn.setAttribute("role", "tab");
       const nameSpan = el("span", "wm-zone-point-name", point.name);
       btn.append(nameSpan);
-      btn.title = point.name;
+      btn.setAttribute("aria-label", point.name);
       btn.addEventListener("click", () => {
         if (openZoneId !== zoneId) return;
         fillPointDetails(point);
@@ -531,7 +530,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
           btn.classList.remove("is-locked");
           btn.dataset.unlocked = "1";
           delete btn.dataset.lockHint;
-          btn.title = "Вернуться в город";
+          btn.setAttribute("aria-label", "Вернуться в город");
           continue;
         }
         const zoneId = spot.zoneId!;
@@ -544,9 +543,8 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
           ? `${zone.description} (${zone.points.length} локации, ilvl ${point.itemLevel}+)`
           : lockHint(zoneId, state.hero.level);
         btn.dataset.lockHint = unlocked ? "" : hint;
-        btn.title = unlocked ? `${zone.name} - ${hint}` : hint;
         btn.textContent = zone.name;
-        btn.setAttribute("aria-label", zone.name);
+        btn.setAttribute("aria-label", unlocked ? `${zone.name}. ${hint}` : hint);
       }
       root.hidden = false;
       scheduleLayout();

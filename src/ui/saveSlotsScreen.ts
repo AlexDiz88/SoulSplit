@@ -142,7 +142,7 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
       const btnInfo = el("button", "slot-action", "Инфо");
       btnInfo.type = "button";
       btnInfo.disabled = slot.empty;
-      btnInfo.title = "Статистика персонажа";
+      btnInfo.setAttribute("aria-label", "Статистика персонажа");
       btnInfo.addEventListener("click", (ev) => {
         ev.stopPropagation();
         if (!slot.empty) handlers.onInfo(slot.index);
@@ -151,7 +151,7 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
       const btnDel = el("button", "slot-action slot-action-danger", "Удалить");
       btnDel.type = "button";
       btnDel.disabled = slot.empty;
-      btnDel.title = "Удалить персонажа";
+      btnDel.setAttribute("aria-label", "Удалить персонажа");
       btnDel.addEventListener("click", (ev) => {
         ev.stopPropagation();
         if (!slot.empty) openConfirm(slot);

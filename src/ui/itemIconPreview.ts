@@ -105,7 +105,7 @@ export function mountItemIconPreview(): ItemIconPreviewApi {
     empty.hidden = entries.length > 0;
     for (const entry of slice) {
       const cell = el("div", "iip-cell");
-      cell.title = entry.name;
+      cell.setAttribute("aria-label", entry.name);
       const face = el("span", "iip-cell-face");
       const img = el("img", "iip-cell-icon") as HTMLImageElement;
       img.src = entry.url;

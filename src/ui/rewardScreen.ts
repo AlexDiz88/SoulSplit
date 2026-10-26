@@ -145,6 +145,8 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
 
   let heroRef: HeroProfile | null = null;
   let currentItems: ItemDef[] = [];
+  /** Были ли предметы в добыче при открытии экрана. */
+  let hadInitialLoot = false;
 
   btnInv.addEventListener("click", () => handlers.onOpenInventory());
   btnClose.addEventListener("click", () => handlers.onDone());
@@ -261,7 +263,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     const cell = el("button", "reward-loot-cell inv-cell filled");
     cell.type = "button";
     cell.dataset.rarity = item.rarity;
-    cell.title = item.name;
+    cell.setAttribute("aria-label", item.name);
 
     const face = el("div", "inv-cell-face");
     if (item.icon) {
@@ -300,7 +302,13 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     lootGrid.replaceChildren();
     if (!currentItems.length) {
       lootGrid.hidden = true;
-      lootEmpty.hidden = false;
+      // Сообщение только если лута изначально не было; после "забрал всё" - пусто.
+      if (!hadInitialLoot) {
+        lootEmpty.textContent = "Предметов нет - только опыт и золото.";
+        lootEmpty.hidden = false;
+      } else {
+        lootEmpty.hidden = true;
+      }
     } else {
       lootGrid.hidden = false;
       lootEmpty.hidden = true;
@@ -421,7 +429,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       for (const k of stats.killsByKind) {
         const kind = getEnemyKind(k.kindId);
         const chip = el("div", "reward-kill-chip");
-        chip.title = kind?.name ?? k.kindId;
+        chip.setAttribute("aria-label", kind?.name ?? k.kindId);
         const icon = el("div", "reward-kill-icon");
         const img = document.createElement("img");
         img.src = kind?.portraitUrl ?? "";
@@ -440,6 +448,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     show(profile, payload) {
       heroRef = profile;
       currentItems = [...payload.items];
+      hadInitialLoot = currentItems.length > 0;
 
       const placeBits = [payload.zoneName];
       if (payload.pointName) placeBits.push(payload.pointName);
@@ -471,6 +480,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       root.hidden = true;
       heroRef = null;
       currentItems = [];
+      hadInitialLoot = false;
     },
     isOpen() {
       return !root.hidden;

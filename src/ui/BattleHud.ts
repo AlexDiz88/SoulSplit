@@ -723,7 +723,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     setPause(paused: boolean) {
       btnPause.textContent = paused ? "▶" : "❚❚";
       btnPause.classList.toggle("active", paused);
-      btnPause.title = paused ? "Пробел - продолжить" : "Пробел - пауза";
+      btnPause.setAttribute(
+        "aria-label",
+        paused ? "Пробел - продолжить" : "Пробел - пауза",
+      );
     },
 
     setSpeed(mult: number) {
