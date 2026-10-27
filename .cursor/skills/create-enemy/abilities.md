@@ -1,6 +1,6 @@
 # Способности врагов (из create-enemy)
 
-Карточки кластера `враги` лежат в `design/abilities/enemies/`. Форма карточки, типы применения врага, сетка и шкала чисел - как в скилле `create-ability`: его [format.md](../create-ability/format.md) и раздел "Враги" в [aspects.md](../create-ability/aspects.md).
+Карточки кластера `враги` лежат в `design/abilities/enemies/`. Форма карточки, типы применения врага, сетка и шкала чисел - как в скилле `create-ability`: его [format.md](../create-ability/format.md) и раздел "Враги" в [aspects.md](../create-ability/aspects.md). DoT и эффекты - [EFFECTS_AND_DOTS.md](../../../design/meta/EFFECTS_AND_DOTS.md) (враги используют те же слоты/флаги, где применимо).
 
 Этот файл - только правила **когда create-enemy сам заводит способность**.
 
