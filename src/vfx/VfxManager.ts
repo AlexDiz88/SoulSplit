@@ -235,25 +235,46 @@ export class VfxManager {
     await playIceShieldVfx(this.layer, this.tweens, x, y, radius);
   }
 
+  /**
+   * Автоатака. onHit вызывается в момент попадания (конец полёта удара),
+   * до добивающего flash - чтобы плавающий урон совпал с ударом.
+   */
   async autoAttackBolt(
     from: { x: number; y: number },
     to: { x: number; y: number },
     melee: boolean,
+    onHit?: () => void,
   ): Promise<void> {
     if (melee) {
       const g = new Graphics();
       this.layer.addChild(g);
+      let hit = false;
+      const fireHit = () => {
+        if (hit) return;
+        hit = true;
+        onHit?.();
+        void this.flashCircle(to.x, to.y, 0xe8e2d4, 16, 0.2);
+      };
       await this.tweens.to(0.18, (t) => {
         g.clear();
-        const x = from.x + (to.x - from.x) * Math.min(1, t * 1.4);
-        const y = from.y + (to.y - from.y) * Math.min(1, t * 1.4);
+        const reachT = Math.min(1, t * 1.4);
+        const x = from.x + (to.x - from.x) * reachT;
+        const y = from.y + (to.y - from.y) * reachT;
         g.circle(x, y, 6).fill({ color: 0xe8e2d4, alpha: 1 - t });
+        if (reachT >= 1) fireHit();
       });
+      fireHit();
       g.destroy();
-      await this.flashCircle(to.x, to.y, 0xe8e2d4, 16, 0.2);
     } else {
-      await this.projectile(from, to, 0xd4c4a0, { size: 5, duration: 0.28, trail: true });
-      await this.flashCircle(to.x, to.y, 0xd4c4a0, 14, 0.18);
+      await this.projectile(from, to, 0xd4c4a0, {
+        size: 5,
+        duration: 0.28,
+        trail: true,
+        onArrive: () => {
+          onHit?.();
+          void this.flashCircle(to.x, to.y, 0xd4c4a0, 14, 0.18);
+        },
+      });
     }
   }
 
@@ -269,7 +290,7 @@ export class VfxManager {
       text,
       style: {
         fontFamily: "Exo 2, sans-serif",
-        fontSize: crit ? 32 : 18,
+        fontSize: crit ? 36 : 22,
         fontWeight: "800",
         fill: color,
         stroke: { color: 0x000000, width: crit ? 5 : 3 },

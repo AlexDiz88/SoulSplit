@@ -1,11 +1,23 @@
 import {
   canEquipInSlot,
   getItemGrip,
+  isBowFamilyWeapon,
+  isOffhandCompatibleWithMain,
+  isQuiverItem,
   isTwoHandWeapon,
   type EquipmentMap,
 } from "./equipment";
 import type { EquipSlotId } from "./slots";
 import type { ItemDef } from "./types";
+
+/** Оффхенд, который нужно снять при надевании mainhand (2H или лук/арбалет без колчана). */
+function offhandDisplacedByMainhand(item: ItemDef, equipment: EquipmentMap): ItemDef | null {
+  const off = equipment.offhand ?? null;
+  if (!off) return null;
+  if (isTwoHandWeapon(item)) return off;
+  if (isBowFamilyWeapon(item) && !isQuiverItem(off)) return off;
+  return null;
+}
 
 /** Сетка рюкзака: 5×5, один предмет = одна ячейка. */
 export const INVENTORY_COLS = 5;
@@ -123,7 +135,7 @@ export function equipFromInventoryToSlot(
 
   const previous = equipment[slot] ?? null;
   const displaceOffhand =
-    isTwoHandWeapon(item) && slot === "mainhand" ? (equipment.offhand ?? null) : null;
+    slot === "mainhand" ? offhandDisplacedByMainhand(item, equipment) : null;
 
   if (displaceOffhand) {
     if (previous) {
@@ -208,7 +220,7 @@ export function swapEquipmentSlots(
 
   if (!canEquipInSlot(a, to, next)) return { ok: false, reason: "bad_slot" };
   if (b && !canEquipInSlot(b, from, next)) return { ok: false, reason: "bad_slot" };
-  if (next.mainhand && isTwoHandWeapon(next.mainhand) && next.offhand) {
+  if (next.mainhand && next.offhand && !isOffhandCompatibleWithMain(next.mainhand, next.offhand)) {
     return { ok: false, reason: "bad_slot" };
   }
 

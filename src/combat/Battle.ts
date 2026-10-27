@@ -25,6 +25,7 @@ import { cloneInventory } from "../items/inventory";
 import type { EquipmentMap } from "../items/equipment";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
 import type { WeaponImplicit } from "../items/types";
+import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
@@ -152,7 +153,7 @@ export class Battle {
     this.hud.setPause(false);
     this.hud.setSpeed(1);
     this.hud.setBattleBanner("start");
-    this.setWeapon(this.weapon);
+    this.syncWeaponFromEquipment();
     this.selectHero(this.hero.id);
     this.bindHud();
     this.app.canvas.addEventListener("pointerdown", this.onPointer);
@@ -352,12 +353,20 @@ export class Battle {
   }
 
   private onHeroEquipmentChanged(): void {
+    this.syncWeaponFromEquipment();
+    this.hud.setHero(this.hero);
+  }
+
+  /** Подтянуть kind/reach/КД из реального оружия. Не переписывает item.name. */
+  private syncWeaponFromEquipment(): void {
     const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
     if (w) {
       this.weapon = w.kind;
-      this.drawWeaponRange();
+      this.hero.stats.reach = w.reach;
+      this.hero.stats.range = w.range;
+      this.hero.stats.autoAttackCd = w.baseCd;
     }
-    this.hud.setHero(this.hero);
+    this.drawWeaponRange();
     if (!this.selectedAbility) this.hud.setHint(this.idleHint());
   }
 
@@ -371,9 +380,23 @@ export class Battle {
     this.hud.setHint(this.idleHint());
   }
 
+  private equippedWeapon(): WeaponImplicit | undefined {
+    return this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
+  }
+
+  private weaponLabel(): string {
+    const w = this.equippedWeapon();
+    if (w?.typeId && WEAPON_TYPE_BY_ID[w.typeId]) return WEAPON_TYPE_BY_ID[w.typeId].name;
+    return WEAPON_LABEL[this.weapon];
+  }
+
+  private weaponReach(): number {
+    return this.equippedWeapon()?.reach ?? WEAPON_REACH[this.weapon];
+  }
+
   private idleHint(): string {
-    const reach = WEAPON_REACH[this.weapon];
-    return `${WEAPON_LABEL[this.weapon]} достаёт ${reach} ${this.rowsWord(reach)} снизу. Клик по врагу в дальности задаёт цель автоатаки.`;
+    const reach = this.weaponReach();
+    return `${this.weaponLabel()} достаёт ${reach} ${this.rowsWord(reach)} снизу. Клик по врагу в дальности задаёт цель автоатаки.`;
   }
 
   private rowsWord(n: number): string {
@@ -646,29 +669,6 @@ export class Battle {
     this.hud.setHint(this.idleHint());
   }
 
-  setWeapon(kind: WeaponKind): void {
-    this.weapon = kind;
-    this.hero.stats.reach = WEAPON_REACH[kind];
-    this.hero.stats.range = kind === "bow" || kind === "staff" ? "ranged" : "melee";
-    // Песочница: смена типа оружия обновляет implicit на mainhand, аффиксы сохраняются.
-    const main = this.hero.equipment.mainhand;
-    if (main?.weapon) {
-      main.weapon.kind = kind;
-      main.weapon.reach = WEAPON_REACH[kind];
-      main.weapon.range = kind === "bow" || kind === "staff" ? "ranged" : "melee";
-      main.weapon.baseCd = kind === "bow" || kind === "staff" ? 1.6 : kind === "spear" ? 1.4 : 1.2;
-      this.hero.stats.autoAttackCd = main.weapon.baseCd;
-      main.name = WEAPON_LABEL[kind];
-    }
-    const pref = this.livingEnemies().find((u) => u.id === this.hero.preferredTargetId);
-    if (pref && this.distanceOf(pref.pos.row) > WEAPON_REACH[kind]) {
-      this.hero.preferredTargetId = null;
-      this.hud.showToast("Цель вышла из дальности оружия");
-    }
-    this.drawWeaponRange();
-    if (!this.selectedAbility) this.hud.setHint(this.idleHint());
-  }
-
   selectAbility(id: AbilityId): void {
     if (!this.started) {
       this.hud.showToast("Сначала нажми Старт");
@@ -762,8 +762,8 @@ export class Battle {
       void this.performCast(def, u, u.pos);
       return;
     }
-    if (this.distanceOf(u.pos.row) > WEAPON_REACH[this.weapon]) {
-      this.hud.showToast(`Вне дальности: ${WEAPON_LABEL[this.weapon].toLowerCase()}`);
+    if (this.distanceOf(u.pos.row) > this.weaponReach()) {
+      this.hud.showToast(`Вне дальности: ${this.weaponLabel().toLowerCase()}`);
       return;
     }
     this.hero.preferredTargetId = u.id;
@@ -1500,49 +1500,54 @@ export class Battle {
     const target = this.findAutoTarget(attacker, hand);
     if (!target) return;
     const reach = this.weaponReachForHand(attacker, hand);
-    await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2);
-    if (!target.alive || this.destroyed) return;
+    let applied = false;
+    const applyHit = () => {
+      if (applied || !attacker.alive || !target.alive || this.destroyed) return;
+      applied = true;
 
-    let dmg: number;
-    let crit = false;
-    if (attacker.team === "player" && attacker.sheet) {
-      const w: WeaponImplicit | undefined =
-        hand === "mainhand"
-          ? attacker.equipment.mainhand?.weapon
-          : attacker.equipment.offhand?.weapon;
-      const roll = w
-        ? rollWeaponDamage(w.damageMin, w.damageMax)
-        : attacker.stats.atk;
-      crit = rollCrit(attacker.sheet);
-      dmg = autoAttackDamage(roll, attacker.sheet, attacker.atkMultiplier(), crit);
-      if (hand === "offhand") {
-        dmg = Math.max(0, Math.round(dmg * OFFHAND_WEAPON_DAMAGE_MULT));
+      let dmg: number;
+      let crit = false;
+      if (attacker.team === "player" && attacker.sheet) {
+        const w: WeaponImplicit | undefined =
+          hand === "mainhand"
+            ? attacker.equipment.mainhand?.weapon
+            : attacker.equipment.offhand?.weapon;
+        const roll = w
+          ? rollWeaponDamage(w.damageMin, w.damageMax)
+          : attacker.stats.atk;
+        crit = rollCrit(attacker.sheet);
+        dmg = autoAttackDamage(roll, attacker.sheet, attacker.atkMultiplier(), crit);
+        if (hand === "offhand") {
+          dmg = Math.max(0, Math.round(dmg * OFFHAND_WEAPON_DAMAGE_MULT));
+        }
+      } else {
+        crit = rollEnemyCrit();
+        dmg = enemyAutoAttackDamage(attacker.stats.atk, attacker.atkMultiplier(), crit);
       }
-    } else {
-      crit = rollEnemyCrit();
-      dmg = enemyAutoAttackDamage(attacker.stats.atk, attacker.atkMultiplier(), crit);
-    }
 
-    const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
-    if (evaded) {
-      this.vfx.floatingText(target.center.x, target.center.y - 8, "УКЛОН", 0x9aa3a0);
-      if (attacker.team === "player") this.statsTracker.noteHeroAutoDodged();
-      else if (target.team === "player") this.statsTracker.noteHeroDodged();
-      return;
-    }
-    if (attacker.team === "player") {
-      this.statsTracker.noteHeroAutoHit(dealt, crit);
-    }
-    if (target.team === "player") {
-      this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
-    }
-    if (dealt > 0) {
-      const label = crit ? `${dealt}!` : `${dealt}`;
-      this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4, {
-        crit,
-      });
-    }
-    if (castBroken) this.showCastInterrupted(target);
+      const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
+      if (evaded) {
+        this.vfx.floatingText(target.center.x, target.center.y - 8, "УКЛОН", 0x9aa3a0);
+        if (attacker.team === "player") this.statsTracker.noteHeroAutoDodged();
+        else if (target.team === "player") this.statsTracker.noteHeroDodged();
+        return;
+      }
+      if (attacker.team === "player") {
+        this.statsTracker.noteHeroAutoHit(dealt, crit);
+      }
+      if (target.team === "player") {
+        this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
+      }
+      if (dealt > 0) {
+        const label = crit ? `${dealt}!` : `${dealt}`;
+        this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4, {
+          crit,
+        });
+      }
+      if (castBroken) this.showCastInterrupted(target);
+    };
+    await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2, applyHit);
+    applyHit();
   }
 
   private frontClear(): boolean {
@@ -1685,6 +1690,9 @@ export class Battle {
           if (dot.sourceAbilityId) this.statsTracker.noteHeroAbilityDot(dot.sourceAbilityId, dot.dealt);
           else this.statsTracker.noteHeroDamage(dot.dealt);
         }
+      }
+      if (statusTick.dotPopup && statusTick.dotPopup > 0) {
+        this.vfx.floatingText(u.center.x, u.center.y - 10, `${statusTick.dotPopup}`, 0xffe6a0);
       }
       for (const key of Object.keys(u.abilityCd)) {
         u.abilityCd[key] = Math.max(0, (u.abilityCd[key] ?? 0) - combatDt);

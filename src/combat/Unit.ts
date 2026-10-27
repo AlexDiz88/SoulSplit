@@ -96,6 +96,13 @@ export class Unit {
   offhandAutoTimer = 0;
   abilityCd: Record<string, number> = {};
   statuses: StatusEffect[] = [];
+  /** Дробный остаток DoT (урон/кадр < 1 иначе Math.round в applyDamage обнуляет тик). */
+  private dotCarryPhysical = 0;
+  private dotCarryMagical = 0;
+  /** Сумма нанесённого DoT с прошлого всплывающего числа. */
+  private dotFloatAcc = 0;
+  /** Секунды до следующего всплывающего числа DoT. */
+  private dotFloatTimer = 0;
   preferredTargetId: string | null = null;
   /** 0 — удар только что прошёл, 1 — автоатака готова. Во время каста - прогресс подготовки. */
   attackCharge = 0;
@@ -814,11 +821,13 @@ export class Unit {
   /**
    * Тик статусов. DoT/реген атрибутируются по sourceAbilityId.
    * castBroken - каст сорван смертью от DoT.
+   * dotPopup - сумма DoT за секунду (для плавающего текста).
    */
   tickStatuses(dt: number): {
     castBroken: boolean;
     dots: { dealt: number; absorbed: number; sourceAbilityId?: AbilityId }[];
     healed: { amount: number; sourceAbilityId?: AbilityId }[];
+    dotPopup?: number;
   } {
     type DotBucket = { amount: number; sourceAbilityId?: AbilityId };
     const bleed: DotBucket = { amount: 0 };
@@ -851,7 +860,14 @@ export class Unit {
 
     const applyDot = (bucket: DotBucket, channel: "physical" | "magical") => {
       if (bucket.amount <= 0) return;
-      const result = this.applyDamage(bucket.amount, { channel });
+      const prevCarry = channel === "physical" ? this.dotCarryPhysical : this.dotCarryMagical;
+      const total = prevCarry + bucket.amount;
+      const whole = Math.floor(total + 1e-9);
+      const nextCarry = total - whole;
+      if (channel === "physical") this.dotCarryPhysical = nextCarry;
+      else this.dotCarryMagical = nextCarry;
+      if (whole <= 0) return;
+      const result = this.applyDamage(whole, { channel });
       castBroken = castBroken || result.castBroken;
       if (!result.evaded) {
         dots.push({
@@ -866,6 +882,27 @@ export class Unit {
     applyDot(burn, "magical");
     applyDot(poison, "magical");
 
+    for (const dot of dots) this.dotFloatAcc += dot.dealt;
+
+    const hasDot = this.statuses.some((s) => s.kind === "bleed" || s.kind === "burn" || s.kind === "poison");
+    let dotPopup: number | undefined;
+    if (hasDot || this.dotFloatAcc > 0) {
+      this.dotFloatTimer += dt;
+      if (this.dotFloatTimer >= 1) {
+        this.dotFloatTimer -= Math.floor(this.dotFloatTimer);
+        if (this.dotFloatAcc > 0) {
+          dotPopup = this.dotFloatAcc;
+          this.dotFloatAcc = 0;
+        }
+      }
+    }
+    if ((!hasDot || !this.alive) && this.dotFloatAcc > 0) {
+      dotPopup = (dotPopup ?? 0) + this.dotFloatAcc;
+      this.dotFloatAcc = 0;
+      this.dotFloatTimer = 0;
+    }
+    if (!hasDot) this.dotFloatTimer = 0;
+
     const healed: { amount: number; sourceAbilityId?: AbilityId }[] = [];
     for (const bucket of regenBuckets.values()) {
       const amount = this.heal(bucket.amount);
@@ -873,7 +910,7 @@ export class Unit {
     }
 
     this.redraw();
-    return { castBroken, dots, healed };
+    return { castBroken, dots, healed, dotPopup };
   }
 
   flash(color: number): void {

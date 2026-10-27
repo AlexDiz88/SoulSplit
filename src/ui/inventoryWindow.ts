@@ -1,5 +1,5 @@
 import type { Unit } from "../combat/Unit";
-import { canEquipInSlot } from "../items/equipment";
+import { canEquipInSlot, equipBlockedToast } from "../items/equipment";
 import {
   equipFromInventory,
   equipFromInventoryToSlot,
@@ -205,9 +205,14 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (source.kind === "inv") {
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
+        const item = hero.inventory[source.index];
         const result = hero.equipInventoryItemToSlot(source.index, slot);
         if (!result.ok) {
-          toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
+          toast(
+            result.reason === "bad_slot" && item
+              ? equipBlockedToast(item, slot, hero.equipment, "Слот не подходит")
+              : "Нельзя экипировать",
+          );
           return;
         }
         afterChange();
@@ -233,9 +238,14 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (!stashBag) return;
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
+        const item = stashBag[source.index];
         const result = equipFromInventoryToSlot(hero.equipment, stashBag, source.index, slot);
         if (!result.ok) {
-          toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
+          toast(
+            result.reason === "bad_slot" && item
+              ? equipBlockedToast(item, slot, hero.equipment, "Слот не подходит")
+              : "Нельзя экипировать",
+          );
           return;
         }
         hero.applyEquipmentChange();
@@ -262,9 +272,19 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (bagTarget) {
         const to = Number(bagTarget.dataset.inv);
         if (!Number.isFinite(to)) return;
+        const swapIn = hero.inventory[to] ?? null;
         const result = hero.unequipSlotToIndex(source.slot, to);
         if (!result.ok) {
-          toast(result.reason === "bad_slot" ? "Нельзя обменять с этим предметом" : "Нельзя снять");
+          toast(
+            result.reason === "bad_slot" && swapIn
+              ? equipBlockedToast(
+                  swapIn,
+                  source.slot,
+                  hero.equipment,
+                  "Нельзя обменять с этим предметом",
+                )
+              : "Нельзя снять",
+          );
           return;
         }
         afterChange();
@@ -273,9 +293,19 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (stashTarget && stashBag) {
         const to = Number(stashTarget.dataset.stash);
         if (!Number.isFinite(to)) return;
+        const swapIn = stashBag[to] ?? null;
         const result = unequipToInventoryAt(hero.equipment, stashBag, source.slot, to);
         if (!result.ok) {
-          toast(result.reason === "bad_slot" ? "Нельзя обменять с этим предметом" : "Нельзя снять");
+          toast(
+            result.reason === "bad_slot" && swapIn
+              ? equipBlockedToast(
+                  swapIn,
+                  source.slot,
+                  hero.equipment,
+                  "Нельзя обменять с этим предметом",
+                )
+              : "Нельзя снять",
+          );
           return;
         }
         hero.applyEquipmentChange();
@@ -285,9 +315,14 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (equipTarget) {
         const slot = equipTarget.dataset.slot as EquipSlotId;
         if (slot === source.slot) return;
+        const moving = hero.equipment[source.slot];
         const result = hero.swapEquipSlots(source.slot, slot);
         if (!result.ok) {
-          toast("Слот не подходит");
+          toast(
+            moving
+              ? equipBlockedToast(moving, slot, hero.equipment, "Слот не подходит")
+              : "Слот не подходит",
+          );
           return;
         }
         afterChange();
@@ -331,11 +366,16 @@ export function mountInventoryWindow(): InventoryWindowApi {
       toast("Экипировку можно менять только вне боя");
       return;
     }
+    const item = hero.inventory[invIndex];
     const result = forceSlot
       ? hero.equipInventoryItemToSlot(invIndex, forceSlot)
       : hero.equipInventoryItem(invIndex);
     if (!result.ok) {
-      toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
+      toast(
+        result.reason === "bad_slot" && item
+          ? equipBlockedToast(item, forceSlot, hero.equipment, "Слот не подходит")
+          : "Нельзя экипировать",
+      );
       return;
     }
     afterChange();
@@ -469,9 +509,14 @@ export function mountInventoryWindow(): InventoryWindowApi {
         const index = Number(stashCell.dataset.stash);
         if (!Number.isFinite(index)) return;
         if (ctrl) {
+          const item = stashBag[index];
           const result = equipFromInventory(hero.equipment, stashBag, index);
           if (!result.ok) {
-            toast(result.reason === "bad_slot" ? "Слот не подходит" : "Нельзя экипировать");
+            toast(
+              result.reason === "bad_slot" && item
+                ? equipBlockedToast(item, null, hero.equipment, "Слот не подходит")
+                : "Нельзя экипировать",
+            );
             return;
           }
           hero.applyEquipmentChange();
