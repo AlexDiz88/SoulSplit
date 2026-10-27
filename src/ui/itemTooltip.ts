@@ -192,6 +192,42 @@ export function fillItemTooltip(
   host.append(...renderItemTooltip(item, options));
 }
 
+/**
+ * Ставит тултип под нижней гранью якоря (ячейка/слот).
+ * Если снизу на экране нет места - над верхней гранью.
+ * Иконка якоря не перекрывается.
+ * Крепится к #hud с position:fixed, чтобы не обрезаться окном и быть поверх сумки.
+ */
+export function placeItemTip(
+  tip: HTMLElement,
+  anchor: HTMLElement,
+  _container?: HTMLElement,
+  opts?: { gap?: number; margin?: number },
+): void {
+  const hud = document.getElementById("hud");
+  if (hud && tip.parentElement !== hud) hud.append(tip);
+
+  tip.hidden = false;
+  tip.style.position = "fixed";
+  tip.style.zIndex = "60";
+
+  const gap = opts?.gap ?? 8;
+  const margin = opts?.margin ?? 6;
+  const rect = anchor.getBoundingClientRect();
+  const tipRect = tip.getBoundingClientRect();
+
+  let left = rect.left + (rect.width - tipRect.width) / 2;
+  left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+
+  const spaceBelow = window.innerHeight - rect.bottom - margin;
+  const need = tipRect.height + gap;
+  const top =
+    spaceBelow >= need ? rect.bottom + gap : rect.top - tipRect.height - gap;
+
+  tip.style.left = `${left}px`;
+  tip.style.top = `${top}px`;
+}
+
 /** Пустой слот в окне сравнения. */
 export function fillEmptyItemTooltip(host: HTMLElement, slot: EquipSlotId, caption?: string): void {
   host.replaceChildren();

@@ -5,7 +5,7 @@ import type { ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
-import { fillItemTooltip } from "./itemTooltip";
+import { fillItemTooltip, placeItemTip } from "./itemTooltip";
 import "./itemRarity.css";
 import "./characterSheet.css";
 
@@ -208,15 +208,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     } else {
       fillItemTooltip(tip, item, { equippedSlot: id });
     }
-    tip.hidden = false;
-    const winRect = win.getBoundingClientRect();
-    const rect = slot.getBoundingClientRect();
-    const tipRect = tip.getBoundingClientRect();
-    let left = rect.right - winRect.left + 10;
-    if (left + tipRect.width > winRect.width - 8) left = rect.left - winRect.left - tipRect.width - 10;
-    const top = Math.min(Math.max(8, rect.top - winRect.top), winRect.height - tipRect.height - 8);
-    tip.style.left = `${Math.max(8, left)}px`;
-    tip.style.top = `${top}px`;
+    placeItemTip(tip, slot, win);
   };
 
   dollWrap.addEventListener("pointerover", (ev) => {

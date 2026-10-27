@@ -33,6 +33,8 @@
   height: auto;
   max-height: calc(100% - 16px - var(--inv-bag-stack-h, 470px) - 28px);
   padding: 16px var(--inv-bag-pad-x, 14px) 20px;
+  /* Тултип слота может выходить за окно (под/над иконкой), не обрезаем. */
+  overflow: visible;
 }
 
 .cs-overlay.cs-mode-gear .cs-body {

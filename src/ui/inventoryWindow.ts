@@ -16,7 +16,7 @@ import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { getItemDrag, type ItemDragSource } from "./itemDrag";
-import { fillItemTooltip } from "./itemTooltip";
+import { fillItemTooltip, placeItemTip } from "./itemTooltip";
 import "./itemRarity.css";
 import "./inventoryWindow.css";
 
@@ -107,17 +107,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const placeTip = (anchor: HTMLElement): void => {
-    tip.hidden = false;
-    const rootRect = root.getBoundingClientRect();
-    const rect = anchor.getBoundingClientRect();
-    const tipRect = tip.getBoundingClientRect();
-    let left = rect.right - rootRect.left + 8;
-    if (left + tipRect.width > rootRect.width - 6) {
-      left = rect.left - rootRect.left - tipRect.width - 8;
-    }
-    const top = Math.min(Math.max(6, rect.top - rootRect.top), rootRect.height - tipRect.height - 6);
-    tip.style.left = `${Math.max(6, left)}px`;
-    tip.style.top = `${top}px`;
+    placeItemTip(tip, anchor, root);
   };
 
   const showBagTip = (cell: HTMLElement): void => {
