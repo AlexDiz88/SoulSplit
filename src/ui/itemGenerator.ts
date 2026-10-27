@@ -1,8 +1,16 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
 import { AFFIX_CATALOG, formatRolledAffix } from "../items/affixCatalog";
+import {
+  baseVariantLabel,
+  formatRolledItemBase,
+  ITEM_BASE_CATALOG,
+  type ItemBaseDef,
+  type ItemBaseVariantKey,
+} from "../items/baseCatalog";
 import { generateItem } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
+import { OFFHAND_TYPES } from "../items/offhandTypes";
 import { deniedStatsForSlot, familiesForSlot, isStatAllowedOnSlot } from "../items/slotRules";
 import { ALL_EQUIP_SLOTS, isAspectItemSlot, SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import {
@@ -334,6 +342,9 @@ function renderItemCard(item: ItemDef): HTMLElement {
         `Дальность: ${item.weapon.reach} · ${item.weapon.range === "melee" ? "ближний" : "дальний"}`,
       ),
     );
+  } else if (item.base) {
+    card.append(el("div", "igen-card-group", "База"));
+    card.append(el("div", "igen-card-affix base", formatRolledItemBase(item.base)));
   }
 
   if (!item.affixes.length) {
@@ -367,10 +378,11 @@ function buildTabs(): HTMLElement {
   const wrap = el("div", "igen-tabs");
   const bar = el("div", "igen-tab-bar");
 
-  type TabId = "params" | "weapons" | "slots" | "rarity";
+  type TabId = "params" | "weapons" | "bases" | "slots" | "rarity";
   const tabs: { id: TabId; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
     { id: "weapons", label: "Таблица оружия" },
+    { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
   ];
@@ -396,6 +408,12 @@ function buildTabs(): HTMLElement {
   panelWeapons.hidden = true;
   panelWeapons.append(buildWeaponsSection());
   panels.set("weapons", panelWeapons);
+
+  const panelBases = el("div", "igen-tab-panel");
+  panelBases.dataset.panel = "bases";
+  panelBases.hidden = true;
+  panelBases.append(buildBasesSection());
+  panels.set("bases", panelBases);
 
   const panelSlots = el("div", "igen-tab-panel");
   panelSlots.dataset.panel = "slots";
@@ -424,8 +442,117 @@ function buildTabs(): HTMLElement {
     btn.addEventListener("click", () => setTab(id));
   }
 
-  wrap.append(bar, panelParams, panelWeapons, panelSlots, panelRarity);
+  wrap.append(bar, panelParams, panelWeapons, panelBases, panelSlots, panelRarity);
   return wrap;
+}
+
+function variantKeyId(key: ItemBaseVariantKey): string {
+  return key;
+}
+
+function buildBasesSection(): HTMLElement {
+  const section = el("section", "igen-section");
+  section.append(
+    el("h3", "igen-section-title", "Базы предметов"),
+    el(
+      "p",
+      "igen-note",
+      "На предмете всегда ровно 1 база из пула слота/типа. Тиры F…A5 как у аффиксов. Дубли база↔аффикс разрешены. Оружие: урон + кулдаун (см. «Таблица оружия»).",
+    ),
+  );
+
+  const scroll = el("div", "igen-table-scroll");
+  const table = el("table", "igen-table");
+  const thead = el("thead");
+  const hr = el("tr");
+  for (const h of ["Слот / тип", "Варианты базы", "variantKey", "Примечание"]) {
+    hr.append(el("th", "", h));
+  }
+  thead.append(hr);
+  table.append(thead);
+
+  const tbody = el("tbody");
+
+  type Group = { label: string; note: string; defs: ItemBaseDef[] };
+  const groups: Group[] = [];
+
+  const armorSlots: EquipSlotId[] = [
+    "head",
+    "chest",
+    "shoulders",
+    "hands",
+    "waist",
+    "legs",
+    "feet",
+    "neck",
+    "ring1",
+    "trinket",
+  ];
+  for (const slot of armorSlots) {
+    const defs = ITEM_BASE_CATALOG.filter(
+      (b) => b.pool.kind === "slot" && b.pool.slot === slot,
+    );
+    if (!defs.length) continue;
+    const note =
+      slot === "waist"
+        ? "Заглушка: кол-во зелий (в sheet пока не суммируется)"
+        : slot === "trinket"
+          ? "aspectDamage задаёт aspectTag на любой редкости"
+          : "";
+    groups.push({
+      label: slot === "ring1" ? "Кольцо (ring1/ring2)" : SLOT_LABEL[slot],
+      note,
+      defs,
+    });
+  }
+
+  for (const oh of OFFHAND_TYPES) {
+    const defs = ITEM_BASE_CATALOG.filter(
+      (b) => b.pool.kind === "offhand" && b.pool.typeId === oh.id,
+    );
+    groups.push({
+      label: oh.name,
+      note:
+        oh.id === "tome"
+          ? "aspectDamage задаёт aspectTag на любой редкости"
+          : "",
+      defs,
+    });
+  }
+
+  groups.push({
+    label: "Оружие (mainhand)",
+    note: "База = диапазон урона + кулдаун атаки по типу; тиры F…A5. См. вкладку «Таблица оружия».",
+    defs: [],
+  });
+
+  for (const g of groups) {
+    const tr = el("tr");
+    tr.append(el("td", "", g.label));
+    if (g.defs.length) {
+      tr.append(
+        el(
+          "td",
+          "",
+          g.defs.map((d) => baseVariantLabel(d)).join(" / "),
+        ),
+        el(
+          "td",
+          "igen-mono",
+          g.defs.map((d) => variantKeyId(d.variantKey)).join(", "),
+        ),
+      );
+    } else {
+      tr.append(el("td", "", "урон + кулдаун"), el("td", "igen-mono", "weapon"));
+    }
+    tr.append(el("td", "", g.note));
+    tbody.append(tr);
+  }
+
+  table.append(tbody);
+  scroll.append(table);
+  section.append(scroll);
+  return section;
 }
 
 function formatBaseWeaponDps(damageMin: number, damageMax: number, baseCd: number): string {

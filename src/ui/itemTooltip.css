@@ -4,8 +4,8 @@
   --tip-c: #b0aaa0;
   /* Иконка = 2x2 ячейки инвентаря. */
   --tip-icon: calc(2 * var(--inv-slot, 76px));
-  max-width: max(260px, calc(var(--tip-icon) + 48px));
-  padding: 12px 16px 13px;
+  max-width: max(300px, calc(var(--tip-icon) + 72px));
+  padding: 14px 18px 15px;
   border: 1px solid color-mix(in srgb, var(--tip-c) 70%, #5a4828);
   background: #08090a;
   box-shadow:
@@ -36,7 +36,7 @@
 .item-tip-caption {
   margin: 0 0 8px;
   color: #c4a35a;
-  font-size: 0.82rem;
+  font-size: 0.95rem;
   font-weight: 800;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -87,7 +87,7 @@
 
 .item-tip-name {
   color: var(--tip-c);
-  font-size: 1.18rem;
+  font-size: 1.38rem;
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: 0.01em;
@@ -103,7 +103,7 @@
 .item-tip-sub {
   margin-top: 3px;
   color: #9a9a9a;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 600;
   letter-spacing: 0.02em;
 }
@@ -130,9 +130,24 @@
   gap: 3px;
 }
 
+.item-tip-base-stat {
+  margin-top: 6px;
+  color: #d8d4c8;
+  font-size: 1.08rem;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+}
+
+.item-tip-base-line {
+  color: #c8c4b8;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .item-tip-dps {
   margin-bottom: 2px;
-  font-size: 1.22rem;
+  font-size: 1.4rem;
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: 0.02em;
@@ -145,7 +160,7 @@
 .item-tip-offhand-penalty {
   margin-top: 6px;
   color: #c4a35a;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
@@ -156,7 +171,7 @@
 
 .item-tip-stat {
   color: #f0f0f0;
-  font-size: 0.95rem;
+  font-size: 1.08rem;
   font-weight: 600;
   line-height: 1.35;
 }
@@ -183,9 +198,9 @@
 
 .item-tip-affix {
   color: #9ea0ff;
-  font-size: 0.92rem;
+  font-size: 1.08rem;
   font-weight: 600;
-  line-height: 1.35;
+  line-height: 1.4;
 }
 
 .item-tip-affix-prefix,
@@ -202,26 +217,26 @@
 
 .item-tip-level {
   color: #8e8e8e;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   font-weight: 600;
 }
 
 .item-tip-sell {
   color: #c9b87a;
-  font-size: 0.8rem;
+  font-size: 0.98rem;
   font-weight: 700;
 }
 
 /* Пустой слот экипировки */
 .item-tip-empty-name {
   color: #c8c2b2;
-  font-size: 1.05rem;
+  font-size: 1.22rem;
   font-weight: 800;
 }
 
 .item-tip-empty-meta {
   margin-top: 4px;
   color: #8e8e8e;
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   font-weight: 600;
 }

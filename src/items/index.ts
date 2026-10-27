@@ -2,6 +2,7 @@ export * from "./slots";
 export * from "./types";
 export * from "./tiers";
 export * from "./affixCatalog";
+export * from "./baseCatalog";
 export * from "./slotRules";
 export * from "./generate";
 export * from "./starterWeapons";

@@ -1,6 +1,7 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import { resolveMerchantPortraitUrl } from "../art/menuBackground";
 import { formatRolledAffix } from "../items/affixCatalog";
+import { formatRolledItemBase } from "../items/baseCatalog";
 import type { EquipmentMap } from "../items/equipment";
 import { addItemToInventory } from "../items/inventory";
 import type { EquipSlotId } from "../items/slots";
@@ -62,6 +63,8 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
   }
   if (item.weapon) {
     host.append(el("div", lineClass, `DPS ${formatWeaponDps(item.weapon)}`));
+  } else if (item.base) {
+    host.append(el("div", `${affixClass} market-affix-base`, formatRolledItemBase(item.base)));
   }
   const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
   const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
@@ -71,7 +74,7 @@ function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, af
   for (const a of suffixes) {
     host.append(el("div", `${affixClass} market-affix-suffix`, formatRolledAffix(a)));
   }
-  if (!item.affixes.length && !item.weapon && !item.offhand) {
+  if (!item.affixes.length && !item.weapon && !item.base) {
     host.append(el("div", lineClass, "Без аффиксов"));
   }
 }

@@ -1,7 +1,7 @@
 import { formatRolledAffix } from "../items/affixCatalog";
+import { formatRolledItemBase } from "../items/baseCatalog";
 import { gripLabel } from "../items/equipment";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
-import { OFFHAND_TYPE_BY_ID } from "../items/offhandTypes";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
@@ -72,7 +72,7 @@ function itemIconNode(item: ItemDef): HTMLElement {
 
 /**
  * Содержимое тултипа предмета в стиле Hero Siege:
- * название → слот → база (DPS) → аффиксы → уровень.
+ * название → слот (не для оффхенда) → база → [DPS оружия] → аффиксы → уровень.
  * Редкость видна по цвету названия, отдельной строкой не пишем.
  */
 export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {}): HTMLElement[] {
@@ -82,6 +82,8 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   const offhandWeapon =
     Boolean(item.weapon) && options.equippedSlot === "offhand";
   const damageMult = offhandWeapon ? OFFHAND_WEAPON_DAMAGE_MULT : 1;
+  /** Чистый оффхенд (щит/том/сфера…), не dual-wield оружие. */
+  const isOffhandItem = Boolean(item.offhand) && !item.weapon;
 
   if (options.caption) {
     nodes.push(el("div", "item-tip-caption", options.caption));
@@ -90,27 +92,38 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     nodes.push(itemIconNode(item));
   }
 
-  nodes.push(
-    el("div", "item-tip-name", item.name),
-    el("div", "item-tip-sub", itemSlotLabel(item)),
-  );
+  // Верхний блок: имя → слот (кроме оффхенда) → база.
+  nodes.push(el("div", "item-tip-name", item.name));
+  if (!isOffhandItem) {
+    nodes.push(el("div", "item-tip-sub", itemSlotLabel(item)));
+  }
+  if (item.weapon) {
+    nodes.push(
+      el(
+        "div",
+        "item-tip-base-stat",
+        `Урон ${item.weapon.damageMin}-${item.weapon.damageMax} · КД ${item.weapon.baseCd.toFixed(1)} с`,
+      ),
+    );
+  } else if (item.base) {
+    nodes.push(el("div", "item-tip-base-stat", formatRolledItemBase(item.base)));
+  }
 
-  const hasBase = Boolean(item.weapon) || Boolean(item.offhand);
   const hasAffixes = item.affixes.length > 0;
 
-  nodes.push(rule());
-
+  // DPS оружия - отдельный блок под верхним.
   if (item.weapon) {
-    const base = el("div", "item-tip-base");
+    nodes.push(rule());
+    const dpsBlock = el("div", "item-tip-base");
     const dps = el("div", "item-tip-dps");
     dps.append(
       el("span", "item-tip-dps-label", "DPS"),
       document.createTextNode(" "),
       el("span", "item-tip-dps-value", formatWeaponDps(item.weapon, damageMult)),
     );
-    base.append(dps);
+    dpsBlock.append(dps);
     if (offhandWeapon) {
-      base.append(
+      dpsBlock.append(
         el(
           "div",
           "item-tip-offhand-penalty",
@@ -118,14 +131,11 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
         ),
       );
     }
-    nodes.push(base);
-  } else if (item.offhand) {
-    const typeName = OFFHAND_TYPE_BY_ID[item.offhand.typeId]?.name ?? "Оффхенд";
-    nodes.push(el("div", "item-tip-base", typeName));
+    nodes.push(dpsBlock);
   }
 
   if (hasAffixes) {
-    if (hasBase) nodes.push(rule());
+    nodes.push(rule());
     const affixes = el("div", "item-tip-affixes");
     const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
     const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
@@ -138,7 +148,7 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     nodes.push(affixes);
   }
 
-  if (hasBase || hasAffixes) nodes.push(rule());
+  nodes.push(rule());
 
   const footer = el("div", "item-tip-footer");
   footer.append(el("div", "item-tip-level", `Уровень предмета ${item.itemLevel}`));

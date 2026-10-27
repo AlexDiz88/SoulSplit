@@ -1,5 +1,12 @@
 import type { WeaponKind } from "../types";
 import type { ItemGrip } from "./grip";
+import {
+  rollTierIndex,
+  sampleAffixQuality,
+  TIER_COUNT,
+  TIER_IDS,
+  type AffixTierId,
+} from "./tiers";
 
 /**
  * Визуальный / предметный тип оружия (имя + арт + баланс).
@@ -209,19 +216,93 @@ export function weaponTypesForSlot(slot: "mainhand" | "offhand"): readonly Weapo
   return WEAPON_TYPES.filter((t) => t.grip === "mainhand" || t.grip === "either" || t.grip === "twoHand");
 }
 
-/** Урон/КД от базы типа с ростом от itemLevel. */
+/** Старая линейная шкала - репрезентативный mid полосы тира (ilvl 1,3,…,19). */
+function legacyScaleAtTier(tierIndex: number): number {
+  const ilvl = 2 * Math.max(0, Math.min(TIER_COUNT - 1, tierIndex)) + 1;
+  return 1 + (ilvl - 1) * 0.12;
+}
+
+export interface WeaponDamageTierRange {
+  id: AffixTierId;
+  /** Окно для damageMin. */
+  minLo: number;
+  minHi: number;
+  /** Окно для damageMax. */
+  maxLo: number;
+  maxHi: number;
+  /** КД: пока плоский (= baseCd типа). */
+  cdLo: number;
+  cdHi: number;
+}
+
+/** 10 тиров урона/КД из текущих чисел типа + старой формулы роста. */
+export function weaponDamageTiers(def: WeaponTypeDef): WeaponDamageTierRange[] {
+  const tiers: WeaponDamageTierRange[] = [];
+  for (let i = 0; i < TIER_COUNT; i++) {
+    const scale = legacyScaleAtTier(i);
+    const nextScale = legacyScaleAtTier(Math.min(TIER_COUNT - 1, i + 1));
+    const centerMin = Math.max(1, Math.round(def.damageMin * scale));
+    const centerMax = Math.max(centerMin, Math.round(def.damageMax * scale));
+    const stepMin = Math.max(1, Math.round(Math.abs(def.damageMin * nextScale - def.damageMin * scale) / 2));
+    const stepMax = Math.max(1, Math.round(Math.abs(def.damageMax * nextScale - def.damageMax * scale) / 2));
+    const minLo = Math.max(1, centerMin - stepMin);
+    const minHi = Math.max(minLo, centerMin + stepMin);
+    const maxLo = Math.max(minLo, centerMax - stepMax);
+    const maxHi = Math.max(maxLo, centerMax + stepMax);
+    tiers.push({
+      id: TIER_IDS[i]!,
+      minLo,
+      minHi,
+      maxLo,
+      maxHi,
+      cdLo: def.baseCd,
+      cdHi: def.baseCd,
+    });
+  }
+  return tiers;
+}
+
+/**
+ * Детерминированный mid-roll без rng (стартеры / превью).
+ * Тир = baseTierIndex(ilvl), quality = 0.5.
+ */
 export function scaleWeaponStats(
   def: WeaponTypeDef,
   itemLevel: number,
 ): { damageMin: number; damageMax: number; baseCd: number; reach: number } {
-  const lvl = Math.max(1, itemLevel);
-  const scale = 1 + (lvl - 1) * 0.12;
-  const damageMin = Math.max(1, Math.round(def.damageMin * scale));
-  const damageMax = Math.max(damageMin, Math.round(def.damageMax * scale));
+  const tiers = weaponDamageTiers(def);
+  const idx = Math.min(TIER_COUNT - 1, Math.max(0, Math.ceil(Math.max(1, itemLevel) / 2) - 1));
+  const t = tiers[idx]!;
+  const q = 0.5;
+  const damageMin = Math.max(1, Math.round(t.minLo + q * (t.minHi - t.minLo)));
+  const damageMax = Math.max(damageMin, Math.round(t.maxLo + q * (t.maxHi - t.maxLo)));
   return {
     damageMin,
     damageMax,
     baseCd: def.baseCd,
     reach: def.reach,
+  };
+}
+
+/** Ролл урона/КД по схеме тиров F…A5 (как аффиксы). */
+export function rollWeaponStats(
+  def: WeaponTypeDef,
+  itemLevel: number,
+  rng: () => number,
+): { damageMin: number; damageMax: number; baseCd: number; reach: number; tierId: AffixTierId } {
+  const tiers = weaponDamageTiers(def);
+  const tierIndex = rollTierIndex(itemLevel, rng);
+  const t = tiers[tierIndex]!;
+  const q = sampleAffixQuality(rng);
+  const damageMin = Math.max(1, Math.round(t.minLo + q * (t.minHi - t.minLo)));
+  const damageMax = Math.max(damageMin, Math.round(t.maxLo + q * (t.maxHi - t.maxLo)));
+  const baseCd =
+    t.cdHi <= t.cdLo ? t.cdLo : Number((t.cdLo + q * (t.cdHi - t.cdLo)).toFixed(2));
+  return {
+    damageMin,
+    damageMax,
+    baseCd,
+    reach: def.reach,
+    tierId: t.id,
   };
 }

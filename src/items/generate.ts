@@ -1,7 +1,7 @@
 import { pickItemIconUrl } from "../art/itemIcons";
 import { ALL_ASPECTS, ASPECT_LABEL } from "../abilities/definitions";
 import type { Aspect } from "../types";
-import type { AffixDef } from "./types";
+import type { AffixDef, RolledItemBase } from "./types";
 import {
   RARITY_AFFIX_COUNT,
   type AffixSlot,
@@ -13,6 +13,12 @@ import {
   type WeaponImplicit,
 } from "./types";
 import { AFFIX_CATALOG, rollAffix } from "./affixCatalog";
+import {
+  basesForOffhand,
+  basesForSlot,
+  rollItemBase,
+  type ItemBaseDef,
+} from "./baseCatalog";
 import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
 import { isAspectItemSlot, type EquipSlotId } from "./slots";
 import {
@@ -21,7 +27,7 @@ import {
   type OffhandTypeId,
 } from "./offhandTypes";
 import {
-  scaleWeaponStats,
+  rollWeaponStats,
   weaponTypesForSlot,
   WEAPON_TYPE_BY_ID,
   type WeaponTypeId,
@@ -74,9 +80,20 @@ function pickAffixSlot(def: AffixDef, rng: () => number): AffixSlot {
   return rng() < 0.5 ? "prefix" : "suffix";
 }
 
-/** Бонус аспекта (и aspectTag) только на rare+. */
+/** Бонус аспекта-аффикса (и aspectTag без базы-аспекта) только на rare+. */
 function rarityAllowsAspectBonus(rarity: ItemRarity): boolean {
   return rarity === "rare" || rarity === "epic";
+}
+
+/** Выбор аспекта с весами изученных (без проверки редкости/слота). */
+function pickAspect(
+  learned: Aspect[] | undefined,
+  force: Aspect | undefined,
+  rng: () => number,
+): Aspect {
+  if (force) return force;
+  const learnedSet = new Set(learned ?? []);
+  return pickWeighted(ALL_ASPECTS, (s) => (learnedSet.has(s) ? 3 : 1), rng) ?? ALL_ASPECTS[0]!;
 }
 
 function rollAspectTag(
@@ -88,10 +105,7 @@ function rollAspectTag(
 ): Aspect | undefined {
   if (!isAspectItemSlot(slot)) return undefined;
   if (!rarityAllowsAspectBonus(rarity)) return undefined;
-  if (force) return force;
-  const learnedSet = new Set(learned ?? []);
-  const pick = pickWeighted(ALL_ASPECTS, (s) => (learnedSet.has(s) ? 3 : 1), rng);
-  return pick ?? undefined;
+  return pickAspect(learned, force, rng);
 }
 
 function makeWeaponImplicit(
@@ -106,7 +120,7 @@ function makeWeaponImplicit(
     forced && (slot === "mainhand" || forced.grip === "either")
       ? forced
       : pool[randInt(rng, 0, pool.length - 1)]!;
-  const stats = scaleWeaponStats(def, itemLevel);
+  const stats = rollWeaponStats(def, itemLevel, rng);
   return {
     kind: def.kind,
     typeId: def.id,
@@ -123,6 +137,45 @@ function makeWeaponImplicit(
 function makeOffhandImplicit(rng: () => number): OffhandImplicit {
   const def = OFFHAND_TYPES[randInt(rng, 0, OFFHAND_TYPES.length - 1)]!;
   return { typeId: def.id };
+}
+
+/**
+ * Ролл одной базы из пула.
+ * Если база аспектная - aspectTag задаётся сразу (любая редкость).
+ * Иначе aspectTag как раньше (rare+ на aspect-слотах).
+ */
+function rollBaseAndAspect(
+  pool: ItemBaseDef[],
+  slot: EquipSlotId,
+  rarity: ItemRarity,
+  itemLevel: number,
+  learned: Aspect[] | undefined,
+  force: Aspect | undefined,
+  rng: () => number,
+  /** Для оффхенда без семьи aspect - не роллить rare+ aspectTag. */
+  allowAffixAspectTag: boolean,
+): { base: RolledItemBase | undefined; aspectTag: Aspect | undefined } {
+  const picked = pickWeighted(pool, (b) => b.weight ?? 10, rng);
+  if (!picked) {
+    return {
+      base: undefined,
+      aspectTag: allowAffixAspectTag
+        ? rollAspectTag(slot, rarity, learned, force, rng)
+        : undefined,
+    };
+  }
+
+  if (picked.variantKey === "aspectDamage") {
+    const aspect = pickAspect(learned, force, rng);
+    const base = rollItemBase({ def: picked, itemLevel, rng, aspect });
+    return { base, aspectTag: aspect };
+  }
+
+  const base = rollItemBase({ def: picked, itemLevel, rng });
+  const aspectTag = allowAffixAspectTag
+    ? rollAspectTag(slot, rarity, learned, force, rng)
+    : undefined;
+  return { base, aspectTag };
 }
 
 function weaponDisplayName(typeId: WeaponTypeId | undefined, kindLabelFallback: string): string {
@@ -180,6 +233,7 @@ function rollAffixes(
   const pool = familyOverride
     ? poolForFamilies(slot, familyOverride, aspectTag)
     : poolForSlot(slot, aspectTag);
+  // Уникальность только между аффиксами; база в usedStats не входит.
   const usedStats = new Set<string>();
   const affixes: RolledAffix[] = [];
 
@@ -262,9 +316,16 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     const offhand = makeOffhandImplicit(rng);
     const typeDef = OFFHAND_TYPE_BY_ID[offhand.typeId];
     const allowsAspect = typeDef.families.includes("aspect");
-    const aspectTag = allowsAspect
-      ? rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng)
-      : undefined;
+    const { base, aspectTag } = rollBaseAndAspect(
+      basesForOffhand(offhand.typeId),
+      slot,
+      rarity,
+      itemLevel,
+      opts.learnedAspects,
+      opts.forceAspect,
+      rng,
+      allowsAspect,
+    );
     const affixes = rollAffixes(
       slot,
       rarity,
@@ -282,11 +343,21 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
       affixes,
       icon: pickItemIconUrl(slot, rarity, rng, { offhandArt: typeDef.art }),
       aspectTag,
+      base,
       offhand,
     };
   }
 
-  const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
+  const { base, aspectTag } = rollBaseAndAspect(
+    basesForSlot(slot),
+    slot,
+    rarity,
+    itemLevel,
+    opts.learnedAspects,
+    opts.forceAspect,
+    rng,
+    isAspectItemSlot(slot),
+  );
   const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng);
   return {
     id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
@@ -297,5 +368,6 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
     affixes,
     icon: pickItemIconUrl(slot, rarity, rng),
     aspectTag,
+    base,
   };
 }

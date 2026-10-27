@@ -66,6 +66,24 @@ export interface OffhandImplicit {
   typeId: OffhandTypeId;
 }
 
+/**
+ * Зароллированная база предмета (не оружие).
+ * Оружие хранит базу в `weapon` (урон + baseCd).
+ * `potionCount` - заглушка пояса, в sheet не суммируется.
+ */
+export type ItemBaseStatKey = StatId | "potionCount";
+
+export interface RolledItemBase {
+  baseId: string;
+  /** Реальный стат или stub пояса. */
+  statId: ItemBaseStatKey;
+  value: number;
+  label: string;
+  tierId?: AffixTierId;
+  tierMin?: number;
+  tierMax?: number;
+}
+
 export interface ItemDef {
   id: string;
   name: string;
@@ -77,6 +95,8 @@ export interface ItemDef {
   icon?: string;
   /** Оружие / оффхенд / аксессуар. */
   aspectTag?: Aspect;
+  /** База брони / аксессуара / оффхенда (не для оружия). */
+  base?: RolledItemBase;
   weapon?: WeaponImplicit;
   /** Взаимоисключает weapon: предмет левой руки без автоатаки. */
   offhand?: OffhandImplicit;

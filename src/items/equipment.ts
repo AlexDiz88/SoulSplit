@@ -1,5 +1,6 @@
 import { createBaseHeroSheet, emptySheet, addToSheet, applyStatCaps, type HeroStatSheet } from "../stats/sheet";
 import type { StatId } from "../stats/statIds";
+import { isCombatBaseStat } from "./baseCatalog";
 import { GRIP_LABEL, type ItemGrip } from "./grip";
 import { OFFHAND_TYPE_BY_ID } from "./offhandTypes";
 import type { ItemDef, WeaponImplicit } from "./types";
@@ -18,11 +19,23 @@ export function affixesToDelta(items: ItemDef[]): Partial<Record<StatId, number>
   return delta;
 }
 
-/** База героя + сумма аффиксов экипировки. */
+/** Сумма баз предметов (stub зелий и пр. не-статы пропускаются). */
+export function basesToDelta(items: ItemDef[]): Partial<Record<StatId, number>> {
+  const delta: Partial<Record<StatId, number>> = {};
+  for (const item of items) {
+    const b = item.base;
+    if (!b || !isCombatBaseStat(b.statId)) continue;
+    delta[b.statId] = (delta[b.statId] ?? 0) + b.value;
+  }
+  return delta;
+}
+
+/** База героя + базы предметов + аффиксы экипировки. */
 export function computeHeroSheet(equipment: EquipmentMap, base = createBaseHeroSheet()): HeroStatSheet {
   const items = Object.values(equipment).filter((x): x is ItemDef => !!x);
   const sheet = emptySheet();
   addToSheet(sheet, base);
+  addToSheet(sheet, basesToDelta(items));
   addToSheet(sheet, affixesToDelta(items));
   return applyStatCaps(sheet);
 }

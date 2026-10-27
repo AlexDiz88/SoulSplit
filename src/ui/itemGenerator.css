@@ -430,6 +430,15 @@
   color: #c4b0e0;
 }
 
+.igen-card-affix.base {
+  color: #d8c89a;
+}
+
+.igen-mono {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.88em;
+}
+
 .igen-section {
   margin-top: 0;
 }
