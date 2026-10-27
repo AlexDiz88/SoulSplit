@@ -226,20 +226,22 @@ export function rollItemBase(opts: RollItemBaseOptions): RolledItemBase {
   };
 }
 
+/** Основной бонус базы и опциональный тир "[48-66] D". */
+export function rolledItemBaseParts(b: RolledItemBase): { main: string; tierMeta?: string } {
+  const main =
+    b.statId === "potionCount"
+      ? `+${b.value} ${b.label}`
+      : formatAffixBonus(b.statId, b.value, b.label);
+  if (b.tierId !== undefined && b.tierMin !== undefined && b.tierMax !== undefined) {
+    return { main, tierMeta: `[${b.tierMin}-${b.tierMax}] ${b.tierId}` };
+  }
+  return { main };
+}
+
 /** Текст базы: "+52 здоровья [48-66] D" / stub зелий. */
 export function formatRolledItemBase(b: RolledItemBase): string {
-  if (b.statId === "potionCount") {
-    const bonus = `+${b.value} ${b.label}`;
-    if (b.tierId !== undefined && b.tierMin !== undefined && b.tierMax !== undefined) {
-      return `${bonus} [${b.tierMin}-${b.tierMax}] ${b.tierId}`;
-    }
-    return bonus;
-  }
-  const bonus = formatAffixBonus(b.statId, b.value, b.label);
-  if (b.tierId !== undefined && b.tierMin !== undefined && b.tierMax !== undefined) {
-    return `${bonus} [${b.tierMin}-${b.tierMax}] ${b.tierId}`;
-  }
-  return bonus;
+  const { main, tierMeta } = rolledItemBaseParts(b);
+  return tierMeta ? `${main} ${tierMeta}` : main;
 }
 
 export function baseVariantLabel(def: ItemBaseDef): string {

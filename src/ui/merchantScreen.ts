@@ -1,8 +1,8 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
 import { resolveMerchantPortraitUrl } from "../art/menuBackground";
-import { formatRolledAffix } from "../items/affixCatalog";
-import { formatRolledItemBase } from "../items/baseCatalog";
+import { rolledAffixParts } from "../items/affixCatalog";
+import { rolledItemBaseParts } from "../items/baseCatalog";
 import type { EquipmentMap } from "../items/equipment";
+import { itemDisplayName } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
@@ -57,22 +57,45 @@ function compareSlotsFor(item: ItemDef): EquipSlotId[] {
   return [item.slot];
 }
 
-function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, affixClass: string): void {
-  if (item.aspectTag) {
-    host.append(el("div", lineClass, `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
+/** Бонус + серый `[Tier]` без min-max (карточки рынка). */
+function appendTieredStat(host: HTMLElement, className: string, main: string, tierId?: string): void {
+  const line = el("div", className, main);
+  if (tierId) {
+    // nbsp: тир не отрывается на следующую строку один.
+    line.append(document.createTextNode("\u00A0"));
+    line.append(el("span", "market-tier-meta", `[${tierId}]`));
   }
+  host.append(line);
+}
+
+function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, affixClass: string): void {
   if (item.weapon) {
-    host.append(el("div", lineClass, `DPS ${formatWeaponDps(item.weapon)}`));
+    appendTieredStat(host, lineClass, `DPS ${formatWeaponDps(item.weapon)}`, item.weapon.tierId);
   } else if (item.base) {
-    host.append(el("div", `${affixClass} market-affix-base`, formatRolledItemBase(item.base)));
+    appendTieredStat(
+      host,
+      `${affixClass} market-affix-base`,
+      rolledItemBaseParts(item.base).main,
+      item.base.tierId,
+    );
   }
   const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
   const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
   for (const a of prefixes) {
-    host.append(el("div", `${affixClass} market-affix-prefix`, formatRolledAffix(a)));
+    appendTieredStat(
+      host,
+      `${affixClass} market-affix-prefix`,
+      rolledAffixParts(a).main,
+      a.tierId,
+    );
   }
   for (const a of suffixes) {
-    host.append(el("div", `${affixClass} market-affix-suffix`, formatRolledAffix(a)));
+    appendTieredStat(
+      host,
+      `${affixClass} market-affix-suffix`,
+      rolledAffixParts(a).main,
+      a.tierId,
+    );
   }
   if (!item.affixes.length && !item.weapon && !item.base) {
     host.append(el("div", lineClass, "Без аффиксов"));
@@ -295,7 +318,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       handlers.showToast("Сумка полна");
       return;
     }
-    const name = current.item.name;
+    const name = itemDisplayName(current.item);
     if (selectedItemId === current.item.id) clearDetail();
     stateRef.hero.gold -= current.price;
     list.splice(index, 1);
@@ -379,7 +402,13 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       iconWrap.append(face);
 
       const info = el("div", "market-offer-info");
-      info.append(el("p", "market-offer-name", item.name));
+      const head = el("div", "market-offer-head");
+      head.append(el("p", "market-offer-name", itemDisplayName(item)));
+      const priceEl = el("div", "market-offer-price");
+      priceEl.append(goldAmountNode(price));
+      if (!canAfford) priceEl.classList.add("unaffordable");
+      head.append(priceEl);
+      info.append(head);
       info.append(
         el("p", "market-offer-sub", `${itemSlotLabel(item)} - ур. ${item.itemLevel}`),
       );
@@ -387,11 +416,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       appendItemStats(stats, item, "market-offer-stat", "market-offer-affix");
       info.append(stats);
 
-      const priceEl = el("div", "market-offer-price");
-      priceEl.append(goldAmountNode(price));
-      if (!canAfford) priceEl.classList.add("unaffordable");
-
-      btn.append(iconWrap, info, priceEl);
+      btn.append(iconWrap, info);
 
       btn.addEventListener("pointerenter", (ev) => {
         if (!stateRef) return;

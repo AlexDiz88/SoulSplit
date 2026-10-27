@@ -79,6 +79,7 @@ function toImplicit(def: StarterWeaponDef): WeaponImplicit {
     baseCd: def.baseCd,
     reach: def.reach,
     range: def.range,
+    tierId: "F",
     grip: def.grip,
     twoHand: def.grip === "twoHand",
   };

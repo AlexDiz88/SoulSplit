@@ -1,6 +1,7 @@
-import { formatRolledAffix } from "../items/affixCatalog";
-import { formatRolledItemBase } from "../items/baseCatalog";
+import { rolledAffixParts } from "../items/affixCatalog";
+import { rolledItemBaseParts } from "../items/baseCatalog";
 import { gripLabel } from "../items/equipment";
+import { itemDisplayName } from "../items/generate";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
@@ -38,10 +39,25 @@ function rule(): HTMLElement {
   return el("div", "item-tip-rule");
 }
 
-/** Подпись слота: "Основная рука" / "Левая рука" / "Обе руки" / "Любая рука". */
+/** Строка бонуса + мелкий серый тир "[min-max] Tier". */
+function rolledStatLine(
+  className: string,
+  parts: { main: string; tierMeta?: string },
+): HTMLElement {
+  const line = el("div", className, parts.main);
+  if (parts.tierMeta) {
+    line.append(document.createTextNode(" "));
+    line.append(el("span", "item-tip-tier-meta", parts.tierMeta));
+  }
+  return line;
+}
+
+/** Подпись слота предмета: "Основная рука" / "Палец" (без номера) / … */
 export function itemSlotLabel(item: ItemDef): string {
   const fromGrip = gripLabel(item);
   if (fromGrip) return fromGrip;
+  // У кольца слот экипа ring1/ring2 нумеруется, сам предмет - просто "Палец".
+  if (item.slot === "ring1" || item.slot === "ring2") return "Палец";
   return SLOT_LABEL[item.slot];
 }
 
@@ -93,20 +109,20 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   }
 
   // Верхний блок: имя → слот (кроме оффхенда) → база.
-  nodes.push(el("div", "item-tip-name", item.name));
+  nodes.push(el("div", "item-tip-name", itemDisplayName(item)));
   if (!isOffhandItem) {
     nodes.push(el("div", "item-tip-sub", itemSlotLabel(item)));
   }
   if (item.weapon) {
+    const w = item.weapon;
     nodes.push(
-      el(
-        "div",
-        "item-tip-base-stat",
-        `Урон ${item.weapon.damageMin}-${item.weapon.damageMax} · КД ${item.weapon.baseCd.toFixed(1)} с`,
-      ),
+      rolledStatLine("item-tip-base-stat", {
+        main: `Урон ${w.damageMin}-${w.damageMax} · КД ${w.baseCd.toFixed(1)} с`,
+        tierMeta: w.tierId ? `[${w.tierId}]` : undefined,
+      }),
     );
   } else if (item.base) {
-    nodes.push(el("div", "item-tip-base-stat", formatRolledItemBase(item.base)));
+    nodes.push(rolledStatLine("item-tip-base-stat", rolledItemBaseParts(item.base)));
   }
 
   const hasAffixes = item.affixes.length > 0;
@@ -140,10 +156,10 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     const prefixes = item.affixes.filter((a) => a.affixSlot === "prefix");
     const suffixes = item.affixes.filter((a) => a.affixSlot === "suffix");
     for (const a of prefixes) {
-      affixes.append(el("div", "item-tip-affix item-tip-affix-prefix", formatRolledAffix(a)));
+      affixes.append(rolledStatLine("item-tip-affix item-tip-affix-prefix", rolledAffixParts(a)));
     }
     for (const a of suffixes) {
-      affixes.append(el("div", "item-tip-affix item-tip-affix-suffix", formatRolledAffix(a)));
+      affixes.append(rolledStatLine("item-tip-affix item-tip-affix-suffix", rolledAffixParts(a)));
     }
     nodes.push(affixes);
   }

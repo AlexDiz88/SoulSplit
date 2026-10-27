@@ -269,7 +269,7 @@ export function weaponDamageTiers(def: WeaponTypeDef): WeaponDamageTierRange[] {
 export function scaleWeaponStats(
   def: WeaponTypeDef,
   itemLevel: number,
-): { damageMin: number; damageMax: number; baseCd: number; reach: number } {
+): { damageMin: number; damageMax: number; baseCd: number; reach: number; tierId: AffixTierId } {
   const tiers = weaponDamageTiers(def);
   const idx = Math.min(TIER_COUNT - 1, Math.max(0, Math.ceil(Math.max(1, itemLevel) / 2) - 1));
   const t = tiers[idx]!;
@@ -281,6 +281,7 @@ export function scaleWeaponStats(
     damageMax,
     baseCd: def.baseCd,
     reach: def.reach,
+    tierId: t.id,
   };
 }
 

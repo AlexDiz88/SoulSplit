@@ -129,6 +129,7 @@ function makeWeaponImplicit(
     baseCd: stats.baseCd,
     reach: stats.reach,
     range: def.range,
+    tierId: stats.tierId,
     grip: def.grip,
     twoHand: def.grip === "twoHand",
   };
@@ -188,6 +189,10 @@ function offhandDisplayName(typeId: OffhandTypeId | undefined): string {
   return "Левая рука";
 }
 
+function withAspectSuffix(base: string, aspect?: Aspect): string {
+  return aspect ? `${base} (${ASPECT_LABEL[aspect]})` : base;
+}
+
 function defaultName(
   slot: EquipSlotId,
   _rarity: ItemRarity,
@@ -195,13 +200,11 @@ function defaultName(
   weapon?: WeaponImplicit,
   offhand?: OffhandImplicit,
 ): string {
-  const aspectPart = aspect ? ASPECT_LABEL[aspect] + " " : "";
   if (weapon) {
-    const base = weaponDisplayName(weapon.typeId, "Оружие");
-    return `${aspectPart}${base}`.trim();
+    return withAspectSuffix(weaponDisplayName(weapon.typeId, "Оружие"), aspect);
   }
   if (offhand) {
-    return `${aspectPart}${offhandDisplayName(offhand.typeId)}`.trim();
+    return withAspectSuffix(offhandDisplayName(offhand.typeId), aspect);
   }
   const slotNames: Partial<Record<EquipSlotId, string>> = {
     head: "Шлем",
@@ -218,7 +221,22 @@ function defaultName(
     mainhand: "Оружие",
     offhand: "Левая рука",
   };
-  return `${aspectPart}${slotNames[slot] ?? "Предмет"}`.trim();
+  return withAspectSuffix(slotNames[slot] ?? "Предмет", aspect);
+}
+
+/**
+ * Отображаемое имя: "Арбалет (Земля)".
+ * Старые сейвы с префиксом "Земля Арбалет" тоже нормализует.
+ */
+export function itemDisplayName(item: ItemDef): string {
+  if (!item.aspectTag) return item.name;
+  const label = ASPECT_LABEL[item.aspectTag];
+  let core = item.name.trim();
+  const prefix = `${label} `;
+  const suffix = ` (${label})`;
+  if (core.startsWith(prefix)) core = core.slice(prefix.length).trim();
+  else if (core.endsWith(suffix)) core = core.slice(0, -suffix.length).trim();
+  return `${core} (${label})`;
 }
 
 function rollAffixes(

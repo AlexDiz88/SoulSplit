@@ -362,19 +362,25 @@ export function rollAffixValue(def: AffixDef, itemLevel: number, rng: () => numb
   return rollAffix(def, itemLevel, rng).value;
 }
 
-/**
- * Текст аффикса: "+52 здоровья [48-66] D"
- * Старые сейвы без tier* показывают только бонус.
- */
-export function formatRolledAffix(a: RolledAffix): string {
+/** Основной бонус и опциональный тир "[48-66] D". */
+export function rolledAffixParts(a: RolledAffix): { main: string; tierMeta?: string } {
   const label = AFFIX_BY_ID[a.affixId]?.label ?? a.label;
-  const bonus = formatAffixBonus(a.statId, a.value, label);
+  const main = formatAffixBonus(a.statId, a.value, label);
   if (
     a.tierId !== undefined &&
     a.tierMin !== undefined &&
     a.tierMax !== undefined
   ) {
-    return `${bonus} [${a.tierMin}-${a.tierMax}] ${a.tierId}`;
+    return { main, tierMeta: `[${a.tierMin}-${a.tierMax}] ${a.tierId}` };
   }
-  return bonus;
+  return { main };
+}
+
+/**
+ * Текст аффикса: "+52 здоровья [48-66] D"
+ * Старые сейвы без tier* показывают только бонус.
+ */
+export function formatRolledAffix(a: RolledAffix): string {
+  const { main, tierMeta } = rolledAffixParts(a);
+  return tierMeta ? `${main} ${tierMeta}` : main;
 }

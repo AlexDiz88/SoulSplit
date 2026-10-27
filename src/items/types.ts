@@ -53,6 +53,8 @@ export interface WeaponImplicit {
   baseCd: number;
   reach: number;
   range: "melee" | "ranged";
+  /** Тир ролла базы урона (F…A5). Старые сейвы могут не иметь. */
+  tierId?: AffixTierId;
   /** Куда можно надеть. Старые сейвы могут не иметь - см. resolveWeaponGrip. */
   grip?: ItemGrip;
   /**

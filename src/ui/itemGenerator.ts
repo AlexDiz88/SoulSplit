@@ -1,4 +1,3 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
 import { AFFIX_CATALOG, formatRolledAffix } from "../items/affixCatalog";
 import {
@@ -8,7 +7,7 @@ import {
   type ItemBaseDef,
   type ItemBaseVariantKey,
 } from "../items/baseCatalog";
-import { generateItem } from "../items/generate";
+import { generateItem, itemDisplayName } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
 import { OFFHAND_TYPES } from "../items/offhandTypes";
 import { deniedStatsForSlot, familiesForSlot, isStatAllowedOnSlot } from "../items/slotRules";
@@ -315,7 +314,7 @@ function renderItemCard(item: ItemDef): HTMLElement {
     ? (WEAPON_TYPE_BY_ID[item.weapon.typeId]?.name ?? SLOT_LABEL[item.slot])
     : SLOT_LABEL[item.slot];
   text.append(
-    el("h4", "igen-card-name", item.name),
+    el("h4", "igen-card-name", itemDisplayName(item)),
     el(
       "div",
       "igen-card-meta",
@@ -325,15 +324,14 @@ function renderItemCard(item: ItemDef): HTMLElement {
   head.append(text);
   card.append(head);
 
-  if (item.aspectTag) {
-    card.append(el("div", "igen-card-meta", `Аспект: ${ASPECT_LABEL[item.aspectTag]}`));
-  }
   if (item.weapon) {
     card.append(
       el(
         "div",
         "igen-card-line",
-        `Базовый урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax}`,
+        item.weapon.tierId
+          ? `Базовый урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax} (${item.weapon.tierId})`
+          : `Базовый урон оружия: ${item.weapon.damageMin}-${item.weapon.damageMax}`,
       ),
       el("div", "igen-card-line", `Базовый кулдаун: ${item.weapon.baseCd.toFixed(1)} с`),
       el(

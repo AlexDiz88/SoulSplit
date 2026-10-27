@@ -26,7 +26,7 @@
   flex-direction: column;
   align-items: center;
   gap: 10px;
-  width: min(980px, 100%);
+  width: min(1040px, 100%);
   max-height: 100%;
   pointer-events: none;
 }
@@ -201,7 +201,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(200px, 260px) 1fr;
+  grid-template-columns: minmax(200px, 230px) 1fr;
   gap: 16px;
   padding: 16px 18px 18px;
 }
@@ -274,11 +274,11 @@
 .market-offer {
   --rar-c: var(--c-uncommon);
   display: grid;
-  grid-template-columns: var(--hand) 1fr auto;
+  grid-template-columns: var(--hand) minmax(0, 1fr);
   align-items: start;
   gap: 10px;
   min-height: var(--hand);
-  padding: 4px;
+  padding: 4px 8px 4px 4px;
   border: 1px solid #4a4538;
   border-radius: 4px;
   background: linear-gradient(180deg, #1a1c1e, #101112);
@@ -355,8 +355,18 @@
   padding-top: 8px;
 }
 
+.market-offer-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
 .market-offer-name {
   margin: 0;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--rar-c);
@@ -382,13 +392,13 @@
 }
 
 .market-offer-stat {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   color: #8fd49a;
   line-height: 1.25;
 }
 
 .market-offer-affix {
-  font-size: 0.72rem;
+  font-size: 0.8rem;
   line-height: 1.25;
   color: #c8d0c4;
 }
@@ -401,12 +411,18 @@
   color: #c4b0e0;
 }
 
+.market-tier-meta {
+  color: #7a7a7a;
+  font-size: 0.78em;
+  font-weight: 500;
+}
+
 .market-offer-price {
-  flex-shrink: 0;
+  flex: 0 0 auto;
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding: 8px 4px 0 0;
+  padding: 0;
   font-size: 0.95rem;
   font-weight: 800;
   color: #e8d7a2;
@@ -430,18 +446,19 @@
 
 .market-detail {
   /* Вне потока: основное окно не смещается. Внешний вид - общий item-tip. */
+  --tip-icon: calc(2 * var(--inv-slot, 76px) + 24px);
   position: absolute;
   left: calc(100% + 12px);
   top: 0;
   z-index: 2;
-  width: 300px;
-  max-width: 300px;
+  width: 340px;
+  max-width: 340px;
   height: auto;
   max-height: 100%;
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  padding: 16px 18px 14px;
+  padding: 18px 20px 16px;
   overflow: auto;
   pointer-events: auto;
   border-radius: 6px;
@@ -511,8 +528,8 @@
 }
 
 .market-tip {
-  min-width: 220px;
-  max-width: 280px;
+  min-width: 260px;
+  max-width: 340px;
 }
 
 @media (max-width: 760px) {
