@@ -47,7 +47,7 @@ VITE_BASE_PATH=/SoulSplit/ npm run build && npm run preview
 
 ### 5. Первый деплой
 
-1. Смержить изменения с workflow в **master** (или push напрямую в master).
+1. Push в **master** (отдельные ветки и PR в этом проекте не используются).
 2. Вкладка **Actions** → workflow **Deploy GitHub Pages** → дождаться зелёной галочки.
 3. **Settings** → **Pages** - появится URL; тот же URL в summary job **deploy** (environment **github-pages**).
 
@@ -66,4 +66,5 @@ VITE_BASE_PATH=/SoulSplit/ npm run build && npm run preview
 
 - Отдельная ветка `gh-pages`.
 - Ручной upload в Pages.
-- Туннели для «постоянного» preview после merge в master.
+- Туннели для «постоянного» preview после push в master.
+- Merge pull request для деплоя.
