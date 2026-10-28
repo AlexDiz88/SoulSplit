@@ -155,7 +155,8 @@
 
 .igen-section-params,
 .igen-section-aspects,
-.igen-section-weapons {
+.igen-section-weapons,
+.igen-section-bases {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -829,11 +830,20 @@
     justify-content: space-between;
     gap: 10px;
     padding: 12px 14px;
+    min-height: 44px;
     font-size: 0.98rem;
     font-weight: 800;
+    line-height: 1.35;
     color: #f0e2b0;
     cursor: var(--cur-default);
     list-style: none;
+  }
+
+  .igen-accordion-summary-text,
+  .igen-accordion-summary .igen-slot-summary-name {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
   }
 
   .igen-accordion-summary::-webkit-details-marker {
@@ -858,7 +868,6 @@
     line-height: 1.4;
   }
 
-  .igen-base-accordion .igen-accordion-body,
   .igen-slot-accordion .igen-slot-card-body {
     padding: 0 14px 12px;
     display: grid;

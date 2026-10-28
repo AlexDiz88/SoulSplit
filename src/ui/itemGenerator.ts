@@ -68,6 +68,12 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
+function accordionSummary(label: string): HTMLElement {
+  const summary = el("summary", "igen-accordion-summary");
+  summary.append(el("span", "igen-accordion-summary-text", label));
+  return summary;
+}
+
 function affixesForSlot(slot: EquipSlotId) {
   const families = new Set(familiesForSlot(slot));
   return AFFIX_CATALOG.filter((a) => {
@@ -295,10 +301,7 @@ function buildBench(hooks: {
   inner.append(controls, result);
 
   const accordion = el("details", "igen-accordion igen-bench-accordion");
-  accordion.append(
-    el("summary", "igen-accordion-summary", "Генерация предмета"),
-    inner,
-  );
+  accordion.append(accordionSummary("Генерация предмета"), inner);
   root.append(accordion);
   return { root };
 }
@@ -331,7 +334,6 @@ function syncIgenPhoneLayout(root: HTMLElement): void {
     }
     if (
       node.classList.contains("igen-slot-accordion") ||
-      node.classList.contains("igen-base-accordion") ||
       node.classList.contains("igen-rules-extra-accordion")
     ) {
       node.open = false;
@@ -680,23 +682,20 @@ function buildBasesSection(): HTMLElement {
 
   const mobileList = el("div", "igen-mobile-cards igen-mobile-only");
   for (const g of groups) {
-    const details = el("details", "igen-accordion igen-base-accordion");
-    details.append(el("summary", "igen-accordion-summary", g.label));
-    const body = el("div", "igen-accordion-body");
+    const rows: HTMLElement[] = [];
     if (g.defs.length) {
-      body.append(
+      rows.push(
         infoRow("Варианты", g.defs.map((d) => baseVariantLabel(d)).join(" / ")),
         infoRow("variantKey", g.defs.map((d) => variantKeyId(d.variantKey)).join(", "), "igen-mono"),
       );
     } else {
-      body.append(
+      rows.push(
         infoRow("Варианты", "урон + кулдаун"),
         infoRow("variantKey", "weapon", "igen-mono"),
       );
     }
-    if (g.note) body.append(infoRow("Примечание", g.note, "igen-desc"));
-    details.append(body);
-    mobileList.append(details);
+    if (g.note) rows.push(infoRow("Примечание", g.note, "igen-desc"));
+    mobileList.append(buildInfoCard(g.label, null, rows));
   }
 
   const scroll = el("div", "igen-table-scroll igen-desktop-only");
@@ -1097,7 +1096,7 @@ function buildRulesSection(): HTMLElement {
     mobileBullets.append(el("li", "", text));
   }
   extraBody.append(mobileBullets);
-  extra.append(el("summary", "igen-accordion-summary", "Общие правила"), extraBody);
+  extra.append(accordionSummary("Общие правила"), extraBody);
 
   const scroll = el("div", "igen-panel-scroll");
   scroll.append(mobileCards, table, list, extra);
