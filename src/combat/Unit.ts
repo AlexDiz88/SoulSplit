@@ -62,6 +62,9 @@ export interface UnitInit {
   equipment?: EquipmentMap;
   /** Рюкзак 5×5. Только у героя. */
   inventory?: InventoryBag;
+  /** Заряды зелий на поясе (только герой). */
+  beltHpPotions?: number;
+  beltManaPotions?: number;
   /** Уровень героя или итоговый уровень врага в этом бою. */
   level?: number;
   /** Элитный враг - золотая рамка и тег. */
@@ -88,6 +91,10 @@ export class Unit {
   equipment: EquipmentMap;
   /** Рюкзак 5×5 (один предмет = одна ячейка). */
   inventory: InventoryBag;
+  /** Заряды зелий здоровья на поясе. */
+  beltHpPotions: number;
+  /** Заряды зелий маны на поясе. */
+  beltManaPotions: number;
   /** Уровень героя или врага в этом бою. */
   level: number;
   readonly elite: boolean;
@@ -144,6 +151,8 @@ export class Unit {
     this.pos = { ...init.pos };
     this.equipment = init.equipment ?? {};
     this.inventory = cloneInventory(init.inventory);
+    this.beltHpPotions = Math.max(0, Math.floor(init.beltHpPotions ?? 0));
+    this.beltManaPotions = Math.max(0, Math.floor(init.beltManaPotions ?? 0));
     this.level = init.level ?? (init.team === "player" ? 1 : 0);
     this.elite = init.elite ?? false;
     this.sheetBase = createBaseHeroSheet();

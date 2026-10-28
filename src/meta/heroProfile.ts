@@ -13,6 +13,12 @@ import {
   createEmptyStash,
   type InventoryBag,
 } from "../items/inventory";
+import {
+  beltPotionCapacity,
+  clampBeltToCapacity,
+  returnOverflowPotions,
+  type BeltPotionState,
+} from "../items/potions";
 import type { StatId } from "../stats/statIds";
 import { createBaseHeroSheet, type HeroStatSheet } from "../stats/sheet";
 import type { AbilityId, Aspect } from "../types";
@@ -126,6 +132,10 @@ export interface HeroProfile {
    * После "Белый флаг" сохраняется урон; после победы/смерти сбрасывается.
    */
   currentHp?: number | null;
+  /** Заряды зелий здоровья на поясе. */
+  beltHpPotions: number;
+  /** Заряды зелий маны на поясе. */
+  beltManaPotions: number;
 }
 
 function cloneEquipment(src: EquipmentMap): EquipmentMap {
@@ -147,6 +157,8 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     stash: cloneStash(src.stash).map((cell) => (cell ? structuredClone(cell) : null)),
     levelBonuses: { ...src.levelBonuses },
     currentHp: src.currentHp ?? null,
+    beltHpPotions: Math.max(0, Math.floor(src.beltHpPotions ?? 0)),
+    beltManaPotions: Math.max(0, Math.floor(src.beltManaPotions ?? 0)),
   };
 }
 
@@ -180,12 +192,20 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     levelBonuses: {},
     portraitUrl: opts?.portraitUrl || pickRandomHeroPortraitUrl(),
     currentHp: null,
+    beltHpPotions: 0,
+    beltManaPotions: 0,
   };
 }
 
 /** Дозаполнить stash у старых сейвов без поля. */
 export function ensureHeroStash(profile: HeroProfile): void {
   profile.stash = cloneStash(profile.stash).map((cell) => (cell ? structuredClone(cell) : null));
+}
+
+/** Дозаполнить заряды пояса у старых сейвов. */
+export function ensureHeroBeltPotions(profile: HeroProfile): void {
+  profile.beltHpPotions = Math.max(0, Math.floor(profile.beltHpPotions ?? 0));
+  profile.beltManaPotions = Math.max(0, Math.floor(profile.beltManaPotions ?? 0));
 }
 
 /** Данные для `new Unit(...)` из профиля. Экип/инвентарь - глубокие копии. */
@@ -213,20 +233,68 @@ export function hydrateCombatUnit(profile: HeroProfile): UnitInit {
     portraitUrl: profile.portraitUrl,
     equipment,
     inventory,
+    beltHpPotions: profile.beltHpPotions ?? 0,
+    beltManaPotions: profile.beltManaPotions ?? 0,
     sheet: undefined,
     level: profile.level,
   };
 }
 
-/** Записать экип/инвентарь юнита обратно в профиль (после боя / хаба). */
+/** Записать экип/инвентарь/пояс юнита обратно в профиль (после боя / хаба). */
 export function syncProfileFromUnit(
   profile: HeroProfile,
-  gear: { equipment: EquipmentMap; inventory: InventoryBag },
+  gear: {
+    equipment: EquipmentMap;
+    inventory: InventoryBag;
+    beltHpPotions?: number;
+    beltManaPotions?: number;
+  },
 ): void {
   profile.equipment = cloneEquipment(gear.equipment);
   profile.inventory = cloneInventory(gear.inventory).map((cell) =>
     cell ? structuredClone(cell) : null,
   );
+  if (gear.beltHpPotions !== undefined) {
+    profile.beltHpPotions = Math.max(0, Math.floor(gear.beltHpPotions));
+  }
+  if (gear.beltManaPotions !== undefined) {
+    profile.beltManaPotions = Math.max(0, Math.floor(gear.beltManaPotions));
+  }
+}
+
+/**
+ * Подрезать заряды пояса под ёмкость экипа; лишнее вернуть в инвентарь.
+ * Мутирует unit (или profile-поля на unit) и inventory.
+ */
+export function clampUnitBeltToEquipment(unit: {
+  equipment: EquipmentMap;
+  inventory: InventoryBag;
+  beltHpPotions: number;
+  beltManaPotions: number;
+}): { overflowReturned: number; overflowLost: number } {
+  const capacity = beltPotionCapacity(unit.equipment);
+  const clamped = clampBeltToCapacity(
+    { beltHpPotions: unit.beltHpPotions, beltManaPotions: unit.beltManaPotions },
+    capacity,
+  );
+  unit.beltHpPotions = clamped.belt.beltHpPotions;
+  unit.beltManaPotions = clamped.belt.beltManaPotions;
+  const result = returnOverflowPotions(
+    unit.inventory,
+    clamped.overflowHp,
+    clamped.overflowMana,
+  );
+  return { overflowReturned: result.returned, overflowLost: result.lost };
+}
+
+export function beltStateFromUnit(unit: {
+  beltHpPotions: number;
+  beltManaPotions: number;
+}): BeltPotionState {
+  return {
+    beltHpPotions: unit.beltHpPotions,
+    beltManaPotions: unit.beltManaPotions,
+  };
 }
 
 /** Записать текущее HP юнита в профиль (`null` = полный запас). */

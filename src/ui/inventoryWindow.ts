@@ -12,6 +12,12 @@ import {
   unequipToInventoryAt,
   type InventoryBag,
 } from "../items/inventory";
+import {
+  beltPotionCapacity,
+  isPotionItem,
+  loadPotionToBelt,
+  POTION_LABEL,
+} from "../items/potions";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { sellPrice } from "../meta/economy";
@@ -357,6 +363,23 @@ export function mountInventoryWindow(): InventoryWindowApi {
       return;
     }
     const item = hero.inventory[invIndex];
+    if (isPotionItem(item)) {
+      const result = loadPotionToBelt(
+        hero.inventory,
+        invIndex,
+        hero,
+        beltPotionCapacity(hero.equipment),
+      );
+      if (!result.ok) {
+        if (result.reason === "belt_full") toast("Пояс полон");
+        else if (result.reason === "empty") toast("Нет ячеек на поясе");
+        else toast("Нельзя зарядить");
+        return;
+      }
+      toast(`На пояс: ${POTION_LABEL[result.potionId]}`);
+      afterChange();
+      return;
+    }
     const result = forceSlot
       ? hero.equipInventoryItemToSlot(invIndex, forceSlot)
       : hero.equipInventoryItem(invIndex);
@@ -682,7 +705,8 @@ function bagCell(index: number, item: ItemDef | null): HTMLButtonElement {
   if (item) {
     btn.dataset.rarity = item.rarity;
     btn.classList.add("filled");
-    btn.setAttribute("aria-label", item.name);
+    const stack = isPotionItem(item) ? Math.max(1, Math.floor(item.stackCount ?? 1)) : 1;
+    btn.setAttribute("aria-label", stack > 1 ? `${item.name} ×${stack}` : item.name);
     if (item.icon) {
       const img = el("img", "inv-cell-icon") as HTMLImageElement;
       img.src = item.icon;
@@ -691,6 +715,9 @@ function bagCell(index: number, item: ItemDef | null): HTMLButtonElement {
       face.append(img);
     } else {
       face.append(el("span", "inv-cell-glyph", SLOT_LABEL[item.slot].slice(0, 1)));
+    }
+    if (stack > 1) {
+      face.append(el("span", "inv-cell-stack", String(stack)));
     }
   } else {
     btn.setAttribute("aria-label", `Пустая ячейка ${index + 1}`);

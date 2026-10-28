@@ -3,6 +3,7 @@ import { rolledItemBaseParts } from "../items/baseCatalog";
 import { gripLabel } from "../items/equipment";
 import { itemDisplayName } from "../items/generate";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
+import { isPotionItem, POTION_HEAL_PCT, POTION_LABEL } from "../items/potions";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
@@ -54,6 +55,7 @@ function rolledStatLine(
 
 /** Подпись слота предмета: "Основная рука" / "Палец" (без номера) / … */
 export function itemSlotLabel(item: ItemDef): string {
+  if (isPotionItem(item)) return "Зелье";
   const fromGrip = gripLabel(item);
   if (fromGrip) return fromGrip;
   // У кольца слот экипа ring1/ring2 нумеруется, сам предмет - просто "Палец".
@@ -88,7 +90,7 @@ function itemIconNode(item: ItemDef): HTMLElement {
 
 /**
  * Содержимое тултипа предмета в стиле Hero Siege:
- * название → слот (не для оффхенда) → база → [DPS оружия] → аффиксы → уровень.
+ * название → слот → база → [DPS оружия] → аффиксы → уровень.
  * Редкость видна по цвету названия, отдельной строкой не пишем.
  */
 export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {}): HTMLElement[] {
@@ -98,8 +100,6 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   const offhandWeapon =
     Boolean(item.weapon) && options.equippedSlot === "offhand";
   const damageMult = offhandWeapon ? OFFHAND_WEAPON_DAMAGE_MULT : 1;
-  /** Чистый оффхенд (щит/том/сфера…), не dual-wield оружие. */
-  const isOffhandItem = Boolean(item.offhand) && !item.weapon;
 
   if (options.caption) {
     nodes.push(el("div", "item-tip-caption", options.caption));
@@ -108,12 +108,29 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
     nodes.push(itemIconNode(item));
   }
 
-  // Верхний блок: имя → слот (кроме оффхенда) → база.
-  nodes.push(el("div", "item-tip-name", itemDisplayName(item)));
-  if (!isOffhandItem) {
-    nodes.push(el("div", "item-tip-sub", itemSlotLabel(item)));
-  }
-  if (item.weapon) {
+  // Верхний блок: имя → слот → база.
+  const tipName = isPotionItem(item)
+    ? `${POTION_LABEL[item.potionId]}${
+        (item.stackCount ?? 1) > 1 ? ` ×${item.stackCount}` : ""
+      }`
+    : itemDisplayName(item);
+  nodes.push(el("div", "item-tip-name", tipName));
+  nodes.push(el("div", "item-tip-sub", itemSlotLabel(item)));
+  if (isPotionItem(item)) {
+    const pct = Math.round(POTION_HEAL_PCT * 100);
+    const effect =
+      item.potionId === "healing_potion"
+        ? `Восстанавливает ${pct}% макс. здоровья`
+        : `Восстанавливает ${pct}% макс. маны`;
+    nodes.push(el("div", "item-tip-base-stat", effect));
+    nodes.push(
+      el(
+        "div",
+        "item-tip-note",
+        "В бою можно применить только снаряженные зелья",
+      ),
+    );
+  } else if (item.weapon) {
     const w = item.weapon;
     nodes.push(
       rolledStatLine("item-tip-base-stat", {
@@ -167,7 +184,9 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   nodes.push(rule());
 
   const footer = el("div", "item-tip-footer");
-  footer.append(el("div", "item-tip-level", `Уровень предмета ${item.itemLevel}`));
+  if (!isPotionItem(item)) {
+    footer.append(el("div", "item-tip-level", `Уровень предмета ${item.itemLevel}`));
+  }
   if (options.priceAmount !== undefined) {
     footer.append(
       goldTipLine(options.priceLabel ?? "Цена:", options.priceAmount, "item-tip-sell"),
@@ -188,6 +207,7 @@ export function fillItemTooltip(
 ): void {
   host.replaceChildren();
   host.dataset.rarity = item.rarity;
+  host.classList.toggle("item-tip--potion", isPotionItem(item));
   host.classList.remove("empty");
   host.append(...renderItemTooltip(item, options));
 }

@@ -1,5 +1,14 @@
 import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
+import {
+  beltCellPotionIds,
+  beltPotionCapacity,
+  POTION_HEAL_PCT,
+  POTION_LABEL,
+  potionIconUrl,
+  unloadPotionFromBelt,
+  type PotionId,
+} from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
@@ -111,6 +120,8 @@ const BODY_AREAS: Record<(typeof BODY_SLOTS)[number], string> = {
 
 const HAND_SLOTS: EquipSlotId[] = ["mainhand", "offhand"];
 
+const BELT_EMPTY_HINT = "ПКМ по зелью в сумке - снарядить, ПКМ по ячейке - снять";
+
 export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const hud = document.getElementById("hud")!;
   const root = el("div", "cs-overlay");
@@ -179,7 +190,14 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
       identityHost.replaceChildren();
       stats.replaceChildren();
     }
-    dollWrap.replaceChildren(renderDoll(hero));
+    dollWrap.replaceChildren(renderDoll(hero, {
+      canChange: canChangeEquipment,
+      onChanged: () => {
+        onEquipmentChanged?.();
+        render();
+      },
+      toast: (text) => showToast?.(text),
+    }));
   };
 
   const open = (): void => {
@@ -194,7 +212,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     onVisibilityChange?.(false);
   };
 
-  const showTip = (slot: HTMLElement): void => {
+  const showEquipTip = (slot: HTMLElement): void => {
     const id = slot.dataset.slot as EquipSlotId | undefined;
     if (!id) return;
     tip.replaceChildren();
@@ -211,13 +229,44 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     placeItemTip(tip, slot, win);
   };
 
+  const showBeltTip = (cell: HTMLElement): void => {
+    tip.replaceChildren();
+    delete tip.dataset.rarity;
+    const potionId = cell.dataset.potion as PotionId | undefined;
+    if (!potionId) {
+      tip.append(
+        el("div", "item-tip-empty-name", "Пустая ячейка"),
+        el("div", "item-tip-empty-meta", BELT_EMPTY_HINT),
+      );
+    } else {
+      const pct = Math.round(POTION_HEAL_PCT * 100);
+      const effect =
+        potionId === "healing_potion"
+          ? `Восстанавливает ${pct}% макс. здоровья`
+          : `Восстанавливает ${pct}% макс. маны`;
+      tip.append(
+        el("div", "item-tip-empty-name", POTION_LABEL[potionId]),
+        el("div", "item-tip-empty-meta", effect),
+        el("div", "item-tip-empty-meta", "ПКМ - снять с пояса"),
+      );
+    }
+    placeItemTip(tip, cell, win);
+  };
+
   dollWrap.addEventListener("pointerover", (ev) => {
+    const belt = (ev.target as Element).closest<HTMLElement>(".cs-belt-cell");
+    if (belt) {
+      showBeltTip(belt);
+      return;
+    }
     const slot = (ev.target as Element).closest<HTMLElement>(".cs-slot");
-    if (slot) showTip(slot);
+    if (slot) showEquipTip(slot);
   });
   dollWrap.addEventListener("pointerout", (ev) => {
+    const belt = (ev.target as Element).closest(".cs-belt-cell");
     const slot = (ev.target as Element).closest(".cs-slot");
     const next = ev.relatedTarget as Element | null;
+    if (belt && (!next || !belt.contains(next))) tip.hidden = true;
     if (slot && (!next || !slot.contains(next))) tip.hidden = true;
   });
 
@@ -225,8 +274,28 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     ev.preventDefault();
     // В режиме тайника ПКМ обрабатывает inventoryWindow (снять / Ctrl+снять в тайник).
     if (mode === "gear") return;
+    if (!hero) return;
+
+    const beltCell = (ev.target as Element).closest<HTMLElement>(".cs-belt-cell.filled");
+    if (beltCell) {
+      if (!canChangeEquipment()) {
+        showToast?.("Экипировку можно менять только вне боя");
+        return;
+      }
+      const potionId = beltCell.dataset.potion as PotionId | undefined;
+      if (!potionId) return;
+      const result = unloadPotionFromBelt(hero.inventory, hero, potionId);
+      if (!result.ok) {
+        if (result.reason === "inventory_full") showToast?.("Инвентарь полон");
+        return;
+      }
+      onEquipmentChanged?.();
+      render();
+      return;
+    }
+
     const slotEl = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled");
-    if (!slotEl || !hero) return;
+    if (!slotEl) return;
     const id = slotEl.dataset.slot as EquipSlotId | undefined;
     if (!id) return;
     if (!canChangeEquipment()) {
@@ -317,7 +386,13 @@ function renderIdentity(hero: Unit | null): HTMLElement {
   return plate;
 }
 
-function renderDoll(hero: Unit | null): HTMLElement {
+interface DollHandlers {
+  canChange: () => boolean;
+  onChanged: () => void;
+  toast: (text: string) => void;
+}
+
+function renderDoll(hero: Unit | null, handlers?: DollHandlers): HTMLElement {
   const doll = el("div", "cs-doll");
   const body = el("div", "cs-doll-body");
   for (const id of BODY_SLOTS) {
@@ -331,8 +406,42 @@ function renderDoll(hero: Unit | null): HTMLElement {
     slot.classList.add("cs-slot-hand");
     hands.append(slot);
   }
-  doll.append(body, hands);
+  doll.append(body, hands, renderBeltStrip(hero, handlers));
   return doll;
+}
+
+function renderBeltStrip(hero: Unit | null, _handlers?: DollHandlers): HTMLElement {
+  const wrap = el("div", "cs-belt");
+  const capacity = hero ? beltPotionCapacity(hero.equipment) : 1;
+  const loaded = hero
+    ? beltCellPotionIds({
+        beltHpPotions: hero.beltHpPotions,
+        beltManaPotions: hero.beltManaPotions,
+      })
+    : [];
+  wrap.append(el("span", "cs-belt-title", "Зелья"));
+  const row = el("div", "cs-belt-row");
+  for (let i = 0; i < capacity; i++) {
+    const potionId = loaded[i];
+    const cell = el("button", "cs-belt-cell");
+    cell.type = "button";
+    if (potionId) {
+      cell.classList.add("filled");
+      cell.dataset.potion = potionId;
+      cell.setAttribute("aria-label", `${POTION_LABEL[potionId]}, ПКМ - снять`);
+      const img = document.createElement("img");
+      img.src = potionIconUrl(potionId);
+      img.alt = "";
+      img.draggable = false;
+      cell.append(img);
+    } else {
+      cell.setAttribute("aria-label", "Пустая ячейка зелья");
+      cell.append(el("span", "cs-belt-x", "×"));
+    }
+    row.append(cell);
+  }
+  wrap.append(row);
+  return wrap;
 }
 
 function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {

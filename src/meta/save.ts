@@ -5,7 +5,7 @@ import type { ItemDef } from "../items/types";
 import type { StatId } from "../stats/statIds";
 import type { Aspect } from "../types";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "./gameState";
-import { ensureHeroStash, HERO_PROFILE_VERSION } from "./heroProfile";
+import { ensureHeroBeltPotions, ensureHeroStash, HERO_PROFILE_VERSION } from "./heroProfile";
 import { ensureMarket } from "./market";
 
 /** Старые ZoneId → актуальные (разработка, свободный rename). */
@@ -112,6 +112,7 @@ function normalizeState(parsed: GameState): GameState {
   state.unlockedZones = [...new Set(state.unlockedZones.map(remapZoneId))];
   if (state.lastZoneId) state.lastZoneId = remapZoneId(state.lastZoneId);
   ensureHeroStash(state.hero);
+  ensureHeroBeltPotions(state.hero);
   ensureMarket(state);
   return state;
 }

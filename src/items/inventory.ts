@@ -7,6 +7,7 @@ import {
   isTwoHandWeapon,
   type EquipmentMap,
 } from "./equipment";
+import { addPotionToInventory, isPotionItem } from "./potions";
 import type { EquipSlotId } from "./slots";
 import type { ItemDef } from "./types";
 
@@ -74,6 +75,7 @@ export function findEmptyInventorySlot(inv: InventoryBag): number {
 }
 
 export function addItemToInventory(inv: InventoryBag, item: ItemDef): number {
+  if (isPotionItem(item)) return addPotionToInventory(inv, item);
   const i = findEmptyInventorySlot(inv);
   if (i < 0) return -1;
   inv[i] = item;
@@ -82,6 +84,7 @@ export function addItemToInventory(inv: InventoryBag, item: ItemDef): number {
 
 /** Целевой слот экипировки для предмета (кольца / either-оружие - в первую пустую ячейку). */
 export function resolveEquipSlot(item: ItemDef, equipment: EquipmentMap): EquipSlotId | null {
+  if (isPotionItem(item)) return null;
   if (item.slot === "ring1" || item.slot === "ring2") {
     if (!equipment.ring1 && canEquipInSlot(item, "ring1", equipment)) return "ring1";
     if (!equipment.ring2 && canEquipInSlot(item, "ring2", equipment)) return "ring2";

@@ -74,6 +74,7 @@ function pluralRu(n: number, one: string, few: string, many: string): string {
 }
 
 function compareSlotsFor(item: ItemDef): EquipSlotId[] {
+  if (item.potionId) return [];
   if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
   if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
   return [item.slot];

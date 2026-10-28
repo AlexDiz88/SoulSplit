@@ -484,7 +484,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 32px;
+  gap: 10px;
 }
 
 .cs-doll-body {
@@ -510,6 +510,75 @@
 .cs-slot-hand {
   width: calc(var(--slot) * 1.35);
   height: calc(var(--slot) * 1.35);
+}
+
+.cs-belt {
+  display: flex;
+  align-items: center;
+  gap: 10px 12px;
+  margin-top: 0;
+  padding: 6px 10px;
+  border: 1px solid rgba(106, 90, 58, 0.55);
+  border-radius: 4px;
+  background: rgba(10, 12, 10, 0.45);
+}
+
+.cs-belt-title {
+  flex: 0 0 auto;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(232, 224, 200, 0.78);
+  white-space: nowrap;
+}
+
+.cs-belt-empty {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: rgba(180, 172, 150, 0.72);
+}
+
+.cs-belt-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cs-belt-cell {
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(120, 110, 90, 0.7);
+  background: radial-gradient(circle at 50% 30%, #2a2c2e, #121314 78%);
+  color: rgba(180, 172, 150, 0.55);
+  cursor: var(--cur-default);
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  font: inherit;
+}
+
+.cs-belt-cell.filled {
+  cursor: var(--cur-default);
+  border-color: rgba(196, 168, 116, 0.85);
+}
+
+.cs-belt-cell img {
+  width: 86%;
+  height: 86%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.cs-belt-x {
+  font-size: 1.1rem;
+  line-height: 1;
+  opacity: 0.55;
 }
 
 @media (max-width: 760px) {
@@ -604,7 +673,7 @@
   }
 
   .cs-doll {
-    gap: 22px;
+    gap: 10px;
   }
 
   .cs-doll-body {
@@ -648,7 +717,7 @@
   }
 
   .cs-doll {
-    gap: 16px;
+    gap: 10px;
   }
 
   .cs-doll-body {

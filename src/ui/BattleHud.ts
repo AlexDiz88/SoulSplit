@@ -14,6 +14,12 @@ import { mountItemGenerator } from "./itemGenerator";
 import { mountItemIconPreview } from "./itemIconPreview";
 import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
+import {
+  potionIconUrl,
+  POTION_HEAL_PCT,
+  POTION_LABEL,
+  type PotionId,
+} from "../items/potions";
 import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import { enemyAtkRange } from "../combat/enemies";
@@ -52,6 +58,14 @@ export interface SkillBarState {
   gcdDuration: number;
 }
 
+export interface PotionBarState {
+  hpCount: number;
+  manaCount: number;
+  /** Общий КД зелий (сек). */
+  cdRemaining: number;
+  cdDuration: number;
+}
+
 export type BattleBannerMode = "start" | "pause" | "hidden";
 
 /** Режим оболочки HUD: хаб прячет бойцовые контролы, title - стартовое меню. */
@@ -60,6 +74,9 @@ export type HudShellMode = "hub" | "battle" | "title";
 export interface BattleHudApi {
   renderSkills(unit: Unit | null, state: SkillBarState): void;
   syncSkills(unit: Unit, state: SkillBarState): void;
+  renderPotions(state: PotionBarState | null): void;
+  syncPotions(state: PotionBarState): void;
+  setOnUsePotion(fn: ((id: PotionId) => void) | null): void;
   setHint(text: string): void;
   showToast(text: string): void;
   /** Простой тултип у точки экрана (например кружок уровня на канвасе). */
@@ -95,7 +112,11 @@ export interface BattleHudApi {
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
+  const combatBar = document.getElementById("hud-combat-bar")!;
   const skillBar = document.getElementById("skill-bar")!;
+  const potionBar = document.getElementById("potion-bar")!;
+  const potionHpBtn = document.getElementById("potion-hp") as HTMLButtonElement;
+  const potionManaBtn = document.getElementById("potion-mana") as HTMLButtonElement;
   const toast = document.getElementById("toast")!;
   const btnPause = document.getElementById("btn-pause")!;
   const btnSpeed = document.getElementById("btn-speed")!;
@@ -116,6 +137,55 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
   let toastTimer = 0;
   let startHandler: (() => void) | null = null;
+  let onUsePotion: ((id: PotionId) => void) | null = null;
+
+  const potionBtnById = {
+    healing_potion: potionHpBtn,
+    mana_potion: potionManaBtn,
+  } as const;
+
+  for (const [id, btn] of Object.entries(potionBtnById)) {
+    const potionId = id as PotionId;
+    const img = btn.querySelector<HTMLImageElement>(".potion-icon");
+    if (img) img.src = potionIconUrl(potionId);
+    btn.addEventListener("click", () => onUsePotion?.(potionId));
+  }
+
+  const applyPotionVisual = (btn: HTMLButtonElement, count: number, cd: number): void => {
+    const countEl = btn.querySelector(".potion-count");
+    if (countEl) countEl.textContent = String(count);
+    const onCd = cd > 0;
+    const empty = count <= 0;
+    btn.disabled = empty || onCd;
+    btn.classList.toggle("is-empty", empty);
+    btn.classList.toggle("on-cd", onCd);
+    let overlay = btn.querySelector<HTMLElement>(".potion-cd");
+    if (onCd) {
+      if (!overlay) {
+        overlay = document.createElement("span");
+        overlay.className = "potion-cd";
+        btn.append(overlay);
+      }
+      overlay.textContent = String(Math.ceil(cd));
+    } else {
+      overlay?.remove();
+    }
+  };
+
+  const renderPotions = (state: PotionBarState | null): void => {
+    if (!state) {
+      applyPotionVisual(potionHpBtn, 0, 0);
+      applyPotionVisual(potionManaBtn, 0, 0);
+      return;
+    }
+    applyPotionVisual(potionHpBtn, state.hpCount, state.cdRemaining);
+    applyPotionVisual(potionManaBtn, state.manaCount, state.cdRemaining);
+  };
+
+  const syncPotions = (state: PotionBarState): void => {
+    applyPotionVisual(potionHpBtn, state.hpCount, state.cdRemaining);
+    applyPotionVisual(potionManaBtn, state.manaCount, state.cdRemaining);
+  };
 
   const setBattleBanner = (mode: BattleBannerMode): void => {
     btnStart.hidden = mode !== "start";
@@ -218,6 +288,36 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   };
 
   const canHoverTooltip = (): boolean => window.matchMedia(HOVER_TOOLTIP_MQ).matches;
+
+  const showPotionTooltip = (btn: HTMLButtonElement, potionId: PotionId): void => {
+    const hotkey = potionId === "healing_potion" ? "F" : "G";
+    const count = Number(btn.querySelector(".potion-count")?.textContent ?? "0");
+    const pct = Math.round(POTION_HEAL_PCT * 100);
+    const effect =
+      potionId === "healing_potion"
+        ? `Восстанавливает ${pct}% макс. здоровья`
+        : `Восстанавливает ${pct}% макс. маны`;
+    tooltip.className = "skill-tooltip";
+    tooltip.style.removeProperty("--aspect-color");
+    tooltip.innerHTML = `
+      <div class="tt-name">${POTION_LABEL[potionId]} (${hotkey})</div>
+      <div class="tt-desc">${effect}. В поясе: ${count}. Общий КД 10 с.</div>
+    `;
+    tooltip.hidden = false;
+    placeTooltip(btn);
+  };
+
+  for (const [id, btn] of Object.entries(potionBtnById)) {
+    const potionId = id as PotionId;
+    btn.addEventListener("mouseenter", () => {
+      if (!canHoverTooltip()) return;
+      showPotionTooltip(btn, potionId);
+    });
+    btn.addEventListener("mouseleave", () => {
+      if (!canHoverTooltip()) return;
+      hideTooltip();
+    });
+  }
 
   const bindSkillTooltip = (btn: HTMLButtonElement, id: AbilityId): void => {
     let longPressTimer = 0;
@@ -714,6 +814,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   return {
     renderSkills,
     syncSkills,
+    renderPotions,
+    syncPotions,
+    setOnUsePotion(fn) {
+      onUsePotion = fn;
+    },
 
     setHint(text: string) {
       void text;
@@ -801,10 +906,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       if (hudTop) hudTop.hidden = title || hub;
       menuBtn.hidden = title || hub;
       if (title || hub) closeMenu();
-      skillBar.hidden = !battle;
+      combatBar.hidden = !battle;
+      potionBar.hidden = !battle;
       if (!battle) {
         setBattleBanner("hidden");
         renderSkills(null, { selectedAbility: null, gcdRemaining: 0, gcdDuration: 1 });
+        renderPotions(null);
       }
     },
 

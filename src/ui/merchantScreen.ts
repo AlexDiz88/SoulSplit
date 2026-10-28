@@ -4,11 +4,18 @@ import { rolledItemBaseParts } from "../items/baseCatalog";
 import type { EquipmentMap } from "../items/equipment";
 import { itemDisplayName } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
+import {
+  createPotionItem,
+  isPotionItem,
+  POTION_HEAL_PCT,
+  POTION_LABEL,
+} from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import type { GameState } from "../meta/gameState";
 import {
   ensureMarket,
+  herbalistPinnedOffers,
   MERCHANT_BY_ID,
   MERCHANTS,
   refreshMarketStock,
@@ -52,6 +59,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 
 /** Слоты экипа для сравнения при наведении на товар. */
 function compareSlotsFor(item: ItemDef): EquipSlotId[] {
+  if (isPotionItem(item)) return [];
   if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
   if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
   return [item.slot];
@@ -69,6 +77,15 @@ function appendTieredStat(host: HTMLElement, className: string, main: string, ti
 }
 
 function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, affixClass: string): void {
+  if (isPotionItem(item)) {
+    const pct = Math.round(POTION_HEAL_PCT * 100);
+    const effect =
+      item.potionId === "healing_potion"
+        ? `+${pct}% макс. здоровья`
+        : `+${pct}% макс. маны`;
+    appendTieredStat(host, lineClass, effect);
+    return;
+  }
   if (item.weapon) {
     appendTieredStat(host, lineClass, `DPS ${formatWeaponDps(item.weapon)}`, item.weapon.tierId);
   } else if (item.base) {
@@ -300,8 +317,33 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     return stateRef.market.stock[activeTab] ?? [];
   }
 
-  function tryBuy(index: number): void {
+  function tryBuy(index: number, pinned = false): void {
     if (!stateRef) return;
+    if (pinned && activeTab === "herbalist") {
+      const pinnedList = herbalistPinnedOffers();
+      const current = pinnedList[index];
+      if (!current || !isPotionItem(current.item)) {
+        handlers.showToast("Товар недоступен");
+        render();
+        return;
+      }
+      if (stateRef.hero.gold < current.price) {
+        handlers.showToast("Недостаточно золота");
+        return;
+      }
+      const bought = createPotionItem(current.item.potionId, 1);
+      const slot = addItemToInventory(stateRef.hero.inventory, bought);
+      if (slot < 0) {
+        handlers.showToast("Сумка полна");
+        return;
+      }
+      stateRef.hero.gold -= current.price;
+      handlers.showToast(`Куплено: ${POTION_LABEL[current.item.potionId]}`);
+      handlers.onChanged();
+      render();
+      return;
+    }
+
     const list = currentOffers();
     const current = list[index];
     if (!current) {
@@ -313,12 +355,17 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       handlers.showToast("Недостаточно золота");
       return;
     }
-    const slot = addItemToInventory(stateRef.hero.inventory, structuredClone(current.item));
+    const toAdd = isPotionItem(current.item)
+      ? createPotionItem(current.item.potionId, current.item.stackCount ?? 1)
+      : structuredClone(current.item);
+    const slot = addItemToInventory(stateRef.hero.inventory, toAdd);
     if (slot < 0) {
       handlers.showToast("Сумка полна");
       return;
     }
-    const name = itemDisplayName(current.item);
+    const name = isPotionItem(current.item)
+      ? POTION_LABEL[current.item.potionId]
+      : itemDisplayName(current.item);
     if (selectedItemId === current.item.id) clearDetail();
     stateRef.hero.gold -= current.price;
     list.splice(index, 1);
@@ -365,12 +412,18 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   function renderGoods(): void {
     if (!stateRef) return;
     ensureMarket(stateRef);
-    const offers = currentOffers();
+    const stockOffers = currentOffers();
+    const pinned =
+      activeTab === "herbalist" ? herbalistPinnedOffers().map((offer) => ({ offer, pinned: true as const })) : [];
+    const rows = [
+      ...pinned,
+      ...stockOffers.map((offer) => ({ offer, pinned: false as const })),
+    ];
     const gold = stateRef.hero.gold;
     goodsGrid.replaceChildren();
     hideCompare();
 
-    if (!offers.length) {
+    if (!rows.length) {
       goodsGrid.append(
         el(
           "p",
@@ -382,12 +435,15 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       return;
     }
 
-    offers.forEach((offer, index) => {
+    rows.forEach((row, visualIndex) => {
+      const { offer, pinned: isPinned } = row;
+      const stockIndex = isPinned ? visualIndex : visualIndex - pinned.length;
       const { item, price } = offer;
       const canAfford = gold >= price;
       const btn = el("button", "market-offer") as HTMLButtonElement;
       btn.type = "button";
       btn.dataset.rarity = item.rarity;
+      if (isPinned) btn.classList.add("market-offer-pinned");
       if (selectedItemId === item.id) btn.classList.add("selected");
 
       const iconWrap = el("div", "market-offer-icon");
@@ -403,14 +459,21 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
       const info = el("div", "market-offer-info");
       const head = el("div", "market-offer-head");
-      head.append(el("p", "market-offer-name", itemDisplayName(item)));
+      const name = isPotionItem(item) ? POTION_LABEL[item.potionId] : itemDisplayName(item);
+      head.append(el("p", "market-offer-name", name));
       const priceEl = el("div", "market-offer-price");
       priceEl.append(goldAmountNode(price));
       if (!canAfford) priceEl.classList.add("unaffordable");
       head.append(priceEl);
       info.append(head);
       info.append(
-        el("p", "market-offer-sub", `${itemSlotLabel(item)} - ур. ${item.itemLevel}`),
+        el(
+          "p",
+          "market-offer-sub",
+          isPinned
+            ? `${itemSlotLabel(item)} - всегда в продаже`
+            : `${itemSlotLabel(item)} - ур. ${item.itemLevel}`,
+        ),
       );
       const stats = el("div", "market-offer-stats");
       appendItemStats(stats, item, "market-offer-stat", "market-offer-affix");
@@ -448,13 +511,13 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       btn.addEventListener("contextmenu", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        tryBuy(index);
+        tryBuy(isPinned ? visualIndex : stockIndex, isPinned);
       });
 
       goodsGrid.append(btn);
     });
 
-    restoreDetailSelection(offers);
+    restoreDetailSelection(rows.map((r) => r.offer));
   }
 
   function render(): void {

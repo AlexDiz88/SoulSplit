@@ -43,9 +43,13 @@ function tiersFromAffix(affixId: string): AffixTierRange[] {
   return def.tiers.map((t) => ({ id: t.id, min: t.min, max: t.max }));
 }
 
-/** Плоские тиры для stub пояса (позже заменим). */
-function potionStubTiers(): AffixTierRange[] {
-  return TIER_IDS.map((id) => ({ id, min: 1, max: 1 }));
+/** Бонус ячеек от пояса (к базовой 1): F…A5 → +1…+4, итог 2…5. */
+function potionCapacityTiers(): AffixTierRange[] {
+  const byTier = [1, 1, 2, 2, 3, 3, 4, 4, 4, 4];
+  return TIER_IDS.map((id, i) => {
+    const v = byTier[i] ?? 1;
+    return { id, min: v, max: v };
+  });
 }
 
 function base(
@@ -97,8 +101,8 @@ export const ITEM_BASE_CATALOG: readonly ItemBaseDef[] = [
   base("hands_crit_chance", slotPool("hands"), "critChance", "шанса крита", tiersFromAffix("crit_chance")),
   base("hands_cast_speed", slotPool("hands"), "castSpeed", "скорости каста", tiersFromAffix("cast_speed")),
 
-  // Waist (stub)
-  base("waist_potion_count", slotPool("waist"), "potionCount", "ячеек зелий", potionStubTiers(), 10),
+  // Waist
+  base("waist_potion_count", slotPool("waist"), "potionCount", "доп. ячеек зелий", potionCapacityTiers(), 10),
 
   // Legs
   base("legs_phys_dr", slotPool("legs"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
@@ -246,7 +250,7 @@ export function formatRolledItemBase(b: RolledItemBase): string {
 
 export function baseVariantLabel(def: ItemBaseDef): string {
   if (def.variantKey === "aspectDamage") return "Бонус урона аспекта";
-  if (def.variantKey === "potionCount") return "Кол-во зелий (заглушка)";
+  if (def.variantKey === "potionCount") return "Доп. ячеек зелий";
   if (isAspectDamageStat(def.variantKey)) return "Бонус урона аспекта";
   return STAT_LABEL[def.variantKey as keyof typeof STAT_LABEL] ?? def.label;
 }

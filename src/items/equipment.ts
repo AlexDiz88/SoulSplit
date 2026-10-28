@@ -3,6 +3,7 @@ import type { StatId } from "../stats/statIds";
 import { isCombatBaseStat } from "./baseCatalog";
 import { GRIP_LABEL, type ItemGrip } from "./grip";
 import { OFFHAND_TYPE_BY_ID } from "./offhandTypes";
+import { isPotionItem } from "./potions";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
 import { WEAPON_TYPE_BY_ID } from "./weaponTypes";
@@ -212,6 +213,7 @@ export function canEquipInSlot(
   slot: EquipSlotId,
   equipment?: EquipmentMap,
 ): boolean {
+  if (isPotionItem(item)) return false;
   if (item.slot === "ring1" || item.slot === "ring2") {
     if (slot !== "ring1" && slot !== "ring2") return false;
   } else {

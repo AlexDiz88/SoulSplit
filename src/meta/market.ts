@@ -1,6 +1,11 @@
 import { ensureItemIcon } from "../art/itemIcons";
 import { normalizeWeaponItemSlot } from "../items/equipment";
 import { generateItem } from "../items/generate";
+import {
+  createPotionItem,
+  POTION_BUY_PRICE,
+  type PotionId,
+} from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
 import { buyPrice, sellPrice } from "./economy";
@@ -215,4 +220,14 @@ export function ensureMarket(state: GameState): void {
 
 export function isMerchantId(id: string): id is MerchantId {
   return id in MERCHANT_BY_ID;
+}
+
+/** Закреплённые зелья травника: всегда в продаже, не кончаются. */
+export function herbalistPinnedOffers(): MarketOffer[] {
+  const ids: PotionId[] = ["healing_potion", "mana_potion"];
+  return ids.map((id) => {
+    const item = createPotionItem(id, 1);
+    item.id = `shop_${id}`;
+    return { item, price: POTION_BUY_PRICE };
+  });
 }

@@ -75,7 +75,21 @@
         </div>
 
         <footer class="hud-bottom">
-          <div class="skill-bar" id="skill-bar" hidden></div>
+          <div class="hud-combat-bar" id="hud-combat-bar" hidden>
+            <div class="potion-bar" id="potion-bar" aria-label="Зелья">
+              <button type="button" class="potion-btn" id="potion-hp" data-potion="healing_potion" aria-label="Зелье здоровья, F" disabled>
+                <img class="potion-icon" alt="" draggable="false" />
+                <span class="potion-hotkey" aria-hidden="true">F</span>
+                <span class="potion-count">0</span>
+              </button>
+              <button type="button" class="potion-btn" id="potion-mana" data-potion="mana_potion" aria-label="Зелье маны, G" disabled>
+                <img class="potion-icon" alt="" draggable="false" />
+                <span class="potion-hotkey" aria-hidden="true">G</span>
+                <span class="potion-count">0</span>
+              </button>
+            </div>
+            <div class="skill-bar" id="skill-bar"></div>
+          </div>
         </footer>
 
         <div id="battle-banner" class="battle-banner" aria-live="polite" hidden>

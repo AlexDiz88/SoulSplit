@@ -71,9 +71,12 @@ export interface OffhandImplicit {
 /**
  * Зароллированная база предмета (не оружие).
  * Оружие хранит базу в `weapon` (урон + baseCd).
- * `potionCount` - заглушка пояса, в sheet не суммируется.
+ * `potionCount` - бонус ячеек зелий пояса (к базовой 1), в sheet не суммируется.
  */
 export type ItemBaseStatKey = StatId | "potionCount";
+
+/** Расходник пояса (здоровье / мана). */
+export type PotionId = "healing_potion" | "mana_potion";
 
 export interface RolledItemBase {
   baseId: string;
@@ -102,6 +105,10 @@ export interface ItemDef {
   weapon?: WeaponImplicit;
   /** Взаимоисключает weapon: предмет левой руки без автоатаки. */
   offhand?: OffhandImplicit;
+  /** Зелье: не экип, стакается в инвентаре, заряжается в пояс. */
+  potionId?: PotionId;
+  /** Размер стака (только для зелий). */
+  stackCount?: number;
 }
 
 export interface GenerateItemOptions {

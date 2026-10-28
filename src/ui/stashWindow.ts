@@ -1,4 +1,5 @@
 import { STASH_COLS, STASH_SIZE, type InventoryBag } from "../items/inventory";
+import { isPotionItem } from "../items/potions";
 import { SLOT_LABEL } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { fillItemTooltip } from "./itemTooltip";
@@ -130,7 +131,8 @@ function stashCell(index: number, item: ItemDef | null): HTMLButtonElement {
   if (item) {
     btn.dataset.rarity = item.rarity;
     btn.classList.add("filled");
-    btn.setAttribute("aria-label", item.name);
+    const stack = isPotionItem(item) ? Math.max(1, Math.floor(item.stackCount ?? 1)) : 1;
+    btn.setAttribute("aria-label", stack > 1 ? `${item.name} ×${stack}` : item.name);
     if (item.icon) {
       const img = el("img", "inv-cell-icon") as HTMLImageElement;
       img.src = item.icon;
@@ -139,6 +141,9 @@ function stashCell(index: number, item: ItemDef | null): HTMLButtonElement {
       face.append(img);
     } else {
       face.append(el("span", "inv-cell-glyph", SLOT_LABEL[item.slot].slice(0, 1)));
+    }
+    if (stack > 1) {
+      face.append(el("span", "inv-cell-stack", String(stack)));
     }
   } else {
     btn.setAttribute("aria-label", `Пустая ячейка тайника ${index + 1}`);

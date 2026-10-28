@@ -24,6 +24,8 @@ export interface BattleResult {
   heroHp: number;
   equipment: EquipmentMap;
   inventory: InventoryBag;
+  beltHpPotions: number;
+  beltManaPotions: number;
   stats: BattleStats;
 }
 

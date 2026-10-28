@@ -8,6 +8,7 @@ import { pushBuyback } from "../meta/market";
 import {
   addXpToProfile,
   applyProfileHp,
+  clampUnitBeltToEquipment,
   ensureHeroStash,
   hydrateCombatUnit,
   sheetBaseFromProfile,
@@ -188,6 +189,12 @@ export class GameApp {
     this.hud.setOnEquipmentChanged(() => {
       if (this.screen === "battle" || !this.state) return;
       if (!this.hubUnit) return;
+      const clamp = clampUnitBeltToEquipment(this.hubUnit);
+      if (clamp.overflowLost > 0) {
+        this.hud.showToast("Часть зелий потеряна: сумка полна");
+      } else if (clamp.overflowReturned > 0) {
+        this.hud.showToast("Лишние зелья сняты с пояса в сумку");
+      }
       syncProfileFromUnit(this.state.hero, this.hubUnit);
       this.persist();
       if (this.screen === "hub") this.hub.show(this.state);
@@ -509,6 +516,8 @@ export class GameApp {
     syncProfileFromUnit(state.hero, {
       equipment: result.equipment,
       inventory: result.inventory,
+      beltHpPotions: result.beltHpPotions,
+      beltManaPotions: result.beltManaPotions,
     });
 
     if (result.outcome === "flee") {

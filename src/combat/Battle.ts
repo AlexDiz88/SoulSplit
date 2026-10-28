@@ -20,10 +20,20 @@ import {
   rollWeaponDamage,
 } from "../stats/formulas";
 import { getStat } from "../stats/sheet";
-import { applyProfileHp, hydrateCombatUnit, sheetBaseFromProfile } from "../meta/heroProfile";
+import {
+  applyProfileHp,
+  clampUnitBeltToEquipment,
+  hydrateCombatUnit,
+  sheetBaseFromProfile,
+} from "../meta/heroProfile";
 import { cloneInventory } from "../items/inventory";
 import type { EquipmentMap } from "../items/equipment";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
+import {
+  POTION_HEAL_PCT,
+  POTION_SHARED_CD,
+  type PotionId,
+} from "../items/potions";
 import type { WeaponImplicit } from "../items/types";
 import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import { easeInOutQuad, TweenManager } from "../util/tween";
@@ -99,6 +109,7 @@ export class Battle {
   private ended = false;
   private hero!: Unit;
   private gcdRemaining = 0;
+  private potionCdRemaining = 0;
   private pendingCast: PendingCast | null = null;
   private gridOrigin = { x: 0, y: 0 };
   private heroAnchor = { x: 0, y: 0 };
@@ -295,6 +306,7 @@ export class Battle {
     window.removeEventListener("keyup", this.onKeyUp);
     document.removeEventListener("contextmenu", this.onContextMenu);
     document.removeEventListener("pointerdown", this.onDocPointer);
+    this.hud.setOnUsePotion(null);
     this.root.destroy({ children: true });
   }
 
@@ -313,14 +325,26 @@ export class Battle {
       return;
     }
 
-    const slot = (SKILL_HOTKEY_CODES as readonly string[]).indexOf(ev.code);
-    if (slot < 0) return;
     if (!document.getElementById("grimoire")?.hidden) return;
     if (!document.getElementById("character")?.hidden) return;
     if (!document.getElementById("inventory")?.hidden) return;
     if (!document.getElementById("bestiary")?.hidden) return;
     if (!document.getElementById("item-generator")?.hidden) return;
     if (!document.getElementById("side-menu")?.hidden) return;
+
+    if (ev.code === "KeyF") {
+      ev.preventDefault();
+      this.tryUsePotion("healing_potion");
+      return;
+    }
+    if (ev.code === "KeyG") {
+      ev.preventDefault();
+      this.tryUsePotion("mana_potion");
+      return;
+    }
+
+    const slot = (SKILL_HOTKEY_CODES as readonly string[]).indexOf(ev.code);
+    if (slot < 0) return;
 
     const id = this.hero?.abilities[slot];
     if (!id) return;
@@ -341,6 +365,7 @@ export class Battle {
     document.getElementById("btn-speed")?.addEventListener("click", this.onSpeedClick);
     this.hud.setCanChangeEquipment(() => this.canChangeEquipment());
     this.hud.setOnEquipmentChanged(() => this.onHeroEquipmentChanged());
+    this.hud.setOnUsePotion((id) => this.tryUsePotion(id));
     window.addEventListener("keydown", this.onKey);
     window.addEventListener("keyup", this.onKeyUp);
     document.addEventListener("contextmenu", this.onContextMenu);
@@ -353,8 +378,81 @@ export class Battle {
   }
 
   private onHeroEquipmentChanged(): void {
+    const clamp = clampUnitBeltToEquipment(this.hero);
+    if (clamp.overflowLost > 0) {
+      this.hud.showToast("Часть зелий потеряна: сумка полна");
+    } else if (clamp.overflowReturned > 0) {
+      this.hud.showToast("Лишние зелья сняты с пояса в сумку");
+    }
     this.syncWeaponFromEquipment();
     this.hud.setHero(this.hero);
+    this.refreshPotionBar();
+  }
+
+  private potionBarState() {
+    return {
+      hpCount: this.hero.beltHpPotions,
+      manaCount: this.hero.beltManaPotions,
+      cdRemaining: this.potionCdRemaining,
+      cdDuration: POTION_SHARED_CD,
+    };
+  }
+
+  private refreshPotionBar(rebuild = false): void {
+    if (rebuild) this.hud.renderPotions(this.potionBarState());
+    else this.hud.syncPotions(this.potionBarState());
+  }
+
+  tryUsePotion(id: PotionId): void {
+    if (!this.started || this.paused || this.ended || !this.hero.alive) return;
+    if (this.potionCdRemaining > 0) {
+      this.hud.showToast("Зелья на перезарядке");
+      return;
+    }
+    if (id === "healing_potion") {
+      if (this.hero.beltHpPotions <= 0) {
+        this.hud.showToast("Нет зелий здоровья");
+        return;
+      }
+      const maxHp = this.hero.sheet
+        ? getStat(this.hero.sheet, "maxHp")
+        : this.hero.stats.maxHp;
+      const amount = Math.floor(maxHp * POTION_HEAL_PCT);
+      const healed = this.hero.heal(amount);
+      this.hero.beltHpPotions -= 1;
+      if (healed > 0) {
+        this.vfx.floatingText(
+          this.hero.center.x,
+          this.hero.center.y - 24,
+          `+${Math.ceil(healed)}`,
+          0x6fcf6a,
+        );
+        this.statsTracker.notePassiveHeal(healed);
+      }
+    } else {
+      if (this.hero.beltManaPotions <= 0) {
+        this.hud.showToast("Нет зелий маны");
+        return;
+      }
+      if (!this.hero.sheet) return;
+      const maxMana = getStat(this.hero.sheet, "maxMana");
+      const before = this.hero.mana;
+      const amount = Math.floor(maxMana * POTION_HEAL_PCT);
+      this.hero.mana = Math.min(maxMana, this.hero.mana + amount);
+      this.hero.beltManaPotions -= 1;
+      const gained = this.hero.mana - before;
+      this.hero.redraw();
+      if (gained > 0) {
+        this.vfx.floatingText(
+          this.hero.center.x,
+          this.hero.center.y - 24,
+          `+${Math.ceil(gained)}`,
+          0x6aa8e8,
+        );
+      }
+    }
+    this.potionCdRemaining = POTION_SHARED_CD;
+    this.refreshPotionBar();
   }
 
   /** Подтянуть kind/reach/КД из реального оружия. Не переписывает item.name. */
@@ -625,6 +723,8 @@ export class Battle {
       heroHp: Math.max(0, Math.ceil(this.hero.hp)),
       equipment: gear.equipment,
       inventory: gear.inventory,
+      beltHpPotions: this.hero.beltHpPotions,
+      beltManaPotions: this.hero.beltManaPotions,
       stats: this.statsTracker.finalize(this.battleElapsed),
     };
     if (outcome === "victory") {
@@ -651,6 +751,7 @@ export class Battle {
   private refreshSkillBar(rebuild = false): void {
     if (rebuild) this.hud.renderSkills(this.hero, this.skillBarState());
     else this.hud.syncSkills(this.hero, this.skillBarState());
+    this.refreshPotionBar(rebuild);
     this.syncCanvasCursor();
   }
 
@@ -1666,6 +1767,9 @@ export class Battle {
     this.battleElapsed += combatDt;
     this.updateTornados(combatDt);
     this.gcdRemaining = Math.max(0, this.gcdRemaining - combatDt);
+    const potionCdBefore = this.potionCdRemaining;
+    this.potionCdRemaining = Math.max(0, this.potionCdRemaining - combatDt);
+    if (potionCdBefore > 0 || this.potionCdRemaining > 0) this.refreshPotionBar();
 
     for (const u of this.units) {
       if (!u.alive) continue;
