@@ -25,6 +25,11 @@ import {
   type WeaponTypeId,
 } from "../items/weaponTypes";
 import {
+  ASPECT_PILLAR_ROWS,
+  aspectSchoolLabel,
+} from "../abilities/aspectPillars";
+import { ASPECT_HEX } from "../abilities/aspects";
+import {
   CORE_STAT_IDS,
   FAMILY_LABEL,
   STAT_CAPS,
@@ -89,7 +94,7 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
   win.setAttribute("aria-labelledby", "igen-title");
 
   const head = el("header", "igen-head");
-  const title = el("h2", "igen-title", "Генератор предметов");
+  const title = el("h2", "igen-title", "Панель разработчика");
   title.id = "igen-title";
   const closeBtn = el("button", "ctrl-btn", "Закрыть");
   closeBtn.type = "button";
@@ -106,11 +111,12 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
     showToast: (text) => showToast?.(text),
   });
   const tabs = buildTabs();
-  body.append(bench.root, tabs);
+  body.append(tabs, bench.root);
 
   win.append(head, body);
   root.append(win);
   hud.append(root);
+  mountIgenPhoneLayout(root);
 
   const open = (): void => {
     root.hidden = false;
@@ -285,8 +291,80 @@ function buildBench(hooks: {
     markAdded();
   });
 
-  root.append(controls, result);
+  const inner = el("div", "igen-bench-inner");
+  inner.append(controls, result);
+
+  const accordion = el("details", "igen-accordion igen-bench-accordion");
+  accordion.append(
+    el("summary", "igen-accordion-summary", "Генерация предмета"),
+    inner,
+  );
+  root.append(accordion);
   return { root };
+}
+
+const IGEN_PHONE_MQ = "(max-width: 480px)";
+
+function mountIgenPhoneLayout(root: HTMLElement): void {
+  const mq = window.matchMedia(IGEN_PHONE_MQ);
+  const sync = (): void => syncIgenPhoneLayout(root);
+  mq.addEventListener("change", sync);
+  sync();
+  for (const node of root.querySelectorAll("details.igen-bench-accordion")) {
+    node.addEventListener("toggle", () => {
+      if (node instanceof HTMLDetailsElement) node.dataset.userToggled = "1";
+    });
+  }
+}
+
+function syncIgenPhoneLayout(root: HTMLElement): void {
+  const mobile = window.matchMedia(IGEN_PHONE_MQ).matches;
+  root.classList.toggle("igen-phone", mobile);
+  for (const node of root.querySelectorAll("details.igen-accordion")) {
+    if (!(node instanceof HTMLDetailsElement)) continue;
+    if (!mobile) {
+      node.open = true;
+      continue;
+    }
+    if (node.classList.contains("igen-bench-accordion") && !node.dataset.userToggled) {
+      node.open = false;
+    }
+    if (
+      node.classList.contains("igen-note-accordion") ||
+      node.classList.contains("igen-slot-accordion") ||
+      node.classList.contains("igen-base-accordion") ||
+      node.classList.contains("igen-rules-extra-accordion")
+    ) {
+      node.open = false;
+    }
+  }
+}
+
+function buildSectionNote(text: string): HTMLElement {
+  const details = el("details", "igen-accordion igen-note-accordion");
+  details.append(
+    el("summary", "igen-accordion-summary", "Пояснение"),
+    el("p", "igen-note igen-accordion-body", text),
+  );
+  return details;
+}
+
+function infoRow(label: string, value: string, valueClass = ""): HTMLElement {
+  const row = el("div", "igen-info-row");
+  row.append(el("span", "igen-info-label", label), el("span", `igen-info-value ${valueClass}`.trim(), value));
+  return row;
+}
+
+function buildInfoCard(title: string, subtitle: string | null, rows: HTMLElement[]): HTMLElement {
+  const card = el("article", "igen-info-card");
+  const head = el("div", "igen-info-card-head");
+  head.append(el("h4", "igen-info-card-title", title));
+  if (subtitle) head.append(el("span", "igen-info-card-sub igen-mono", subtitle));
+  card.append(head);
+  const body = el("div", "igen-info-card-body");
+  body.append(...rows);
+  card.append(body);
+  return card;
 }
 
 function field(label: string, control: HTMLElement): HTMLElement {
@@ -374,19 +452,33 @@ function renderItemCard(item: ItemDef): HTMLElement {
 
 function buildTabs(): HTMLElement {
   const wrap = el("div", "igen-tabs");
-  const bar = el("div", "igen-tab-bar");
+  const bar = el("div", "igen-tab-bar igen-desktop-only");
+  const mobileNav = el("div", "igen-mobile-nav igen-mobile-only");
+  const tabPicker = field("Раздел", el("select", "igen-select igen-tab-select") as HTMLSelectElement);
+  tabPicker.classList.add("igen-tab-picker");
+  mobileNav.append(tabPicker);
 
-  type TabId = "params" | "weapons" | "bases" | "slots" | "rarity";
+  type TabId = "params" | "aspects" | "weapons" | "bases" | "slots" | "rarity";
   const tabs: { id: TabId; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
+    { id: "aspects", label: "Аспекты" },
     { id: "weapons", label: "Таблица оружия" },
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
   ];
 
+  const tabSelect = tabPicker.querySelector("select") as HTMLSelectElement;
+  for (const tab of tabs) {
+    const opt = el("option", "", tab.label);
+    opt.value = tab.id;
+    if (tab.active) opt.selected = true;
+    tabSelect.append(opt);
+  }
+
   const buttons = new Map<TabId, HTMLButtonElement>();
   const panels = new Map<TabId, HTMLElement>();
+  const panelsWrap = el("div", "igen-tab-panels");
 
   for (const tab of tabs) {
     const btn = el("button", `igen-tab${tab.active ? " active" : ""}`, tab.label) as HTMLButtonElement;
@@ -400,6 +492,12 @@ function buildTabs(): HTMLElement {
   panelParams.dataset.panel = "params";
   panelParams.append(buildParamsSection());
   panels.set("params", panelParams);
+
+  const panelAspects = el("div", "igen-tab-panel");
+  panelAspects.dataset.panel = "aspects";
+  panelAspects.hidden = true;
+  panelAspects.append(buildAspectsSection());
+  panels.set("aspects", panelAspects);
 
   const panelWeapons = el("div", "igen-tab-panel");
   panelWeapons.dataset.panel = "weapons";
@@ -429,6 +527,7 @@ function buildTabs(): HTMLElement {
     for (const [tabId, btn] of buttons) {
       btn.classList.toggle("active", tabId === id);
     }
+    tabSelect.value = id;
     for (const [tabId, panel] of panels) {
       const on = tabId === id;
       panel.classList.toggle("active", on);
@@ -439,39 +538,101 @@ function buildTabs(): HTMLElement {
   for (const [id, btn] of buttons) {
     btn.addEventListener("click", () => setTab(id));
   }
+  tabSelect.addEventListener("change", () => setTab(tabSelect.value as TabId));
 
-  wrap.append(bar, panelParams, panelWeapons, panelBases, panelSlots, panelRarity);
+  panelsWrap.append(
+    panelParams,
+    panelAspects,
+    panelWeapons,
+    panelBases,
+    panelSlots,
+    panelRarity,
+  );
+
+  wrap.append(mobileNav, bar, panelsWrap);
   return wrap;
+}
+
+function buildAspectsSection(): HTMLElement {
+  const section = el("section", "igen-section igen-section-aspects");
+  section.append(
+    el("h3", "igen-section-title", "Столбы школ"),
+    buildSectionNote(
+      'Ориентир для генерации и отбора способностей (design/meta/ASPECTS.md). "-" = не столб школы, отдельные карточки могут быть исключением.',
+    ),
+  );
+
+  const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
+  for (const row of ASPECT_PILLAR_ROWS) {
+    const head = el("div", "igen-aspect-card-head");
+    const swatch = el("span", "igen-aspect-swatch");
+    swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
+    head.append(swatch, el("span", "", aspectSchoolLabel(row.aspectId)));
+    const card = el("article", "igen-info-card igen-aspect-card");
+    card.append(head);
+    const body = el("div", "igen-info-card-body");
+    body.append(
+      infoRow("aspect_id", row.aspectId, "igen-mono"),
+      infoRow("Урон", row.damageTag),
+      infoRow("DoT", row.dot),
+      infoRow("Контроль", row.control),
+      infoRow("Защита", row.defense),
+      infoRow("Крючки", row.hooks, "igen-desc"),
+    );
+    card.append(body);
+    mobileCards.append(card);
+  }
+
+  const scroll = el("div", "igen-table-scroll igen-desktop-only");
+  const table = el("table", "igen-table igen-table-aspects");
+  const thead = el("thead");
+  const headRow = el("tr");
+  for (const h of [
+    "Школа",
+    "aspect_id",
+    "Урон (тег)",
+    "DoT / длительное",
+    "Контроль / темп",
+    "Защита / себя",
+    "Метки и крючки",
+  ]) {
+    headRow.append(el("th", "", h));
+  }
+  thead.append(headRow);
+  table.append(thead);
+
+  const tbody = el("tbody");
+  for (const row of ASPECT_PILLAR_ROWS) {
+    const tr = el("tr");
+    const schoolCell = el("td", "igen-aspect-school");
+    const swatch = el("span", "igen-aspect-swatch");
+    swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
+    schoolCell.append(swatch, document.createTextNode(aspectSchoolLabel(row.aspectId)));
+    tr.append(
+      schoolCell,
+      el("td", "igen-mono", row.aspectId),
+      el("td", "", row.damageTag),
+      el("td", "", row.dot),
+      el("td", "", row.control),
+      el("td", "", row.defense),
+      el("td", "igen-desc", row.hooks),
+    );
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  scroll.append(table);
+  section.append(mobileCards, scroll);
+  return section;
 }
 
 function variantKeyId(key: ItemBaseVariantKey): string {
   return key;
 }
 
-function buildBasesSection(): HTMLElement {
-  const section = el("section", "igen-section");
-  section.append(
-    el("h3", "igen-section-title", "Базы предметов"),
-    el(
-      "p",
-      "igen-note",
-      "На предмете всегда ровно 1 база из пула слота/типа. Тиры F…A5 как у аффиксов. Дубли база↔аффикс разрешены. Оружие: урон + кулдаун (см. «Таблица оружия»).",
-    ),
-  );
+type BaseCatalogGroup = { label: string; note: string; defs: ItemBaseDef[] };
 
-  const scroll = el("div", "igen-table-scroll");
-  const table = el("table", "igen-table");
-  const thead = el("thead");
-  const hr = el("tr");
-  for (const h of ["Слот / тип", "Варианты базы", "variantKey", "Примечание"]) {
-    hr.append(el("th", "", h));
-  }
-  thead.append(hr);
-  table.append(thead);
-
-  const tbody = el("tbody");
-
-  type Group = { label: string; note: string; defs: ItemBaseDef[] };
+function collectBaseCatalogGroups(): BaseCatalogGroup[] {
+  type Group = BaseCatalogGroup;
   const groups: Group[] = [];
 
   const armorSlots: EquipSlotId[] = [
@@ -520,9 +681,56 @@ function buildBasesSection(): HTMLElement {
 
   groups.push({
     label: "Оружие (mainhand)",
-    note: "База = диапазон урона + кулдаун атаки по типу; тиры F…A5. См. вкладку «Таблица оружия».",
+    note: "База = диапазон урона + кулдаун атаки по типу; тиры F…A5. См. вкладку \"Таблица оружия\".",
     defs: [],
   });
+
+  return groups;
+}
+
+function buildBasesSection(): HTMLElement {
+  const section = el("section", "igen-section igen-section-bases");
+  section.append(
+    el("h3", "igen-section-title", "Базы предметов"),
+    buildSectionNote(
+      "На предмете всегда ровно 1 база из пула слота/типа. Тиры F…A5 как у аффиксов. Дубли база↔аффикс разрешены. Оружие: урон + кулдаун (см. \"Таблица оружия\").",
+    ),
+  );
+
+  const groups = collectBaseCatalogGroups();
+
+  const mobileList = el("div", "igen-mobile-cards igen-mobile-only");
+  for (const g of groups) {
+    const details = el("details", "igen-accordion igen-base-accordion");
+    details.append(el("summary", "igen-accordion-summary", g.label));
+    const body = el("div", "igen-accordion-body");
+    if (g.defs.length) {
+      body.append(
+        infoRow("Варианты", g.defs.map((d) => baseVariantLabel(d)).join(" / ")),
+        infoRow("variantKey", g.defs.map((d) => variantKeyId(d.variantKey)).join(", "), "igen-mono"),
+      );
+    } else {
+      body.append(
+        infoRow("Варианты", "урон + кулдаун"),
+        infoRow("variantKey", "weapon", "igen-mono"),
+      );
+    }
+    if (g.note) body.append(infoRow("Примечание", g.note, "igen-desc"));
+    details.append(body);
+    mobileList.append(details);
+  }
+
+  const scroll = el("div", "igen-table-scroll igen-desktop-only");
+  const table = el("table", "igen-table");
+  const thead = el("thead");
+  const hr = el("tr");
+  for (const h of ["Слот / тип", "Варианты базы", "variantKey", "Примечание"]) {
+    hr.append(el("th", "", h));
+  }
+  thead.append(hr);
+  table.append(thead);
+
+  const tbody = el("tbody");
 
   for (const g of groups) {
     const tr = el("tr");
@@ -549,7 +757,7 @@ function buildBasesSection(): HTMLElement {
 
   table.append(tbody);
   scroll.append(table);
-  section.append(scroll);
+  section.append(mobileList, scroll);
   return section;
 }
 
@@ -599,14 +807,29 @@ function compareWeapons(
 function buildWeaponsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-weapons");
   section.append(
-    el(
-      "p",
-      "igen-note",
-      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован. Клик по заголовку - сортировка.",
+    buildSectionNote(
+      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован. На десктопе сортировка по клику на заголовок.",
     ),
   );
 
-  const scroll = el("div", "igen-table-scroll");
+  const mobileToolbar = el("div", "igen-mobile-toolbar igen-mobile-only");
+  const sortSelect = el("select", "igen-select") as HTMLSelectElement;
+  for (const opt of [
+    { value: "name", label: "Сортировка: название" },
+    { value: "baseCd", label: "Сортировка: кулдаун" },
+    { value: "damage", label: "Сортировка: урон" },
+    { value: "dps", label: "Сортировка: DPS" },
+    { value: "reach", label: "Сортировка: дистанция" },
+  ]) {
+    const node = el("option", "", opt.label);
+    node.value = opt.value;
+    sortSelect.append(node);
+  }
+  mobileToolbar.append(field("Список оружия", sortSelect));
+
+  const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
+
+  const scroll = el("div", "igen-table-scroll igen-desktop-only");
   const table = el("table", "igen-table igen-table-sortable");
   const thead = el("thead");
   const headRow = el("tr");
@@ -661,6 +884,20 @@ function buildWeaponsSection(): HTMLElement {
 
   const tbody = el("tbody");
 
+  const renderMobileCards = (rows: (typeof WEAPON_TYPES)[number][]): void => {
+    mobileCards.replaceChildren();
+    for (const type of rows) {
+      mobileCards.append(
+        buildInfoCard(type.name, null, [
+          infoRow("Кулдаун", `${type.baseCd.toFixed(1)} с`),
+          infoRow("Урон", `${type.damageMin}-${type.damageMax}`),
+          infoRow("DPS", formatBaseWeaponDps(type.damageMin, type.damageMax, type.baseCd)),
+          infoRow("Дистанция", String(type.reach)),
+        ]),
+      );
+    }
+  };
+
   const renderRows = (): void => {
     const rows = [...WEAPON_TYPES].sort((a, b) => compareWeapons(a, b, sortKey, sortDir));
     tbody.replaceChildren();
@@ -676,11 +913,18 @@ function buildWeaponsSection(): HTMLElement {
       tbody.append(tr);
     }
     syncHeaderMarks();
+    renderMobileCards(rows);
   };
+
+  sortSelect.addEventListener("change", () => {
+    sortKey = sortSelect.value as WeaponSortKey;
+    sortDir = 1;
+    renderRows();
+  });
 
   table.append(tbody);
   scroll.append(table);
-  section.append(scroll);
+  section.append(mobileToolbar, mobileCards, scroll);
   renderRows();
   return section;
 }
@@ -688,7 +932,32 @@ function buildWeaponsSection(): HTMLElement {
 function buildParamsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-params");
 
-  const scroll = el("div", "igen-table-scroll");
+  const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
+  for (const id of CORE_STAT_IDS) {
+    const family = FAMILY_OF_STAT[id];
+    mobileCards.append(
+      buildInfoCard(STAT_LABEL[id], null, [
+        infoRow("Тип", typeLabel(id)),
+        infoRow("Категория", family ? FAMILY_LABEL[family] : "-"),
+        infoRow("Кап", capLabelForStat(id)),
+        infoRow("Описание", STAT_DESC[id], "igen-desc"),
+      ]),
+    );
+  }
+  mobileCards.append(
+    buildInfoCard(ASPECT_BONUS_LABEL, null, [
+      infoRow("Тип", "плоский %"),
+      infoRow("Категория", FAMILY_LABEL.aspect),
+      infoRow("Кап", capLabelForStat("aspectDamage:air")),
+      infoRow(
+        "Описание",
+        "Только на оружии и аксессуаре, и только с редкости rare+. Складывается с уроном способностей до капа 100% на пакет. Дроп оружия изученных аспектов весит выше.",
+        "igen-desc",
+      ),
+    ]),
+  );
+
+  const scroll = el("div", "igen-table-scroll igen-desktop-only");
   const table = el("table", "igen-table");
   const thead = el("thead");
   const headRow = el("tr");
@@ -727,7 +996,7 @@ function buildParamsSection(): HTMLElement {
   tbody.append(aspectRow);
   table.append(tbody);
   scroll.append(table);
-  section.append(scroll);
+  section.append(mobileCards, scroll);
   return section;
 }
 
@@ -740,9 +1009,7 @@ function typeLabel(id: StatId): string {
 function buildSlotsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-slots");
   section.append(
-    el(
-      "p",
-      "igen-note",
+    buildSectionNote(
       "Категория задаёт пул аффиксов слота. Отдельный deny-лист режет конкретные статы даже внутри разрешённой категории.",
     ),
   );
@@ -755,18 +1022,31 @@ function buildSlotsSection(): HTMLElement {
     const allowedNames = uniqueLabels(allowed.map((a) => formatStatName(a.statId)));
     const deniedNames = denied.map((id) => formatStatName(id as StatId));
     const aspect = isAspectItemSlot(slot) ? "да" : "нет";
+    const aspectLabel = aspect === "да" ? "Аспект: да" : "Аспект: нет";
 
-    const card = el("article", "igen-slot-card");
+    const cardBody = el("div", "igen-slot-card-body");
+    cardBody.append(
+      slotBlock("Категории", families, ""),
+      slotBlock("Может роллить", allowedNames, "igen-allow"),
+      slotBlock("Запрещено", deniedNames, "igen-deny"),
+    );
+
+    const mobileAccordion = el("details", "igen-accordion igen-slot-accordion igen-mobile-only");
+    const summary = el("summary", "igen-accordion-summary");
+    summary.append(
+      el("span", "igen-slot-summary-name", SLOT_LABEL[slot]),
+      el("span", "igen-slot-summary-meta", aspectLabel),
+    );
+    mobileAccordion.append(summary, cardBody.cloneNode(true) as HTMLElement);
+
+    const card = el("article", "igen-slot-card igen-desktop-only");
     const title = el("div", "igen-slot-card-head");
     title.append(
       el("h4", "igen-slot-card-title", SLOT_LABEL[slot]),
-      el("span", "igen-slot-card-aspect", aspect === "да" ? "Аспект: да" : "Аспект: нет"),
+      el("span", "igen-slot-card-aspect", aspectLabel),
     );
-    card.append(title);
-    card.append(slotBlock("Категории", families, ""));
-    card.append(slotBlock("Может роллить", allowedNames, "igen-allow"));
-    card.append(slotBlock("Запрещено", deniedNames, "igen-deny"));
-    grid.append(card);
+    card.append(title, cardBody);
+    grid.append(mobileAccordion, card);
   }
   section.append(grid);
   return section;
@@ -790,7 +1070,26 @@ function slotBlock(label: string, names: string[], className: string): HTMLEleme
 function buildRulesSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-rarity");
 
-  const table = el("table", "igen-table");
+  const notes: Record<ItemRarity, string> = {
+    common: "Белый. Только implicit оружия, если слот оружейный.",
+    uncommon: "Один ролл. Prefix или suffix случайно.",
+    magic: "Два ролла. Без бонуса аспекта.",
+    rare: "3-4 ролла. На оружии/аксессуаре появляется aspectTag и aspect-аффикс.",
+    epic: "4-5 роллов. Aspect как у rare. Легендарки в генератор не входят.",
+  };
+
+  const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
+  for (const rarity of RARITIES) {
+    const [lo, hi] = RARITY_AFFIX_COUNT[rarity];
+    mobileCards.append(
+      buildInfoCard(RARITY_LABEL[rarity], null, [
+        infoRow("Аффиксов", lo === hi ? String(lo) : `${lo}-${hi}`),
+        infoRow("Заметка", notes[rarity], "igen-desc"),
+      ]),
+    );
+  }
+
+  const table = el("table", "igen-table igen-desktop-only");
   const thead = el("thead");
   const hr = el("tr");
   for (const h of ["Редкость", "Аффиксов", "Заметка"]) {
@@ -799,13 +1098,6 @@ function buildRulesSection(): HTMLElement {
   thead.append(hr);
   table.append(thead);
   const tbody = el("tbody");
-  const notes: Record<ItemRarity, string> = {
-    common: "Белый. Только implicit оружия, если слот оружейный.",
-    uncommon: "Один ролл. Prefix или suffix случайно.",
-    magic: "Два ролла. Без бонуса аспекта.",
-    rare: "3-4 ролла. На оружии/аксессуаре появляется aspectTag и aspect-аффикс.",
-    epic: "4-5 роллов. Aspect как у rare. Легендарки в генератор не входят.",
-  };
   for (const rarity of RARITIES) {
     const [lo, hi] = RARITY_AFFIX_COUNT[rarity];
     const tr = el("tr");
@@ -817,19 +1109,30 @@ function buildRulesSection(): HTMLElement {
     tbody.append(tr);
   }
   table.append(tbody);
-  section.append(table);
 
-  const list = el("ul", "igen-bullets");
   const bullets = [
     "Аффикс = statId + roll(min, max) по itemLevel (tiers в каталоге).",
     "Prefix / suffix заложены: в v1 любой аффикс может быть обоими.",
     "Базовый урон оружия и бонус атаки оружия - разные сущности.",
     "Аспектные предметы: оружие, левая рука, аксессуар.",
   ];
+  const list = el("ul", "igen-bullets igen-desktop-only");
   for (const text of bullets) {
     list.append(el("li", "", text));
   }
-  section.append(list);
+
+  const extra = el("details", "igen-accordion igen-rules-extra-accordion igen-mobile-only");
+  const extraBody = el("div", "igen-accordion-body");
+  const mobileBullets = el("ul", "igen-bullets");
+  for (const text of bullets) {
+    mobileBullets.append(el("li", "", text));
+  }
+  extraBody.append(mobileBullets);
+  extra.append(el("summary", "igen-accordion-summary", "Общие правила"), extraBody);
+
+  const scroll = el("div", "igen-panel-scroll");
+  scroll.append(mobileCards, table, list, extra);
+  section.append(scroll);
   return section;
 }
 

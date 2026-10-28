@@ -12,6 +12,7 @@ export interface StartMenuApi {
 export interface StartMenuHandlers {
   onPlay: () => void;
   onSettings: () => void;
+  onDevPanel: () => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -48,7 +49,9 @@ export function mountStartMenu(handlers: StartMenuHandlers): StartMenuApi {
   btnPlay.type = "button";
   const btnSettings = el("button", "title-btn", "Настройки");
   btnSettings.type = "button";
-  actions.append(btnPlay, btnSettings);
+  const btnDevPanel = el("button", "title-btn title-btn-dev", "Панель разработчика");
+  btnDevPanel.type = "button";
+  actions.append(btnPlay, btnSettings, btnDevPanel);
 
   stage.append(brand, actions);
   root.append(stage);
@@ -59,6 +62,7 @@ export function mountStartMenu(handlers: StartMenuHandlers): StartMenuApi {
 
   btnPlay.addEventListener("click", () => handlers.onPlay());
   btnSettings.addEventListener("click", () => handlers.onSettings());
+  btnDevPanel.addEventListener("click", () => handlers.onDevPanel());
 
   return {
     show() {
