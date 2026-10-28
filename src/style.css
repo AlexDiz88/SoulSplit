@@ -163,8 +163,6 @@ textarea,
 
 #hud button,
 #hud .side-menu,
-#hud .bestiary-overlay,
-#hud .grimoire-overlay,
 #hud .igen-overlay {
   pointer-events: auto;
 }

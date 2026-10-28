@@ -24,55 +24,8 @@
 
         <nav id="side-menu" class="side-menu" hidden>
           <button type="button" id="btn-character" class="menu-item" aria-keyshortcuts="C">Персонаж</button>
-          <button type="button" id="btn-bestiary" class="menu-item" aria-keyshortcuts="H">Бестиарий</button>
-          <button type="button" id="btn-grimoire" class="menu-item" aria-keyshortcuts="V">Гримуар</button>
           <button type="button" id="btn-item-generator" class="menu-item" aria-keyshortcuts="G">Панель разработчика</button>
         </nav>
-
-        <div id="bestiary" class="bestiary-overlay" hidden>
-          <div class="bestiary-window" role="dialog" aria-labelledby="bestiary-title">
-            <div class="bestiary-head">
-              <h2 id="bestiary-title">Бестиарий</h2>
-              <button type="button" id="bestiary-close" class="ctrl-btn">Закрыть</button>
-            </div>
-            <div class="bestiary-filters" role="search" aria-label="Фильтры бестиария">
-              <label class="bestiary-filter">
-                <span>Группа</span>
-                <select id="bestiary-filter-group" class="bestiary-filter-select"></select>
-              </label>
-              <label class="bestiary-filter">
-                <span>Уровень</span>
-                <select id="bestiary-filter-level" class="bestiary-filter-select"></select>
-              </label>
-              <label class="bestiary-filter">
-                <span>Регион</span>
-                <select id="bestiary-filter-region" class="bestiary-filter-select"></select>
-              </label>
-              <button type="button" id="bestiary-filter-reset" class="ctrl-btn bestiary-filter-reset">
-                Сброс фильтров
-              </button>
-            </div>
-            <div class="bestiary-body">
-              <div id="bestiary-list" class="bestiary-list"></div>
-              <aside id="bestiary-detail" class="bestiary-detail">Выберите врага, чтобы увидеть характеристики.</aside>
-            </div>
-          </div>
-        </div>
-
-        <div id="grimoire" class="grimoire-overlay" hidden>
-          <div class="grimoire-window" role="dialog" aria-labelledby="grimoire-title" data-phone-view="aspects">
-            <div class="grimoire-head">
-              <button type="button" id="grimoire-back" class="ctrl-btn grimoire-back" hidden>Назад</button>
-              <h2 id="grimoire-title">Гримуар</h2>
-              <button type="button" id="grimoire-close" class="ctrl-btn">Закрыть</button>
-            </div>
-            <div class="grimoire-body">
-              <div id="grimoire-aspects" class="grimoire-aspects"></div>
-              <div id="grimoire-list" class="grimoire-list"></div>
-              <aside id="grimoire-detail" class="grimoire-detail"></aside>
-            </div>
-          </div>
-        </div>
 
         <footer class="hud-bottom">
           <div class="hud-combat-bar" id="hud-combat-bar" hidden>

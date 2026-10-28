@@ -21,8 +21,6 @@ export interface HubScreenApi {
 
 export interface HubScreenHandlers {
   onCharacter: () => void;
-  onBestiary: () => void;
-  onGrimoire: () => void;
   onItemGenerator: () => void;
   onSave: () => void;
   onSettings: () => void;
@@ -129,10 +127,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   menu.hidden = true;
   menu.setAttribute("aria-label", "Игровое меню");
 
-  const btnBestiary = el("button", "hub-menu-item", "Бестиарий");
-  btnBestiary.type = "button";
-  const btnGrimoire = el("button", "hub-menu-item", "Гримуар");
-  btnGrimoire.type = "button";
   const btnItemGen = el("button", "hub-menu-item", "Панель разработчика");
   btnItemGen.type = "button";
   const menuSep = el("div", "hub-menu-sep");
@@ -146,8 +140,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const btnExit = el("button", "hub-menu-item hub-menu-item-danger", "Главное меню");
   btnExit.type = "button";
   menu.append(
-    btnBestiary,
-    btnGrimoire,
     btnItemGen,
     menuSep,
     btnSave,
@@ -206,14 +198,6 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     else closeMenu();
   });
 
-  btnBestiary.addEventListener("click", () => {
-    closeMenu();
-    handlers.onBestiary();
-  });
-  btnGrimoire.addEventListener("click", () => {
-    closeMenu();
-    handlers.onGrimoire();
-  });
   btnItemGen.addEventListener("click", () => {
     closeMenu();
     handlers.onItemGenerator();

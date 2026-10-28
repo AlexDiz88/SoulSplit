@@ -40,15 +40,32 @@ import {
   type AffixFamily,
   type StatId,
 } from "../stats/statIds";
+import { mountBestiary, type BestiaryTooltipHost } from "./bestiary";
+import { mountGrimoire } from "./grimoire";
 import "./itemGenerator.css";
+
+export type DevPanelTab =
+  | "params"
+  | "aspects"
+  | "weapons"
+  | "bases"
+  | "slots"
+  | "rarity"
+  | "grimoire"
+  | "bestiary";
 
 export interface ItemGeneratorApi {
   isOpen(): boolean;
   open(): void;
+  openTab(tab: DevPanelTab): void;
+  getActiveTab(): DevPanelTab;
+  /** Escape внутри панели (назад в гримуаре/бестиарии на телефоне). */
+  handleEscape(): boolean;
   close(): void;
   setHero(hero: Unit): void;
   setOnInventoryChanged(fn: () => void): void;
   setShowToast(fn: (text: string) => void): void;
+  setBestiaryTooltips(host: BestiaryTooltipHost): void;
 }
 
 const RARITIES: ItemRarity[] = ["common", "uncommon", "magic", "rare", "epic"];
@@ -116,8 +133,30 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
     onInventoryChanged: () => onInventoryChanged?.(),
     showToast: (text) => showToast?.(text),
   });
-  const tabs = buildTabs();
-  body.append(tabs, bench.root);
+
+  let bestiaryTooltips: BestiaryTooltipHost | null = null;
+  const grimoireMount = el("div", "igen-embed-mount");
+  const bestiaryMount = el("div", "igen-embed-mount");
+  const grimoire = mountGrimoire(grimoireMount);
+  const bestiary = mountBestiary(bestiaryMount, {
+    showAbilityRef(anchor, ref) {
+      bestiaryTooltips?.showAbilityRef(anchor, ref);
+    },
+    hideAbilityRef() {
+      bestiaryTooltips?.hideAbilityRef();
+    },
+    canHoverAbilityRef() {
+      return bestiaryTooltips?.canHoverAbilityRef() ?? false;
+    },
+  });
+
+  const tabs = buildTabs({ grimoireMount, bestiaryMount, grimoire, bestiary });
+  const applyTab = tabs.setTab;
+  tabs.setTab = (tab: DevPanelTab): void => {
+    applyTab(tab);
+    root.classList.toggle("igen-catalog-tab", tab === "grimoire" || tab === "bestiary");
+  };
+  body.append(tabs.root, bench.root);
 
   win.append(head, body);
   root.append(win);
@@ -166,6 +205,13 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
       onOpen();
       open();
     },
+    openTab(tab) {
+      onOpen();
+      open();
+      tabs.setTab(tab);
+    },
+    getActiveTab: () => tabs.getTab(),
+    handleEscape: () => tabs.handleEscape(),
     close,
     setHero(next) {
       hero = next;
@@ -175,6 +221,9 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
     },
     setShowToast(fn) {
       showToast = fn;
+    },
+    setBestiaryTooltips(host) {
+      bestiaryTooltips = host;
     },
   };
 }
@@ -442,7 +491,17 @@ function renderItemCard(item: ItemDef): HTMLElement {
   return card;
 }
 
-function buildTabs(): HTMLElement {
+function buildTabs(deps: {
+  grimoireMount: HTMLElement;
+  bestiaryMount: HTMLElement;
+  grimoire: ReturnType<typeof mountGrimoire>;
+  bestiary: ReturnType<typeof mountBestiary>;
+}): {
+  root: HTMLElement;
+  setTab: (id: DevPanelTab) => void;
+  getTab: () => DevPanelTab;
+  handleEscape: () => boolean;
+} {
   const wrap = el("div", "igen-tabs");
   const bar = el("div", "igen-tab-bar igen-desktop-only");
   const mobileNav = el("div", "igen-mobile-nav igen-mobile-only");
@@ -450,14 +509,15 @@ function buildTabs(): HTMLElement {
   tabPicker.classList.add("igen-tab-picker");
   mobileNav.append(tabPicker);
 
-  type TabId = "params" | "aspects" | "weapons" | "bases" | "slots" | "rarity";
-  const tabs: { id: TabId; label: string; active?: boolean }[] = [
+  const tabs: { id: DevPanelTab; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
     { id: "aspects", label: "Аспекты" },
     { id: "weapons", label: "Таблица оружия" },
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
+    { id: "grimoire", label: "Гримуар" },
+    { id: "bestiary", label: "Бестиарий" },
   ];
 
   const tabSelect = tabPicker.querySelector("select") as HTMLSelectElement;
@@ -468,8 +528,8 @@ function buildTabs(): HTMLElement {
     tabSelect.append(opt);
   }
 
-  const buttons = new Map<TabId, HTMLButtonElement>();
-  const panels = new Map<TabId, HTMLElement>();
+  const buttons = new Map<DevPanelTab, HTMLButtonElement>();
+  const panels = new Map<DevPanelTab, HTMLElement>();
   const panelsWrap = el("div", "igen-tab-panels");
 
   for (const tab of tabs) {
@@ -515,7 +575,22 @@ function buildTabs(): HTMLElement {
   panelRarity.append(buildRulesSection());
   panels.set("rarity", panelRarity);
 
-  const setTab = (id: TabId): void => {
+  const panelGrimoire = el("div", "igen-tab-panel igen-tab-panel-embed");
+  panelGrimoire.dataset.panel = "grimoire";
+  panelGrimoire.hidden = true;
+  panelGrimoire.append(deps.grimoireMount);
+  panels.set("grimoire", panelGrimoire);
+
+  const panelBestiary = el("div", "igen-tab-panel igen-tab-panel-embed");
+  panelBestiary.dataset.panel = "bestiary";
+  panelBestiary.hidden = true;
+  panelBestiary.append(deps.bestiaryMount);
+  panels.set("bestiary", panelBestiary);
+
+  let activeTab: DevPanelTab = "params";
+
+  const setTab = (id: DevPanelTab): void => {
+    activeTab = id;
     for (const [tabId, btn] of buttons) {
       btn.classList.toggle("active", tabId === id);
     }
@@ -525,12 +600,14 @@ function buildTabs(): HTMLElement {
       panel.classList.toggle("active", on);
       panel.hidden = !on;
     }
+    if (id === "grimoire") deps.grimoire.refresh();
+    if (id === "bestiary") deps.bestiary.refresh();
   };
 
   for (const [id, btn] of buttons) {
     btn.addEventListener("click", () => setTab(id));
   }
-  tabSelect.addEventListener("change", () => setTab(tabSelect.value as TabId));
+  tabSelect.addEventListener("change", () => setTab(tabSelect.value as DevPanelTab));
 
   panelsWrap.append(
     panelParams,
@@ -539,10 +616,21 @@ function buildTabs(): HTMLElement {
     panelBases,
     panelSlots,
     panelRarity,
+    panelGrimoire,
+    panelBestiary,
   );
 
   wrap.append(mobileNav, bar, panelsWrap);
-  return wrap;
+  return {
+    root: wrap,
+    setTab,
+    getTab: () => activeTab,
+    handleEscape: () => {
+      if (activeTab === "grimoire" && deps.grimoire.back()) return true;
+      if (activeTab === "bestiary" && deps.bestiary.back()) return true;
+      return false;
+    },
+  };
 }
 
 function buildAspectsSection(): HTMLElement {

@@ -1003,3 +1003,124 @@
     width: 100%;
   }
 }
+
+.igen-embed-mount {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.igen-tab-panel-embed.active {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.grimoire-embedded-window,
+.bestiary-embedded-window {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.grimoire-embedded-head {
+  flex-shrink: 0;
+  margin-bottom: 6px;
+}
+
+.grimoire-embedded-title {
+  font-size: 1.05rem;
+}
+
+.bestiary-subhead {
+  display: none;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.bestiary-subtitle {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--accent, #e8d7a2);
+}
+
+.igen-tab-panel-embed .bestiary-body {
+  flex: 1;
+  min-height: 0;
+}
+
+.igen-phone.igen-catalog-tab .igen-bench {
+  display: none;
+}
+
+.igen-phone .bestiary-subhead {
+  display: flex;
+}
+
+.igen-phone .bestiary-embedded-window[data-phone-view="list"] .bestiary-detail {
+  display: none;
+}
+
+.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-list,
+.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-filters {
+  display: none;
+}
+
+.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-body {
+  grid-template-rows: minmax(0, 1fr);
+}
+
+@media (max-width: 480px) {
+  .igen-tab-panel-embed .grimoire-body {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="aspects"] .grimoire-list,
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="aspects"] .grimoire-detail,
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="list"] .grimoire-aspects,
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="list"] .grimoire-detail,
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="detail"] .grimoire-aspects,
+  .igen-tab-panel-embed .grimoire-window[data-phone-view="detail"] .grimoire-list {
+    display: none;
+  }
+
+  .igen-tab-panel-embed .grimoire-aspects,
+  .igen-tab-panel-embed .grimoire-list,
+  .igen-tab-panel-embed .grimoire-detail {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .igen-tab-panel-embed .grimoire-back {
+    display: inline-flex;
+    align-items: center;
+    min-width: 76px;
+  }
+
+  .igen-tab-panel-embed .grimoire-back[hidden] {
+    display: none;
+  }
+}

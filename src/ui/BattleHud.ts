@@ -1,6 +1,5 @@
 import {
   abilityDisplayName,
-  abilityIconUrlForRef,
   combatAbilityIdForRef,
   findAbilityCard,
   isPassiveAbilityRef,
@@ -8,7 +7,6 @@ import {
 } from "../abilities/catalog";
 import { ABILITIES, ASPECT_HEX, describeAbility, zoneSecondaryDamage } from "../abilities/definitions";
 import { mountCharacterSheet } from "./characterSheet";
-import { mountGrimoire } from "./grimoire";
 import { mountInventoryWindow } from "./inventoryWindow";
 import { mountItemGenerator } from "./itemGenerator";
 import { mountItemIconPreview } from "./itemIconPreview";
@@ -22,8 +20,6 @@ import {
 } from "../items/potions";
 import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
-import { enemyAtkRange } from "../combat/enemies";
-import { enemyPortraitUrl, loadEnemyCards, type EnemyCard } from "../combat/enemyCatalog";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
 
@@ -125,16 +121,6 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const battleBanner = document.getElementById("battle-banner")!;
   const menuBtn = document.getElementById("btn-menu")!;
   const sideMenu = document.getElementById("side-menu")!;
-  const bestiaryBtn = document.getElementById("btn-bestiary")!;
-  const bestiary = document.getElementById("bestiary")!;
-  const bestiaryList = document.getElementById("bestiary-list")!;
-  const bestiaryDetail = document.getElementById("bestiary-detail")!;
-  const bestiaryClose = document.getElementById("bestiary-close")!;
-  const bestiaryFilterGroup = document.getElementById("bestiary-filter-group") as HTMLSelectElement;
-  const bestiaryFilterLevel = document.getElementById("bestiary-filter-level") as HTMLSelectElement;
-  const bestiaryFilterRegion = document.getElementById("bestiary-filter-region") as HTMLSelectElement;
-  const bestiaryFilterReset = document.getElementById("bestiary-filter-reset")!;
-
   let toastTimer = 0;
   let startHandler: (() => void) | null = null;
   let onUsePotion: ((id: PotionId) => void) | null = null;
@@ -515,10 +501,9 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     }, 1400);
   };
 
-  type PanelId = "character" | "grimoire" | "bestiary" | "item-generator";
+  type PanelId = "character" | "item-generator";
 
   let character!: ReturnType<typeof mountCharacterSheet>;
-  let grimoire!: ReturnType<typeof mountGrimoire>;
   let itemGenerator!: ReturnType<typeof mountItemGenerator>;
 
   /** Перед открытием панели закрывает остальные (хоткеи и меню переключают окна). */
@@ -526,12 +511,9 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     hideTooltip();
     closeMenu();
     if (except !== "character" && character.isOpen()) character.close();
-    if (except !== "grimoire" && grimoire.isOpen()) grimoire.close();
-    if (except !== "bestiary") bestiary.hidden = true;
     if (except !== "item-generator" && itemGenerator.isOpen()) itemGenerator.close();
   };
 
-  grimoire = mountGrimoire(() => prepareOpen("grimoire"));
   character = mountCharacterSheet(() => prepareOpen("character"));
   const inventory = mountInventoryWindow();
   const stash = mountStashWindow();
@@ -563,6 +545,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   });
   itemGenerator = mountItemGenerator(() => prepareOpen("item-generator"));
   itemGenerator.setShowToast(pushToast);
+  itemGenerator.setBestiaryTooltips({
+    showAbilityRef: showAbilityRefTooltip,
+    hideAbilityRef: hideTooltip,
+    canHoverAbilityRef: canHoverTooltip,
+  });
   mountItemIconPreview();
 
   const refreshGearUi = (): void => {
@@ -579,189 +566,19 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     menuBtn.setAttribute("aria-expanded", "true");
   };
 
-  const showDetail = (card: EnemyCard): void => {
-    hideTooltip();
-    bestiaryDetail.replaceChildren();
-    const portrait = document.createElement("img");
-    portrait.className = "bestiary-detail-portrait";
-    portrait.src = enemyPortraitUrl(card);
-    portrait.alt = card.name;
-    const title = document.createElement("div");
-    title.className = "bestiary-detail-name";
-    title.textContent = card.name;
-    const portraitId = document.createElement("div");
-    portraitId.className = "grimoire-icon-id";
-    portraitId.textContent = card.portrait;
-    const status = document.createElement("span");
-    const statusLabel = displayEnemyStatus(card.status);
-    status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
-    status.textContent = statusLabel;
-    const atkRange = enemyAtkRange(card.atk);
-    const atkLabel =
-      atkRange.min === atkRange.max ? String(atkRange.min) : `${atkRange.min}-${atkRange.max}`;
-    bestiaryDetail.append(
-      portrait,
-      title,
-      portraitId,
-      status,
-      statLine("Уровень", String(card.baseLevel)),
-      statLine("Здоровье", String(card.hp)),
-      statLine("Урон", atkLabel),
-      statLine("Кулдаун", card.cd),
-      statLine("Дистанция", String(card.reach)),
-      statLine("Появление", card.spawnRowsLabel),
-    );
-    if (card.group) bestiaryDetail.append(statLine("Группа", card.group));
-    if (card.region) bestiaryDetail.append(statLine("Регион", card.region));
-    if (card.abilities && card.abilities !== "-" && card.abilities !== "нет") {
-      const refs = card.abilities
-        .split(",")
-        .map((part) => part.trim())
-        .filter((part) => part && part !== "-" && part !== "нет");
-      if (refs.length) {
-        bestiaryDetail.append(abilityIconsRow(refs, showAbilityRefTooltip, hideTooltip, canHoverTooltip));
-      }
-    }
-    if (card.description) {
-      const desc = document.createElement("div");
-      desc.className = "bestiary-desc";
-      const label = document.createElement("span");
-      label.className = "bestiary-desc-label";
-      label.textContent = "Описание";
-      const text = document.createElement("div");
-      text.className = "bestiary-desc-text";
-      text.textContent = card.description;
-      desc.append(label, text);
-      bestiaryDetail.append(desc);
-    }
-  };
-
-  const clearDetail = (): void => {
-    hideTooltip();
-    bestiaryDetail.textContent = "Выберите врага, чтобы увидеть характеристики.";
-  };
-
-  const fillSelectOptions = (
-    select: HTMLSelectElement,
-    values: string[],
-    allLabel: string,
-  ): void => {
-    const prev = select.value;
-    select.replaceChildren();
-    const all = document.createElement("option");
-    all.value = "";
-    all.textContent = allLabel;
-    select.append(all);
-    for (const value of values) {
-      const opt = document.createElement("option");
-      opt.value = value;
-      opt.textContent = value;
-      select.append(opt);
-    }
-    select.value = values.includes(prev) ? prev : "";
-  };
-
-  const syncBestiaryFilterOptions = (): void => {
-    const cards = loadEnemyCards();
-    const groups = [...new Set(cards.map((c) => c.group).filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b, "ru"),
-    );
-    const levels = [...new Set(cards.map((c) => String(c.baseLevel)))].sort(
-      (a, b) => Number(a) - Number(b),
-    );
-    const regions = [...new Set(cards.map((c) => c.region).filter(Boolean))].sort((a, b) =>
-      a.localeCompare(b, "ru"),
-    );
-    fillSelectOptions(bestiaryFilterGroup, groups, "Все");
-    fillSelectOptions(bestiaryFilterLevel, levels, "Все");
-    fillSelectOptions(bestiaryFilterRegion, regions, "Все");
-  };
-
-  const filteredEnemyCards = (): EnemyCard[] => {
-    const group = bestiaryFilterGroup.value;
-    const level = bestiaryFilterLevel.value;
-    const region = bestiaryFilterRegion.value;
-    return loadEnemyCards().filter((card) => {
-      if (group && card.group !== group) return false;
-      if (level && String(card.baseLevel) !== level) return false;
-      if (region && card.region !== region) return false;
-      return true;
-    });
-  };
-
-  const fillBestiary = (): void => {
-    syncBestiaryFilterOptions();
-    bestiaryList.replaceChildren();
-    for (const card of filteredEnemyCards()) {
-      const row = document.createElement("button");
-      row.type = "button";
-      row.className = "bestiary-row";
-      const img = document.createElement("img");
-      img.src = enemyPortraitUrl(card);
-      img.alt = card.name;
-      const text = document.createElement("span");
-      text.className = "bestiary-copy";
-      const name = document.createElement("span");
-      name.className = "bestiary-name";
-      name.textContent = card.name;
-      const status = document.createElement("span");
-      const statusLabel = displayEnemyStatus(card.status);
-      status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
-      status.textContent = statusLabel;
-      const type = document.createElement("span");
-      type.className = "bestiary-type";
-      type.textContent = `уровень ${card.baseLevel}`;
-      text.append(name, status, type);
-      row.append(img, text);
-      row.addEventListener("click", () => {
-        for (const other of bestiaryList.querySelectorAll(".bestiary-row")) {
-          other.classList.remove("active");
-        }
-        row.classList.add("active");
-        showDetail(card);
-      });
-      bestiaryList.append(row);
-    }
-    clearDetail();
-  };
-
-  const onBestiaryFilterChange = (): void => {
-    fillBestiary();
-  };
-
-  bestiaryFilterGroup.addEventListener("change", onBestiaryFilterChange);
-  bestiaryFilterLevel.addEventListener("change", onBestiaryFilterChange);
-  bestiaryFilterRegion.addEventListener("change", onBestiaryFilterChange);
-  bestiaryFilterReset.addEventListener("click", () => {
-    bestiaryFilterGroup.value = "";
-    bestiaryFilterLevel.value = "";
-    bestiaryFilterRegion.value = "";
-    fillBestiary();
-  });
-
   menuBtn.addEventListener("click", () => {
     if (sideMenu.hidden) openMenu();
     else closeMenu();
   });
-  const openBestiary = (): void => {
-    prepareOpen("bestiary");
-    fillBestiary();
-    bestiary.hidden = false;
+
+  const toggleDevPanelTab = (tab: "bestiary" | "grimoire"): void => {
+    if (itemGenerator.isOpen() && itemGenerator.getActiveTab() === tab) {
+      itemGenerator.close();
+    } else {
+      itemGenerator.openTab(tab);
+    }
   };
 
-  bestiaryBtn.addEventListener("click", () => {
-    openBestiary();
-  });
-  bestiaryClose.addEventListener("click", () => {
-    hideTooltip();
-    bestiary.hidden = true;
-  });
-  bestiary.addEventListener("click", (ev) => {
-    if (ev.target === bestiary) {
-      hideTooltip();
-      bestiary.hidden = true;
-    }
-  });
   document.addEventListener("pointerdown", (ev) => {
     if (sideMenu.hidden) return;
     const target = ev.target;
@@ -779,33 +596,23 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     if (!typing && !ev.repeat && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
       if (ev.code === "KeyH") {
         ev.preventDefault();
-        if (bestiary.hidden) openBestiary();
-        else bestiary.hidden = true;
+        toggleDevPanelTab("bestiary");
         return;
       }
       if (ev.code === "KeyV") {
         ev.preventDefault();
-        if (grimoire.isOpen()) grimoire.close();
-        else grimoire.open();
+        toggleDevPanelTab("grimoire");
         return;
       }
     }
 
     if (ev.code !== "Escape") return;
     if (itemGenerator.isOpen()) {
-      itemGenerator.close();
+      if (!itemGenerator.handleEscape()) itemGenerator.close();
       return;
     }
     if (character.isOpen()) {
       character.close();
-      return;
-    }
-    if (grimoire.isOpen()) {
-      if (!grimoire.back()) grimoire.close();
-      return;
-    }
-    if (!bestiary.hidden) {
-      bestiary.hidden = true;
       return;
     }
     closeMenu();
@@ -977,11 +784,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openBestiary() {
-      openBestiary();
+      itemGenerator.openTab("bestiary");
     },
 
     openGrimoire() {
-      grimoire.open();
+      itemGenerator.openTab("grimoire");
     },
 
     openItemGenerator() {
@@ -996,83 +803,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setMarketMode(false);
       stash.close();
       if (itemGenerator.isOpen()) itemGenerator.close();
-      if (grimoire.isOpen()) grimoire.close();
-      bestiary.hidden = true;
       closeMenu();
     },
   };
-}
-
-function statLine(label: string, value: string): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "bestiary-stat";
-  const name = document.createElement("span");
-  name.textContent = label;
-  const val = document.createElement("b");
-  val.textContent = value;
-  row.append(name, val);
-  return row;
-}
-
-function abilityIconsRow(
-  refs: string[],
-  showTip: (anchor: HTMLElement, ref: string) => void,
-  hideTip: () => void,
-  canHover: () => boolean,
-): HTMLElement {
-  const row = document.createElement("div");
-  row.className = "bestiary-stat bestiary-abilities-row";
-  const label = document.createElement("span");
-  label.textContent = "Способности";
-  const icons = document.createElement("div");
-  icons.className = "bestiary-ability-icons";
-
-  for (const ref of refs) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    const passive = isPassiveAbilityRef(ref);
-    btn.className = `skill-btn has-art bestiary-ability-icon${passive ? " skill-passive" : ""}`;
-    btn.setAttribute("aria-label", abilityDisplayName(ref));
-    const img = document.createElement("img");
-    img.className = "skill-icon";
-    img.src = abilityIconUrlForRef(ref);
-    img.alt = "";
-    img.draggable = false;
-    btn.append(img);
-
-    btn.addEventListener("mouseenter", () => {
-      if (!canHover()) return;
-      showTip(btn, ref);
-    });
-    btn.addEventListener("mouseleave", () => {
-      if (!canHover()) return;
-      hideTip();
-    });
-    btn.addEventListener("focus", () => {
-      if (!canHover()) return;
-      showTip(btn, ref);
-    });
-    btn.addEventListener("blur", () => {
-      if (!canHover()) return;
-      hideTip();
-    });
-
-    icons.append(btn);
-  }
-
-  row.append(label, icons);
-  return row;
-}
-
-function displayEnemyStatus(status: string): string {
-  if (status === "прототип" || status === "взято") return "одобрено";
-  return status;
-}
-
-function enemyStatusClass(status: string): string {
-  if (status === "черновик") return " draft";
-  if (status === "одобрено") return " approved";
-  if (status === "отказ") return " rejected";
-  if (status === "под вопросом") return " review";
-  return "";
 }

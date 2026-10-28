@@ -3,24 +3,48 @@ import { abilityIconUrl, cardsInAspect, GRIMOIRE_ASPECTS, type AbilityCard, type
 type PhoneView = "aspects" | "list" | "detail";
 
 export interface GrimoireApi {
-  isOpen(): boolean;
-  open(): void;
-  close(): void;
+  refresh(): void;
   /** На узком портретном экране возвращает на предыдущий шаг. Иначе false. */
   back(): boolean;
 }
 
 const PORTRAIT = window.matchMedia("(max-width: 480px)");
 
-export function mountGrimoire(onOpen: () => void): GrimoireApi {
-  const root = document.getElementById("grimoire")!;
-  const windowEl = root.querySelector<HTMLElement>(".grimoire-window")!;
-  const title = document.getElementById("grimoire-title")!;
-  const backBtn = document.getElementById("grimoire-back")!;
-  const closeBtn = document.getElementById("grimoire-close")!;
-  const aspectList = document.getElementById("grimoire-aspects")!;
-  const abilityList = document.getElementById("grimoire-list")!;
-  const detail = document.getElementById("grimoire-detail")!;
+export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
+  mountEl.className = "grimoire-embedded";
+
+  const windowEl = document.createElement("div");
+  windowEl.className = "grimoire-window grimoire-embedded-window";
+  windowEl.dataset.phoneView = "aspects";
+
+  const head = document.createElement("div");
+  head.className = "grimoire-head grimoire-embedded-head";
+  const backBtn = document.createElement("button");
+  backBtn.type = "button";
+  backBtn.id = "grimoire-back";
+  backBtn.className = "ctrl-btn grimoire-back";
+  backBtn.textContent = "Назад";
+  backBtn.hidden = true;
+  const title = document.createElement("h2");
+  title.id = "grimoire-title";
+  title.className = "grimoire-embedded-title";
+  title.textContent = "Гримуар";
+  head.append(backBtn, title);
+
+  const body = document.createElement("div");
+  body.className = "grimoire-body";
+  const aspectList = document.createElement("div");
+  aspectList.id = "grimoire-aspects";
+  aspectList.className = "grimoire-aspects";
+  const abilityList = document.createElement("div");
+  abilityList.id = "grimoire-list";
+  abilityList.className = "grimoire-list";
+  const detail = document.createElement("aside");
+  detail.id = "grimoire-detail";
+  detail.className = "grimoire-detail";
+  body.append(aspectList, abilityList, detail);
+  windowEl.append(head, body);
+  mountEl.append(windowEl);
 
   let aspectId = GRIMOIRE_ASPECTS.find((aspect) => cardsInAspect(aspect.id).length > 0)?.id ?? GRIMOIRE_ASPECTS[0]!.id;
   let cardId: string | null = null;
@@ -52,8 +76,8 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     const aspect = aspectById(card.aspectId);
     detail.style.setProperty("--aspect", aspect.color);
 
-    const head = document.createElement("div");
-    head.className = "grimoire-detail-head";
+    const detailHead = document.createElement("div");
+    detailHead.className = "grimoire-detail-head";
     const img = document.createElement("img");
     img.src = abilityIconUrl(card);
     img.alt = "";
@@ -67,7 +91,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     meta.className = "grimoire-kicker";
     meta.textContent = card.aspect;
     heading.append(name, iconId, meta);
-    head.append(img, heading);
+    detailHead.append(img, heading);
 
     const description = document.createElement("p");
     description.className = "grimoire-desc";
@@ -83,7 +107,7 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     );
 
     detail.append(
-      head,
+      detailHead,
       description,
       stats,
       block("Зона", card.zoneLabel),
@@ -113,20 +137,20 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       row.type = "button";
       row.className = "grimoire-row";
       row.classList.toggle("active", card.id === cardId);
-      const img = document.createElement("img");
-      img.src = abilityIconUrl(card);
-      img.alt = "";
+      const rowImg = document.createElement("img");
+      rowImg.src = abilityIconUrl(card);
+      rowImg.alt = "";
       const text = document.createElement("span");
       text.className = "grimoire-copy";
-      const name = document.createElement("span");
-      name.className = "grimoire-name";
-      name.textContent = card.name;
+      const rowName = document.createElement("span");
+      rowName.className = "grimoire-name";
+      rowName.textContent = card.name;
       const status = document.createElement("span");
       const statusLabel = displayStatus(card.status);
       status.className = `grimoire-status${statusClass(statusLabel)}`;
       status.textContent = statusLabel;
-      text.append(name, status);
-      row.append(img, text);
+      text.append(rowName, status);
+      row.append(rowImg, text);
       row.addEventListener("click", () => {
         cardId = card.id;
         view = "detail";
@@ -147,11 +171,11 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
       btn.className = "grimoire-aspect";
       btn.classList.toggle("active", aspect.id === aspectId);
       btn.style.setProperty("--aspect", aspect.color);
-      const name = document.createElement("span");
-      name.textContent = aspect.name;
+      const aspectName = document.createElement("span");
+      aspectName.textContent = aspect.name;
       const badge = document.createElement("b");
       badge.textContent = String(count);
-      btn.append(name, badge);
+      btn.append(aspectName, badge);
       btn.addEventListener("click", () => {
         aspectId = aspect.id;
         cardId = null;
@@ -164,12 +188,11 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     }
   };
 
-  const open = (): void => {
+  const refresh = (): void => {
     view = PORTRAIT.matches ? "aspects" : "list";
     renderAspects();
     renderAbilities();
     syncChrome();
-    root.hidden = false;
   };
 
   backBtn.addEventListener("click", () => {
@@ -177,34 +200,16 @@ export function mountGrimoire(onOpen: () => void): GrimoireApi {
     else view = "aspects";
     syncChrome();
   });
-  closeBtn.addEventListener("click", () => {
-    root.hidden = true;
-  });
-  root.addEventListener("click", (ev) => {
-    if (ev.target === root) root.hidden = true;
-  });
+
   PORTRAIT.addEventListener("change", () => {
-    if (root.hidden) return;
     if (!PORTRAIT.matches) view = "list";
     syncChrome();
   });
 
-  document.getElementById("btn-grimoire")!.addEventListener("click", () => {
-    onOpen();
-    open();
-  });
-
   return {
-    isOpen: () => !root.hidden,
-    open: () => {
-      onOpen();
-      open();
-    },
-    close: () => {
-      root.hidden = true;
-    },
-    back: () => {
-      if (root.hidden || !PORTRAIT.matches || view === "aspects") return false;
+    refresh,
+    back() {
+      if (!PORTRAIT.matches || view === "aspects") return false;
       if (view === "detail") view = "list";
       else view = "aspects";
       syncChrome();
@@ -328,6 +333,6 @@ function zoneBlock(zone: AbilityZone): HTMLElement {
 function cellClass(token: string): string {
   if (token === "+") return "zone-cell aim-empty";
   if (token === "X") return "zone-cell hit aim";
-  if (token === "." ) return "zone-cell";
+  if (token === ".") return "zone-cell";
   return "zone-cell hit";
 }

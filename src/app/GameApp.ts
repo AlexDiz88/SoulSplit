@@ -104,14 +104,6 @@ export class GameApp {
         this.merchant.hide();
         this.hud.openCharacter();
       },
-      onBestiary: () => {
-        this.merchant.hide();
-        this.hud.openBestiary();
-      },
-      onGrimoire: () => {
-        this.merchant.hide();
-        this.hud.openGrimoire();
-      },
       onItemGenerator: () => {
         this.merchant.hide();
         this.hud.openItemGenerator();
