@@ -541,10 +541,7 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  position: sticky;
-  top: 0;
   background: #141914;
-  z-index: 1;
 }
 
 .igen-sort-th {
@@ -725,12 +722,8 @@
 
   .igen-mobile-nav {
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 3;
     margin-bottom: 6px;
     padding-bottom: 6px;
-    background: linear-gradient(180deg, #171c17 85%, transparent);
   }
 
   .igen-tab-picker {
@@ -1167,24 +1160,50 @@
   display: none;
 }
 
-/* Телефон: одна прокрутка каталога, без схлопывания flex-basis: 0 */
-.igen-phone .igen-tab-panel-embed.active {
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.igen-phone .igen-tab-panel-embed.active > .igen-embed-mount,
-.igen-phone .igen-tab-panel-embed.active > .grimoire-embedded,
-.igen-phone .igen-tab-panel-embed.active > .bestiary-embedded {
-  flex: 1;
-  min-height: 0;
+/* Телефон: одна прокрутка всего окна, без sticky-шапок */
+.igen-phone .igen-window {
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+.igen-phone .igen-body,
+.igen-phone .igen-tabs,
+.igen-phone .igen-tab-panels,
+.igen-phone .igen-tab-panel.active,
+.igen-phone .igen-tab-panel-embed.active {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
+.igen-phone .igen-tab-panel-embed.active > .igen-embed-mount,
+.igen-phone .igen-tab-panel-embed.active > .grimoire-embedded,
+.igen-phone .igen-tab-panel-embed.active > .bestiary-embedded {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
   display: block;
+}
+
+.igen-phone .igen-section,
+.igen-phone .igen-section-params,
+.igen-phone .igen-section-aspects,
+.igen-phone .igen-section-weapons,
+.igen-phone .igen-section-slots,
+.igen-phone .igen-section-bases,
+.igen-phone .igen-section-rarity,
+.igen-phone .igen-panel-scroll,
+.igen-phone .igen-table-scroll,
+.igen-phone .igen-mobile-cards,
+.igen-phone .igen-slot-scroll,
+.igen-phone .igen-tab-panel[data-panel="generate"] .igen-section-items,
+.igen-phone .igen-bench {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
 }
 
 .igen-phone .grimoire-embedded-window,
@@ -1228,21 +1247,6 @@
   min-height: auto;
   height: auto;
   overflow: visible;
-}
-
-.igen-phone .bestiary-embedded-window .bestiary-filters {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding-bottom: 8px;
-  background: linear-gradient(180deg, #171c17 88%, transparent);
-}
-
-.igen-phone .bestiary-embedded-window .bestiary-subhead {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: #171c17;
 }
 
 .igen-phone .bestiary-embedded-window .bestiary-body {
