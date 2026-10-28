@@ -1,0 +1,104 @@
+.igen-phone .ui-custom-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+}
+
+.igen-phone .ui-custom-select-native {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+}
+
+.igen-phone .ui-custom-select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  text-align: left;
+  cursor: var(--cur-default);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.igen-phone .ui-custom-select-trigger::after {
+  content: "";
+  flex-shrink: 0;
+  width: 11px;
+  height: 8px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpolyline points='1,1.5 6,6.5 11,1.5' fill='none' stroke='%23c8c2b2' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-size: contain;
+  transition: transform 0.15s ease;
+}
+
+.igen-phone .ui-custom-select.is-open .ui-custom-select-trigger::after {
+  transform: rotate(180deg);
+}
+
+.igen-phone .ui-custom-select-list {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 50;
+  max-height: min(280px, 42dvh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--panel-border, #3a4538);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #171c17 0%, #101410 100%);
+  box-shadow:
+    0 12px 32px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(120, 130, 110, 0.12);
+  padding: 4px 0;
+}
+
+.igen-phone .ui-custom-select-option {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d8d2c4;
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-align: left;
+  cursor: var(--cur-default);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.igen-phone .ui-custom-select-option:hover,
+.igen-phone .ui-custom-select-option:focus-visible {
+  background: rgba(120, 130, 110, 0.18);
+  outline: none;
+}
+
+.igen-phone .ui-custom-select-option.active {
+  background: rgba(196, 163, 90, 0.14);
+  color: #f0e2b0;
+}
+
+.igen-phone .ui-custom-select-option + .ui-custom-select-option {
+  border-top: 1px solid rgba(120, 130, 110, 0.16);
+}
+
+.igen-phone .igen-field .ui-custom-select,
+.igen-phone .igen-tab-picker .ui-custom-select,
+.igen-phone .bestiary-filter .ui-custom-select {
+  width: 100%;
+}

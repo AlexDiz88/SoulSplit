@@ -41,7 +41,9 @@ import {
   type StatId,
 } from "../stats/statIds";
 import { mountBestiary, type BestiaryTooltipHost } from "./bestiary";
+import { removeCustomSelectsIn, syncCustomSelectsIn } from "./customSelect";
 import { mountGrimoire } from "./grimoire";
+import "./customSelect.css";
 import "./itemGenerator.css";
 
 export type DevPanelTab =
@@ -370,6 +372,8 @@ function mountIgenPhoneLayout(root: HTMLElement): void {
 function syncIgenPhoneLayout(root: HTMLElement): void {
   const mobile = window.matchMedia(IGEN_PHONE_MQ).matches;
   root.classList.toggle("igen-phone", mobile);
+  if (mobile) syncCustomSelectsIn(root);
+  else removeCustomSelectsIn(root);
   for (const node of root.querySelectorAll("details.igen-accordion")) {
     if (!(node instanceof HTMLDetailsElement)) continue;
     if (!mobile) {
