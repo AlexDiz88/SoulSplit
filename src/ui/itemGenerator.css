@@ -314,7 +314,40 @@
 .igen-select:active {
   outline: none;
   box-shadow: none;
+  border-width: 1px;
   border-color: #4a5548;
+}
+
+/* Селекты панели разработчика: без системной рамки и «увеличения» на телефоне */
+.igen-overlay select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.igen-overlay select:focus,
+.igen-overlay select:focus-visible,
+.igen-overlay select:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+}
+
+.igen-overlay .igen-select:focus,
+.igen-overlay .igen-select:focus-visible,
+.igen-overlay .igen-select:active {
+  border-color: #4a5548 !important;
+}
+
+.igen-overlay .bestiary-filter-select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.igen-overlay .bestiary-filter-select:focus,
+.igen-overlay .bestiary-filter-select:focus-visible,
+.igen-overlay .bestiary-filter-select:active {
+  outline: none !important;
+  box-shadow: none !important;
+  border-width: 1px !important;
+  border-color: var(--panel-border, #3a4538) !important;
 }
 
 .igen-input {
@@ -1173,6 +1206,26 @@
   top: 0;
   z-index: 2;
   background: #171c17;
+}
+
+.igen-phone .igen-tab-panel-embed.active > .grimoire-embedded,
+.igen-phone .igen-tab-panel-embed.active > .bestiary-embedded {
+  padding-right: 10px;
+  box-sizing: border-box;
+}
+
+.igen-phone .grimoire-embedded-window .grimoire-aspects,
+.igen-phone .grimoire-embedded-window .grimoire-list {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.igen-phone .grimoire-embedded-window .grimoire-aspect,
+.igen-phone .grimoire-embedded-window .grimoire-row {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .igen-phone .grimoire-embedded-window .grimoire-aspects,

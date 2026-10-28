@@ -756,6 +756,16 @@ textarea,
   background-position: right 10px center;
   background-size: 11px 8px;
   cursor: var(--cur-default);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bestiary-filter-select:focus,
+.bestiary-filter-select:focus-visible,
+.bestiary-filter-select:active {
+  outline: none;
+  box-shadow: none;
+  border-width: 1px;
+  border-color: var(--panel-border);
 }
 
 .bestiary-filter-reset {
@@ -1103,10 +1113,14 @@ textarea,
 .grimoire-aspect:hover,
 .grimoire-aspect.active,
 .grimoire-row:hover,
-.grimoire-row.active,
+.grimoire-row.active {
+  border-color: var(--accent);
+}
+
 .grimoire-aspect:focus-visible,
 .grimoire-row:focus-visible {
-  border-color: var(--accent);
+  outline: none;
+  box-shadow: none;
 }
 
 .grimoire-aspect.active,
