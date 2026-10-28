@@ -25,6 +25,11 @@ import {
   type WeaponTypeId,
 } from "../items/weaponTypes";
 import {
+  ASPECT_PILLAR_ROWS,
+  aspectSchoolLabel,
+} from "../abilities/aspectPillars";
+import { ASPECT_HEX } from "../abilities/aspects";
+import {
   CORE_STAT_IDS,
   FAMILY_LABEL,
   STAT_CAPS,
@@ -376,9 +381,10 @@ function buildTabs(): HTMLElement {
   const wrap = el("div", "igen-tabs");
   const bar = el("div", "igen-tab-bar");
 
-  type TabId = "params" | "weapons" | "bases" | "slots" | "rarity";
+  type TabId = "params" | "aspects" | "weapons" | "bases" | "slots" | "rarity";
   const tabs: { id: TabId; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
+    { id: "aspects", label: "Аспекты" },
     { id: "weapons", label: "Таблица оружия" },
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
@@ -400,6 +406,12 @@ function buildTabs(): HTMLElement {
   panelParams.dataset.panel = "params";
   panelParams.append(buildParamsSection());
   panels.set("params", panelParams);
+
+  const panelAspects = el("div", "igen-tab-panel");
+  panelAspects.dataset.panel = "aspects";
+  panelAspects.hidden = true;
+  panelAspects.append(buildAspectsSection());
+  panels.set("aspects", panelAspects);
 
   const panelWeapons = el("div", "igen-tab-panel");
   panelWeapons.dataset.panel = "weapons";
@@ -440,8 +452,69 @@ function buildTabs(): HTMLElement {
     btn.addEventListener("click", () => setTab(id));
   }
 
-  wrap.append(bar, panelParams, panelWeapons, panelBases, panelSlots, panelRarity);
+  wrap.append(
+    bar,
+    panelParams,
+    panelAspects,
+    panelWeapons,
+    panelBases,
+    panelSlots,
+    panelRarity,
+  );
   return wrap;
+}
+
+function buildAspectsSection(): HTMLElement {
+  const section = el("section", "igen-section igen-section-aspects");
+  section.append(
+    el("h3", "igen-section-title", "Столбы школ"),
+    el(
+      "p",
+      "igen-note",
+      'Ориентир для генерации и отбора способностей (design/meta/ASPECTS.md). "-" = не столб школы, отдельные карточки могут быть исключением.',
+    ),
+  );
+
+  const scroll = el("div", "igen-table-scroll");
+  const table = el("table", "igen-table igen-table-aspects");
+  const thead = el("thead");
+  const headRow = el("tr");
+  for (const h of [
+    "Школа",
+    "aspect_id",
+    "Урон (тег)",
+    "DoT / длительное",
+    "Контроль / темп",
+    "Защита / себя",
+    "Метки и крючки",
+  ]) {
+    headRow.append(el("th", "", h));
+  }
+  thead.append(headRow);
+  table.append(thead);
+
+  const tbody = el("tbody");
+  for (const row of ASPECT_PILLAR_ROWS) {
+    const tr = el("tr");
+    const schoolCell = el("td", "igen-aspect-school");
+    const swatch = el("span", "igen-aspect-swatch");
+    swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
+    schoolCell.append(swatch, document.createTextNode(aspectSchoolLabel(row.aspectId)));
+    tr.append(
+      schoolCell,
+      el("td", "igen-mono", row.aspectId),
+      el("td", "", row.damageTag),
+      el("td", "", row.dot),
+      el("td", "", row.control),
+      el("td", "", row.defense),
+      el("td", "igen-desc", row.hooks),
+    );
+    tbody.append(tr);
+  }
+  table.append(tbody);
+  scroll.append(table);
+  section.append(scroll);
+  return section;
 }
 
 function variantKeyId(key: ItemBaseVariantKey): string {
