@@ -127,7 +127,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   menu.hidden = true;
   menu.setAttribute("aria-label", "Игровое меню");
 
-  const btnItemGen = el("button", "hub-menu-item", "Панель разработчика");
+  const btnItemGen = el("button", "hub-menu-item", "Кодекс");
   btnItemGen.type = "button";
   const menuSep = el("div", "hub-menu-sep");
   menuSep.setAttribute("role", "separator");

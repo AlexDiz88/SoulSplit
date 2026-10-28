@@ -51,7 +51,7 @@ export function mountStartMenu(handlers: StartMenuHandlers): StartMenuApi {
   btnPlay.type = "button";
   const btnSettings = el("button", "title-btn", "Настройки");
   btnSettings.type = "button";
-  const btnDevPanel = el("button", "title-btn title-btn-dev", "Панель разработчика");
+  const btnDevPanel = el("button", "title-btn title-btn-dev", "Кодекс");
   btnDevPanel.type = "button";
   actions.append(btnPlay, btnSettings, btnDevPanel);
 

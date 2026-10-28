@@ -71,7 +71,7 @@ export function pickRandomTownBackgroundUrl(): string {
   return TOWN_BACKGROUND_URLS[index]!;
 }
 
-/** Узкий портрет / телефон: те же брейкпоинты, что у HUD и панели разработчика. */
+/** Узкий портрет / телефон: те же брейкпоинты, что у HUD и Кодекса. */
 export const PHONE_UI_MQ = "(max-width: 480px)";
 
 export function isPhoneUi(): boolean {

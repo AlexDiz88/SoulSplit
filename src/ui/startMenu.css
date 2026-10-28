@@ -838,3 +838,14 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+@media (max-width: 480px) {
+  #start-menu .title-brand {
+    display: none;
+  }
+
+  #start-menu .title-stage {
+    top: 50%;
+    gap: clamp(18px, 3vh, 28px);
+  }
+}
