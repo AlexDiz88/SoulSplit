@@ -1108,7 +1108,9 @@ function buildSlotsSection(): HTMLElement {
     card.append(title, cardBody);
     grid.append(mobileAccordion, card);
   }
-  section.append(grid);
+  const scroll = el("div", "igen-panel-scroll igen-slot-scroll");
+  scroll.append(grid);
+  section.append(scroll);
   return section;
 }
 
