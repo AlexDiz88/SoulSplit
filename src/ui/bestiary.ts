@@ -106,7 +106,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function mountBestiary(mountEl: HTMLElement, tooltipHost: BestiaryTooltipHost): BestiaryApi {
-  mountEl.className = "bestiary-embedded";
+  mountEl.classList.add("bestiary-embedded");
 
   const shell = el("div", "bestiary-window bestiary-embedded-window");
   shell.dataset.phoneView = "list";

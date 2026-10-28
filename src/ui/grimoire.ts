@@ -11,7 +11,7 @@ export interface GrimoireApi {
 const PORTRAIT = window.matchMedia("(max-width: 480px)");
 
 export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
-  mountEl.className = "grimoire-embedded";
+  mountEl.classList.add("grimoire-embedded");
 
   const windowEl = document.createElement("div");
   windowEl.className = "grimoire-window grimoire-embedded-window";

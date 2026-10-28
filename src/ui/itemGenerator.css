@@ -1021,7 +1021,9 @@
   }
 }
 
-.igen-embed-mount {
+.igen-embed-mount,
+.igen-tab-panel-embed > .grimoire-embedded,
+.igen-tab-panel-embed > .bestiary-embedded {
   flex: 1;
   min-height: 0;
   display: flex;
@@ -1037,12 +1039,10 @@
 
 .grimoire-embedded-window,
 .bestiary-embedded-window {
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
   width: 100%;
   max-width: 100%;
-  height: auto;
-  max-height: none;
   border: 0;
   border-radius: 0;
   padding: 0;
@@ -1050,7 +1050,6 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  touch-action: pan-y;
 }
 
 .grimoire-embedded-window .grimoire-body {
@@ -1064,13 +1063,12 @@
 .grimoire-embedded-window .grimoire-aspects,
 .grimoire-embedded-window .grimoire-list,
 .grimoire-embedded-window .grimoire-detail {
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  touch-action: pan-y;
 }
 
 .grimoire-embedded-head {
@@ -1106,20 +1104,21 @@
 }
 
 .igen-tab-panel-embed .bestiary-body {
-  flex: 1 1 0;
+  flex: 1;
   min-height: 0;
   overflow: hidden;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16px;
 }
 
 .bestiary-embedded-window .bestiary-list,
 .bestiary-embedded-window .bestiary-detail {
-  flex: 1 1 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
-  touch-action: pan-y;
 }
 
 .igen-phone .bestiary-subhead {
@@ -1135,56 +1134,81 @@
   display: none;
 }
 
-.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-body {
-  grid-template-rows: minmax(0, 1fr);
-}
-
-.igen-phone .bestiary-embedded-window .bestiary-body {
-  display: flex;
-  flex-direction: column;
-  grid-template-columns: none;
-  grid-template-rows: none;
-  gap: 0;
-}
-
-.igen-phone .bestiary-embedded-window[data-phone-view="list"] .bestiary-list {
-  flex: 1 1 0;
+/* Телефон: одна прокрутка каталога, без схлопывания flex-basis: 0 */
+.igen-phone .igen-tab-panel-embed.active {
+  flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-content: flex-start;
+  overflow: hidden;
 }
 
-.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-detail {
-  flex: 1 1 0;
+.igen-phone .igen-tab-panel-embed.active > .igen-embed-mount,
+.igen-phone .igen-tab-panel-embed.active > .grimoire-embedded,
+.igen-phone .igen-tab-panel-embed.active > .bestiary-embedded {
+  flex: 1;
   min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  display: block;
 }
 
-.igen-phone .grimoire-embedded-window .grimoire-aspects,
-.igen-phone .grimoire-embedded-window .grimoire-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  align-content: flex-start;
+.igen-phone .grimoire-embedded-window,
+.igen-phone .bestiary-embedded-window {
+  flex: none;
+  min-height: auto;
+  height: auto;
+  overflow: visible;
+}
+
+.igen-phone .grimoire-embedded-window .grimoire-body {
+  flex: none;
+  min-height: auto;
+  overflow: visible;
+}
+
+.igen-phone .grimoire-embedded-head {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #171c17;
 }
 
 .igen-phone .grimoire-embedded-window .grimoire-aspects,
 .igen-phone .grimoire-embedded-window .grimoire-list,
 .igen-phone .grimoire-embedded-window .grimoire-detail {
-  flex: 1 1 0;
-  min-height: 0;
+  flex: none;
+  min-height: auto;
+  height: auto;
+  overflow: visible;
 }
 
-.igen-phone .igen-embed-mount {
-  flex: 1 1 0;
-  min-height: 0;
+.igen-phone .bestiary-embedded-window .bestiary-filters {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding-bottom: 8px;
+  background: linear-gradient(180deg, #171c17 88%, transparent);
 }
 
-.igen-phone .igen-tab-panel-embed.active {
-  flex: 1 1 0;
-  min-height: 0;
-  overflow: hidden;
+.igen-phone .bestiary-embedded-window .bestiary-subhead {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #171c17;
+}
+
+.igen-phone .bestiary-embedded-window .bestiary-body {
+  flex: none;
+  display: block;
+  overflow: visible;
+}
+
+.igen-phone .bestiary-embedded-window .bestiary-list,
+.igen-phone .bestiary-embedded-window .bestiary-detail {
+  overflow: visible;
+  min-height: auto;
 }
 
 @media (max-width: 480px) {
