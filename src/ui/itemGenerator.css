@@ -1201,13 +1201,6 @@
   overflow: visible;
 }
 
-.igen-phone .grimoire-embedded-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  background: #171c17;
-}
-
 .igen-phone .igen-tab-panel-embed.active > .grimoire-embedded,
 .igen-phone .igen-tab-panel-embed.active > .bestiary-embedded {
   padding-right: 10px;
