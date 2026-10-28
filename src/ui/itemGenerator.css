@@ -54,11 +54,22 @@
 }
 
 .igen-bench {
-  flex-shrink: 0;
-  border: 1px solid rgba(196, 163, 90, 0.28);
-  border-radius: 10px;
-  padding: 12px 14px 14px;
-  background: rgba(20, 24, 20, 0.9);
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.igen-tab-panel[data-panel="generate"] .igen-section-items {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .igen-tabs {
@@ -142,7 +153,8 @@
 }
 
 .igen-tab-panel[data-panel="slots"].active,
-.igen-tab-panel[data-panel="rarity"].active {
+.igen-tab-panel[data-panel="rarity"].active,
+.igen-tab-panel[data-panel="generate"].active {
   overflow: auto;
 }
 
@@ -751,32 +763,10 @@
   }
 
   .igen-bench {
-    flex-shrink: 0;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    background: transparent;
-    max-height: none;
-    overflow: visible;
-  }
-
-  .igen-bench-accordion {
-    border: 1px solid rgba(196, 163, 90, 0.35);
-    border-radius: 10px;
-    background: rgba(20, 24, 20, 0.95);
-    overflow: hidden;
-  }
-
-  .igen-bench-accordion[open] .igen-bench-inner {
-    max-height: min(46dvh, 360px);
-    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+    overflow: auto;
     -webkit-overflow-scrolling: touch;
-    padding: 10px 12px 12px;
-    border-top: 1px solid rgba(120, 130, 110, 0.22);
-  }
-
-  .igen-bench-accordion:not([open]) .igen-bench-inner {
-    display: none;
   }
 
   .igen-controls {
@@ -966,14 +956,6 @@
     display: none;
   }
 
-  .igen-bench-accordion {
-    border: 0;
-    background: transparent;
-  }
-
-  .igen-bench-accordion > .igen-bench-inner {
-    display: block;
-  }
 }
 
 @media (max-width: 720px) and (min-width: 481px) {
@@ -981,11 +963,6 @@
     width: 100%;
     height: calc(100vh - 12px);
     padding: 10px;
-  }
-
-  .igen-bench {
-    max-height: 34%;
-    overflow: auto;
   }
 
   .igen-controls {
@@ -1066,10 +1043,6 @@
 .igen-tab-panel-embed .bestiary-body {
   flex: 1;
   min-height: 0;
-}
-
-.igen-phone.igen-catalog-tab .igen-bench {
-  display: none;
 }
 
 .igen-phone .bestiary-subhead {

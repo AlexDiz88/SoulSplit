@@ -51,6 +51,7 @@ export type DevPanelTab =
   | "bases"
   | "slots"
   | "rarity"
+  | "generate"
   | "grimoire"
   | "bestiary";
 
@@ -150,13 +151,19 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
     },
   });
 
-  const tabs = buildTabs({ grimoireMount, bestiaryMount, grimoire, bestiary });
+  const tabs = buildTabs({
+    grimoireMount,
+    bestiaryMount,
+    grimoire,
+    bestiary,
+    generateRoot: bench.root,
+  });
   const applyTab = tabs.setTab;
   tabs.setTab = (tab: DevPanelTab): void => {
     applyTab(tab);
     root.classList.toggle("igen-catalog-tab", tab === "grimoire" || tab === "bestiary");
   };
-  body.append(tabs.root, bench.root);
+  body.append(tabs.root);
 
   win.append(head, body);
   root.append(win);
@@ -346,12 +353,8 @@ function buildBench(hooks: {
     markAdded();
   });
 
-  const inner = el("div", "igen-bench-inner");
-  inner.append(controls, result);
-
-  const accordion = el("details", "igen-accordion igen-bench-accordion");
-  accordion.append(accordionSummary("Генерация предмета"), inner);
-  root.append(accordion);
+  root.classList.add("igen-section-items");
+  root.append(controls, result);
   return { root };
 }
 
@@ -362,11 +365,6 @@ function mountIgenPhoneLayout(root: HTMLElement): void {
   const sync = (): void => syncIgenPhoneLayout(root);
   mq.addEventListener("change", sync);
   sync();
-  for (const node of root.querySelectorAll("details.igen-bench-accordion")) {
-    node.addEventListener("toggle", () => {
-      if (node instanceof HTMLDetailsElement) node.dataset.userToggled = "1";
-    });
-  }
 }
 
 function syncIgenPhoneLayout(root: HTMLElement): void {
@@ -377,9 +375,6 @@ function syncIgenPhoneLayout(root: HTMLElement): void {
     if (!mobile) {
       node.open = true;
       continue;
-    }
-    if (node.classList.contains("igen-bench-accordion") && !node.dataset.userToggled) {
-      node.open = false;
     }
     if (
       node.classList.contains("igen-slot-accordion") ||
@@ -496,6 +491,7 @@ function buildTabs(deps: {
   bestiaryMount: HTMLElement;
   grimoire: ReturnType<typeof mountGrimoire>;
   bestiary: ReturnType<typeof mountBestiary>;
+  generateRoot: HTMLElement;
 }): {
   root: HTMLElement;
   setTab: (id: DevPanelTab) => void;
@@ -516,6 +512,7 @@ function buildTabs(deps: {
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
+    { id: "generate", label: "Генерация предметов" },
     { id: "grimoire", label: "Гримуар" },
     { id: "bestiary", label: "Бестиарий" },
   ];
@@ -575,6 +572,12 @@ function buildTabs(deps: {
   panelRarity.append(buildRulesSection());
   panels.set("rarity", panelRarity);
 
+  const panelGenerate = el("div", "igen-tab-panel");
+  panelGenerate.dataset.panel = "generate";
+  panelGenerate.hidden = true;
+  panelGenerate.append(deps.generateRoot);
+  panels.set("generate", panelGenerate);
+
   const panelGrimoire = el("div", "igen-tab-panel igen-tab-panel-embed");
   panelGrimoire.dataset.panel = "grimoire";
   panelGrimoire.hidden = true;
@@ -616,6 +619,7 @@ function buildTabs(deps: {
     panelBases,
     panelSlots,
     panelRarity,
+    panelGenerate,
     panelGrimoire,
     panelBestiary,
   );
