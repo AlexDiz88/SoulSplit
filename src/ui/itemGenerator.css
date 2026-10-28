@@ -583,6 +583,41 @@
   line-height: 1.4;
 }
 
+.igen-info-card-body {
+  display: grid;
+  gap: 8px;
+}
+
+.igen-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.igen-info-label {
+  flex: 0 0 34%;
+  max-width: 34%;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #8a9280;
+  line-height: 1.25;
+}
+
+.igen-info-value {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.92rem;
+  line-height: 1.4;
+  color: #d8d2c4;
+  word-break: break-word;
+}
+
+.igen-info-value.igen-desc {
+  line-height: 1.45;
+}
+
 .igen-aspect-school {
   display: flex;
   align-items: center;
@@ -934,31 +969,13 @@
     color: #9aa394;
   }
 
-  .igen-info-card-body {
-    display: grid;
-    gap: 6px;
-  }
-
   .igen-info-row {
-    display: grid;
-    grid-template-columns: minmax(88px, 34%) minmax(0, 1fr);
     gap: 8px;
-    align-items: start;
   }
 
   .igen-info-label {
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: #8a9280;
-  }
-
-  .igen-info-value {
-    font-size: 0.92rem;
-    line-height: 1.35;
-    color: #d8d2c4;
-    word-break: break-word;
+    flex-basis: 32%;
+    max-width: 32%;
   }
 
   .igen-aspect-card-head {
