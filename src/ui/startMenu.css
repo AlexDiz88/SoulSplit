@@ -159,6 +159,12 @@
   width: min(300px, 100%);
 }
 
+.title-btn-dev {
+  font-size: 0.9rem;
+  letter-spacing: 0.04em;
+  opacity: 0.94;
+}
+
 .title-btn:hover,
 .title-btn:focus-visible {
   transform: translateY(-1px);

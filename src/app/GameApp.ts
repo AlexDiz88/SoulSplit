@@ -77,6 +77,7 @@ export class GameApp {
     this.startMenu = mountStartMenu({
       onPlay: () => this.goSlots(),
       onSettings: () => this.goSettings(),
+      onDevPanel: () => this.hud.openItemGenerator(),
     });
 
     this.settings = mountSettingsScreen({

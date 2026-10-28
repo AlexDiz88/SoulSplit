@@ -94,7 +94,7 @@ export function mountItemGenerator(onOpen: () => void): ItemGeneratorApi {
   win.setAttribute("aria-labelledby", "igen-title");
 
   const head = el("header", "igen-head");
-  const title = el("h2", "igen-title", "Генератор предметов");
+  const title = el("h2", "igen-title", "Панель разработчика");
   title.id = "igen-title";
   const closeBtn = el("button", "ctrl-btn", "Закрыть");
   closeBtn.type = "button";

@@ -4,7 +4,7 @@
   background: rgba(6, 8, 6, 0.78);
   display: grid;
   place-items: center;
-  z-index: 50;
+  z-index: 65;
   padding: 8px;
 }
 
@@ -74,11 +74,18 @@
   gap: 6px;
   flex-shrink: 0;
   margin-bottom: 10px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  padding-bottom: 2px;
 }
 
 .igen-tab {
+  flex: 0 0 auto;
   height: 38px;
   padding: 0 16px;
+  white-space: nowrap;
   border: 1px solid #4a5548;
   border-radius: 8px;
   background: #121812;
@@ -582,7 +589,147 @@
   }
 }
 
-@media (max-width: 720px) {
+/* Realme GT Neo 3 и узкие телефоны (~360×804, 20:9). */
+@media (max-width: 480px) {
+  .igen-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    padding: 0;
+    place-items: stretch;
+  }
+
+  .igen-window {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: none;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      calc(12px + env(safe-area-inset-right))
+      calc(12px + env(safe-area-inset-bottom))
+      calc(12px + env(safe-area-inset-left));
+    font-size: 15px;
+  }
+
+  .igen-head {
+    margin-bottom: 8px;
+    gap: 8px;
+  }
+
+  .igen-title {
+    font-size: 1.15rem;
+    line-height: 1.2;
+  }
+
+  .igen-head .ctrl-btn {
+    flex-shrink: 0;
+    min-width: 76px;
+    min-height: 40px;
+  }
+
+  .igen-body {
+    gap: 8px;
+  }
+
+  .igen-bench {
+    flex-shrink: 0;
+    max-height: min(32dvh, 240px);
+    overflow: auto;
+    padding: 10px;
+  }
+
+  .igen-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .igen-field {
+    width: 100%;
+    font-size: 0.92rem;
+  }
+
+  .igen-field,
+  .igen-gen-btn {
+    width: 100%;
+  }
+
+  .igen-select,
+  .igen-input {
+    width: 100%;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .igen-gen-btn,
+  .igen-add-btn {
+    min-height: 44px;
+  }
+
+  .igen-tab {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 0.88rem;
+  }
+
+  .igen-tab-bar {
+    margin-bottom: 8px;
+    gap: 5px;
+  }
+
+  .igen-tab-panel[data-panel="slots"].active,
+  .igen-tab-panel[data-panel="rarity"].active,
+  .igen-tab-panel[data-panel="params"].active,
+  .igen-tab-panel[data-panel="aspects"].active,
+  .igen-tab-panel[data-panel="weapons"].active,
+  .igen-tab-panel[data-panel="bases"].active {
+    overflow: hidden;
+  }
+
+  .igen-section-params,
+  .igen-section-aspects,
+  .igen-section-weapons {
+    padding: 8px 8px 0;
+  }
+
+  .igen-section-title {
+    font-size: 1.05rem;
+  }
+
+  .igen-note {
+    font-size: 0.88rem;
+    line-height: 1.35;
+  }
+
+  .igen-table {
+    font-size: 0.88rem;
+  }
+
+  .igen-table th,
+  .igen-table td {
+    padding: 6px 8px;
+  }
+
+  .igen-table-aspects {
+    min-width: 640px;
+  }
+
+  .igen-card {
+    padding: 10px;
+  }
+
+  .igen-card-name {
+    font-size: 1rem;
+  }
+}
+
+@media (max-width: 720px) and (min-width: 481px) {
   .igen-window {
     width: 100%;
     height: calc(100vh - 12px);
@@ -592,11 +739,6 @@
   .igen-bench {
     max-height: 34%;
     overflow: auto;
-  }
-
-  .igen-table {
-    display: block;
-    overflow-x: auto;
   }
 
   .igen-controls {
@@ -612,11 +754,5 @@
   .igen-select,
   .igen-input {
     width: 100%;
-  }
-
-  .igen-tab {
-    flex: 1;
-    padding: 0 10px;
-    font-size: 0.92rem;
   }
 }

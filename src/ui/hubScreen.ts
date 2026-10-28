@@ -133,7 +133,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   btnBestiary.type = "button";
   const btnGrimoire = el("button", "hub-menu-item", "Гримуар");
   btnGrimoire.type = "button";
-  const btnItemGen = el("button", "hub-menu-item", "Генератор предметов");
+  const btnItemGen = el("button", "hub-menu-item", "Панель разработчика");
   btnItemGen.type = "button";
   const menuSep = el("div", "hub-menu-sep");
   menuSep.setAttribute("role", "separator");
