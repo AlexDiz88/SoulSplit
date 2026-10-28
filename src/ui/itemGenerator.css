@@ -1037,11 +1037,11 @@
 
 .grimoire-embedded-window,
 .bestiary-embedded-window {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   width: 100%;
-  height: 100%;
-  max-width: none;
+  max-width: 100%;
+  height: auto;
   max-height: none;
   border: 0;
   border-radius: 0;
@@ -1050,6 +1050,7 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  touch-action: pan-y;
 }
 
 .grimoire-embedded-window .grimoire-body {
@@ -1063,12 +1064,13 @@
 .grimoire-embedded-window .grimoire-aspects,
 .grimoire-embedded-window .grimoire-list,
 .grimoire-embedded-window .grimoire-detail {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .grimoire-embedded-head {
@@ -1099,9 +1101,25 @@
   color: var(--accent, #e8d7a2);
 }
 
+.bestiary-embedded-window .bestiary-filters {
+  flex-shrink: 0;
+}
+
 .igen-tab-panel-embed .bestiary-body {
-  flex: 1;
+  flex: 1 1 0;
   min-height: 0;
+  overflow: hidden;
+}
+
+.bestiary-embedded-window .bestiary-list,
+.bestiary-embedded-window .bestiary-detail {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .igen-phone .bestiary-subhead {
@@ -1119,6 +1137,54 @@
 
 .igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-body {
   grid-template-rows: minmax(0, 1fr);
+}
+
+.igen-phone .bestiary-embedded-window .bestiary-body {
+  display: flex;
+  flex-direction: column;
+  grid-template-columns: none;
+  grid-template-rows: none;
+  gap: 0;
+}
+
+.igen-phone .bestiary-embedded-window[data-phone-view="list"] .bestiary-list {
+  flex: 1 1 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.igen-phone .bestiary-embedded-window[data-phone-view="detail"] .bestiary-detail {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.igen-phone .grimoire-embedded-window .grimoire-aspects,
+.igen-phone .grimoire-embedded-window .grimoire-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-content: flex-start;
+}
+
+.igen-phone .grimoire-embedded-window .grimoire-aspects,
+.igen-phone .grimoire-embedded-window .grimoire-list,
+.igen-phone .grimoire-embedded-window .grimoire-detail {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.igen-phone .igen-embed-mount {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.igen-phone .igen-tab-panel-embed.active {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
 }
 
 @media (max-width: 480px) {
