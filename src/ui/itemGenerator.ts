@@ -330,7 +330,6 @@ function syncIgenPhoneLayout(root: HTMLElement): void {
       node.open = false;
     }
     if (
-      node.classList.contains("igen-note-accordion") ||
       node.classList.contains("igen-slot-accordion") ||
       node.classList.contains("igen-base-accordion") ||
       node.classList.contains("igen-rules-extra-accordion")
@@ -338,15 +337,6 @@ function syncIgenPhoneLayout(root: HTMLElement): void {
       node.open = false;
     }
   }
-}
-
-function buildSectionNote(text: string): HTMLElement {
-  const details = el("details", "igen-accordion igen-note-accordion");
-  details.append(
-    el("summary", "igen-accordion-summary", "Пояснение"),
-    el("p", "igen-note igen-accordion-body", text),
-  );
-  return details;
 }
 
 function infoRow(label: string, value: string, valueClass = ""): HTMLElement {
@@ -684,12 +674,7 @@ function collectBaseCatalogGroups(): BaseCatalogGroup[] {
 
 function buildBasesSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-bases");
-  section.append(
-    el("h3", "igen-section-title", "Базы предметов"),
-    buildSectionNote(
-      "На предмете всегда ровно 1 база из пула слота/типа. Тиры F…A5 как у аффиксов. Дубли база↔аффикс разрешены. Оружие: урон + кулдаун (см. \"Таблица оружия\").",
-    ),
-  );
+  section.append(el("h3", "igen-section-title", "Базы предметов"));
 
   const groups = collectBaseCatalogGroups();
 
@@ -800,11 +785,6 @@ function compareWeapons(
 
 function buildWeaponsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-weapons");
-  section.append(
-    buildSectionNote(
-      "Базовые значения на уровне предмета 1. Урон растёт с itemLevel, кулдаун фиксирован. На десктопе сортировка по клику на заголовок.",
-    ),
-  );
 
   const mobileToolbar = el("div", "igen-mobile-toolbar igen-mobile-only");
   const sortSelect = el("select", "igen-select") as HTMLSelectElement;
@@ -1002,11 +982,6 @@ function typeLabel(id: StatId): string {
 
 function buildSlotsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-slots");
-  section.append(
-    buildSectionNote(
-      "Категория задаёт пул аффиксов слота. Отдельный deny-лист режет конкретные статы даже внутри разрешённой категории.",
-    ),
-  );
 
   const grid = el("div", "igen-slot-grid");
   for (const slot of ALL_EQUIP_SLOTS) {
