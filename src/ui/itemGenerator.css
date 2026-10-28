@@ -293,6 +293,15 @@
   background-position: right 10px center;
   background-size: 11px 8px;
   cursor: var(--cur-default);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.igen-select:focus,
+.igen-select:focus-visible,
+.igen-select:active {
+  outline: none;
+  box-shadow: none;
+  border-color: #4a5548;
 }
 
 .igen-input {

@@ -555,12 +555,6 @@ function buildTabs(): HTMLElement {
 
 function buildAspectsSection(): HTMLElement {
   const section = el("section", "igen-section igen-section-aspects");
-  section.append(
-    el("h3", "igen-section-title", "Столбы школ"),
-    buildSectionNote(
-      'Ориентир для генерации и отбора способностей (design/meta/ASPECTS.md). "-" = не столб школы, отдельные карточки могут быть исключением.',
-    ),
-  );
 
   const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
   for (const row of ASPECT_PILLAR_ROWS) {
