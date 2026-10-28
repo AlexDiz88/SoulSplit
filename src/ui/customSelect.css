@@ -24,9 +24,11 @@
   gap: 10px;
   width: 100%;
   min-width: 0;
+  padding-right: 10px;
   text-align: left;
   cursor: var(--cur-default);
   -webkit-tap-highlight-color: transparent;
+  background-image: none;
 }
 
 .igen-phone .ui-custom-select-trigger::after {
