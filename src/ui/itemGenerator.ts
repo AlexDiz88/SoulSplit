@@ -508,13 +508,13 @@ function buildTabs(deps: {
   const tabs: { id: DevPanelTab; label: string; active?: boolean }[] = [
     { id: "params", label: "Параметры героя", active: true },
     { id: "aspects", label: "Аспекты" },
+    { id: "grimoire", label: "Гримуар" },
+    { id: "bestiary", label: "Бестиарий" },
     { id: "weapons", label: "Таблица оружия" },
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
     { id: "generate", label: "Генерация предметов" },
-    { id: "grimoire", label: "Гримуар" },
-    { id: "bestiary", label: "Бестиарий" },
   ];
 
   const tabSelect = tabPicker.querySelector("select") as HTMLSelectElement;
