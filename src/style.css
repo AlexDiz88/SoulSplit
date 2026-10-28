@@ -1427,7 +1427,17 @@ textarea,
     display: none;
   }
 
-  .grimoire-body,
+  .grimoire-body {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
   .grimoire-aspects,
   .grimoire-list,
   .grimoire-detail {
@@ -1435,11 +1445,8 @@ textarea,
     max-width: 100%;
     min-width: 0;
     overflow-x: hidden;
-  }
-
-  .grimoire-body {
-    display: flex;
-    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .grimoire-window[data-phone-view="aspects"] .grimoire-list,

@@ -1052,6 +1052,25 @@
   overflow: hidden;
 }
 
+.grimoire-embedded-window .grimoire-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.grimoire-embedded-window .grimoire-aspects,
+.grimoire-embedded-window .grimoire-list,
+.grimoire-embedded-window .grimoire-detail {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
 .grimoire-embedded-head {
   flex-shrink: 0;
   margin-bottom: 6px;
@@ -1125,6 +1144,9 @@
     min-height: 0;
     width: 100%;
     max-width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .igen-tab-panel-embed .grimoire-back {
