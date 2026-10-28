@@ -28,7 +28,9 @@ export function mountSettingsScreen(handlers: SettingsScreenHandlers): SettingsS
   const root = el("div", "meta-screen title-screen");
   root.id = "settings-screen";
   root.hidden = true;
-  root.append(createMenuBackgroundImg());
+  const menuBg = createMenuBackgroundImg();
+  if (menuBg) root.append(menuBg);
+  else root.classList.add("title-screen-phone");
 
   const stage = el("div", "title-stage title-stage-settings");
 

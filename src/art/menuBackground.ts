@@ -71,6 +71,13 @@ export function pickRandomTownBackgroundUrl(): string {
   return TOWN_BACKGROUND_URLS[index]!;
 }
 
+/** Узкий портрет / телефон: те же брейкпоинты, что у HUD и панели разработчика. */
+export const PHONE_UI_MQ = "(max-width: 480px)";
+
+export function isPhoneUi(): boolean {
+  return window.matchMedia(PHONE_UI_MQ).matches;
+}
+
 /** Картинка фона как отдельный слой (чёще, чем CSS background + градиенты поверх). */
 function createBackgroundImgFromUrl(src: string): HTMLImageElement {
   const img = document.createElement("img");
@@ -87,7 +94,9 @@ function createBackgroundImgFromStem(stem: string): HTMLImageElement {
   return createBackgroundImgFromUrl(resolveAssetBgUrl(stem));
 }
 
-export function createMenuBackgroundImg(): HTMLImageElement {
+/** На телефоне не грузим main_menu - только фон из CSS. */
+export function createMenuBackgroundImg(): HTMLImageElement | null {
+  if (isPhoneUi()) return null;
   return createBackgroundImgFromStem("main_menu");
 }
 

@@ -30,7 +30,9 @@ export function mountStartMenu(handlers: StartMenuHandlers): StartMenuApi {
   const root = el("div", "meta-screen title-screen");
   root.id = "start-menu";
   root.hidden = true;
-  root.append(createMenuBackgroundImg());
+  const menuBg = createMenuBackgroundImg();
+  if (menuBg) root.append(menuBg);
+  else root.classList.add("title-screen-phone");
 
   const stage = el("div", "title-stage");
 
