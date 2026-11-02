@@ -13,8 +13,8 @@ import { mountItemIconPreview } from "./itemIconPreview";
 import { mountStashWindow } from "./stashWindow";
 import type { InventoryBag } from "../items/inventory";
 import {
+  potionEffectText,
   potionIconUrl,
-  POTION_HEAL_PCT,
   POTION_LABEL,
   type PotionId,
 } from "../items/potions";
@@ -75,6 +75,8 @@ export interface BattleHudApi {
   setOnUsePotion(fn: ((id: PotionId) => void) | null): void;
   setHint(text: string): void;
   showToast(text: string): void;
+  /** Модальный алерт с одной кнопкой (например нехватка зелий после боя). */
+  showAlert(title: string, message: string): void;
   /** Простой тултип у точки экрана (например кружок уровня на канвасе). */
   showScreenTooltip(clientX: number, clientY: number, title: string, desc: string): void;
   hideScreenTooltip(): void;
@@ -121,9 +123,38 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const battleBanner = document.getElementById("battle-banner")!;
   const menuBtn = document.getElementById("btn-menu")!;
   const sideMenu = document.getElementById("side-menu")!;
+  const hudRoot = document.getElementById("hud")!;
   let toastTimer = 0;
   let startHandler: (() => void) | null = null;
   let onUsePotion: ((id: PotionId) => void) | null = null;
+
+  const alertOverlay = document.createElement("div");
+  alertOverlay.className = "confirm-overlay";
+  alertOverlay.hidden = true;
+  alertOverlay.setAttribute("role", "dialog");
+  alertOverlay.setAttribute("aria-modal", "true");
+  const alertPanel = document.createElement("div");
+  alertPanel.className = "confirm-panel";
+  const alertTitle = document.createElement("h2");
+  const alertText = document.createElement("p");
+  const alertActions = document.createElement("div");
+  alertActions.className = "confirm-actions confirm-actions-single";
+  const alertOk = document.createElement("button");
+  alertOk.type = "button";
+  alertOk.className = "meta-btn meta-btn-primary";
+  alertOk.textContent = "Понятно";
+  alertActions.append(alertOk);
+  alertPanel.append(alertTitle, alertText, alertActions);
+  alertOverlay.append(alertPanel);
+  hudRoot.append(alertOverlay);
+
+  const closeAlert = (): void => {
+    alertOverlay.hidden = true;
+  };
+  alertOk.addEventListener("click", closeAlert);
+  alertOverlay.addEventListener("click", (ev) => {
+    if (ev.target === alertOverlay) closeAlert();
+  });
 
   const potionBtnById = {
     healing_potion: potionHpBtn,
@@ -278,11 +309,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const showPotionTooltip = (btn: HTMLButtonElement, potionId: PotionId): void => {
     const hotkey = potionId === "healing_potion" ? "F" : "G";
     const count = Number(btn.querySelector(".potion-count")?.textContent ?? "0");
-    const pct = Math.round(POTION_HEAL_PCT * 100);
-    const effect =
-      potionId === "healing_potion"
-        ? `Восстанавливает ${pct}% макс. здоровья`
-        : `Восстанавливает ${pct}% макс. маны`;
+    const effect = potionEffectText(potionId);
     tooltip.className = "skill-tooltip";
     tooltip.style.removeProperty("--aspect-color");
     tooltip.innerHTML = `
@@ -607,6 +634,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     }
 
     if (ev.code !== "Escape") return;
+    if (!alertOverlay.hidden) {
+      closeAlert();
+      return;
+    }
     if (itemGenerator.isOpen()) {
       if (!itemGenerator.handleEscape()) itemGenerator.close();
       return;
@@ -633,6 +664,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     showToast(text: string) {
       pushToast(text);
+    },
+
+    showAlert(title: string, message: string) {
+      alertTitle.textContent = title;
+      alertText.textContent = message;
+      alertOverlay.hidden = false;
     },
 
     showScreenTooltip(clientX: number, clientY: number, title: string, desc: string) {
@@ -705,14 +742,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     setShellMode(mode: HudShellMode) {
       const battle = mode === "battle";
-      const title = mode === "title";
-      const hub = mode === "hub";
       const controls = document.querySelector(".controls") as HTMLElement | null;
       const hudTop = document.querySelector(".hud-top") as HTMLElement | null;
       if (controls) controls.hidden = !battle;
-      if (hudTop) hudTop.hidden = title || hub;
-      menuBtn.hidden = title || hub;
-      if (title || hub) closeMenu();
+      if (hudTop) hudTop.hidden = !battle;
+      menuBtn.hidden = !battle;
+      if (!battle) closeMenu();
       combatBar.hidden = !battle;
       potionBar.hidden = !battle;
       if (!battle) {
@@ -797,6 +832,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
     closeOverlays() {
       hideTooltip();
+      closeAlert();
       character.close();
       inventory.close();
       inventory.setStashBag(null);

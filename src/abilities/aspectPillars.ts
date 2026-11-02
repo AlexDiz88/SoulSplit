@@ -82,7 +82,7 @@ export const ASPECT_PILLAR_ROWS: readonly AspectPillarRow[] = [
     hooks: "цена своим HP",
   },
   {
-    aspectId: "death",
+    aspectId: "necromancy",
     damageTag: "смерть",
     dot: 'drain / "жизнь"',
     control: "страх",

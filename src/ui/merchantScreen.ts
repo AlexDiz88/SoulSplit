@@ -7,8 +7,8 @@ import { addItemToInventory } from "../items/inventory";
 import {
   createPotionItem,
   isPotionItem,
-  POTION_HEAL_PCT,
   POTION_LABEL,
+  potionEffectText,
 } from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
@@ -78,12 +78,7 @@ function appendTieredStat(host: HTMLElement, className: string, main: string, ti
 
 function appendItemStats(host: HTMLElement, item: ItemDef, lineClass: string, affixClass: string): void {
   if (isPotionItem(item)) {
-    const pct = Math.round(POTION_HEAL_PCT * 100);
-    const effect =
-      item.potionId === "healing_potion"
-        ? `+${pct}% макс. здоровья`
-        : `+${pct}% макс. маны`;
-    appendTieredStat(host, lineClass, effect);
+    appendTieredStat(host, lineClass, potionEffectText(item.potionId));
     return;
   }
   if (item.weapon) {
@@ -470,8 +465,8 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
         el(
           "p",
           "market-offer-sub",
-          isPinned
-            ? `${itemSlotLabel(item)} - всегда в продаже`
+          isPotionItem(item)
+            ? itemSlotLabel(item)
             : `${itemSlotLabel(item)} - ур. ${item.itemLevel}`,
         ),
       );

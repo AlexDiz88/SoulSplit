@@ -39,6 +39,13 @@ export interface CharacterCreateScreenHandlers {
   onCreate: (slotIndex: number, opts: NewHeroOptions) => void;
 }
 
+/** Десктоп с мышью: тултип по наведению. Тач: toggle по клику (иначе enter/leave мигают). */
+const HOVER_TOOLTIP_MQ = "(hover: hover) and (pointer: fine)";
+
+function canHoverTooltip(): boolean {
+  return window.matchMedia(HOVER_TOOLTIP_MQ).matches;
+}
+
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
@@ -173,24 +180,54 @@ export function mountCharacterCreateScreen(
     STARTER_WEAPONS.map((def) => [def.id, createStarterWeapon(def.id)] as const),
   );
 
+  const hideWeaponTip = (): void => {
+    weaponTip.hidden = true;
+    delete weaponTip.dataset.tipId;
+  };
+
   const showWeaponTip = (btn: HTMLButtonElement, id: StarterWeaponId): void => {
     const item = weaponItems.get(id);
     if (!item) return;
     fillItemTooltip(weaponTip, item, { showSellPrice: false });
+    weaponTip.dataset.tipId = id;
     weaponTip.hidden = false;
     const fieldRect = weaponField.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    const tipRect = weaponTip.getBoundingClientRect();
-    let left = btnRect.right - fieldRect.left + 10;
-    if (left + tipRect.width > fieldRect.width - 4) {
-      left = btnRect.left - fieldRect.left - tipRect.width - 10;
+    const isPhone = window.matchMedia("(max-width: 560px)").matches;
+    if (isPhone) {
+      // Фиксированное место: над лейблом "Стартовое оружие".
+      const labelEl = weaponField.querySelector("label");
+      const labelRect = labelEl?.getBoundingClientRect() ?? fieldRect;
+      weaponTip.style.left = "0px";
+      weaponTip.style.right = "0px";
+      weaponTip.style.width = "auto";
+      weaponTip.style.maxWidth = "none";
+      const tipRect = weaponTip.getBoundingClientRect();
+      weaponTip.style.top = `${labelRect.top - fieldRect.top - tipRect.height - 8}px`;
+    } else {
+      weaponTip.style.right = "";
+      weaponTip.style.width = "";
+      weaponTip.style.maxWidth = "";
+      const btnRect = btn.getBoundingClientRect();
+      const tipRect = weaponTip.getBoundingClientRect();
+      let left = btnRect.right - fieldRect.left + 10;
+      if (left + tipRect.width > fieldRect.width - 4) {
+        left = btnRect.left - fieldRect.left - tipRect.width - 10;
+      }
+      const top = Math.min(
+        Math.max(0, btnRect.top - fieldRect.top),
+        Math.max(0, fieldRect.height - tipRect.height),
+      );
+      weaponTip.style.left = `${Math.max(0, left)}px`;
+      weaponTip.style.top = `${top}px`;
     }
-    const top = Math.min(
-      Math.max(0, btnRect.top - fieldRect.top),
-      Math.max(0, fieldRect.height - tipRect.height),
-    );
-    weaponTip.style.left = `${Math.max(0, left)}px`;
-    weaponTip.style.top = `${top}px`;
+  };
+
+  const toggleWeaponTip = (btn: HTMLButtonElement, id: StarterWeaponId): void => {
+    if (!weaponTip.hidden && weaponTip.dataset.tipId === id) {
+      hideWeaponTip();
+      return;
+    }
+    showWeaponTip(btn, id);
   };
 
   for (const def of STARTER_WEAPONS) {
@@ -213,14 +250,23 @@ export function mountCharacterCreateScreen(
     btn.addEventListener("click", () => {
       starterWeapon = def.id;
       for (const [id, b] of weaponButtons) b.classList.toggle("is-active", id === starterWeapon);
+      if (!canHoverTooltip()) toggleWeaponTip(btn, def.id);
     });
-    btn.addEventListener("pointerenter", () => showWeaponTip(btn, def.id));
+    btn.addEventListener("pointerenter", () => {
+      if (!canHoverTooltip()) return;
+      showWeaponTip(btn, def.id);
+    });
     btn.addEventListener("pointerleave", () => {
-      weaponTip.hidden = true;
+      if (!canHoverTooltip()) return;
+      hideWeaponTip();
     });
-    btn.addEventListener("focus", () => showWeaponTip(btn, def.id));
+    btn.addEventListener("focus", () => {
+      if (!canHoverTooltip()) return;
+      showWeaponTip(btn, def.id);
+    });
     btn.addEventListener("blur", () => {
-      weaponTip.hidden = true;
+      if (!canHoverTooltip()) return;
+      hideWeaponTip();
     });
     weaponButtons.set(def.id, btn);
     weaponGrid.append(btn);
@@ -273,6 +319,11 @@ export function mountCharacterCreateScreen(
     });
   };
 
+  const hideAbilityTip = (): void => {
+    abilityTip.hidden = true;
+    delete abilityTip.dataset.tipId;
+  };
+
   const showAbilityTip = (btn: HTMLButtonElement, id: AbilityId): void => {
     const def = ABILITIES[id];
     const reachLabel = def.reach <= 0 ? "на себя" : `${def.reach}`;
@@ -294,25 +345,46 @@ export function mountCharacterCreateScreen(
         <div class="tt-stat"><span>Радиус</span><b>${reachLabel}</b></div>
       </div>
     `;
+    abilityTip.dataset.tipId = id;
     abilityTip.hidden = false;
 
     const fieldRect = abilityField.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    const tipRect = abilityTip.getBoundingClientRect();
-    let left = btnRect.right - fieldRect.left + 10;
-    if (left + tipRect.width > fieldRect.width - 4) {
-      left = btnRect.left - fieldRect.left - tipRect.width - 10;
+    const isPhone = window.matchMedia("(max-width: 560px)").matches;
+    if (isPhone) {
+      // Фиксированное место: над лейблом "Стартовая способность".
+      const labelEl = abilityField.querySelector("label");
+      const labelRect = labelEl?.getBoundingClientRect() ?? fieldRect;
+      abilityTip.style.left = "0px";
+      abilityTip.style.right = "0px";
+      abilityTip.style.width = "auto";
+      abilityTip.style.maxWidth = "none";
+      const tipRect = abilityTip.getBoundingClientRect();
+      abilityTip.style.top = `${labelRect.top - fieldRect.top - tipRect.height - 8}px`;
+    } else {
+      abilityTip.style.right = "";
+      abilityTip.style.width = "";
+      abilityTip.style.maxWidth = "";
+      const btnRect = btn.getBoundingClientRect();
+      const tipRect = abilityTip.getBoundingClientRect();
+      let left = btnRect.right - fieldRect.left + 10;
+      if (left + tipRect.width > fieldRect.width - 4) {
+        left = btnRect.left - fieldRect.left - tipRect.width - 10;
+      }
+      const top = Math.min(
+        Math.max(0, btnRect.top - fieldRect.top),
+        Math.max(0, fieldRect.height - tipRect.height),
+      );
+      abilityTip.style.left = `${Math.max(0, left)}px`;
+      abilityTip.style.top = `${top}px`;
     }
-    const top = Math.min(
-      Math.max(0, btnRect.top - fieldRect.top),
-      Math.max(0, fieldRect.height - tipRect.height),
-    );
-    abilityTip.style.left = `${Math.max(0, left)}px`;
-    abilityTip.style.top = `${top}px`;
   };
 
-  const hideAbilityTip = (): void => {
-    abilityTip.hidden = true;
+  const toggleAbilityTip = (btn: HTMLButtonElement, id: AbilityId): void => {
+    if (!abilityTip.hidden && abilityTip.dataset.tipId === id) {
+      hideAbilityTip();
+      return;
+    }
+    showAbilityTip(btn, id);
   };
 
   const setStarterAbility = (id: AbilityId | null): void => {
@@ -350,11 +422,26 @@ export function mountCharacterCreateScreen(
       img.draggable = false;
       face.append(img);
       btn.append(face);
-      btn.addEventListener("click", () => setStarterAbility(id));
-      btn.addEventListener("pointerenter", () => showAbilityTip(btn, id));
-      btn.addEventListener("pointerleave", hideAbilityTip);
-      btn.addEventListener("focus", () => showAbilityTip(btn, id));
-      btn.addEventListener("blur", hideAbilityTip);
+      btn.addEventListener("click", () => {
+        setStarterAbility(id);
+        if (!canHoverTooltip()) toggleAbilityTip(btn, id);
+      });
+      btn.addEventListener("pointerenter", () => {
+        if (!canHoverTooltip()) return;
+        showAbilityTip(btn, id);
+      });
+      btn.addEventListener("pointerleave", () => {
+        if (!canHoverTooltip()) return;
+        hideAbilityTip();
+      });
+      btn.addEventListener("focus", () => {
+        if (!canHoverTooltip()) return;
+        showAbilityTip(btn, id);
+      });
+      btn.addEventListener("blur", () => {
+        if (!canHoverTooltip()) return;
+        hideAbilityTip();
+      });
       abilityGrid.append(btn);
     }
   };
@@ -437,7 +524,7 @@ export function mountCharacterCreateScreen(
       nameInput.focus();
     },
     hide() {
-      weaponTip.hidden = true;
+      hideWeaponTip();
       hideAbilityTip();
       root.hidden = true;
     },
@@ -445,6 +532,8 @@ export function mountCharacterCreateScreen(
       return !root.hidden;
     },
     destroy() {
+      hideWeaponTip();
+      hideAbilityTip();
       root.remove();
     },
   };

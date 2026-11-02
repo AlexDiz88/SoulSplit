@@ -39,7 +39,7 @@ export const STARTER_LOADOUT_BY_ASPECT: Record<Aspect, AbilityId[]> = {
   ice: ["ice_arrow", "ice_shield"],
   mechanics: [],
   lightning: [],
-  death: [],
+  necromancy: [],
   fire: ["fireball", "flame_cone"],
   nature: ["rejuvenation", "root_grasp", "poison_bush"],
   mind: [],

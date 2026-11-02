@@ -3,8 +3,8 @@ import type { Unit } from "../combat/Unit";
 import {
   beltCellPotionIds,
   beltPotionCapacity,
-  POTION_HEAL_PCT,
   POTION_LABEL,
+  potionEffectText,
   potionIconUrl,
   unloadPotionFromBelt,
   type PotionId,
@@ -239,14 +239,9 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
         el("div", "item-tip-empty-meta", BELT_EMPTY_HINT),
       );
     } else {
-      const pct = Math.round(POTION_HEAL_PCT * 100);
-      const effect =
-        potionId === "healing_potion"
-          ? `Восстанавливает ${pct}% макс. здоровья`
-          : `Восстанавливает ${pct}% макс. маны`;
       tip.append(
         el("div", "item-tip-empty-name", POTION_LABEL[potionId]),
-        el("div", "item-tip-empty-meta", effect),
+        el("div", "item-tip-empty-meta", potionEffectText(potionId)),
         el("div", "item-tip-empty-meta", "ПКМ - снять с пояса"),
       );
     }

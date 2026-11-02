@@ -3,7 +3,12 @@ import { rolledItemBaseParts } from "../items/baseCatalog";
 import { gripLabel } from "../items/equipment";
 import { itemDisplayName } from "../items/generate";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
-import { isPotionItem, POTION_HEAL_PCT, POTION_LABEL } from "../items/potions";
+import {
+  isPotionItem,
+  POTION_BATTLE_NOTE,
+  POTION_LABEL,
+  potionEffectText,
+} from "../items/potions";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef, WeaponImplicit } from "../items/types";
 import { sellPrice } from "../meta/economy";
@@ -117,19 +122,8 @@ export function renderItemTooltip(item: ItemDef, options: ItemTooltipOptions = {
   nodes.push(el("div", "item-tip-name", tipName));
   nodes.push(el("div", "item-tip-sub", itemSlotLabel(item)));
   if (isPotionItem(item)) {
-    const pct = Math.round(POTION_HEAL_PCT * 100);
-    const effect =
-      item.potionId === "healing_potion"
-        ? `Восстанавливает ${pct}% макс. здоровья`
-        : `Восстанавливает ${pct}% макс. маны`;
-    nodes.push(el("div", "item-tip-base-stat", effect));
-    nodes.push(
-      el(
-        "div",
-        "item-tip-note",
-        "В бою можно применить только снаряженные зелья",
-      ),
-    );
+    nodes.push(el("div", "item-tip-base-stat", potionEffectText(item.potionId)));
+    nodes.push(el("div", "item-tip-note", POTION_BATTLE_NOTE));
   } else if (item.weapon) {
     const w = item.weapon;
     nodes.push(

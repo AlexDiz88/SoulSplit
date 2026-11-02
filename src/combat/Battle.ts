@@ -319,18 +319,25 @@ export class Battle {
     if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) return;
     if (ev.repeat) return;
 
-    if (ev.code === "Space") {
+    if (ev.code === "Space" || ev.code === "Enter") {
       ev.preventDefault();
-      this.onPauseClick();
+      if (!this.started && !this.ended) {
+        this.onStartClick();
+      } else if (ev.code === "Space") {
+        this.onPauseClick();
+      }
       return;
     }
 
-    if (!document.getElementById("grimoire")?.hidden) return;
-    if (!document.getElementById("character")?.hidden) return;
-    if (!document.getElementById("inventory")?.hidden) return;
-    if (!document.getElementById("bestiary")?.hidden) return;
-    if (!document.getElementById("item-generator")?.hidden) return;
-    if (!document.getElementById("side-menu")?.hidden) return;
+    // Нет элемента в DOM - не блокируем (иначе null?.hidden даёт вечный return).
+    const overlayOpen = (id: string): boolean => {
+      const el = document.getElementById(id);
+      return el != null && !el.hidden;
+    };
+    if (overlayOpen("character")) return;
+    if (overlayOpen("inventory")) return;
+    if (overlayOpen("item-generator")) return;
+    if (overlayOpen("side-menu")) return;
 
     if (ev.code === "KeyF") {
       ev.preventDefault();

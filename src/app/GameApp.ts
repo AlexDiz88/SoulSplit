@@ -6,6 +6,10 @@ import { victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
 import { pushBuyback } from "../meta/market";
 import {
+  beltRefillShortageText,
+  refillBeltFromInventory,
+} from "../items/potions";
+import {
   addXpToProfile,
   applyProfileHp,
   clampUnitBeltToEquipment,
@@ -506,18 +510,30 @@ export class GameApp {
 
   private onBattleComplete(result: BattleResult): void {
     const state = this.requireState();
+    /** Состав пояса до боя - цель автодозарядки (тип и порядок ячеек). */
+    const beltTarget = {
+      beltHpPotions: state.hero.beltHpPotions,
+      beltManaPotions: state.hero.beltManaPotions,
+    };
     syncProfileFromUnit(state.hero, {
       equipment: result.equipment,
       inventory: result.inventory,
       beltHpPotions: result.beltHpPotions,
       beltManaPotions: result.beltManaPotions,
     });
+    const shortage = refillBeltFromInventory(
+      state.hero.inventory,
+      state.hero,
+      beltTarget,
+    );
+    const shortageText = beltRefillShortageText(shortage.missingHp, shortage.missingMana);
 
     if (result.outcome === "flee") {
       state.hero.currentHp = Math.max(1, result.heroHp);
       this.goHub();
       if (this.hubUnit) syncProfileHp(state.hero, this.hubUnit);
       this.persist();
+      if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
     }
 
@@ -532,6 +548,7 @@ export class GameApp {
       this.bindHubEquipmentSync();
       this.rebuildHubUnit();
       this.defeat.show();
+      if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
     }
 
@@ -575,5 +592,6 @@ export class GameApp {
       pointName: point.name,
       stats: result.stats,
     });
+    if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
   }
 }

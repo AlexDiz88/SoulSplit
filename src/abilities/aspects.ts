@@ -13,7 +13,7 @@ export const ALL_ASPECTS: readonly Aspect[] = [
   "ice",
   "mechanics",
   "lightning",
-  "death",
+  "necromancy",
   "fire",
   "nature",
   "mind",
@@ -30,20 +30,20 @@ export const ASPECT_LABEL: Record<Aspect, string> = {
   air: "Воздух",
   beast: "Дух Зверя",
   earth: "Земля",
-  illusion: "Иллюзии/Эфир",
+  illusion: "Иллюзии",
   witchcraft: "Колдовство",
   blood: "Кровь",
   ice: "Лёд",
   mechanics: "Механика",
   lightning: "Молния",
-  death: "Некромантия/Смерть",
+  necromancy: "Некромантия",
   fire: "Огонь",
   nature: "Природа",
   mind: "Разум",
   light: "Свет",
   might: "Сила",
   stealth: "Скрытность",
-  hunt: "Стрельба/Охота",
+  hunt: "Охота",
   dark: "Тьма",
 };
 
@@ -60,7 +60,7 @@ export const ASPECT_COLOR: Record<Aspect, number> = {
   ice: 0x7ec8e8,
   mechanics: 0xd0a060,
   lightning: 0xe6d36a,
-  death: 0x8aaa78,
+  necromancy: 0x8aaa78,
   fire: 0xff7a3d,
   nature: 0x6aaa62,
   mind: 0xe0a0c4,
@@ -84,7 +84,7 @@ export const ASPECT_HEX: Record<Aspect, string> = {
   ice: "#7ec8e8",
   mechanics: "#d0a060",
   lightning: "#e6d36a",
-  death: "#8aaa78",
+  necromancy: "#8aaa78",
   fire: "#ff7a3d",
   nature: "#6aaa62",
   mind: "#e0a0c4",
@@ -98,6 +98,7 @@ export const ASPECT_HEX: Record<Aspect, string> = {
 /** Старый id прототипа → актуальный. */
 export const ASPECT_ID_REMAP: Record<string, Aspect> = {
   iron: "might",
+  death: "necromancy",
 };
 
 export function remapAspectId(id: string): Aspect | null {

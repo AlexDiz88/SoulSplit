@@ -13,7 +13,7 @@ export type Aspect =
   | "ice"
   | "mechanics"
   | "lightning"
-  | "death"
+  | "necromancy"
   | "fire"
   | "nature"
   | "mind"

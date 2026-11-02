@@ -180,6 +180,13 @@ textarea,
   background: linear-gradient(180deg, rgba(8, 12, 8, 0.9), transparent);
 }
 
+/* display:flex/grid иначе перебивает UA [hidden] { display:none } */
+.hud-top[hidden],
+.controls[hidden],
+.menu-btn[hidden] {
+  display: none;
+}
+
 .menu-btn {
   width: 40px;
   height: 40px;

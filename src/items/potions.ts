@@ -22,6 +22,18 @@ export const POTION_LABEL: Record<PotionId, string> = {
   mana_potion: "Зелье маны",
 };
 
+/** Единый текст эффекта для тултипа, рынка, боя и пояса. */
+export function potionEffectText(id: PotionId): string {
+  const pct = Math.round(POTION_HEAL_PCT * 100);
+  return id === "healing_potion"
+    ? `Восстанавливает ${pct}% здоровья`
+    : `Восстанавливает ${pct}% маны`;
+}
+
+/** Примечание к зельям в карточке предмета (инвентарь / рынок). */
+export const POTION_BATTLE_NOTE =
+  "В бою можно применить только снаряженные зелья";
+
 const POTION_ICON: Record<PotionId, string> = {
   healing_potion: healingPotionUrl,
   mana_potion: manaPotionUrl,
@@ -189,4 +201,68 @@ export function returnOverflowPotions(
     else lost += 1;
   }
   return { returned, lost };
+}
+
+/** Сколько зелий данного типа лежит в сумке (сумма стаков). */
+export function countPotionsInInventory(inv: InventoryBag, potionId: PotionId): number {
+  let n = 0;
+  for (const cell of inv) {
+    if (isPotionItem(cell) && cell.potionId === potionId) {
+      n += Math.max(1, Math.floor(cell.stackCount ?? 1));
+    }
+  }
+  return n;
+}
+
+/** Снять 1 зелье нужного типа из сумки. */
+export function takePotionOfTypeFromInventory(
+  inv: InventoryBag,
+  potionId: PotionId,
+): boolean {
+  for (let i = 0; i < inv.length; i++) {
+    const cell = inv[i];
+    if (isPotionItem(cell) && cell.potionId === potionId) {
+      return takeOneFromPotionStack(inv, i) != null;
+    }
+  }
+  return false;
+}
+
+/**
+ * После боя: дозарядить пояс до целевых счётчиков (как до боя) из сумки.
+ * Тип и порядок ячеек UI сохраняются (сначала HP, потом Mana).
+ */
+export function refillBeltFromInventory(
+  inv: InventoryBag,
+  belt: BeltPotionState,
+  target: BeltPotionState,
+): { missingHp: number; missingMana: number } {
+  const needHp = Math.max(
+    0,
+    Math.floor(target.beltHpPotions) - Math.max(0, Math.floor(belt.beltHpPotions)),
+  );
+  const needMana = Math.max(
+    0,
+    Math.floor(target.beltManaPotions) - Math.max(0, Math.floor(belt.beltManaPotions)),
+  );
+  let missingHp = 0;
+  let missingMana = 0;
+  for (let i = 0; i < needHp; i++) {
+    if (takePotionOfTypeFromInventory(inv, "healing_potion")) belt.beltHpPotions += 1;
+    else missingHp += 1;
+  }
+  for (let i = 0; i < needMana; i++) {
+    if (takePotionOfTypeFromInventory(inv, "mana_potion")) belt.beltManaPotions += 1;
+    else missingMana += 1;
+  }
+  return { missingHp, missingMana };
+}
+
+/** Текст нехватки для попапа после автодозарядки. */
+export function beltRefillShortageText(missingHp: number, missingMana: number): string | null {
+  const parts: string[] = [];
+  if (missingHp > 0) parts.push(`${POTION_LABEL.healing_potion} ×${missingHp}`);
+  if (missingMana > 0) parts.push(`${POTION_LABEL.mana_potion} ×${missingMana}`);
+  if (parts.length === 0) return null;
+  return `В сумке не хватило зелий для пояса: ${parts.join(", ")}.`;
 }
