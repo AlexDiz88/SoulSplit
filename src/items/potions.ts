@@ -14,7 +14,7 @@ export const POTION_CAPACITY_MAX = 5;
 
 /** Цена продажи одной штуки. */
 export const POTION_SELL_PRICE = 8;
-/** Цена покупки у травника. */
+/** Цена покупки у мистика. */
 export const POTION_BUY_PRICE = 25;
 
 export const POTION_LABEL: Record<PotionId, string> = {

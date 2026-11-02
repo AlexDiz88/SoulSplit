@@ -1,13 +1,28 @@
 import { isPotionItem, POTION_BUY_PRICE, POTION_SELL_PRICE } from "../items/potions";
-import type { ItemDef, ItemRarity } from "../items/types";
+import { baseTierIndex, tierIdAt, type AffixTierId } from "../items/tiers";
+import type { ItemDef } from "../items/types";
 
-/** Множитель продажи по редкости (цена = ilvl * mult). */
-export const RARITY_SELL_MULT: Record<ItemRarity, number> = {
-  common: 5,
-  uncommon: 10,
-  magic: 18,
-  rare: 28,
-  epic: 40,
+/** Базовая цена за уровень предмета. */
+export const ITEM_BASE_PRICE = 10;
+
+/** Доля от полной стоимости при продаже торговцу. */
+export const SELL_RATIO = 0.15;
+
+/**
+ * Фикс. наценка за аффикс / базу / weapon-тир.
+ * Пример канона: D = 25 → ilvl5 + 3×D = 10*5 + 75 = 125.
+ */
+export const TIER_MARKUP: Record<AffixTierId, number> = {
+  F: 10,
+  E: 15,
+  D: 25,
+  C: 40,
+  B: 60,
+  A1: 90,
+  A2: 125,
+  A3: 165,
+  A4: 210,
+  A5: 260,
 };
 
 /** Золото за победу: `(8 + kills * 2) * zone.itemLevel`. */
@@ -15,19 +30,55 @@ export function victoryGold(zoneItemLevel: number, kills: number): number {
   return (8 + kills * 2) * Math.max(1, zoneItemLevel);
 }
 
+function resolveTierId(tierId: AffixTierId | undefined, itemLevel: number): AffixTierId {
+  if (tierId) return tierId;
+  return tierIdAt(baseTierIndex(itemLevel));
+}
+
+function tierMarkup(tierId: AffixTierId | undefined, itemLevel: number): number {
+  return TIER_MARKUP[resolveTierId(tierId, itemLevel)] ?? TIER_MARKUP.F;
+}
+
+/**
+ * Полная стоимость предмета (цена покупки у торговца для экипа).
+ * `basePrice * ilvl + Σ markup(тира аффикса) + markup(базы) + markup(weapon)`.
+ */
+export function itemValue(item: ItemDef): number {
+  if (isPotionItem(item)) {
+    const n = Math.max(1, Math.floor(item.stackCount ?? 1));
+    return POTION_BUY_PRICE * n;
+  }
+
+  const ilvl = Math.max(1, Math.floor(item.itemLevel));
+  let total = ITEM_BASE_PRICE * ilvl;
+
+  for (const affix of item.affixes ?? []) {
+    total += tierMarkup(affix.tierId, ilvl);
+  }
+  if (item.base?.tierId || item.base) {
+    total += tierMarkup(item.base.tierId, ilvl);
+  }
+  if (item.weapon) {
+    total += tierMarkup(item.weapon.tierId, ilvl);
+  }
+
+  return Math.max(1, Math.floor(total));
+}
+
+/** Цена продажи торговцу. */
 export function sellPrice(item: ItemDef): number {
   if (isPotionItem(item)) {
     const n = Math.max(1, Math.floor(item.stackCount ?? 1));
     return POTION_SELL_PRICE * n;
   }
-  return Math.max(1, item.itemLevel) * RARITY_SELL_MULT[item.rarity];
+  return Math.max(1, Math.round(itemValue(item) * SELL_RATIO));
 }
 
-/** Цена покупки у торговца (продажа × 3.5; зелья - фикс). */
+/** Цена покупки у торговца. */
 export function buyPrice(item: ItemDef): number {
   if (isPotionItem(item)) {
     const n = Math.max(1, Math.floor(item.stackCount ?? 1));
     return POTION_BUY_PRICE * n;
   }
-  return Math.max(1, Math.round(sellPrice(item) * 3.5));
+  return itemValue(item);
 }

@@ -121,6 +121,8 @@ export interface GenerateItemOptions {
   forceAspect?: Aspect;
   /** Принудительный вид оружия (генератор / крафт). Только для mainhand. */
   forceWeaponType?: WeaponTypeId;
+  /** Принудительный тип оффхенда (генератор / лавка). Только для offhand. */
+  forceOffhandType?: OffhandTypeId;
   rng?: () => number;
   name?: string;
 }

@@ -6,13 +6,19 @@ import {
   POTION_BUY_PRICE,
   type PotionId,
 } from "../items/potions";
+import type { OffhandTypeId } from "../items/offhandTypes";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
 import { buyPrice, sellPrice } from "./economy";
 import type { Aspect } from "../types";
 import type { GameState } from "./gameState";
 
-export type MerchantId = "weaponsmith" | "armorer" | "herbalist" | "baker";
+export type MerchantId =
+  | "weaponsmith"
+  | "armorer"
+  | "jeweler"
+  | "mystic"
+  | "baker";
 
 /** Вкладка рынка: торговцы + выкуп. */
 export type MarketTabId = MerchantId | "buyback";
@@ -20,8 +26,17 @@ export type MarketTabId = MerchantId | "buyback";
 export interface MerchantDef {
   id: MerchantId;
   label: string;
-  /** Слоты ассортимента. */
+  /** Слоты ассортимента. Пустой массив - пока ничего не продаёт. */
   slots: readonly EquipSlotId[];
+  /**
+   * Если в slots есть offhand - ограничить типы левой руки.
+   * Без списка роллятся все OffhandTypeId.
+   */
+  offhandTypes?: readonly OffhandTypeId[];
+  /** Мин. число офферов при реролле (без закреплённых зелий). */
+  stockMin: number;
+  /** Макс. число офферов при реролле (без закреплённых зелий). */
+  stockMax: number;
   /** Акцент портрета (CSS color). */
   accent: string;
   /** Имя файла в assets/art/backgrounds без расширения. */
@@ -47,28 +62,47 @@ export const MERCHANTS: readonly MerchantDef[] = [
   {
     id: "weaponsmith",
     label: "Оружейник",
-    slots: ["mainhand", "offhand"],
+    slots: ["mainhand"],
+    stockMin: 3,
+    stockMax: 6,
     accent: "#c45a3a",
     portraitStem: "weaponsmith",
   },
   {
     id: "armorer",
     label: "Бронник",
-    slots: ["head", "chest", "shoulders", "hands", "waist", "legs", "feet"],
+    slots: ["head", "chest", "shoulders", "hands", "waist", "legs", "feet", "offhand"],
+    offhandTypes: ["shield", "quiver"],
+    stockMin: 5,
+    stockMax: 10,
     accent: "#6a8a9a",
     portraitStem: "armorsmith",
   },
   {
-    id: "herbalist",
-    label: "Травник",
-    slots: ["neck", "trinket"],
+    id: "jeweler",
+    label: "Ювелир",
+    slots: ["ring1", "ring2", "neck"],
+    stockMin: 2,
+    stockMax: 4,
+    accent: "#9a7acc",
+    portraitStem: "jeweler",
+  },
+  {
+    id: "mystic",
+    label: "Мистик",
+    slots: ["trinket", "offhand"],
+    offhandTypes: ["tome", "orb", "relic"],
+    stockMin: 2,
+    stockMax: 4,
     accent: "#5a9a5a",
-    portraitStem: "herbalist",
+    portraitStem: "mystic",
   },
   {
     id: "baker",
     label: "Пекарь",
-    slots: ["ring1", "ring2", "trinket"],
+    slots: [],
+    stockMin: 0,
+    stockMax: 0,
     accent: "#c4a05a",
     portraitStem: "baker",
   },
@@ -85,9 +119,6 @@ const SHOP_RARITY: { rarity: ItemRarity; weight: number }[] = [
   { rarity: "magic", weight: 13 },
   { rarity: "rare", weight: 2 },
 ];
-
-const STOCK_MIN = 3;
-const STOCK_MAX = 10;
 
 function randInt(rng: () => number, min: number, max: number): number {
   return Math.floor(min + rng() * (max - min + 1));
@@ -108,7 +139,8 @@ function emptyStock(): MarketStock {
   return {
     weaponsmith: [],
     armorer: [],
-    herbalist: [],
+    jeweler: [],
+    mystic: [],
     baker: [],
   };
 }
@@ -127,6 +159,15 @@ function shopItemLevel(heroLevel: number): number {
   return Math.max(1, heroLevel);
 }
 
+function pickOffhandType(
+  merchant: MerchantDef,
+  rng: () => number,
+): OffhandTypeId | undefined {
+  const pool = merchant.offhandTypes;
+  if (!pool?.length) return undefined;
+  return pool[randInt(rng, 0, pool.length - 1)]!;
+}
+
 function rollOffer(
   merchant: MerchantDef,
   itemLevel: number,
@@ -135,11 +176,13 @@ function rollOffer(
 ): MarketOffer {
   const slot = merchant.slots[randInt(rng, 0, merchant.slots.length - 1)]!;
   const rarity = pickWeighted(SHOP_RARITY, (r) => r.weight, rng).rarity;
+  const forceOffhandType = slot === "offhand" ? pickOffhandType(merchant, rng) : undefined;
   const item = generateItem({
     slot,
     rarity,
     itemLevel,
     learnedAspects,
+    forceOffhandType,
     rng,
   });
   return { item, price: buyPrice(item) };
@@ -149,8 +192,11 @@ export function rollMerchantStock(
   merchant: MerchantDef,
   opts: { heroLevel: number; learnedAspects: Aspect[]; rng?: () => number },
 ): MarketOffer[] {
+  if (merchant.slots.length === 0 || merchant.stockMax <= 0) return [];
   const rng = opts.rng ?? Math.random;
-  const count = randInt(rng, STOCK_MIN, STOCK_MAX);
+  const lo = Math.max(0, merchant.stockMin);
+  const hi = Math.max(lo, merchant.stockMax);
+  const count = randInt(rng, lo, hi);
   const ilvl = shopItemLevel(opts.heroLevel);
   const out: MarketOffer[] = [];
   for (let i = 0; i < count; i++) {
@@ -195,17 +241,51 @@ export function cloneMarketState(src: MarketState | undefined | null): MarketSta
     return { stock: emptyStock(), buyback: [] };
   }
   const stock = emptyStock();
+  const raw = src.stock as Partial<Record<MerchantId | "herbalist", MarketOffer[]>>;
   for (const merchant of MERCHANTS) {
-    stock[merchant.id] = cloneOffers(src.stock[merchant.id]);
+    stock[merchant.id] = cloneOffers(raw[merchant.id]);
+  }
+  // Старые сейвы: herbalist → mystic.
+  if (!stock.mystic.length && raw.herbalist?.length) {
+    stock.mystic = cloneOffers(raw.herbalist);
   }
   return { stock, buyback: cloneOffers(src.buyback) };
 }
 
 /** Дозаполнить market у старых сейвов; полный реролл только если все полки пусты. */
 export function ensureMarket(state: GameState): void {
+  const srcStock = state.market?.stock as
+    | (Partial<Record<MerchantId | "herbalist", MarketOffer[]>> & object)
+    | undefined
+    | null;
+  const hadJeweler = Boolean(srcStock && Object.prototype.hasOwnProperty.call(srcStock, "jeweler"));
+  const hadMystic = Boolean(
+    srcStock &&
+      (Object.prototype.hasOwnProperty.call(srcStock, "mystic") ||
+        Object.prototype.hasOwnProperty.call(srcStock, "herbalist")),
+  );
   state.market = cloneMarketState(state.market);
-  const allEmpty = MERCHANTS.every((m) => state.market.stock[m.id].length === 0);
-  if (allEmpty) refreshMarketStock(state);
+  for (const merchant of MERCHANTS) {
+    if (merchant.slots.length === 0) state.market.stock[merchant.id] = [];
+  }
+  const sellable = MERCHANTS.filter((m) => m.slots.length > 0);
+  const allEmpty = sellable.every((m) => state.market.stock[m.id].length === 0);
+  if (allEmpty) {
+    refreshMarketStock(state);
+  } else {
+    if (!hadJeweler) {
+      state.market.stock.jeweler = rollMerchantStock(MERCHANT_BY_ID.jeweler, {
+        heroLevel: state.hero.level,
+        learnedAspects: state.hero.learnedAspects,
+      });
+    }
+    if (!hadMystic) {
+      state.market.stock.mystic = rollMerchantStock(MERCHANT_BY_ID.mystic, {
+        heroLevel: state.hero.level,
+        learnedAspects: state.hero.learnedAspects,
+      });
+    }
+  }
   for (const merchant of MERCHANTS) {
     for (const offer of state.market.stock[merchant.id]) {
       normalizeWeaponItemSlot(offer.item);
@@ -222,8 +302,8 @@ export function isMerchantId(id: string): id is MerchantId {
   return id in MERCHANT_BY_ID;
 }
 
-/** Закреплённые зелья травника: всегда в продаже, не кончаются. */
-export function herbalistPinnedOffers(): MarketOffer[] {
+/** Закреплённые зелья мистика: всегда в продаже, не кончаются. */
+export function mysticPinnedOffers(): MarketOffer[] {
   const ids: PotionId[] = ["healing_potion", "mana_potion"];
   return ids.map((id) => {
     const item = createPotionItem(id, 1);

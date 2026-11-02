@@ -112,7 +112,7 @@ export function createWorldMapBackgroundImg(): HTMLImageElement {
   return createBackgroundImgFromStem("map_01");
 }
 
-/** URL портрета торговца (`weaponsmith`, `armorsmith`, …). */
+/** URL портрета торговца (`weaponsmith`, `armorsmith`, `jeweler`, …). */
 export function resolveMerchantPortraitUrl(stem: string): string {
   return resolveAssetBgUrl(stem);
 }

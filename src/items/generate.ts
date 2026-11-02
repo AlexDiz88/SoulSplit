@@ -135,8 +135,9 @@ function makeWeaponImplicit(
   };
 }
 
-function makeOffhandImplicit(rng: () => number): OffhandImplicit {
-  const def = OFFHAND_TYPES[randInt(rng, 0, OFFHAND_TYPES.length - 1)]!;
+function makeOffhandImplicit(rng: () => number, forceTypeId?: OffhandTypeId): OffhandImplicit {
+  const forced = forceTypeId ? OFFHAND_TYPE_BY_ID[forceTypeId] : undefined;
+  const def = forced ?? OFFHAND_TYPES[randInt(rng, 0, OFFHAND_TYPES.length - 1)]!;
   return { typeId: def.id };
 }
 
@@ -331,7 +332,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
   }
 
   if (slot === "offhand") {
-    const offhand = makeOffhandImplicit(rng);
+    const offhand = makeOffhandImplicit(rng, opts.forceOffhandType);
     const typeDef = OFFHAND_TYPE_BY_ID[offhand.typeId];
     const allowsAspect = typeDef.families.includes("aspect");
     const { base, aspectTag } = rollBaseAndAspect(

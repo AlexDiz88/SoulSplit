@@ -15,7 +15,7 @@ import type { ItemDef } from "../items/types";
 import type { GameState } from "../meta/gameState";
 import {
   ensureMarket,
-  herbalistPinnedOffers,
+  mysticPinnedOffers,
   MERCHANT_BY_ID,
   MERCHANTS,
   refreshMarketStock,
@@ -314,8 +314,8 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   function tryBuy(index: number, pinned = false): void {
     if (!stateRef) return;
-    if (pinned && activeTab === "herbalist") {
-      const pinnedList = herbalistPinnedOffers();
+    if (pinned && activeTab === "mystic") {
+      const pinnedList = mysticPinnedOffers();
       const current = pinnedList[index];
       if (!current || !isPotionItem(current.item)) {
         handlers.showToast("Товар недоступен");
@@ -409,7 +409,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     ensureMarket(stateRef);
     const stockOffers = currentOffers();
     const pinned =
-      activeTab === "herbalist" ? herbalistPinnedOffers().map((offer) => ({ offer, pinned: true as const })) : [];
+      activeTab === "mystic" ? mysticPinnedOffers().map((offer) => ({ offer, pinned: true as const })) : [];
     const rows = [
       ...pinned,
       ...stockOffers.map((offer) => ({ offer, pinned: false as const })),
