@@ -28,6 +28,7 @@ RARITY_TOKENS = frozenset(
         "magical",
         "rare",
         "epic",
+        "legendary",
         "white",
         "green",
         "blue",

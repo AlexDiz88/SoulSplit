@@ -655,11 +655,10 @@ function buildAspectsSection(): HTMLElement {
     const body = el("div", "igen-info-card-body");
     body.append(
       infoRow("aspect_id", row.aspectId, "igen-mono"),
-      infoRow("Урон", row.damageTag),
       infoRow("DoT", row.dot),
-      infoRow("Контроль", row.control),
-      infoRow("Защита", row.defense),
-      infoRow("Крючки", row.hooks, "igen-desc"),
+      infoRow("Эффекты", row.control),
+      infoRow("Защита / Восстановление", row.defense),
+      infoRow("Особенности / Назначение", row.hooks, "igen-desc"),
     );
     card.append(body);
     mobileCards.append(card);
@@ -672,11 +671,10 @@ function buildAspectsSection(): HTMLElement {
   for (const h of [
     "Школа",
     "aspect_id",
-    "Урон (тег)",
     "DoT / длительное",
-    "Контроль / темп",
-    "Защита / себя",
-    "Метки и крючки",
+    "Эффекты",
+    "Защита / Восстановление",
+    "Особенности / Назначение",
   ]) {
     headRow.append(el("th", "", h));
   }
@@ -695,7 +693,6 @@ function buildAspectsSection(): HTMLElement {
     tr.append(
       schoolCell,
       el("td", "igen-mono", row.aspectId),
-      el("td", "", row.damageTag),
       el("td", "", row.dot),
       el("td", "", row.control),
       el("td", "", row.defense),
