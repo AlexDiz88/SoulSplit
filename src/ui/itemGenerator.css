@@ -1098,15 +1098,15 @@
 .grimoire-embedded-window .grimoire-body {
   flex: 1;
   min-height: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: minmax(180px, 240px) minmax(220px, 300px) minmax(0, 1fr);
+  gap: 16px;
   overflow: hidden;
 }
 
 .grimoire-embedded-window .grimoire-aspects,
 .grimoire-embedded-window .grimoire-list,
 .grimoire-embedded-window .grimoire-detail {
-  flex: 1;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -1234,6 +1234,9 @@
 .igen-phone .grimoire-embedded-window .grimoire-body {
   flex: none;
   min-height: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
   overflow: visible;
 }
 
