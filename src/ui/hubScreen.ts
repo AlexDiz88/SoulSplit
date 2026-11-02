@@ -456,9 +456,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       goldLine.replaceChildren(goldAmountNode(state.hero.gold, "gold-amount hub-bag-gold-amount"));
 
       // Фон не рандомим: вечер по умолчанию, день/вечер только вручную.
-      if (root.hidden) applyTownTime(townTime);
+      const opening = root.hidden;
+      if (opening) applyTownTime(townTime);
 
-      closeMenu();
+      // Меню закрываем только при входе в город, не при каждом refresh (реген HP/маны).
+      if (opening) closeMenu();
       root.hidden = false;
       applyHeroDock(state);
       scheduleLayout();

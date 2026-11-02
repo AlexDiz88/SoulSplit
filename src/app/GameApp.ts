@@ -251,7 +251,7 @@ export class GameApp {
       }
       if (!changed) return;
       syncProfileVitals(this.state.hero, unit);
-      this.hub.show(this.state);
+      this.hub.showHeroDock(this.state);
     }, 1000);
   }
 
