@@ -111,8 +111,10 @@ export class Unit {
   /** Секунды до следующего всплывающего числа DoT. */
   private dotFloatTimer = 0;
   preferredTargetId: string | null = null;
-  /** 0 — удар только что прошёл, 1 — автоатака готова. Во время каста - прогресс подготовки. */
+  /** 0 - удар только что прошёл, 1 - автоатака готова. Во время каста врага - прогресс подготовки. */
   attackCharge = 0;
+  /** Прогресс КД левой руки (0..1). Только герой при dual wield. */
+  offhandAttackCharge = 0;
   /** Активная подготовка способности. null - не кастует. */
   cast: UnitCast | null = null;
   alive = true;
@@ -567,6 +569,11 @@ export class Unit {
     this.cdBarBg.clear();
     this.cdBarFg.clear();
     this.castLabel.visible = false;
+
+    if (this.team === "player") {
+      this.drawHeroAttackCharges();
+      return;
+    }
     if (this.team !== "enemy") return;
 
     const fill = Math.max(0, Math.min(1, this.attackCharge));
@@ -607,6 +614,42 @@ export class Unit {
     this.cdBarBg.roundRect(x, y, w, h, 1).fill({ color: 0x1a2018, alpha: 0.92 });
     if (fill > 0) {
       this.cdBarFg.roundRect(x, y, Math.max(2, w * fill), h, 1).fill({ color: 0xe8d7a2, alpha: 0.95 });
+    }
+  }
+
+  /** Тонкие полосы КД автоатак на портрете героя (1 или 2 при dual wield). */
+  private drawHeroAttackCharges(): void {
+    const hasMain = Boolean(this.equipment.mainhand?.weapon);
+    const hasOff = this.hasOffhandWeapon();
+    if (!hasMain && !hasOff) return;
+
+    const half = this.half;
+    const pad = 6;
+    const x = -half + pad;
+    const w = this.cardSize - pad * 2;
+    const h = 3;
+    const gap = 2;
+    const topY = -half + 5;
+
+    type Bar = { fill: number; y: number; color: number };
+    const bars: Bar[] = [];
+    if (hasMain && hasOff) {
+      bars.push({ fill: this.attackCharge, y: topY, color: 0xe8d7a2 });
+      bars.push({ fill: this.offhandAttackCharge, y: topY + h + gap, color: 0xa8b4c4 });
+    } else if (hasMain) {
+      bars.push({ fill: this.attackCharge, y: topY, color: 0xe8d7a2 });
+    } else {
+      bars.push({ fill: this.offhandAttackCharge, y: topY, color: 0xe8d7a2 });
+    }
+
+    for (const bar of bars) {
+      this.cdBarBg.roundRect(x, bar.y, w, h, 1).fill({ color: 0x1a2018, alpha: 0.92 });
+      const fill = Math.max(0, Math.min(1, bar.fill));
+      if (fill > 0) {
+        this.cdBarFg
+          .roundRect(x, bar.y, Math.max(2, w * fill), h, 1)
+          .fill({ color: bar.color, alpha: 0.95 });
+      }
     }
   }
 
@@ -653,7 +696,10 @@ export class Unit {
       this.stats.reach = w.reach;
       this.stats.range = w.range;
     }
-    if (!off) this.offhandAutoTimer = 0;
+    if (!off) {
+      this.offhandAutoTimer = 0;
+      this.offhandAttackCharge = 0;
+    }
     this.rebuildSheetFromEquipment();
   }
 

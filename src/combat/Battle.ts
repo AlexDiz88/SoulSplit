@@ -37,6 +37,7 @@ import {
 import type { WeaponImplicit } from "../items/types";
 import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import { easeInOutQuad, TweenManager } from "../util/tween";
+import { playMeleeHit, unlockAudio } from "../audio/sfx";
 import { VfxManager } from "../vfx/VfxManager";
 import { CELL, GAP } from "./board";
 import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
@@ -184,6 +185,7 @@ export class Battle {
   };
 
   private readonly onPointer = (ev: PointerEvent): void => {
+    unlockAudio();
     if (ev.button === 2) {
       ev.preventDefault();
       this.cancelAbilityTargeting();
@@ -265,6 +267,7 @@ export class Battle {
   };
 
   private readonly onStartClick = (): void => {
+    unlockAudio();
     if (this.destroyed || this.started || this.ended) return;
     this.started = true;
     this.paused = false;
@@ -1645,6 +1648,9 @@ export class Battle {
         else if (target.team === "player") this.statsTracker.noteHeroDodged();
         return;
       }
+      if (melee) {
+        playMeleeHit(attacker.team === "player" ? "hero" : "enemy");
+      }
       if (attacker.team === "player") {
         this.statsTracker.noteHeroAutoHit(dealt, crit);
       }
@@ -1806,7 +1812,14 @@ export class Battle {
       const passiveHeal = u.tickResourceRegen(combatDt);
       if (u.team === "player" && passiveHeal > 0) this.statsTracker.notePassiveHeal(passiveHeal);
       const needPreview = u.autoAttackNeed();
-      if (u.team === "enemy" && !u.cast) {
+      if (u.team === "player") {
+        const hasMain = Boolean(u.equipment.mainhand?.weapon);
+        u.attackCharge =
+          hasMain && needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : hasMain ? 1 : 0;
+        const offNeed = u.offhandAutoAttackNeed();
+        u.offhandAttackCharge =
+          offNeed > 0 ? Math.min(1, u.offhandAutoTimer / offNeed) : 0;
+      } else if (!u.cast) {
         u.attackCharge = needPreview > 0 ? Math.min(1, u.autoTimer / needPreview) : 1;
       }
       const statusTick = u.tickStatuses(combatDt);
