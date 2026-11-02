@@ -25,6 +25,7 @@ import {
   type DamageChannel,
 } from "../stats/formulas";
 import type { AbilityId, GridPos, Aspect, StatusEffect, Team, UnitStats } from "../types";
+import type { SummonSlot } from "./board";
 
 export interface UnitCast {
   id: AbilityId;
@@ -69,6 +70,8 @@ export interface UnitInit {
   level?: number;
   /** Элитный враг - золотая рамка и тег. */
   elite?: boolean;
+  /** Слот суммона у героя (0 - слева, 1 - справа). Только у призванных союзников. */
+  summonSlot?: SummonSlot | null;
 }
 
 export class Unit {
@@ -98,6 +101,8 @@ export class Unit {
   /** Уровень героя или врага в этом бою. */
   level: number;
   readonly elite: boolean;
+  /** Слот суммона у портрета героя; null у героя и врагов. */
+  summonSlot: SummonSlot | null;
   autoTimer: number;
   /** Таймер автоатаки оружия в левой руке (dual wield). */
   offhandAutoTimer = 0;
@@ -157,6 +162,7 @@ export class Unit {
     this.beltManaPotions = Math.max(0, Math.floor(init.beltManaPotions ?? 0));
     this.level = init.level ?? (init.team === "player" ? 1 : 0);
     this.elite = init.elite ?? false;
+    this.summonSlot = init.summonSlot ?? null;
     this.sheetBase = createBaseHeroSheet();
     this.sheet =
       init.sheet === undefined

@@ -39,7 +39,7 @@ import { WEAPON_TYPE_BY_ID } from "../items/weaponTypes";
 import { easeInOutQuad, TweenManager } from "../util/tween";
 import { playMeleeHit, unlockAudio } from "../audio/sfx";
 import { VfxManager } from "../vfx/VfxManager";
-import { CELL, GAP } from "./board";
+import { CELL, GAP, SUMMON_SLOT_COUNT, type SummonSlot } from "./board";
 import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
 import { BattleStatsTracker } from "./battleStats";
 import { Unit } from "./Unit";
@@ -114,6 +114,11 @@ export class Battle {
   private pendingCast: PendingCast | null = null;
   private gridOrigin = { x: 0, y: 0 };
   private heroAnchor = { x: 0, y: 0 };
+  /** Центры ячеек суммонов: [слева, справа], верх по линии с портретом героя. */
+  private summonAnchors: Array<{ x: number; y: number }> = Array.from(
+    { length: SUMMON_SLOT_COUNT },
+    () => ({ x: 0, y: 0 }),
+  );
   private baseBoardX = 0;
   private baseBoardY = 0;
   private rangeGfx = new Graphics();
@@ -526,6 +531,7 @@ export class Battle {
       x: 0,
       y: -totalH / 2 + gridH + STACK_GAP + HERO_SIZE / 2,
     };
+    this.layoutSummonAnchors();
 
     const c = new Container();
 
@@ -534,9 +540,12 @@ export class Battle {
       for (let row = 0; row < GRID_SIZE; row++) {
         const x = this.gridOrigin.x + col * PITCH;
         const y = this.gridOrigin.y + row * PITCH;
-        grid.roundRect(x, y, CELL, CELL, 6).fill({ color: 0x141a14, alpha: 0.9 });
-        grid.roundRect(x, y, CELL, CELL, 6).stroke({ color: 0x5a3a3a, width: 1.5, alpha: 0.55 });
+        this.paintBoardCell(grid, x, y);
       }
+    }
+    for (let slot = 0; slot < SUMMON_SLOT_COUNT; slot++) {
+      const anchor = this.summonAnchors[slot]!;
+      this.paintBoardCell(grid, anchor.x - CELL / 2, anchor.y - CELL / 2);
     }
     c.addChild(grid);
 
@@ -567,11 +576,41 @@ export class Battle {
     return c;
   }
 
+  /** Ячейка сетки врагов и слотов суммонов - один размер и стиль. */
+  private paintBoardCell(gfx: Graphics, x: number, y: number): void {
+    gfx.roundRect(x, y, CELL, CELL, 6).fill({ color: 0x141a14, alpha: 0.9 });
+    gfx.roundRect(x, y, CELL, CELL, 6).stroke({ color: 0x5a3a3a, width: 1.5, alpha: 0.55 });
+  }
+
+  /**
+   * Слоты суммонов: CELL×CELL, верх вровень с верхом портрета героя.
+   * Внешние края совпадают с краями сетки 4×4 (HERO_SIZE + 2·GAP + 2·CELL = gridW).
+   */
+  private layoutSummonAnchors(): void {
+    const heroHalf = HERO_SIZE / 2;
+    const top = this.heroAnchor.y - heroHalf;
+    const cy = top + CELL / 2;
+    this.summonAnchors[0] = {
+      x: this.heroAnchor.x - heroHalf - GAP - CELL / 2,
+      y: cy,
+    };
+    this.summonAnchors[1] = {
+      x: this.heroAnchor.x + heroHalf + GAP + CELL / 2,
+      y: cy,
+    };
+  }
+
   private cellCenter(pos: GridPos): { x: number; y: number } {
     return {
       x: this.gridOrigin.x + pos.col * PITCH + CELL / 2,
       y: this.gridOrigin.y + pos.row * PITCH + CELL / 2,
     };
+  }
+
+  /** Центр слота суммона (0 - слева, 1 - справа). */
+  summonSlotCenter(slot: SummonSlot): { x: number; y: number } {
+    const anchor = this.summonAnchors[slot];
+    return anchor ? { x: anchor.x, y: anchor.y } : { x: 0, y: 0 };
   }
 
   private layout(): void {
@@ -632,8 +671,13 @@ export class Battle {
 
   private placeAll(): void {
     for (const u of this.units) {
-      if (u.team === "player") {
+      if (u === this.hero) {
         u.view.position.set(this.heroAnchor.x, this.heroAnchor.y);
+      } else if (u.team === "player") {
+        const slot = u.summonSlot;
+        if (slot == null) continue;
+        const c = this.summonSlotCenter(slot);
+        u.view.position.set(c.x, c.y);
       } else if (u.alive) {
         const c = this.cellCenter(u.pos);
         u.view.position.set(c.x, c.y);
