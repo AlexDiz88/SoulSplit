@@ -20,8 +20,10 @@ export interface BattleResult {
   killed: BattleKill[];
   survivingEnemyCount: number;
   durationSec: number;
-  /** Текущее HP героя на момент исхода (для отступления). */
+  /** Текущее HP героя на момент исхода. */
   heroHp: number;
+  /** Текущая мана героя на момент исхода. */
+  heroMana: number;
   equipment: EquipmentMap;
   inventory: InventoryBag;
   beltHpPotions: number;

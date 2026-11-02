@@ -11,15 +11,16 @@ import {
 } from "../items/potions";
 import {
   addXpToProfile,
-  applyProfileHp,
+  applyProfileVitals,
   clampUnitBeltToEquipment,
   ensureHeroStash,
   hydrateCombatUnit,
   sheetBaseFromProfile,
   syncProfileFromUnit,
-  syncProfileHp,
+  syncProfileVitals,
   type NewHeroOptions,
 } from "../meta/heroProfile";
+import { getStat } from "../stats/sheet";
 import { rollVictoryLoot, victoryXp } from "../meta/loot";
 import {
   clearSlot,
@@ -61,6 +62,8 @@ export class GameApp {
   private prevUnlocked = new Set<ZoneId>();
   /** Куда вернуть игрока с экрана награды (карта + окно региона). */
   private rewardReturn: { zoneId: ZoneId; pointId: string } | null = null;
+  /** Реген HP/маны в городе (+1/сек). */
+  private hubRegenTimer: ReturnType<typeof setInterval> | null = null;
 
   private readonly app: Application;
   private readonly hud: BattleHudApi;
@@ -107,6 +110,10 @@ export class GameApp {
       onCharacter: () => {
         this.merchant.hide();
         this.hud.openCharacter();
+      },
+      onInventory: () => {
+        this.merchant.hide();
+        this.hud.toggleInventory();
       },
       onItemGenerator: () => {
         this.merchant.hide();
@@ -212,9 +219,38 @@ export class GameApp {
     if (!this.state || this.activeSlot < 0) return;
     if (this.hubUnit && this.screen !== "battle") {
       syncProfileFromUnit(this.state.hero, this.hubUnit);
-      syncProfileHp(this.state.hero, this.hubUnit);
+      syncProfileVitals(this.state.hero, this.hubUnit);
     }
     saveSlot(this.activeSlot, this.state);
+  }
+
+  private stopHubRegen(): void {
+    if (this.hubRegenTimer == null) return;
+    clearInterval(this.hubRegenTimer);
+    this.hubRegenTimer = null;
+  }
+
+  /** В городе +1 HP и +1 маны в секунду. Вне города не регенерирует. */
+  private startHubRegen(): void {
+    this.stopHubRegen();
+    this.hubRegenTimer = setInterval(() => {
+      if (this.screen !== "hub" || !this.state || !this.hubUnit) return;
+      const unit = this.hubUnit;
+      const maxHp = unit.stats.maxHp;
+      const maxMana = unit.sheet ? getStat(unit.sheet, "maxMana") : 0;
+      let changed = false;
+      if (unit.hp < maxHp) {
+        unit.hp = Math.min(maxHp, unit.hp + 1);
+        changed = true;
+      }
+      if (unit.mana < maxMana) {
+        unit.mana = Math.min(maxMana, unit.mana + 1);
+        changed = true;
+      }
+      if (!changed) return;
+      syncProfileVitals(this.state.hero, unit);
+      this.hub.show(this.state);
+    }, 1000);
   }
 
   private manualSave(): void {
@@ -233,6 +269,7 @@ export class GameApp {
   }
 
   private leaveActiveGame(): void {
+    this.stopHubRegen();
     this.persist();
     this.destroyBattle();
     this.hubUnit = null;
@@ -243,6 +280,11 @@ export class GameApp {
   }
 
   private goSettingsFromHub(): void {
+    if (this.hubUnit && this.state) {
+      syncProfileFromUnit(this.state.hero, this.hubUnit);
+      syncProfileVitals(this.state.hero, this.hubUnit);
+    }
+    this.stopHubRegen();
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "settings";
@@ -329,7 +371,7 @@ export class GameApp {
     const init = hydrateCombatUnit(state.hero);
     this.hubUnit = new Unit(init);
     this.hubUnit.rebuildSheetFromEquipment(sheetBaseFromProfile(state.hero));
-    applyProfileHp(this.hubUnit, state.hero);
+    applyProfileVitals(this.hubUnit, state.hero);
     this.hud.setHero(this.hubUnit);
   }
 
@@ -381,6 +423,7 @@ export class GameApp {
     this.noteNewZones();
     this.rebuildHubUnit();
     this.hub.show(state);
+    this.startHubRegen();
     this.persist();
   }
 
@@ -395,7 +438,11 @@ export class GameApp {
 
   goWorldMap(opts?: { openZoneId?: ZoneId; openPointId?: string }): void {
     const state = this.requireState();
-    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    if (this.hubUnit) {
+      syncProfileFromUnit(state.hero, this.hubUnit);
+      syncProfileVitals(state.hero, this.hubUnit);
+    }
+    this.stopHubRegen();
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "world_map";
@@ -478,8 +525,10 @@ export class GameApp {
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
+      syncProfileVitals(state.hero, this.hubUnit);
       this.persist();
     }
+    this.stopHubRegen();
     const zone = getZone(zoneId);
     const point = getZonePoint(zone, pointId);
     state.lastZoneId = zoneId;
@@ -530,15 +579,19 @@ export class GameApp {
 
     if (result.outcome === "flee") {
       state.hero.currentHp = Math.max(1, result.heroHp);
+      state.hero.currentMana = Math.max(0, result.heroMana);
       this.goHub();
-      if (this.hubUnit) syncProfileHp(state.hero, this.hubUnit);
+      if (this.hubUnit) syncProfileVitals(state.hero, this.hubUnit);
       this.persist();
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
     }
 
     if (result.outcome === "defeat") {
+      // После смерти - полный запас (возрождение в городе).
       state.hero.currentHp = null;
+      state.hero.currentMana = null;
+      this.stopHubRegen();
       this.persist();
       this.destroyBattle();
       this.hideAll();
@@ -552,7 +605,9 @@ export class GameApp {
       return;
     }
 
-    state.hero.currentHp = null;
+    // Победа: раны и мана сохраняются до отдыха в городе.
+    state.hero.currentHp = Math.max(1, result.heroHp);
+    state.hero.currentMana = Math.max(0, result.heroMana);
     const zone = getZone(result.zoneId);
     const point = getZonePoint(zone, result.pointId);
     const kills = result.killed.length;

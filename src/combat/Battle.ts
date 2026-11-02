@@ -21,7 +21,7 @@ import {
 } from "../stats/formulas";
 import { getStat } from "../stats/sheet";
 import {
-  applyProfileHp,
+  applyProfileVitals,
   clampUnitBeltToEquipment,
   hydrateCombatUnit,
   sheetBaseFromProfile,
@@ -644,7 +644,7 @@ export class Battle {
     init.cardSize = HERO_SIZE;
     this.hero = new Unit(init);
     this.hero.rebuildSheetFromEquipment(sheetBaseFromProfile(heroProfile));
-    applyProfileHp(this.hero, heroProfile);
+    applyProfileVitals(this.hero, heroProfile);
     const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;
     this.weapon = w?.kind ?? "melee";
     this.unitsLayer.addChild(this.hero.view);
@@ -728,6 +728,7 @@ export class Battle {
       survivingEnemyCount: this.livingEnemies().length,
       durationSec: this.battleElapsed,
       heroHp: Math.max(0, Math.ceil(this.hero.hp)),
+      heroMana: Math.max(0, Math.floor(this.hero.mana)),
       equipment: gear.equipment,
       inventory: gear.inventory,
       beltHpPotions: this.hero.beltHpPotions,

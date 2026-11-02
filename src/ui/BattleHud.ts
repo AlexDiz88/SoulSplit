@@ -767,11 +767,18 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openInventory() {
-      inventory.open();
+      // Сумка всегда вместе с окном персонажа.
+      prepareOpen("character");
+      inventory.setStashBag(null);
+      inventory.setMarketMode(false);
+      stash.close();
+      character.setMode("full");
+      character.open();
     },
 
     closeInventory() {
-      inventory.close();
+      if (character.isOpen()) character.close();
+      else inventory.close();
     },
 
     isInventoryOpen() {
@@ -779,8 +786,15 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     toggleInventory() {
-      if (inventory.isOpen()) inventory.close();
-      else inventory.open();
+      if (character.isOpen()) character.close();
+      else {
+        prepareOpen("character");
+        inventory.setStashBag(null);
+        inventory.setMarketMode(false);
+        stash.close();
+        character.setMode("full");
+        character.open();
+      }
     },
 
     openStash(bag) {

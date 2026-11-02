@@ -20,7 +20,7 @@ import {
   type BeltPotionState,
 } from "../items/potions";
 import type { StatId } from "../stats/statIds";
-import { createBaseHeroSheet, type HeroStatSheet } from "../stats/sheet";
+import { createBaseHeroSheet, getStat, type HeroStatSheet } from "../stats/sheet";
 import type { AbilityId, Aspect } from "../types";
 import { applyXpGain, levelBonusesAsStatDelta, type AddXpResult } from "./progression";
 
@@ -129,9 +129,16 @@ export interface HeroProfile {
   /**
    * Текущее HP вне полного восстановления.
    * `null` / отсутствует - полный запас (maxHp).
-   * После "Белый флаг" сохраняется урон; после победы/смерти сбрасывается.
+   * После победы / отступления сохраняется; после поражения сбрасывается.
+   * В городе медленно восстанавливается (+1/сек).
    */
   currentHp?: number | null;
+  /**
+   * Текущая мана вне полного запаса.
+   * `null` / отсутствует - полный запас (maxMana).
+   * Правила как у currentHp.
+   */
+  currentMana?: number | null;
   /** Заряды зелий здоровья на поясе. */
   beltHpPotions: number;
   /** Заряды зелий маны на поясе. */
@@ -157,6 +164,7 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     stash: cloneStash(src.stash).map((cell) => (cell ? structuredClone(cell) : null)),
     levelBonuses: { ...src.levelBonuses },
     currentHp: src.currentHp ?? null,
+    currentMana: src.currentMana ?? null,
     beltHpPotions: Math.max(0, Math.floor(src.beltHpPotions ?? 0)),
     beltManaPotions: Math.max(0, Math.floor(src.beltManaPotions ?? 0)),
   };
@@ -192,6 +200,7 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     levelBonuses: {},
     portraitUrl: opts?.portraitUrl || pickRandomHeroPortraitUrl(),
     currentHp: null,
+    currentMana: null,
     beltHpPotions: 0,
     beltManaPotions: 0,
   };
@@ -315,6 +324,65 @@ export function applyProfileHp(
   if (saved == null) return;
   unit.hp = Math.min(unit.stats.maxHp, Math.max(1, Math.ceil(saved)));
   unit.redraw();
+}
+
+/** Записать текущую ману юнита в профиль (`null` = полный запас). */
+export function syncProfileMana(
+  profile: HeroProfile,
+  unit: { mana: number; sheet: HeroStatSheet | null | undefined },
+): void {
+  if (!unit.sheet) {
+    profile.currentMana = null;
+    return;
+  }
+  const maxMana = getStat(unit.sheet, "maxMana");
+  const mana = Math.floor(unit.mana);
+  profile.currentMana = mana >= maxMana ? null : Math.max(0, mana);
+}
+
+/** Наложить `currentMana` профиля на уже собранного юнита (после rebuild листа). */
+export function applyProfileMana(
+  unit: {
+    mana: number;
+    sheet: HeroStatSheet | null | undefined;
+    redraw: () => void;
+  },
+  profile: HeroProfile,
+): void {
+  const saved = profile.currentMana;
+  if (saved == null || !unit.sheet) return;
+  const maxMana = getStat(unit.sheet, "maxMana");
+  unit.mana = Math.min(maxMana, Math.max(0, Math.floor(saved)));
+  unit.redraw();
+}
+
+/** Синхронизировать HP и ману юнита в профиль. */
+export function syncProfileVitals(
+  profile: HeroProfile,
+  unit: {
+    hp: number;
+    mana: number;
+    stats: { maxHp: number };
+    sheet: HeroStatSheet | null | undefined;
+  },
+): void {
+  syncProfileHp(profile, unit);
+  syncProfileMana(profile, unit);
+}
+
+/** Наложить сохранённые HP и ману на юнита. */
+export function applyProfileVitals(
+  unit: {
+    hp: number;
+    mana: number;
+    stats: { maxHp: number };
+    sheet: HeroStatSheet | null | undefined;
+    redraw: () => void;
+  },
+  profile: HeroProfile,
+): void {
+  applyProfileHp(unit, profile);
+  applyProfileMana(unit, profile);
 }
 
 /** Добавить XP и обновить levelBonuses. Мутирует profile. */

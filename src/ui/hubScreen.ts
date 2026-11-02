@@ -2,8 +2,12 @@ import {
   createTownBackgroundImg,
   pickRandomTownBackgroundUrl,
 } from "../art/menuBackground";
+import { computeHeroSheet } from "../items/equipment";
+import { sheetBaseFromProfile } from "../meta/heroProfile";
 import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
+import { getStat } from "../stats/sheet";
+import { goldAmountNode } from "./goldIcon";
 import {
   HUB_LOCATIONS,
   coverLayout,
@@ -21,6 +25,7 @@ export interface HubScreenApi {
 
 export interface HubScreenHandlers {
   onCharacter: () => void;
+  onInventory: () => void;
   onItemGenerator: () => void;
   onSave: () => void;
   onSettings: () => void;
@@ -42,6 +47,23 @@ function el<K extends keyof HTMLElementTagNameMap>(
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
+}
+
+function makeRoundBtn(className: string, label: string): HTMLButtonElement {
+  const btn = el("button", className);
+  btn.type = "button";
+  btn.setAttribute("aria-label", label);
+  return btn;
+}
+
+function bagIcon(): HTMLElement {
+  const span = el("span", "hub-bag-icon");
+  span.setAttribute("aria-hidden", "true");
+  span.innerHTML =
+    '<svg viewBox="0 0 24 24" focusable="false">' +
+    '<path fill="currentColor" d="M7 8V6.8C7 4.15 9.02 2 12 2s5 2.15 5 4.8V8h2.2c.99 0 1.8.81 1.8 1.8v10.4c0 .99-.81 1.8-1.8 1.8H4.8c-.99 0-1.8-.81-1.8-1.8V9.8C3 8.81 3.81 8 4.8 8H7zm2 0h6V6.8c0-1.55-1.12-2.8-3-2.8s-3 1.25-3 2.8V8z"/>' +
+    "</svg>";
+  return span;
 }
 
 export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
@@ -68,59 +90,78 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   }
   root.append(map);
 
-  const topbar = el("header", "hub-topbar");
+  /* ---- Герой: левый нижний угол ---- */
+  const heroDock = el("button", "hub-hero-dock");
+  heroDock.type = "button";
+  heroDock.setAttribute("aria-label", "Персонаж");
 
-  const left = el("button", "hub-topbar-left");
-  left.type = "button";
-  left.setAttribute("aria-label", "Персонаж");
   const portraitWrap = el("div", "hub-portrait");
   const portraitImg = el("img", "hub-portrait-img");
   portraitImg.alt = "";
   portraitImg.draggable = false;
   portraitWrap.append(portraitImg);
 
-  const meta = el("div", "hub-topbar-meta");
+  const heroBody = el("div", "hub-hero-body");
   const heroRow = el("div", "hub-hero-row");
   const levelBadge = el("div", "hub-level");
+  levelBadge.style.setProperty("--xp-pct", "0");
+  levelBadge.setAttribute("aria-label", "Уровень и опыт");
   const levelNum = el("span", "hub-level-num", "1");
   levelBadge.append(levelNum);
   const nameEl = el("div", "hub-name");
   heroRow.append(levelBadge, nameEl);
 
-  const xp = el("div", "hub-xp");
-  const xpTrack = el("div", "hub-xp-track");
-  const xpFill = el("div", "hub-xp-fill");
-  const xpLabel = el("span", "hub-xp-label");
-  xpTrack.append(xpFill, xpLabel);
-  xp.append(xpTrack);
-  meta.append(heroRow, xp);
-  left.append(portraitWrap, meta);
-  left.addEventListener("click", () => handlers.onCharacter());
+  const makeVital = (kind: "hp" | "mana", title: string) => {
+    const wrap = el("div", `hub-vital hub-vital-${kind}`);
+    wrap.setAttribute("aria-label", title);
+    const track = el("div", "hub-vital-track");
+    const fill = el("div", "hub-vital-fill");
+    const gloss = el("div", "hub-vital-gloss");
+    const label = el("span", "hub-vital-label", "0 / 0");
+    track.append(fill, gloss, label);
+    wrap.append(track);
+    return { wrap, fill, label };
+  };
 
-  const right = el("div", "hub-topbar-right");
-  const currencies = el("div", "hub-currencies");
-  const addGoldBtn = el("button", "hub-add-gold-btn", "+1000");
-  addGoldBtn.type = "button";
-  addGoldBtn.setAttribute("aria-label", "Добавить 1000 золота");
+  const hpBar = makeVital("hp", "Здоровье");
+  const manaBar = makeVital("mana", "Мана");
+
+  heroBody.append(heroRow, hpBar.wrap, manaBar.wrap);
+  heroDock.append(portraitWrap, heroBody);
+  heroDock.addEventListener("click", () => handlers.onCharacter());
+  // Вне .hub-screen: иначе stacking context хаба держит блок под затемнением/блюром оверлеев.
+  heroDock.hidden = true;
+
+  const syncPortraitSize = (): void => {
+    // Квадрат по высоте колонки статов (aspect-ratio во flex с overflow схлопывался в 0).
+    const side = Math.max(1, Math.round(heroBody.getBoundingClientRect().height));
+    portraitWrap.style.width = `${side}px`;
+    portraitWrap.style.height = `${side}px`;
+    portraitWrap.style.flexBasis = `${side}px`;
+  };
+  const portraitObs = new ResizeObserver(() => syncPortraitSize());
+  portraitObs.observe(heroBody);
+
+  let xpTipText = "0 / 1";
+  const xpTip = el("div", "skill-tooltip hub-xp-tip");
+  xpTip.hidden = true;
+
+  /* ---- Круглые кнопки: правый верх ---- */
+  const tools = el("div", "hub-tools");
+
+  const addGoldBtn = makeRoundBtn("hub-round-btn hub-add-gold-btn", "Добавить 1000 золота");
+  addGoldBtn.textContent = "+1k";
   addGoldBtn.addEventListener("click", () => handlers.onAddTestGold());
-  const goldEl = el("div", "hub-currency hub-currency-gold");
-  const goldValue = el("span", "hub-currency-value", "0");
-  goldEl.append(el("span", "hub-currency-label", "Золото"), goldValue);
-  currencies.append(addGoldBtn, goldEl);
 
-  const fsBtn = el("button", "hub-fs-btn");
-  fsBtn.type = "button";
-  fsBtn.setAttribute("aria-label", "Полный экран");
-  fsBtn.setAttribute("aria-pressed", "false");
+  const fsBtn = makeRoundBtn("hub-round-btn hub-fs-btn", "Полный экран");
   fsBtn.append(el("span", "hub-fs-icon"));
+  fsBtn.setAttribute("aria-pressed", "false");
 
   const menuWrap = el("div", "hub-menu-wrap");
-  const menuBtn = el("button", "hub-menu-btn");
-  menuBtn.type = "button";
-  menuBtn.setAttribute("aria-label", "Меню");
+  const menuBtn = makeRoundBtn("hub-round-btn hub-menu-btn", "Меню");
+  menuBtn.append(el("span"), el("span"), el("span"));
   menuBtn.setAttribute("aria-expanded", "false");
   menuBtn.setAttribute("aria-controls", "hub-game-menu");
-  menuBtn.append(el("span"), el("span"), el("span"));
 
   const menu = el("nav", "hub-game-menu");
   menu.id = "hub-game-menu";
@@ -139,23 +180,53 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   btnSlots.type = "button";
   const btnExit = el("button", "hub-menu-item hub-menu-item-danger", "Главное меню");
   btnExit.type = "button";
-  menu.append(
-    btnItemGen,
-    menuSep,
-    btnSave,
-    btnSettings,
-    btnSlots,
-    btnExit,
-  );
+  menu.append(btnItemGen, menuSep, btnSave, btnSettings, btnSlots, btnExit);
   menuWrap.append(menuBtn, menu);
-  right.append(currencies, fsBtn, menuWrap);
 
-  topbar.append(left, right);
-  root.append(topbar);
+  tools.append(addGoldBtn, fsBtn, menuWrap);
+  root.append(tools);
+
+  /* ---- Сумка: правый нижний угол ---- */
+  const bagDock = el("div", "hub-bag-dock");
+  const bagBtn = makeRoundBtn("hub-round-btn hub-bag-btn", "Инвентарь");
+  bagBtn.append(bagIcon());
+  bagBtn.addEventListener("click", () => handlers.onInventory());
+  const goldLine = el("div", "hub-bag-gold");
+  goldLine.setAttribute("aria-live", "polite");
+  bagDock.append(bagBtn, goldLine);
+  root.append(bagDock);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
-  hud.append(root);
+  hud.append(root, heroDock, xpTip);
+
+  const hideXpTip = (): void => {
+    xpTip.hidden = true;
+  };
+
+  const placeXpTip = (clientX: number, clientY: number): void => {
+    xpTip.innerHTML = `
+      <div class="tt-name">Опыт</div>
+      <div class="tt-desc">${xpTipText}</div>
+    `;
+    xpTip.hidden = false;
+    const tipRect = xpTip.getBoundingClientRect();
+    let left = clientX - tipRect.width / 2;
+    left = Math.max(10, Math.min(left, window.innerWidth - tipRect.width - 10));
+    let top = clientY - tipRect.height - 12;
+    if (top < 8) top = clientY + 16;
+    xpTip.style.left = `${left}px`;
+    xpTip.style.top = `${top}px`;
+  };
+
+  levelBadge.addEventListener("pointerenter", (ev) => {
+    placeXpTip(ev.clientX, ev.clientY);
+  });
+  levelBadge.addEventListener("pointermove", (ev) => {
+    if (xpTip.hidden) return;
+    placeXpTip(ev.clientX, ev.clientY);
+  });
+  levelBadge.addEventListener("pointerleave", hideXpTip);
 
   const closeMenu = (): void => {
     menu.hidden = true;
@@ -245,6 +316,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
         handlers.onStash();
         return;
       }
+      if (ev.code === "KeyI" && !root.hidden) {
+        ev.preventDefault();
+        handlers.onInventory();
+        return;
+      }
     }
 
     if (ev.code !== "Escape" || menu.hidden) return;
@@ -299,6 +375,18 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const resizeObs = new ResizeObserver(() => scheduleLayout());
   resizeObs.observe(root);
 
+  const setVital = (
+    bar: { fill: HTMLElement; label: HTMLElement },
+    current: number,
+    max: number,
+  ): void => {
+    const cur = Math.max(0, Math.round(current));
+    const cap = Math.max(1, Math.round(max));
+    const pct = Math.min(100, (cur / cap) * 100);
+    bar.fill.style.width = `${pct}%`;
+    bar.label.textContent = `${cur} / ${cap}`;
+  };
+
   return {
     show(state) {
       const h = state.hero;
@@ -306,17 +394,27 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       portraitImg.alt = h.name;
       levelNum.textContent = String(h.level);
       nameEl.textContent = h.name;
-      goldValue.textContent = String(h.gold);
+
+      goldLine.replaceChildren(goldAmountNode(h.gold, "gold-amount hub-bag-gold-amount"));
 
       if (h.level >= MAX_HERO_LEVEL) {
-        xpLabel.textContent = "Макс. уровень";
-        xpFill.style.width = "100%";
+        levelBadge.style.setProperty("--xp-pct", "100");
+        xpTipText = "Макс. уровень";
       } else {
-        const need = xpToNextLevel(h.level);
-        const pct = Math.min(100, (h.xp / need) * 100);
-        xpLabel.textContent = `${h.xp} / ${need}`;
-        xpFill.style.width = `${pct}%`;
+        const need = Math.max(1, xpToNextLevel(h.level));
+        const pct = Math.min(100, Math.max(0, (h.xp / need) * 100));
+        levelBadge.style.setProperty("--xp-pct", String(pct));
+        xpTipText = `${h.xp} / ${need}`;
       }
+
+      const sheet = computeHeroSheet(h.equipment, sheetBaseFromProfile(h));
+      const maxHp = getStat(sheet, "maxHp");
+      const maxMana = getStat(sheet, "maxMana");
+      const hp = h.currentHp == null ? maxHp : Math.min(maxHp, Math.max(1, Math.ceil(h.currentHp)));
+      const mana =
+        h.currentMana == null ? maxMana : Math.min(maxMana, Math.max(0, Math.floor(h.currentMana)));
+      setVital(hpBar, hp, maxHp);
+      setVital(manaBar, mana, maxMana);
 
       // Новый фон только при входе в город, не при обновлении UI (рынок, золото, экип).
       if (root.hidden) {
@@ -331,22 +429,30 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
       closeMenu();
       root.hidden = false;
+      heroDock.hidden = false;
       scheduleLayout();
+      requestAnimationFrame(syncPortraitSize);
     },
     hide() {
       closeMenu();
+      hideXpTip();
       root.hidden = true;
+      heroDock.hidden = true;
     },
     isOpen() {
       return !root.hidden;
     },
     destroy() {
       if (layoutRaf) cancelAnimationFrame(layoutRaf);
+      portraitObs.disconnect();
       resizeObs.disconnect();
       bgImg.removeEventListener("load", onBgLoad);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
       window.removeEventListener("keydown", onKeyDown);
+      hideXpTip();
+      xpTip.remove();
+      heroDock.remove();
       root.remove();
     },
   };

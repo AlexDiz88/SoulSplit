@@ -10,8 +10,8 @@
   z-index: 50;
   display: grid;
   place-items: center;
-  background: rgba(4, 6, 4, 0.78);
-  backdrop-filter: blur(2px);
+  background: rgba(4, 6, 4, 0.35);
+  backdrop-filter: blur(1px);
 }
 
 .cs-overlay[hidden] {
@@ -21,7 +21,7 @@
 /* Режим тайника: только кукла экипа справа над инвентарём. */
 .cs-overlay.cs-mode-gear {
   place-items: unset;
-  background: rgba(4, 6, 4, 0.62);
+  background: rgba(4, 6, 4, 0.22);
 }
 
 .cs-overlay.cs-mode-gear .cs-window {

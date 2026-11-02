@@ -172,7 +172,7 @@ export function mountItemIconPreview(): ItemIconPreviewApi {
         return;
       }
     }
-    if (ev.code !== "KeyB" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (ev.code !== "KeyL" || ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
     ev.preventDefault();
     if (root.hidden) open();
     else close();
