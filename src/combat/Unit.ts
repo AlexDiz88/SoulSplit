@@ -212,7 +212,7 @@ export class Unit {
       text: "",
       style: {
         fontFamily: "Exo 2, sans-serif",
-        fontSize: 10,
+        fontSize: 11,
         fontWeight: "800",
         fill: 0xe8e2d4,
         stroke: { color: 0x0c0f0c, width: 3 },
@@ -367,8 +367,10 @@ export class Unit {
     const barW = this.cardSize - 6;
     const sheet = this.sheet;
     const showMana = sheet !== null;
-    const hpBarH = showMana ? 10 : 12;
-    const manaBarH = 8;
+    // У героя бары на портрете чуть выше, у врагов оставляем компактные.
+    const taller = this.team === "player" ? 8 : 0;
+    const hpBarH = (showMana ? 10 : 12) + taller;
+    const manaBarH = 8 + taller;
     const barGap = 1;
     const manaY = half - manaBarH - 1;
     const hpY = showMana ? manaY - barGap - hpBarH : half - hpBarH - 1;

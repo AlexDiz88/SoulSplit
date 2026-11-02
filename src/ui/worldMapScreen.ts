@@ -217,7 +217,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   const actions = el("div", "wm-zone-actions");
   const btnBack = el("button", "meta-btn wm-zone-btn", "Назад");
   btnBack.type = "button";
-  const btnGo = el("button", "meta-btn meta-btn-primary wm-zone-btn", "В путь");
+  const btnGo = el("button", "meta-btn meta-btn-primary wm-zone-btn", "В бой");
   btnGo.type = "button";
   actions.append(btnBack, btnGo);
 

@@ -202,6 +202,7 @@ export class GameApp {
       syncProfileFromUnit(this.state.hero, this.hubUnit);
       this.persist();
       if (this.screen === "hub") this.hub.show(this.state);
+      else if (this.screen === "world_map") this.hub.showHeroDock(this.state);
       if (this.merchant.isOpen() && this.state) this.merchant.show(this.state);
     });
   }
@@ -450,6 +451,7 @@ export class GameApp {
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.worldMap.show(state, opts);
+    this.hub.showHeroDock(state);
   }
 
   /** Закрыть экран награды: карта мира с открытым окном региона. */

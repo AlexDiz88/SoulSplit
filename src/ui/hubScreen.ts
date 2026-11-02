@@ -19,6 +19,9 @@ import "./hubScreen.css";
 export interface HubScreenApi {
   show(state: GameState): void;
   hide(): void;
+  /** Портрет + HP/мана поверх карты (не зависит от экрана города). */
+  showHeroDock(state: GameState): void;
+  hideHeroDock(): void;
   isOpen(): boolean;
   destroy(): void;
 }
@@ -387,34 +390,39 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     bar.label.textContent = `${cur} / ${cap}`;
   };
 
+  const applyHeroDock = (state: GameState): void => {
+    const h = state.hero;
+    portraitImg.src = h.portraitUrl;
+    portraitImg.alt = h.name;
+    levelNum.textContent = String(h.level);
+    nameEl.textContent = h.name;
+
+    if (h.level >= MAX_HERO_LEVEL) {
+      levelBadge.style.setProperty("--xp-pct", "100");
+      xpTipText = "Макс. уровень";
+    } else {
+      const need = Math.max(1, xpToNextLevel(h.level));
+      const pct = Math.min(100, Math.max(0, (h.xp / need) * 100));
+      levelBadge.style.setProperty("--xp-pct", String(pct));
+      xpTipText = `${h.xp} / ${need}`;
+    }
+
+    const sheet = computeHeroSheet(h.equipment, sheetBaseFromProfile(h));
+    const maxHp = getStat(sheet, "maxHp");
+    const maxMana = getStat(sheet, "maxMana");
+    const hp = h.currentHp == null ? maxHp : Math.min(maxHp, Math.max(1, Math.ceil(h.currentHp)));
+    const mana =
+      h.currentMana == null ? maxMana : Math.min(maxMana, Math.max(0, Math.floor(h.currentMana)));
+    setVital(hpBar, hp, maxHp);
+    setVital(manaBar, mana, maxMana);
+
+    heroDock.hidden = false;
+    requestAnimationFrame(syncPortraitSize);
+  };
+
   return {
     show(state) {
-      const h = state.hero;
-      portraitImg.src = h.portraitUrl;
-      portraitImg.alt = h.name;
-      levelNum.textContent = String(h.level);
-      nameEl.textContent = h.name;
-
-      goldLine.replaceChildren(goldAmountNode(h.gold, "gold-amount hub-bag-gold-amount"));
-
-      if (h.level >= MAX_HERO_LEVEL) {
-        levelBadge.style.setProperty("--xp-pct", "100");
-        xpTipText = "Макс. уровень";
-      } else {
-        const need = Math.max(1, xpToNextLevel(h.level));
-        const pct = Math.min(100, Math.max(0, (h.xp / need) * 100));
-        levelBadge.style.setProperty("--xp-pct", String(pct));
-        xpTipText = `${h.xp} / ${need}`;
-      }
-
-      const sheet = computeHeroSheet(h.equipment, sheetBaseFromProfile(h));
-      const maxHp = getStat(sheet, "maxHp");
-      const maxMana = getStat(sheet, "maxMana");
-      const hp = h.currentHp == null ? maxHp : Math.min(maxHp, Math.max(1, Math.ceil(h.currentHp)));
-      const mana =
-        h.currentMana == null ? maxMana : Math.min(maxMana, Math.max(0, Math.floor(h.currentMana)));
-      setVital(hpBar, hp, maxHp);
-      setVital(manaBar, mana, maxMana);
+      goldLine.replaceChildren(goldAmountNode(state.hero.gold, "gold-amount hub-bag-gold-amount"));
 
       // Новый фон только при входе в город, не при обновлении UI (рынок, золото, экип).
       if (root.hidden) {
@@ -429,9 +437,15 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
 
       closeMenu();
       root.hidden = false;
-      heroDock.hidden = false;
+      applyHeroDock(state);
       scheduleLayout();
-      requestAnimationFrame(syncPortraitSize);
+    },
+    showHeroDock(state) {
+      applyHeroDock(state);
+    },
+    hideHeroDock() {
+      hideXpTip();
+      heroDock.hidden = true;
     },
     hide() {
       closeMenu();
