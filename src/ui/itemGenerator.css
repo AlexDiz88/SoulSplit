@@ -624,6 +624,7 @@
   gap: 8px;
   font-weight: 700;
   white-space: nowrap;
+  line-height: 1.35;
 }
 
 .igen-aspect-swatch {
@@ -633,6 +634,11 @@
   border-radius: 3px;
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+
+.igen-table-aspects {
+  border-collapse: collapse;
+  border-spacing: 0;
 }
 
 .igen-table-aspects th,
@@ -983,9 +989,20 @@
     align-items: center;
     gap: 8px;
     margin-bottom: 8px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(120, 130, 110, 0.2);
     font-size: 1.02rem;
     font-weight: 800;
+    line-height: 1.3;
     color: #f0e2b0;
+  }
+
+  .igen-aspect-card .igen-info-row {
+    align-items: flex-start;
+  }
+
+  .igen-aspect-card .igen-info-label {
+    padding-top: 2px;
   }
 
   .igen-tab-panel[data-panel="slots"].active {

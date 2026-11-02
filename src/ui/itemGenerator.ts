@@ -686,10 +686,12 @@ function buildAspectsSection(): HTMLElement {
   const tbody = el("tbody");
   for (const row of ASPECT_PILLAR_ROWS) {
     const tr = el("tr");
-    const schoolCell = el("td", "igen-aspect-school");
+    const schoolCell = el("td");
+    const school = el("div", "igen-aspect-school");
     const swatch = el("span", "igen-aspect-swatch");
     swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
-    schoolCell.append(swatch, document.createTextNode(aspectSchoolLabel(row.aspectId)));
+    school.append(swatch, document.createTextNode(aspectSchoolLabel(row.aspectId)));
+    schoolCell.append(school);
     tr.append(
       schoolCell,
       el("td", "igen-mono", row.aspectId),
