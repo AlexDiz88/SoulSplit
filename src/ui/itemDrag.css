@@ -85,6 +85,19 @@ body.item-dragging .market-offer {
   cursor: var(--cur-grabbing);
 }
 
+/* Бросок за пределы окон - удаление. */
+body.item-dragging.item-drag-destroy,
+body.item-dragging.item-drag-destroy .inv-cell.filled,
+body.item-dragging.item-drag-destroy .cs-slot.filled,
+body.item-dragging.item-drag-destroy .market-offer {
+  cursor: var(--cur-not-allowed);
+}
+
+body.item-dragging.item-drag-destroy .item-drag-ghost {
+  filter: brightness(0.7) saturate(0.7);
+  outline: 2px solid rgba(200, 70, 70, 0.85);
+}
+
 /* Источник остаётся на месте, но без "прозрачного" призрака поверх UI. */
 .item-drag-source {
   filter: brightness(0.55);

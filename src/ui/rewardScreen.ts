@@ -31,6 +31,8 @@ export interface RewardScreenApi {
   show(profile: HeroProfile, payload: RewardScreenPayload): void;
   hide(): void;
   isOpen(): boolean;
+  /** Вернуть предмет из сумки обратно в добычу (ПКМ в инвентаре). */
+  returnItem(item: ItemDef): void;
   destroy(): void;
 }
 
@@ -38,6 +40,7 @@ export interface RewardScreenHandlers {
   onTaken: () => void;
   onDone: () => void;
   onOpenInventory: () => void;
+  onOpenCharacter: () => void;
   showToast: (text: string) => void;
 }
 
@@ -126,11 +129,13 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
   const footRight = el("div", "reward-foot-right");
   const btnInv = el("button", "meta-btn", "Инвентарь");
   btnInv.type = "button";
+  const btnChar = el("button", "meta-btn", "Персонаж");
+  btnChar.type = "button";
   const btnTakeAll = el("button", "meta-btn", "Забрать всё");
   btnTakeAll.type = "button";
   const btnClose = el("button", "meta-btn", "Закрыть");
   btnClose.type = "button";
-  footLeft.append(btnInv);
+  footLeft.append(btnInv, btnChar);
   footRight.append(btnTakeAll, btnClose);
   foot.append(footLeft, footRight);
 
@@ -150,6 +155,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
   let hadInitialLoot = false;
 
   btnInv.addEventListener("click", () => handlers.onOpenInventory());
+  btnChar.addEventListener("click", () => handlers.onOpenCharacter());
   btnClose.addEventListener("click", () => handlers.onDone());
   btnTakeAll.addEventListener("click", () => takeAll());
 
@@ -485,6 +491,12 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     },
     isOpen() {
       return !root.hidden;
+    },
+    returnItem(item) {
+      if (root.hidden) return;
+      currentItems = [...currentItems, item];
+      hadInitialLoot = true;
+      renderLoot();
     },
     destroy() {
       hideCompare();

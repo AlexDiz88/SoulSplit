@@ -168,6 +168,7 @@ export class GameApp {
       },
       onDone: () => this.closeRewardToMap(),
       onOpenInventory: () => this.hud.toggleInventory(),
+      onOpenCharacter: () => this.hud.openCharacter(),
       showToast: (t) => this.hud.showToast(t),
     });
 
@@ -456,6 +457,8 @@ export class GameApp {
 
   /** Закрыть экран награды: карта мира с открытым окном региона. */
   private closeRewardToMap(): void {
+    this.hud.setOnLootReturn(null);
+    this.hud.closeOverlays();
     const ret = this.rewardReturn;
     this.rewardReturn = null;
     if (ret) this.goWorldMap({ openZoneId: ret.zoneId, openPointId: ret.pointId });
@@ -648,6 +651,9 @@ export class GameApp {
       zoneName: zone.name,
       pointName: point.name,
       stats: result.stats,
+    });
+    this.hud.setOnLootReturn((item) => {
+      this.reward.returnItem(item);
     });
     if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
   }

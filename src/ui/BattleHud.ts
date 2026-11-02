@@ -101,6 +101,11 @@ export interface BattleHudApi {
   openMarketSide(): void;
   setMarketMode(active: boolean): void;
   setOnMarketSell(fn: ((item: ItemDef, price: number) => void) | null): void;
+  /**
+   * После боя: ПКМ в сумке (без окна персонажа) возвращает предмет в добычу.
+   * Пока открыт лист персонажа - callback глушится, ПКМ снова экипирует.
+   */
+  setOnLootReturn(fn: ((item: ItemDef) => void) | null): void;
   openBestiary(): void;
   openGrimoire(): void;
   openItemGenerator(): void;
@@ -548,15 +553,25 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   inventory.setShowToast(pushToast);
   character.setShowToast(pushToast);
   let onPanelsClosed: (() => void) | null = null;
+  let lootReturnHandler: ((item: ItemDef) => void) | null = null;
+
+  const syncLootReturnMode = (): void => {
+    // Возврат в добычу только когда сумка одна, без листа персонажа.
+    inventory.setOnLootReturn(
+      lootReturnHandler && !character.isOpen() ? lootReturnHandler : null,
+    );
+  };
 
   character.setOnVisibilityChange((open) => {
     if (open) {
       inventory.open();
+      syncLootReturnMode();
     } else {
       inventory.close();
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
       stash.close();
+      syncLootReturnMode();
       onPanelsClosed?.();
     }
   });
@@ -644,6 +659,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     }
     if (character.isOpen()) {
       character.close();
+      return;
+    }
+    if (inventory.isOpen()) {
+      inventory.close();
       return;
     }
     closeMenu();
@@ -767,18 +786,20 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openInventory() {
-      // Сумка всегда вместе с окном персонажа.
+      // Только сумка, без оверлея персонажа.
+      if (character.isOpen()) character.close();
       prepareOpen("character");
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
       stash.close();
-      character.setMode("full");
-      character.open();
+      inventory.open();
+      syncLootReturnMode();
     },
 
     closeInventory() {
       if (character.isOpen()) character.close();
       else inventory.close();
+      syncLootReturnMode();
     },
 
     isInventoryOpen() {
@@ -786,15 +807,21 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     toggleInventory() {
-      if (character.isOpen()) character.close();
-      else {
-        prepareOpen("character");
-        inventory.setStashBag(null);
-        inventory.setMarketMode(false);
-        stash.close();
-        character.setMode("full");
-        character.open();
+      if (character.isOpen()) {
+        character.close();
+        return;
       }
+      if (inventory.isOpen()) {
+        inventory.close();
+        syncLootReturnMode();
+        return;
+      }
+      prepareOpen("character");
+      inventory.setStashBag(null);
+      inventory.setMarketMode(false);
+      stash.close();
+      inventory.open();
+      syncLootReturnMode();
     },
 
     openStash(bag) {
@@ -828,6 +855,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setOnMarketSell(fn);
     },
 
+    setOnLootReturn(fn) {
+      lootReturnHandler = fn;
+      syncLootReturnMode();
+    },
+
     setOnPanelsClosed(fn) {
       onPanelsClosed = fn;
     },
@@ -851,6 +883,8 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.close();
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
+      lootReturnHandler = null;
+      syncLootReturnMode();
       stash.close();
       if (itemGenerator.isOpen()) itemGenerator.close();
       closeMenu();

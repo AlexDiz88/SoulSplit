@@ -40,6 +40,11 @@ export interface InventoryWindowApi {
   setOnStashChanged(fn: () => void): void;
   /** Продажа в режиме рынка: золото + выкуп. */
   setOnMarketSell(fn: ((item: ItemDef, price: number) => void) | null): void;
+  /**
+   * Режим добычи после боя: ПКМ кладёт предмет обратно в лут вместо экипа.
+   * Активен, пока callback не null (и нет тайника/рынка).
+   */
+  setOnLootReturn(fn: ((item: ItemDef) => void) | null): void;
   setShowToast(fn: (text: string) => void): void;
 }
 
@@ -65,7 +70,24 @@ export function mountInventoryWindow(): InventoryWindowApi {
   tip.hidden = true;
 
   root.append(head, gridHost, tip);
-  hud.append(root);
+
+  const confirm = el("div", "confirm-overlay");
+  confirm.hidden = true;
+  confirm.setAttribute("role", "dialog");
+  confirm.setAttribute("aria-modal", "true");
+  const confirmPanel = el("div", "confirm-panel");
+  const confirmTitle = el("h2", "", "Удалить предмет?");
+  const confirmText = el("p", "", "");
+  const confirmActions = el("div", "confirm-actions");
+  const btnCancel = el("button", "meta-btn", "Отмена");
+  btnCancel.type = "button";
+  const btnConfirm = el("button", "meta-btn meta-btn-danger", "Удалить");
+  btnConfirm.type = "button";
+  confirmActions.append(btnCancel, btnConfirm);
+  confirmPanel.append(confirmTitle, confirmText, confirmActions);
+  confirm.append(confirmPanel);
+
+  hud.append(root, confirm);
 
   const itemDrag = getItemDrag();
 
@@ -76,12 +98,16 @@ export function mountInventoryWindow(): InventoryWindowApi {
   let onEquipmentChanged: (() => void) | null = null;
   let onStashChanged: (() => void) | null = null;
   let onMarketSell: ((item: ItemDef, price: number) => void) | null = null;
+  let onLootReturn: ((item: ItemDef) => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
 
   /** Pending pointer: ещё не прошли порог движения. */
   let pending: { source: ItemDragSource; item: ItemDef; el: HTMLElement; x: number; y: number } | null =
     null;
   let dropHighlight: HTMLElement | null = null;
+  let pendingDestroy: { source: ItemDragSource; item: ItemDef } | null = null;
+  /** После drag не закрывать окно персонажа кликом по оверлею. */
+  let suppressClick = false;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -91,6 +117,84 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (opts?.stash) onStashChanged?.();
     onEquipmentChanged?.();
     render();
+  };
+
+  const closeDestroyConfirm = (): void => {
+    pendingDestroy = null;
+    confirm.hidden = true;
+  };
+
+  const destroySource = (source: ItemDragSource, item: ItemDef, quiet = false): boolean => {
+    if (!hero) return false;
+    if (source.kind === "inv") {
+      if (hero.inventory[source.index]?.id !== item.id) return false;
+      hero.inventory[source.index] = null;
+      if (!quiet) toast(`Удалено: ${item.name}`);
+      afterChange();
+      return true;
+    }
+    if (source.kind === "stash") {
+      if (!stashBag || stashBag[source.index]?.id !== item.id) return false;
+      stashBag[source.index] = null;
+      if (!quiet) toast(`Удалено: ${item.name}`);
+      afterChange({ stash: true });
+      return true;
+    }
+    if (source.kind === "equip") {
+      if (hero.equipment[source.slot]?.id !== item.id) return false;
+      delete hero.equipment[source.slot];
+      hero.applyEquipmentChange();
+      if (!quiet) toast(`Удалено: ${item.name}`);
+      afterChange();
+      return true;
+    }
+    return false;
+  };
+
+  const openDestroyConfirm = (source: ItemDragSource, item: ItemDef): void => {
+    pendingDestroy = { source, item };
+    confirmText.textContent = `"${item.name}" будет уничтожен без возможности восстановления.`;
+    confirm.hidden = false;
+  };
+
+  const isInsideItemWindow = (node: Element | null): boolean =>
+    !!node?.closest(
+      ".inv-bag-root, .cs-window, .stash-root, .stash-hints, .market-window, .market-detail, .confirm-overlay, .confirm-panel",
+    );
+
+  const resolveFilledSource = (
+    target: EventTarget | null,
+  ): { source: ItemDragSource; item: ItemDef; el: HTMLElement } | null => {
+    if (!hero || !(target instanceof Element)) return null;
+    const equip = target.closest<HTMLElement>(".cs-slot.filled");
+    const invCell = target.closest<HTMLElement>(".inv-cell.filled[data-inv]");
+    const stashCell = target.closest<HTMLElement>(".inv-cell.filled[data-stash]");
+    if (!equip && !invCell && !stashCell) return null;
+    if (invCell && root.hidden) return null;
+    if (stashCell && !stashBag) return null;
+    if (equip && root.hidden && !stashBag && !marketMode) return null;
+
+    if (equip) {
+      const slot = equip.dataset.slot as EquipSlotId;
+      const item = hero.equipment[slot];
+      if (!item) return null;
+      return { source: { kind: "equip", slot }, item, el: equip };
+    }
+    if (stashCell && stashBag) {
+      const index = Number(stashCell.dataset.stash);
+      if (!Number.isFinite(index)) return null;
+      const item = stashBag[index];
+      if (!item) return null;
+      return { source: { kind: "stash", index }, item, el: stashCell };
+    }
+    if (invCell) {
+      const index = Number(invCell.dataset.inv);
+      if (!Number.isFinite(index)) return null;
+      const item = hero.inventory[index];
+      if (!item) return null;
+      return { source: { kind: "inv", index }, item, el: invCell };
+    }
+    return null;
   };
 
   const render = (): void => {
@@ -108,6 +212,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const close = (): void => {
     cancelDrag();
+    closeDestroyConfirm();
     root.hidden = true;
     tip.hidden = true;
   };
@@ -154,6 +259,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     pending = null;
     itemDrag.cancel();
     clearDropHighlight();
+    document.body.classList.remove("item-drag-destroy");
   };
 
   const applyDrop = (source: ItemDragSource, dropEl: Element | null): void => {
@@ -168,16 +274,32 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const bagTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-inv]");
     const stashTarget = dropEl?.closest<HTMLElement>(".inv-cell[data-stash]");
     const marketTarget = dropEl?.closest<HTMLElement>(".market-window, .market-detail");
-
-    /** Перетащили на окно рынка - продажа. */
-    if (
+    const hasSlotTarget = !!(equipTarget || bagTarget || stashTarget);
+    const marketDrop =
       marketMode &&
-      marketTarget &&
-      !equipTarget &&
-      !bagTarget &&
-      !stashTarget &&
+      !!marketTarget &&
+      !hasSlotTarget &&
+      (source.kind === "inv" || source.kind === "equip" || source.kind === "stash");
+
+    /** Бросок за пределы окон предметов - запрос на удаление. */
+    if (
+      !hasSlotTarget &&
+      !marketDrop &&
+      !isInsideItemWindow(dropEl) &&
       (source.kind === "inv" || source.kind === "equip" || source.kind === "stash")
     ) {
+      const item =
+        source.kind === "inv"
+          ? hero.inventory[source.index]
+          : source.kind === "stash"
+            ? stashBag?.[source.index]
+            : hero.equipment[source.slot];
+      if (item) openDestroyConfirm(source, item);
+      return;
+    }
+
+    /** Перетащили на окно рынка - продажа. */
+    if (marketDrop) {
       if (source.kind === "inv") {
         sellInventoryCell(source.index);
         return;
@@ -331,28 +453,45 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const bagTarget = under?.closest<HTMLElement>(".inv-cell[data-inv]");
     const stashTarget = under?.closest<HTMLElement>(".inv-cell[data-stash]");
     const marketTarget = under?.closest<HTMLElement>(".market-window, .market-detail");
+    const markSafe = (): void => {
+      document.body.classList.remove("item-drag-destroy");
+    };
     if ((source.kind === "inv" || source.kind === "stash") && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
       setDropHighlight(equipTarget, canEquipInSlot(item, slot, hero?.equipment));
+      markSafe();
     } else if (
       (source.kind === "equip" || source.kind === "inv" || source.kind === "stash") &&
       (bagTarget || stashTarget)
     ) {
       setDropHighlight(bagTarget ?? stashTarget ?? null, true);
+      markSafe();
     } else if (source.kind === "equip" && equipTarget) {
       const slot = equipTarget.dataset.slot as EquipSlotId;
       setDropHighlight(
         equipTarget,
         slot !== source.slot && canEquipInSlot(item, slot, hero?.equipment),
       );
+      markSafe();
     } else if (
       marketMode &&
       marketTarget &&
       (source.kind === "inv" || source.kind === "equip" || source.kind === "stash")
     ) {
       setDropHighlight(marketTarget, true);
+      markSafe();
+    } else if (
+      !equipTarget &&
+      !bagTarget &&
+      !stashTarget &&
+      !isInsideItemWindow(under) &&
+      (source.kind === "inv" || source.kind === "equip" || source.kind === "stash")
+    ) {
+      clearDropHighlight();
+      document.body.classList.add("item-drag-destroy");
     } else {
       clearDropHighlight();
+      markSafe();
     }
   };
 
@@ -439,14 +578,22 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (cell && (!next || !cell.contains(next))) tip.hidden = true;
   });
 
-  /** Без тайника/рынка: ПКМ в сумке надевает. Иначе - window capture. */
+  /** Без тайника/рынка: ПКМ надевает; в режиме добычи - возвращает в лут. */
   gridHost.addEventListener("contextmenu", (ev) => {
     if (stashBag || marketMode) return;
     ev.preventDefault();
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
-    if (!cell) return;
+    if (!cell || !hero) return;
     const index = Number(cell.dataset.inv);
     if (!Number.isFinite(index)) return;
+    if (onLootReturn) {
+      const item = hero.inventory[index];
+      if (!item) return;
+      hero.inventory[index] = null;
+      onLootReturn(item);
+      afterChange();
+      return;
+    }
     tryEquipRmb(index);
   });
 
@@ -583,45 +730,43 @@ export function mountInventoryWindow(): InventoryWindowApi {
   );
 
   const onPointerDown = (ev: PointerEvent): void => {
-    if (ev.button !== 0 || !hero) return;
-    const equip = (ev.target as Element).closest<HTMLElement>(".cs-slot.filled");
-    const invCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
-    const stashCell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-stash]");
+    if (!hero) return;
 
-    if (!equip && !invCell && !stashCell) return;
-    if (invCell && root.hidden) return;
-    if (stashCell && !stashBag) return;
-    if (equip && root.hidden && !stashBag && !marketMode) return;
-
-    let source: ItemDragSource;
-    let item: ItemDef | null | undefined;
-    let sourceEl: HTMLElement;
-    if (equip) {
-      const slot = equip.dataset.slot as EquipSlotId;
-      item = hero.equipment[slot];
-      source = { kind: "equip", slot };
-      sourceEl = equip;
-    } else if (stashCell && stashBag) {
-      const index = Number(stashCell.dataset.stash);
-      if (!Number.isFinite(index)) return;
-      item = stashBag[index];
-      source = { kind: "stash", index };
-      sourceEl = stashCell;
-    } else if (invCell) {
-      const index = Number(invCell.dataset.inv);
-      if (!Number.isFinite(index)) return;
-      item = hero.inventory[index];
-      source = { kind: "inv", index };
-      sourceEl = invCell;
-    } else {
+    /** Alt+СКМ - мгновенное удаление без подтверждения. */
+    if (ev.button === 1 && ev.altKey) {
+      const hit = resolveFilledSource(ev.target);
+      if (!hit) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      cancelDrag();
+      closeDestroyConfirm();
+      if (!canChangeEquipment()) {
+        toast("Экипировку можно менять только вне боя");
+        return;
+      }
+      destroySource(hit.source, hit.item);
       return;
     }
-    if (!item) return;
 
-    pending = { source, item, el: sourceEl, x: ev.clientX, y: ev.clientY };
+    if (ev.button !== 0) return;
+    const hit = resolveFilledSource(ev.target);
+    if (!hit) return;
+    pending = { source: hit.source, item: hit.item, el: hit.el, x: ev.clientX, y: ev.clientY };
   };
 
   window.addEventListener("pointerdown", onPointerDown, true);
+
+  /** Блокируем автоскролл браузера на Alt+СКМ. */
+  window.addEventListener(
+    "auxclick",
+    (ev) => {
+      if (ev.button === 1 && ev.altKey && resolveFilledSource(ev.target)) {
+        ev.preventDefault();
+        ev.stopPropagation();
+      }
+    },
+    true,
+  );
 
   window.addEventListener("pointermove", (ev) => {
     if (pending && !itemDrag.isActive()) {
@@ -629,6 +774,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       const dy = ev.clientY - pending.y;
       if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
       tip.hidden = true;
+      closeDestroyConfirm();
       itemDrag.begin(pending.item, pending.source, ev.clientX, ev.clientY, pending.el);
       pending = null;
     }
@@ -649,11 +795,52 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const under = itemDrag.hitTest(ev.clientX, ev.clientY);
     const session = itemDrag.end();
     clearDropHighlight();
+    document.body.classList.remove("item-drag-destroy");
+    suppressClick = true;
+    window.setTimeout(() => {
+      suppressClick = false;
+    }, 0);
     if (session && (session.source.kind === "inv" || session.source.kind === "stash" || session.source.kind === "equip")) {
       applyDrop(session.source, under);
     }
   });
   window.addEventListener("pointercancel", () => cancelDrag());
+
+  window.addEventListener(
+    "click",
+    (ev) => {
+      if (!suppressClick) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      suppressClick = false;
+    },
+    true,
+  );
+
+  btnCancel.addEventListener("click", closeDestroyConfirm);
+  btnConfirm.addEventListener("click", () => {
+    const req = pendingDestroy;
+    closeDestroyConfirm();
+    if (!req) return;
+    if (!canChangeEquipment()) {
+      toast("Экипировку можно менять только вне боя");
+      return;
+    }
+    destroySource(req.source, req.item, true);
+  });
+  confirm.addEventListener("click", (ev) => {
+    if (ev.target === confirm) closeDestroyConfirm();
+  });
+  window.addEventListener(
+    "keydown",
+    (ev) => {
+      if (ev.code !== "Escape" || confirm.hidden) return;
+      ev.preventDefault();
+      ev.stopImmediatePropagation();
+      closeDestroyConfirm();
+    },
+    true,
+  );
 
   return {
     isOpen: () => !root.hidden,
@@ -681,6 +868,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     },
     setOnMarketSell(fn) {
       onMarketSell = fn;
+    },
+    setOnLootReturn(fn) {
+      onLootReturn = fn;
     },
     setShowToast(fn) {
       showToast = fn;
