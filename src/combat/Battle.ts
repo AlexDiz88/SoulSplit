@@ -1609,6 +1609,10 @@ export class Battle {
     const target = this.findAutoTarget(attacker, hand);
     if (!target) return;
     const reach = this.weaponReachForHand(attacker, hand);
+    const melee = reach <= 2;
+    const from = { x: attacker.view.x, y: attacker.view.y };
+    const to = { x: target.view.x, y: target.view.y };
+    const home = { ...from };
     let applied = false;
     const applyHit = () => {
       if (applied || !attacker.alive || !target.alive || this.destroyed) return;
@@ -1648,6 +1652,7 @@ export class Battle {
         this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
       }
       if (dealt > 0) {
+        if (melee) target.flash(0xffffff);
         const label = crit ? `${dealt}!` : `${dealt}`;
         this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4, {
           crit,
@@ -1655,7 +1660,24 @@ export class Battle {
       }
       if (castBroken) this.showCastInterrupted(target);
     };
-    await this.vfx.autoAttackBolt(attacker.center, target.center, reach <= 2, applyHit);
+
+    const lunge = melee
+      ? (t: number) => {
+          const ox0 = (to.x - home.x) * 0.28;
+          const oy0 = (to.y - home.y) * 0.28;
+          const len = Math.hypot(ox0, oy0) || 1;
+          const cap = 38;
+          const scale = len > cap ? cap / len : 1;
+          attacker.view.x = home.x + ox0 * scale * t;
+          attacker.view.y = home.y + oy0 * scale * t;
+        }
+      : undefined;
+
+    try {
+      await this.vfx.autoAttackBolt(from, to, melee, applyHit, lunge);
+    } finally {
+      if (melee) attacker.view.position.set(home.x, home.y);
+    }
     applyHit();
   }
 

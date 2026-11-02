@@ -9,6 +9,7 @@ import { playIceShieldVfx } from "./premium/IceShieldVfx";
 import { playShadowStrikeVfx } from "./premium/ShadowStrikeVfx";
 import { playSeverArteryVfx } from "./premium/SeverArteryVfx";
 import { playHammerThrowVfx } from "./premium/HammerThrowVfx";
+import { playMeleeStrikeVfx } from "./premium/MeleeStrikeVfx";
 
 export class VfxManager {
   readonly layer = new Container();
@@ -236,46 +237,37 @@ export class VfxManager {
   }
 
   /**
-   * Автоатака. onHit вызывается в момент попадания (конец полёта удара),
-   * до добивающего flash - чтобы плавающий урон совпал с ударом.
+   * Автоатака. onHit - в момент попадания (удар / конец полёта).
+   * onCasterLunge(t) только для melee: 0 дома, 1 на пике рывка к цели.
    */
   async autoAttackBolt(
     from: { x: number; y: number },
     to: { x: number; y: number },
     melee: boolean,
     onHit?: () => void,
+    onCasterLunge?: (t: number) => void,
   ): Promise<void> {
     if (melee) {
-      const g = new Graphics();
-      this.layer.addChild(g);
-      let hit = false;
-      const fireHit = () => {
-        if (hit) return;
-        hit = true;
-        onHit?.();
-        void this.flashCircle(to.x, to.y, 0xe8e2d4, 16, 0.2);
-      };
-      await this.tweens.to(0.18, (t) => {
-        g.clear();
-        const reachT = Math.min(1, t * 1.4);
-        const x = from.x + (to.x - from.x) * reachT;
-        const y = from.y + (to.y - from.y) * reachT;
-        g.circle(x, y, 6).fill({ color: 0xe8e2d4, alpha: 1 - t });
-        if (reachT >= 1) fireHit();
-      });
-      fireHit();
-      g.destroy();
-    } else {
-      await this.projectile(from, to, 0xd4c4a0, {
-        size: 5,
-        duration: 0.28,
-        trail: true,
-        onArrive: () => {
-          onHit?.();
-          void this.flashCircle(to.x, to.y, 0xd4c4a0, 14, 0.18);
-        },
-      });
+      await playMeleeStrikeVfx(
+        this.layer,
+        this.tweens,
+        from,
+        to,
+        onCasterLunge,
+        onHit,
+        (amp, dur) => this.screenShake(amp, dur),
+      );
+      return;
     }
+    await this.projectile(from, to, 0xd4c4a0, {
+      size: 5,
+      duration: 0.28,
+      trail: true,
+      onArrive: () => {
+        onHit?.();
+        void this.flashCircle(to.x, to.y, 0xd4c4a0, 14, 0.18);
+      },
+    });
   }
 
   floatingText(
