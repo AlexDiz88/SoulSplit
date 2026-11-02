@@ -36,39 +36,11 @@ function resolveAssetBgUrl(stem: string): string {
   return url;
 }
 
-/** Пул фонов города: `town-day`, `town-evening`, … */
-function isTownPoolStem(stem: string): boolean {
-  return stem.toLowerCase().startsWith("town-");
-}
+export type TownTimeOfDay = "day" | "evening";
 
-const TOWN_BACKGROUND_URLS = (() => {
-  const byStem = new Map<string, { ext: string; url: string }>();
-  for (const [path, mod] of Object.entries(menuBgModules)) {
-    const stem = fileStem(path);
-    if (!isTownPoolStem(stem)) continue;
-    const key = stem.toLowerCase();
-    const ext = fileExt(path);
-    const prev = byStem.get(key);
-    const ai = EXT_PRIORITY.indexOf(ext as (typeof EXT_PRIORITY)[number]);
-    const bi = prev
-      ? EXT_PRIORITY.indexOf(prev.ext as (typeof EXT_PRIORITY)[number])
-      : 99;
-    if (!prev || (ai < 0 ? 99 : ai) < (bi < 0 ? 99 : bi)) {
-      byStem.set(key, { ext, url: mod.default });
-    }
-  }
-  return [...byStem.values()].map((v) => v.url);
-})();
-
-/** Случайный URL фона города (`town-day`, `town-evening`, …). */
-export function pickRandomTownBackgroundUrl(): string {
-  if (TOWN_BACKGROUND_URLS.length === 0) {
-    throw new Error(
-      "Нет фона города: положи assets/art/backgrounds/town-day|town-evening.{png|jpg|jpeg|webp}",
-    );
-  }
-  const index = Math.floor(Math.random() * TOWN_BACKGROUND_URLS.length);
-  return TOWN_BACKGROUND_URLS[index]!;
+/** URL фона города по времени суток (`town-day` / `town-evening`). */
+export function getTownBackgroundUrl(time: TownTimeOfDay): string {
+  return resolveAssetBgUrl(time === "day" ? "town-day" : "town-evening");
 }
 
 /** Узкий портрет / телефон: те же брейкпоинты, что у HUD и Кодекса. */
@@ -101,7 +73,7 @@ export function createMenuBackgroundImg(): HTMLImageElement | null {
 }
 
 export function createTownBackgroundImg(): HTMLImageElement {
-  return createBackgroundImgFromUrl(pickRandomTownBackgroundUrl());
+  return createBackgroundImgFromUrl(getTownBackgroundUrl("evening"));
 }
 
 export function createChooseSlotBackgroundImg(): HTMLImageElement {

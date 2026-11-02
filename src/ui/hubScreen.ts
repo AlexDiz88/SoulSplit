@@ -1,6 +1,7 @@
 import {
   createTownBackgroundImg,
-  pickRandomTownBackgroundUrl,
+  getTownBackgroundUrl,
+  type TownTimeOfDay,
 } from "../art/menuBackground";
 import { computeHeroSheet } from "../items/equipment";
 import { sheetBaseFromProfile } from "../meta/heroProfile";
@@ -74,6 +75,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   root.id = "hub-screen";
   root.hidden = true;
   const bgImg = createTownBackgroundImg();
+  let townTime: TownTimeOfDay = "evening";
   let currentTownBgUrl = bgImg.getAttribute("src") ?? "";
   root.append(bgImg);
 
@@ -152,6 +154,10 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   /* ---- Круглые кнопки: правый верх ---- */
   const tools = el("div", "hub-tools");
 
+  const timeBtn = makeRoundBtn("hub-round-btn hub-time-btn", "День");
+  timeBtn.textContent = "☾";
+  timeBtn.setAttribute("aria-pressed", "true");
+
   const addGoldBtn = makeRoundBtn("hub-round-btn hub-add-gold-btn", "Добавить 1000 золота");
   addGoldBtn.textContent = "+1k";
   addGoldBtn.addEventListener("click", () => handlers.onAddTestGold());
@@ -186,7 +192,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   menu.append(btnItemGen, menuSep, btnSave, btnSettings, btnSlots, btnExit);
   menuWrap.append(menuBtn, menu);
 
-  tools.append(addGoldBtn, fsBtn, menuWrap);
+  tools.append(timeBtn, addGoldBtn, fsBtn, menuWrap);
   root.append(tools);
 
   /* ---- Сумка: правый нижний угол ---- */
@@ -371,6 +377,31 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     layoutRaf = requestAnimationFrame(layoutLocations);
   };
 
+  const syncTimeBtn = (): void => {
+    const evening = townTime === "evening";
+    timeBtn.textContent = evening ? "☾" : "☀";
+    timeBtn.setAttribute("aria-label", evening ? "Сменить на день" : "Сменить на вечер");
+    timeBtn.setAttribute("aria-pressed", evening ? "true" : "false");
+    timeBtn.classList.toggle("is-evening", evening);
+  };
+
+  const applyTownTime = (time: TownTimeOfDay): void => {
+    townTime = time;
+    syncTimeBtn();
+    const nextBg = getTownBackgroundUrl(time);
+    if (currentTownBgUrl === nextBg) return;
+    currentTownBgUrl = nextBg;
+    imageW = 0;
+    imageH = 0;
+    bgImg.src = nextBg;
+    scheduleLayout();
+  };
+
+  timeBtn.addEventListener("click", () => {
+    applyTownTime(townTime === "evening" ? "day" : "evening");
+  });
+  syncTimeBtn();
+
   const onBgLoad = (): void => scheduleLayout();
   bgImg.addEventListener("load", onBgLoad);
   if (bgImg.complete && bgImg.naturalWidth > 0) scheduleLayout();
@@ -424,16 +455,8 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     show(state) {
       goldLine.replaceChildren(goldAmountNode(state.hero.gold, "gold-amount hub-bag-gold-amount"));
 
-      // Новый фон только при входе в город, не при обновлении UI (рынок, золото, экип).
-      if (root.hidden) {
-        const nextBg = pickRandomTownBackgroundUrl();
-        if (currentTownBgUrl !== nextBg) {
-          currentTownBgUrl = nextBg;
-          imageW = 0;
-          imageH = 0;
-          bgImg.src = nextBg;
-        }
-      }
+      // Фон не рандомим: вечер по умолчанию, день/вечер только вручную.
+      if (root.hidden) applyTownTime(townTime);
 
       closeMenu();
       root.hidden = false;

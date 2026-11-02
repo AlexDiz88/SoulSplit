@@ -195,29 +195,27 @@ export class Unit {
     this.cdBarFg.eventMode = "none";
     this.hpBarBg = new Graphics();
     this.hpBarFg = new Graphics();
-    this.hpText = new Text({
-      text: "",
-      style: {
-        fontFamily: "Exo 2, sans-serif",
-        fontSize: 11,
-        fontWeight: "800",
-        fill: 0xe8e2d4,
-        stroke: { color: 0x0c0f0c, width: 3 },
+    // Как .hub-vital-label: белый + тень, без stroke (stroke ломает визуальный центр).
+    const makeBarLabelStyle = () => ({
+      fontFamily: "Exo 2, sans-serif",
+      fontSize: 11,
+      fontWeight: "800" as const,
+      fill: 0xffffff,
+      letterSpacing: 0.4,
+      align: "center" as const,
+      dropShadow: {
+        color: 0x000000,
+        alpha: 0.95,
+        blur: 2,
+        distance: 1,
+        angle: Math.PI / 2,
       },
     });
+    this.hpText = new Text({ text: "", style: makeBarLabelStyle() });
     this.hpText.anchor.set(0.5);
     this.manaBarBg = new Graphics();
     this.manaBarFg = new Graphics();
-    this.manaText = new Text({
-      text: "",
-      style: {
-        fontFamily: "Exo 2, sans-serif",
-        fontSize: 11,
-        fontWeight: "800",
-        fill: 0xe8e2d4,
-        stroke: { color: 0x0c0f0c, width: 3 },
-      },
-    });
+    this.manaText = new Text({ text: "", style: makeBarLabelStyle() });
     this.manaText.anchor.set(0.5);
     this.nameText = new Text({
       text: init.short,
@@ -422,7 +420,7 @@ export class Unit {
       color: ratio > 0.35 ? 0x5a9e5a : 0xc45a4a,
     });
     this.hpText.text = `${Math.ceil(this.hp)}/${this.stats.maxHp}`;
-    this.hpText.position.set(0, hpY + hpBarH / 2);
+    this.hpText.position.set(0, Math.round(hpY + hpBarH / 2));
 
     this.manaBarBg.clear();
     this.manaBarFg.clear();
@@ -434,7 +432,7 @@ export class Unit {
         .roundRect(-barW / 2, manaY, Math.max(0, barW * manaRatio), manaBarH, 2)
         .fill({ color: 0x3a7ec8 });
       this.manaText.text = `${Math.ceil(this.mana)}/${Math.round(maxMana)}`;
-      this.manaText.position.set(0, manaY + manaBarH / 2);
+      this.manaText.position.set(0, Math.round(manaY + manaBarH / 2));
       this.manaText.visible = true;
     } else {
       this.manaText.visible = false;
