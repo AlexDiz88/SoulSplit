@@ -1,6 +1,18 @@
+import { ALL_ASPECTS } from "../abilities/aspects";
 import { abilityIconUrl, cardsInAspect, GRIMOIRE_ASPECTS, type AbilityCard, type AbilityZone } from "../abilities/catalog";
+import type { Aspect } from "../types";
+import {
+  createAspectIconImg,
+  createAspectNameTip,
+  hideAspectNameTip,
+  wireAspectNameTooltip,
+} from "./aspectIcon";
 
 type PhoneView = "aspects" | "list" | "detail";
+
+function isHeroAspect(id: string): id is Aspect {
+  return (ALL_ASPECTS as readonly string[]).includes(id);
+}
 
 export interface GrimoireApi {
   refresh(): void;
@@ -43,7 +55,8 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
   detail.id = "grimoire-detail";
   detail.className = "grimoire-detail";
   body.append(aspectList, abilityList, detail);
-  windowEl.append(head, body);
+  const aspectTip = createAspectNameTip();
+  windowEl.append(head, body, aspectTip);
   mountEl.append(windowEl);
 
   let aspectId = GRIMOIRE_ASPECTS.find((aspect) => cardsInAspect(aspect.id).length > 0)?.id ?? GRIMOIRE_ASPECTS[0]!.id;
@@ -87,9 +100,17 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
     const iconId = document.createElement("p");
     iconId.className = "grimoire-icon-id";
     iconId.textContent = card.icon;
-    const meta = document.createElement("p");
-    meta.className = "grimoire-kicker";
-    meta.textContent = card.aspect;
+    const meta = document.createElement("div");
+    meta.className = "grimoire-kicker grimoire-kicker-aspect";
+    if (isHeroAspect(aspect.id)) {
+      const aspectHit = document.createElement("span");
+      aspectHit.className = "grimoire-detail-aspect aspect-icon-hit";
+      aspectHit.append(createAspectIconImg(aspect.id, "aspect-icon-sm"));
+      wireAspectNameTooltip(aspectHit, aspect.id, aspectTip);
+      meta.append(aspectHit);
+    } else {
+      meta.textContent = aspect.name;
+    }
     heading.append(name, iconId, meta);
     detailHead.append(img, heading);
 
@@ -164,6 +185,7 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
 
   const renderAspects = (): void => {
     aspectList.replaceChildren();
+    hideAspectNameTip(aspectTip);
     for (const aspect of GRIMOIRE_ASPECTS) {
       const count = cardsInAspect(aspect.id).length;
       const btn = document.createElement("button");
@@ -171,12 +193,21 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
       btn.className = "grimoire-aspect";
       btn.classList.toggle("active", aspect.id === aspectId);
       btn.style.setProperty("--aspect", aspect.color);
-      const aspectName = document.createElement("span");
-      aspectName.textContent = aspect.name;
       const badge = document.createElement("b");
       badge.textContent = String(count);
-      btn.append(aspectName, badge);
+      if (isHeroAspect(aspect.id)) {
+        const iconWrap = document.createElement("span");
+        iconWrap.className = "grimoire-aspect-icon";
+        iconWrap.append(createAspectIconImg(aspect.id, "aspect-icon"));
+        btn.append(iconWrap, badge);
+        wireAspectNameTooltip(btn, aspect.id, aspectTip);
+      } else {
+        const aspectName = document.createElement("span");
+        aspectName.textContent = aspect.name;
+        btn.append(aspectName, badge);
+      }
       btn.addEventListener("click", () => {
+        hideAspectNameTip(aspectTip);
         aspectId = aspect.id;
         cardId = null;
         view = "list";

@@ -309,6 +309,29 @@
   font-size: 0.86rem;
 }
 
+.cs-identity-aspect {
+  display: flex;
+  justify-content: center;
+}
+
+.cs-aspect-hit {
+  border-radius: 8px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.35);
+}
+
+.cs-stat-aspect-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.cs-stat-aspect-hit .aspect-icon-sm {
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+}
+
 .cs-identity-level {
   display: inline-flex;
   margin-top: 4px;

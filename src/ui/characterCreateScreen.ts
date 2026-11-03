@@ -3,7 +3,6 @@ import {
   ABILITIES,
   ALL_ASPECTS,
   ASPECT_HEX,
-  ASPECT_LABEL,
   describeAbility,
   zoneSecondaryDamage,
 } from "../abilities/definitions";
@@ -22,6 +21,12 @@ import {
   validateHeroName,
 } from "../meta/heroProfile";
 import type { AbilityId, Aspect } from "../types";
+import {
+  createAspectIconImg,
+  createAspectNameTip,
+  hideAspectNameTip,
+  wireAspectNameTooltip,
+} from "./aspectIcon";
 import { fillItemTooltip } from "./itemTooltip";
 import "./hubScreen.css";
 import "./startMenu.css";
@@ -141,15 +146,18 @@ export function mountCharacterCreateScreen(
   const aspectField = el("div", "create-field");
   aspectField.append(el("label", undefined, "Первичный аспект"));
   const aspectGrid = el("div", "aspect-grid");
+  const aspectTip = createAspectNameTip();
   const aspectButtons = new Map<Aspect, HTMLButtonElement>();
   for (const id of ALL_ASPECTS) {
-    const btn = el("button", "aspect-opt", ASPECT_LABEL[id]);
+    const btn = el("button", "aspect-opt aspect-icon-btn");
     btn.type = "button";
+    btn.append(createAspectIconImg(id, "aspect-icon"));
     btn.addEventListener("click", () => setAspect(id));
+    wireAspectNameTooltip(btn, id, aspectTip, { toggleOnClick: true });
     aspectButtons.set(id, btn);
     aspectGrid.append(btn);
   }
-  aspectField.append(aspectGrid);
+  aspectField.append(aspectGrid, aspectTip);
   body.append(aspectField);
 
   const abilityField = el("div", "create-field create-field-abilities");
@@ -526,6 +534,7 @@ export function mountCharacterCreateScreen(
     hide() {
       hideWeaponTip();
       hideAbilityTip();
+      hideAspectNameTip(aspectTip);
       root.hidden = true;
     },
     isOpen() {
@@ -534,6 +543,7 @@ export function mountCharacterCreateScreen(
     destroy() {
       hideWeaponTip();
       hideAbilityTip();
+      hideAspectNameTip(aspectTip);
       root.remove();
     },
   };

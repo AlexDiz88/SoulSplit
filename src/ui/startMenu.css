@@ -241,10 +241,10 @@
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 3px;
   width: 100%;
   aspect-ratio: 3 / 4.2;
-  padding: 10px 8px 12px;
+  padding: 10px 8px 10px;
   border: 1px solid var(--theme-border);
   border-radius: 2px;
   background:
@@ -344,15 +344,20 @@
 }
 
 .slot-level {
-  font-size: 0.78rem;
+  font-size: 0.88rem;
+  font-weight: 700;
   color: var(--muted);
 }
 
 .slot-aspect {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--theme-violet);
-  text-shadow: 0 0 10px var(--theme-glow-soft);
+  margin-top: 2px;
+}
+
+.slot-aspect .aspect-icon-sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  box-shadow: 0 0 10px var(--theme-glow-soft);
 }
 
 .slot-actions {
@@ -544,17 +549,22 @@
 
 .aspect-grid {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 8px;
-  max-height: min(42vh, 320px);
-  overflow-y: auto;
-  padding-right: 2px;
+  grid-template-columns: repeat(10, 64px);
+  gap: 10px;
+  justify-content: start;
+  max-height: none;
+  overflow: visible;
+  padding-right: 0;
 }
 
 .aspect-opt {
-  font-size: 0.78rem;
-  padding: 8px 6px;
-  line-height: 1.2;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  font-size: 0;
+  line-height: 0;
+  border-radius: 2px;
+  overflow: hidden;
 }
 
 .create-field-abilities,
@@ -814,10 +824,6 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
-  .aspect-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-  }
-
   .portrait-grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
@@ -829,16 +835,13 @@
   }
 
   .aspect-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 6px;
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
+    grid-template-columns: repeat(5, 64px);
+    gap: 10px;
+    justify-content: start;
   }
 
   .aspect-opt {
-    font-size: 0.68rem;
-    padding: 7px 4px;
+    padding: 0;
   }
 
   .portrait-grid {

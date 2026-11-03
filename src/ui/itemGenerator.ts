@@ -28,7 +28,6 @@ import {
   ASPECT_PILLAR_ROWS,
   aspectSchoolLabel,
 } from "../abilities/aspectPillars";
-import { ASPECT_HEX } from "../abilities/aspects";
 import {
   CORE_STAT_IDS,
   FAMILY_LABEL,
@@ -40,6 +39,7 @@ import {
   type AffixFamily,
   type StatId,
 } from "../stats/statIds";
+import { createAspectIconImg } from "./aspectIcon";
 import { mountBestiary, type BestiaryTooltipHost } from "./bestiary";
 import { removeCustomSelectsIn, syncCustomSelectsIn } from "./customSelect";
 import { mountGrimoire } from "./grimoire";
@@ -647,9 +647,10 @@ function buildAspectsSection(): HTMLElement {
   const mobileCards = el("div", "igen-mobile-cards igen-mobile-only");
   for (const row of ASPECT_PILLAR_ROWS) {
     const head = el("div", "igen-aspect-card-head");
-    const swatch = el("span", "igen-aspect-swatch");
-    swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
-    head.append(swatch, el("span", "", aspectSchoolLabel(row.aspectId)));
+    head.append(
+      createAspectIconImg(row.aspectId, "aspect-icon-sm igen-aspect-icon"),
+      el("span", "", aspectSchoolLabel(row.aspectId)),
+    );
     const card = el("article", "igen-info-card igen-aspect-card");
     card.append(head);
     const body = el("div", "igen-info-card-body");
@@ -686,9 +687,10 @@ function buildAspectsSection(): HTMLElement {
     const tr = el("tr");
     const schoolCell = el("td");
     const school = el("div", "igen-aspect-school");
-    const swatch = el("span", "igen-aspect-swatch");
-    swatch.style.backgroundColor = ASPECT_HEX[row.aspectId];
-    school.append(swatch, document.createTextNode(aspectSchoolLabel(row.aspectId)));
+    school.append(
+      createAspectIconImg(row.aspectId, "aspect-icon-sm igen-aspect-icon"),
+      document.createTextNode(aspectSchoolLabel(row.aspectId)),
+    );
     schoolCell.append(school);
     tr.append(
       schoolCell,

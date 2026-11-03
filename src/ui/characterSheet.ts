@@ -1,4 +1,3 @@
-import { ASPECT_LABEL } from "../abilities/definitions";
 import type { Unit } from "../combat/Unit";
 import {
   beltCellPotionIds,
@@ -14,6 +13,12 @@ import type { ItemDef } from "../items/types";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
+import {
+  createAspectIconHit,
+  createAspectNameTip,
+  hideAspectNameTip,
+  wireAspectNameTooltip,
+} from "./aspectIcon";
 import { fillItemTooltip, placeItemTip } from "./itemTooltip";
 import "./itemRarity.css";
 import "./characterSheet.css";
@@ -150,9 +155,10 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
   const tip = el("div", "item-tip cs-tip");
   tip.hidden = true;
+  const aspectTip = createAspectNameTip();
 
   win.append(closeBtn, head, body, tip);
-  root.append(win);
+  root.append(win, aspectTip);
   hud.append(root);
 
   let hero: Unit | null = null;
@@ -182,10 +188,11 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
   const render = (): void => {
     tip.hidden = true;
+    hideAspectNameTip(aspectTip);
     applyMode();
     if (mode === "full") {
-      identityHost.replaceChildren(renderIdentity(hero));
-      stats.replaceChildren(...renderStats(hero));
+      identityHost.replaceChildren(renderIdentity(hero, aspectTip));
+      stats.replaceChildren(...renderStats(hero, aspectTip));
     } else {
       identityHost.replaceChildren();
       stats.replaceChildren();
@@ -208,6 +215,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   const close = (): void => {
     root.hidden = true;
     tip.hidden = true;
+    hideAspectNameTip(aspectTip);
     changeMode("full", false);
     onVisibilityChange?.(false);
   };
@@ -362,7 +370,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   };
 }
 
-function renderIdentity(hero: Unit | null): HTMLElement {
+function renderIdentity(hero: Unit | null, aspectTip: HTMLElement): HTMLElement {
   const plate = el("div", "cs-identity");
   const portrait = el("div", "cs-identity-portrait");
   if (hero?.portraitUrl) {
@@ -372,11 +380,17 @@ function renderIdentity(hero: Unit | null): HTMLElement {
     portrait.append(img);
   }
   const copy = el("div", "cs-identity-copy");
-  copy.append(
-    el("h3", "cs-identity-name", hero?.name ?? "Герой"),
-    el("div", "cs-identity-meta", hero ? `Аспект: ${ASPECT_LABEL[hero.aspect]}` : "Нет данных"),
-    el("div", "cs-identity-level", `Уровень ${hero?.level ?? 1}`),
-  );
+  copy.append(el("h3", "cs-identity-name", hero?.name ?? "Герой"));
+  if (hero) {
+    const meta = el("div", "cs-identity-meta cs-identity-aspect");
+    const hit = createAspectIconHit(hero.aspect, "aspect-icon-md", "cs-aspect-hit aspect-icon-hit");
+    wireAspectNameTooltip(hit, hero.aspect, aspectTip);
+    meta.append(hit);
+    copy.append(meta);
+  } else {
+    copy.append(el("div", "cs-identity-meta", "Нет данных"));
+  }
+  copy.append(el("div", "cs-identity-level", `Уровень ${hero?.level ?? 1}`));
   plate.append(portrait, copy);
   return plate;
 }
@@ -465,7 +479,7 @@ function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
   return btn;
 }
 
-function renderStats(hero: Unit | null): HTMLElement[] {
+function renderStats(hero: Unit | null, aspectTip: HTMLElement): HTMLElement[] {
   const sheet = hero?.sheet;
   const s = hero?.stats;
   const reach = s?.reach ?? 1;
@@ -491,12 +505,6 @@ function renderStats(hero: Unit | null): HTMLElement[] {
         : "-";
   const offWeaponLine = mainW && offW ? `${fmtDmg(offW)} (-25%)` : null;
 
-  const aspectRows: [string, string][] = [];
-  if (sheet && hero) {
-    const dmg = aspectDamageOf(sheet, hero.aspect);
-    if (dmg > 0) aspectRows.push([`Урон аспекта (${ASPECT_LABEL[hero.aspect]})`, `${dmg}%`]);
-  }
-
   const mainRows: [string, string][] = [
     ["Здоровье", sheet ? String(getStat(sheet, "maxHp")) : s ? String(s.maxHp) : "-"],
     ["Мана", sheet ? String(getStat(sheet, "maxMana")) : "-"],
@@ -515,6 +523,28 @@ function renderStats(hero: Unit | null): HTMLElement[] {
     ["Дальность", `${reach} ${reach === 1 ? "ряд" : reach < 5 ? "ряда" : "рядов"}`],
   );
 
+  const offense = statGroup("Нападение", [
+    ["Шанс крита", pct(sheet, "critChance")],
+    ["Урон крита", pct(sheet, "critDamage")],
+    ["Урон способностей", pct(sheet, "abilityDamage")],
+    ["Скорость каста", pct(sheet, "castSpeed")],
+    ["Перезарядка", pct(sheet, "cooldownReduction")],
+    ["Снижение стоимости маны", pct(sheet, "manaCostReduction")],
+  ]);
+  if (sheet && hero) {
+    const dmg = aspectDamageOf(sheet, hero.aspect);
+    if (dmg > 0) {
+      const row = el("div", "cs-stat");
+      const label = el("span", "cs-stat-aspect-label");
+      label.append(document.createTextNode("Урон аспекта "));
+      const hit = createAspectIconHit(hero.aspect, "aspect-icon-sm", "cs-stat-aspect-hit aspect-icon-hit");
+      wireAspectNameTooltip(hit, hero.aspect, aspectTip);
+      label.append(hit);
+      row.append(label, el("b", "", `${dmg}%`));
+      offense.append(row);
+    }
+  }
+
   return [
     statGroup("Основные", mainRows),
     statGroup("Защита", [
@@ -524,15 +554,7 @@ function renderStats(hero: Unit | null): HTMLElement[] {
       ["Блок", pct(sheet, "blockChance")],
       ["Парирование", pct(sheet, "parryChance")],
     ]),
-    statGroup("Нападение", [
-      ["Шанс крита", pct(sheet, "critChance")],
-      ["Урон крита", pct(sheet, "critDamage")],
-      ["Урон способностей", pct(sheet, "abilityDamage")],
-      ["Скорость каста", pct(sheet, "castSpeed")],
-      ["Перезарядка", pct(sheet, "cooldownReduction")],
-      ["Снижение стоимости маны", pct(sheet, "manaCostReduction")],
-      ...aspectRows,
-    ]),
+    offense,
   ];
 }
 

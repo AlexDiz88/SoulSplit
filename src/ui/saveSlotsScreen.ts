@@ -1,9 +1,14 @@
 import { createChooseSlotBackgroundImg } from "../art/menuBackground";
-import { ASPECT_LABEL } from "../abilities/definitions";
 import {
   SAVE_SLOT_COUNT,
   type SaveSlotSummary,
 } from "../meta/save";
+import {
+  createAspectIconHit,
+  createAspectNameTip,
+  hideAspectNameTip,
+  wireAspectNameTooltip,
+} from "./aspectIcon";
 import "./hubScreen.css";
 import "./startMenu.css";
 
@@ -46,8 +51,9 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
   head.append(btnBack);
 
   const grid = el("div", "slots-grid");
+  const aspectTip = createAspectNameTip();
   wrap.append(head, grid);
-  root.append(wrap);
+  root.append(wrap, aspectTip);
 
   const confirm = el("div", "confirm-overlay");
   confirm.hidden = true;
@@ -125,8 +131,10 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
         mid.append(img);
         frame.append(mid);
         const meta = el("div", "slot-meta");
-        meta.append(el("div", "slot-level", `Ур. ${slot.level}`));
-        meta.append(el("div", "slot-aspect", ASPECT_LABEL[slot.aspect]));
+        meta.append(el("div", "slot-level", `Уровень ${slot.level}`));
+        const aspectHit = createAspectIconHit(slot.aspect, "aspect-icon-sm", "slot-aspect aspect-icon-hit");
+        wireAspectNameTooltip(aspectHit, slot.aspect, aspectTip);
+        meta.append(aspectHit);
         frame.append(meta);
       }
 
@@ -172,12 +180,14 @@ export function mountSaveSlotsScreen(handlers: SaveSlotsScreenHandlers): SaveSlo
     },
     hide() {
       closeConfirm();
+      hideAspectNameTip(aspectTip);
       root.hidden = true;
     },
     isOpen() {
       return !root.hidden;
     },
     destroy() {
+      hideAspectNameTip(aspectTip);
       root.remove();
     },
   };
