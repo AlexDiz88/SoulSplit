@@ -499,7 +499,7 @@ function renderStats(hero: Unit | null): HTMLElement[] {
 
   const mainRows: [string, string][] = [
     ["Здоровье", sheet ? String(getStat(sheet, "maxHp")) : s ? String(s.maxHp) : "-"],
-    ["Мана", sheet ? `${Math.round(hero!.mana)} / ${getStat(sheet, "maxMana")}` : "-"],
+    ["Мана", sheet ? String(getStat(sheet, "maxMana")) : "-"],
     ["Реген маны", sheet ? formatStatValue("manaRegen", getStat(sheet, "manaRegen")) : "-"],
     ["Урон оружия", weaponLine],
   ];

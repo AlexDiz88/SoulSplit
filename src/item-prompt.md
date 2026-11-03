@@ -57,3 +57,28 @@ If a design looks like "same pants but fewer buckles" - REJECT it and invent a d
 
 Keep: fantasy-RPG readability, centered one item per tile, no characters, no text.
 Do not change frames, stone plates, grid, gutters, or background at all.
+
+
+
+
+
+--------
+ASPECT: FIRE
+
+Style lock (CRITICAL - match attached master reference sheet exactly): flat minimalist 2D fantasy GAME UI ICONS like classic MMORPG / card-game skill tiles. Each icon is a rounded square with a thin dark recessed border and soft inner bevel. Background is a dark moody wash tinted to the named ASPECT, with subtle smoky / misty texture and gentle corner vignette - NOT flat pure black, NOT a scenic landscape. Foreground is a single centered PALE CREAM / OFF-WHITE silhouette (warm ivory, not pure white, not yellow), bold simplified cut-paper / vector shapes, high contrast against the dark tile. VERY subtle engraved / etched inner detail lines only - no full cel shading, no thick white sticker outline, no neon glow, no glossy 3D render, no photoreal. Match the cream-on-dark silhouette language, rounded tile framing, texture, and graphic simplification of the attached reference sheet; only the subject designs change.
+
+Text lock (CRITICAL): ZERO text anywhere in the image - no letters, no numbers, no words, no readable runes, no signage, no labels, no captions, no watermarks, no logos, no UI strings, no panel indices, no fake scribbles that look like language.
+
+Setting: medieval fantasy dark-magic game UI; pure magical / elemental symbol tiles - no steampunk, no gears, no brass machinery, no characters, no faces, no hands.
+
+Layout: single square 1:1 image, clean 3x3 contact sheet of NINE equal rounded-square icon panels with thin even dark gutters, ZERO text / labels / numbers / captions. Each panel is a complete standalone game aspect icon.
+
+Framing per panel: one clear cream silhouette centered and large inside a dark ASPECT-tinted rounded square tile, small safe margin from the bevel edge, nothing crossing gutters. Same visual treatment in every panel.
+
+Subject / theme: ASPECT ICON pack for the single magic school named in ASPECT above. All nine panels are different emblematic symbols of that one school only - readable as the SAME aspect. Shared tile color story: dark desaturated wash that fits that aspect's natural palette (vary hue slightly per panel, stay in-family). Pure symbol icons, not full scenes, not characters.
+
+Diversity: nine DIFFERENT silhouettes of the named ASPECT - unique composition, unique emblem shape, unique intensity; do NOT repeat the same emblem with only a scale change; do NOT invent unrelated schools or elements.
+
+Panel brief: invent NINE strong alternate icons for the named ASPECT in this exact cream-silhouette-on-dark-tile style - composition and emblem variety only; keep every tile themed to that aspect and UI-readable at small size.
+
+Negatives: photorealistic, semi-realistic, 3d, cgi, soft painterly, anime shading, thick white sticker outline, heavy white border, chunky marker stroke, neon glow, candy oversaturation, multicolored rainbow cream, full-color polychrome foreground (foreground must stay pale cream), scenic background, landscape, character, face, hands, body, mixing multiple magic schools across panels, weak muddy silhouette, busy photo texture, ornate frames, ANY text, letters, numbers, words, readable runes, logos, watermark, UI, labels, captions, panel indices, blurry, uneven panel sizes, collage with white borders, steampunk, gears, cogs, brass machinery

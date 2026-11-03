@@ -109,11 +109,14 @@ export class GameApp {
     this.hub = mountHubScreen({
       onCharacter: () => {
         this.merchant.hide();
-        this.hud.openCharacter();
+        if (this.hud.isInventoryOpen()) this.hud.closeInventory();
+        else this.hud.openCharacter();
       },
       onInventory: () => {
         this.merchant.hide();
-        this.hud.toggleInventory();
+        // В городе сумка без листа персонажа бессмысленна - открываем оба окна.
+        if (this.hud.isInventoryOpen()) this.hud.closeInventory();
+        else this.hud.openCharacter();
       },
       onItemGenerator: () => {
         this.merchant.hide();
