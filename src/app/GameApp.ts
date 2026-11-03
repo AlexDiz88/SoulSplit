@@ -2,7 +2,7 @@ import type { Application } from "pixi.js";
 import { Battle, type BattleResult } from "../combat/Battle";
 import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
-import { victoryGold } from "../meta/economy";
+import { defeatGoldLoss, victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
 import { pushBuyback } from "../meta/market";
 import {
@@ -180,10 +180,7 @@ export class GameApp {
     });
 
     this.defeat = mountDefeatScreen({
-      onHub: () => this.goHub(),
-      onRetry: () => this.retryLastZone(),
-      onCharacter: () => this.hud.openCharacter(),
-      onInventory: () => this.hud.openInventory(),
+      onWake: () => this.wakeFromDefeat(),
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -425,14 +422,12 @@ export class GameApp {
     this.goWorldMap();
   }
 
-  private retryLastZone(): void {
+  /** После поражения: город с 1 HP и 1 маны. */
+  private wakeFromDefeat(): void {
     const state = this.requireState();
-    const id = state.lastZoneId ?? "north_road";
-    if (!isZoneUnlocked(id, state.hero.level, state.unlockedZones)) {
-      this.goHub();
-      return;
-    }
-    this.startBattle(id);
+    state.hero.currentHp = 1;
+    state.hero.currentMana = 1;
+    this.goHub();
   }
 
   goHub(): void {
@@ -611,29 +606,30 @@ export class GameApp {
     const shortageText = beltRefillShortageText(shortage.missingHp, shortage.missingMana);
 
     if (result.outcome === "flee") {
+      // Раны и мана из боя сохраняются; в город не кидаем (там реген).
       state.hero.currentHp = Math.max(1, result.heroHp);
       state.hero.currentMana = Math.max(0, result.heroMana);
-      this.goHub();
-      if (this.hubUnit) syncProfileVitals(state.hero, this.hubUnit);
+      this.stopGlobalEffectsTick();
+      this.destroyBattle();
+      this.rebuildHubUnit();
       this.persist();
+      this.goWorldMap({ openZoneId: result.zoneId, openPointId: result.pointId });
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
     }
 
     if (result.outcome === "defeat") {
-      // После смерти - полный запас (возрождение в городе).
-      state.hero.currentHp = null;
-      state.hero.currentMana = null;
+      const stolen = defeatGoldLoss(state.hero.gold);
+      state.hero.gold = Math.max(0, state.hero.gold - stolen);
       this.stopGlobalEffectsTick();
-      this.persist();
       this.destroyBattle();
       this.hideAll();
+      this.hud.closeOverlays();
       this.screen = "defeat";
-      this.hud.setShellMode("hub");
-      this.hud.setCanChangeEquipment(() => true);
-      this.bindHubEquipmentSync();
-      this.rebuildHubUnit();
+      this.hud.setShellMode("title");
+      this.hud.setCanChangeEquipment(() => false);
       this.syncGlobalEffectsHud();
+      this.persist();
       this.defeat.show();
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;

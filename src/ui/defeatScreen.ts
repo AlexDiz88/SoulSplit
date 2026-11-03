@@ -1,4 +1,5 @@
 import "./hubScreen.css";
+import "./defeatScreen.css";
 
 export interface DefeatScreenApi {
   show(): void;
@@ -8,10 +9,7 @@ export interface DefeatScreenApi {
 }
 
 export interface DefeatScreenHandlers {
-  onHub: () => void;
-  onRetry: () => void;
-  onCharacter: () => void;
-  onInventory: () => void;
+  onWake: () => void;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -26,47 +24,85 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 
 export function mountDefeatScreen(handlers: DefeatScreenHandlers): DefeatScreenApi {
-  const root = el("div", "meta-screen");
+  const root = el("div", "meta-screen defeat-screen");
   root.id = "defeat-screen";
   root.hidden = true;
-  const panel = el("div", "meta-panel");
-  panel.append(el("h1", "meta-brand", "Поражение"));
-  panel.append(
-    el("p", "meta-summary", "Герой пал. Лут и опыт не получены. Экип можно сменить перед повтором."),
+  root.setAttribute("role", "dialog");
+  root.setAttribute("aria-modal", "true");
+  root.setAttribute("aria-labelledby", "defeat-title");
+
+  const stage = el("div", "defeat-stage");
+
+  const title = el("h1", "defeat-title");
+  title.id = "defeat-title";
+  title.setAttribute("aria-label", "Поражение");
+  const glow = el("span", "defeat-title-glow", "Поражение");
+  glow.setAttribute("aria-hidden", "true");
+  const face = el("span", "defeat-title-face", "Поражение");
+  title.append(glow, face);
+
+  const summary = el(
+    "p",
+    "defeat-summary defeat-line",
+    "Тьма отступает медленно. Каждое поражение не проходит бесследно. Но это ещё не конец.",
   );
-  const actions = el("div", "meta-actions");
-  const btnRetry = el("button", "meta-btn meta-btn-primary", "Повторить зону");
-  btnRetry.type = "button";
-  const btnChar = el("button", "meta-btn", "Персонаж");
-  btnChar.type = "button";
-  const btnInv = el("button", "meta-btn", "Инвентарь");
-  btnInv.type = "button";
-  const btnHub = el("button", "meta-btn", "В хаб");
-  btnHub.type = "button";
-  actions.append(btnRetry, btnChar, btnInv, btnHub);
-  panel.append(actions);
-  root.append(panel);
+  const penalty = el(
+    "p",
+    "defeat-penalty defeat-line",
+    "(Пока вы были без сознания, вас ограбили. Потеряно 10% золота)",
+  );
+
+  const actions = el("div", "defeat-actions");
+  const btnWake = el("button", "title-btn title-btn-primary defeat-wake-btn", "Очнуться");
+  btnWake.type = "button";
+  actions.append(btnWake);
+
+  stage.append(title, summary, penalty, actions);
+  root.append(stage);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
   hud.append(root);
 
-  btnRetry.addEventListener("click", () => handlers.onRetry());
-  btnChar.addEventListener("click", () => handlers.onCharacter());
-  btnInv.addEventListener("click", () => handlers.onInventory());
-  btnHub.addEventListener("click", () => handlers.onHub());
+  const onWakeClick = (): void => {
+    handlers.onWake();
+  };
+
+  /** Пока экран открыт - глотаем хоткеи; алерт поверх может обработать свои клавиши. */
+  const onKeyDown = (ev: KeyboardEvent): void => {
+    if (root.hidden) return;
+    const alertOpen = document.querySelector(".confirm-overlay:not([hidden])");
+    if (alertOpen) return;
+    if (ev.code === "Enter" || ev.code === "Space") {
+      if (document.activeElement === btnWake) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      btnWake.focus();
+      handlers.onWake();
+      return;
+    }
+    ev.preventDefault();
+    ev.stopPropagation();
+  };
+
+  btnWake.addEventListener("click", onWakeClick);
 
   return {
     show() {
       root.hidden = false;
+      window.addEventListener("keydown", onKeyDown, true);
+      requestAnimationFrame(() => btnWake.focus());
     },
     hide() {
       root.hidden = true;
+      window.removeEventListener("keydown", onKeyDown, true);
     },
     isOpen() {
       return !root.hidden;
     },
     destroy() {
+      window.removeEventListener("keydown", onKeyDown, true);
+      btnWake.removeEventListener("click", onWakeClick);
       root.remove();
     },
   };

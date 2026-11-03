@@ -30,6 +30,14 @@ export function victoryGold(zoneItemLevel: number, kills: number): number {
   return (8 + kills * 2) * Math.max(1, zoneItemLevel);
 }
 
+/** Доля золота, теряемая при поражении. */
+export const DEFEAT_GOLD_LOSS_RATIO = 0.1;
+
+/** Сколько золота забрать при поражении (10%, вниз). */
+export function defeatGoldLoss(gold: number): number {
+  return Math.max(0, Math.floor(Math.max(0, gold) * DEFEAT_GOLD_LOSS_RATIO));
+}
+
 function resolveTierId(tierId: AffixTierId | undefined, itemLevel: number): AffixTierId {
   if (tierId) return tierId;
   return tierIdAt(baseTierIndex(itemLevel));

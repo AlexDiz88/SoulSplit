@@ -149,6 +149,9 @@ export class Battle {
   private battleElapsed = 0;
   private completed = false;
   private boardTipKey: string | null = null;
+  /** Секунды до экрана победы после смерти последнего врага; null = нет отсчёта. */
+  private victoryDelaySec: number | null = null;
+  private static readonly VICTORY_DELAY_SEC = 2;
 
   constructor(app: Application, hud: BattleHudApi, config: BattleConfig) {
     this.app = app;
@@ -822,15 +825,10 @@ export class Battle {
       beltManaPotions: this.hero.beltManaPotions,
       stats: this.statsTracker.finalize(this.battleElapsed),
     };
-    if (outcome === "victory") {
-      this.hud.showToast("Победа!");
-      this.hud.setHint("Враги повержены.");
-    } else if (outcome === "flee") {
+    this.victoryDelaySec = null;
+    if (outcome === "flee") {
       this.hud.showToast("Отступление");
       this.hud.setHint("Герой сбежал. Лут не получен.");
-    } else {
-      this.hud.showToast("Поражение");
-      this.hud.setHint("Айра пала.");
     }
     this.config.onComplete(result);
   }
@@ -1925,6 +1923,14 @@ export class Battle {
     this.vfx.update(rawDt);
     this.drawMark();
 
+    if (this.victoryDelaySec != null) {
+      this.victoryDelaySec -= rawDt;
+      if (this.victoryDelaySec <= 0) {
+        this.victoryDelaySec = null;
+        this.finish("victory");
+      }
+    }
+
     if (combatDt <= 0) return;
     this.battleElapsed += combatDt;
     this.updateTornados(combatDt);
@@ -2075,9 +2081,19 @@ export class Battle {
     if (this.paused && !this.hero.alive) return;
     const enemies = this.livingEnemies().length > 0;
     if (!enemies) {
-      this.finish("victory");
+      this.beginVictoryDelay();
     } else if (!this.hero.alive) {
       this.finish("defeat");
     }
+  }
+
+  /** Пауза и короткая задержка, чтобы доиграть смерть / VFX до экрана награды. */
+  private beginVictoryDelay(): void {
+    if (this.ended || this.completed || this.destroyed) return;
+    this.ended = true;
+    this.victoryDelaySec = Battle.VICTORY_DELAY_SEC;
+    this.applyPause(true);
+    this.hud.showToast("Победа!");
+    this.hud.setHint("Враги повержены.");
   }
 }

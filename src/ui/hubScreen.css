@@ -74,7 +74,7 @@
     #161822;
 }
 
-/* ---- Герой: левый нижний угол (выше cs-overlay, без затемнения/блюра) ---- */
+/* ---- Герой: левый нижний угол (рамка как у окна персонажа / инвентаря) ---- */
 .hub-hero-dock {
   appearance: none;
   position: absolute;
@@ -83,17 +83,16 @@
   z-index: 52;
   margin: 0;
   padding: 0 5px 0 0;
-  border: 1px solid rgba(120, 110, 170, 0.45);
-  border-radius: 1px;
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
   background:
-    linear-gradient(
-      165deg,
-      rgba(36, 38, 58, 0.92) 0%,
-      rgba(14, 16, 26, 0.94) 100%
-    );
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 60%),
+    repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.014) 0 2px, transparent 2px 5px),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
   box-shadow:
-    0 12px 28px rgba(0, 0, 0, 0.45),
-    inset 0 1px 0 rgba(230, 225, 255, 0.1);
+    inset 0 0 0 3px #0a0b0c,
+    inset 0 0 0 4px rgba(196, 163, 90, 0.4),
+    0 12px 28px rgba(0, 0, 0, 0.55);
   color: inherit;
   font: inherit;
   text-align: left;
@@ -108,7 +107,41 @@
   pointer-events: auto;
   transition:
     border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    box-shadow 0.15s ease,
+    filter 0.15s ease;
+}
+
+/* Угловые скобы - как у .cs-window, компактнее под док. */
+.hub-hero-dock::before {
+  content: "";
+  position: absolute;
+  inset: 5px;
+  z-index: 2;
+  pointer-events: none;
+  --g: linear-gradient(#d8b86a, #d8b86a);
+  background:
+    var(--g) top left / 16px 1.5px no-repeat,
+    var(--g) top left / 1.5px 16px no-repeat,
+    var(--g) top right / 16px 1.5px no-repeat,
+    var(--g) top right / 1.5px 16px no-repeat,
+    var(--g) bottom left / 16px 1.5px no-repeat,
+    var(--g) bottom left / 1.5px 16px no-repeat,
+    var(--g) bottom right / 16px 1.5px no-repeat,
+    var(--g) bottom right / 1.5px 16px no-repeat;
+}
+
+.hub-hero-dock::after {
+  content: "";
+  position: absolute;
+  inset: 8px;
+  z-index: 2;
+  pointer-events: none;
+  --r: radial-gradient(circle, #e8cf8a 0 1.5px, #5a4828 2px, transparent 2.5px);
+  background:
+    var(--r) top left / 6px 6px no-repeat,
+    var(--r) top right / 6px 6px no-repeat,
+    var(--r) bottom left / 6px 6px no-repeat,
+    var(--r) bottom right / 6px 6px no-repeat;
 }
 
 .hub-hero-dock[hidden] {
@@ -116,15 +149,17 @@
 }
 
 .hub-hero-dock:hover {
-  border-color: rgba(180, 165, 255, 0.55);
+  border-color: #8a7448;
+  filter: brightness(1.04);
   box-shadow:
-    0 14px 30px rgba(0, 0, 0, 0.5),
-    0 0 18px rgba(140, 120, 220, 0.16),
-    inset 0 1px 0 rgba(230, 225, 255, 0.14);
+    inset 0 0 0 3px #0a0b0c,
+    inset 0 0 0 4px rgba(216, 184, 106, 0.55),
+    0 14px 30px rgba(0, 0, 0, 0.58),
+    0 0 16px rgba(196, 163, 90, 0.18);
 }
 
 .hub-hero-dock:focus-visible {
-  outline: 2px solid rgba(180, 165, 255, 0.55);
+  outline: 2px solid rgba(216, 184, 106, 0.65);
   outline-offset: 2px;
 }
 
@@ -138,9 +173,9 @@
   height: 112px;
   border-radius: 0;
   border: none;
-  border-right: 1px solid rgba(200, 185, 255, 0.28);
-  background: rgba(8, 10, 16, 0.95);
-  box-shadow: inset 0 1px 0 rgba(230, 225, 255, 0.1);
+  border-right: 1px solid rgba(196, 163, 90, 0.35);
+  background: rgba(8, 10, 12, 0.95);
+  box-shadow: inset 0 1px 0 rgba(232, 207, 138, 0.08);
   overflow: hidden;
 }
 
