@@ -30,6 +30,7 @@ import {
   saveSlot,
 } from "../meta/save";
 import { getZone, getZonePoint, isZoneUnlocked, syncUnlockedZones } from "../meta/zones";
+import { applyKillProgress } from "../quests/questLog";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
 import { mountCharacterCreateScreen } from "../ui/characterCreateScreen";
@@ -38,10 +39,13 @@ import { mountGlobalEffectsHud } from "../ui/globalEffectsHud";
 import type { HubLocationId } from "../ui/hubLocations";
 import { mountHubScreen } from "../ui/hubScreen";
 import { mountMerchantScreen } from "../ui/merchantScreen";
+import { mountQuestLogScreen } from "../ui/questLogScreen";
+import { mountQuestTracker } from "../ui/questTracker";
 import { mountRewardScreen } from "../ui/rewardScreen";
 import { mountSaveSlotsScreen } from "../ui/saveSlotsScreen";
 import { mountSettingsScreen } from "../ui/settingsScreen";
 import { mountStartMenu } from "../ui/startMenu";
+import { mountTownHallScreen } from "../ui/townHallScreen";
 import { mountWorldMapScreen } from "../ui/worldMapScreen";
 
 type AppScreen =
@@ -77,6 +81,9 @@ export class GameApp {
   private readonly hub: ReturnType<typeof mountHubScreen>;
   private readonly worldMap: ReturnType<typeof mountWorldMapScreen>;
   private readonly merchant: ReturnType<typeof mountMerchantScreen>;
+  private readonly townHall: ReturnType<typeof mountTownHallScreen>;
+  private readonly questLog: ReturnType<typeof mountQuestLogScreen>;
+  private readonly questTracker: ReturnType<typeof mountQuestTracker>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
   private readonly defeat: ReturnType<typeof mountDefeatScreen>;
 
@@ -113,17 +120,23 @@ export class GameApp {
     this.hub = mountHubScreen({
       onCharacter: () => {
         this.merchant.hide();
+        this.townHall.hide();
+        this.questLog.hide();
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
       },
       onInventory: () => {
         this.merchant.hide();
+        this.townHall.hide();
+        this.questLog.hide();
         // В городе сумка без листа персонажа бессмысленна - открываем оба окна.
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
       },
       onItemGenerator: () => {
         this.merchant.hide();
+        this.townHall.hide();
+        this.questLog.hide();
         this.hud.openItemGenerator();
       },
       onSave: () => this.manualSave(),
@@ -155,6 +168,34 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
+    this.townHall = mountTownHallScreen({
+      onClose: () => {
+        this.syncQuestTracker();
+      },
+      onChanged: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        this.syncQuestTracker();
+      },
+      showToast: (t) => this.hud.showToast(t),
+    });
+
+    this.questLog = mountQuestLogScreen({
+      onClose: () => {
+        this.syncQuestTracker();
+      },
+      onChanged: () => {
+        this.persist();
+        this.syncQuestTracker();
+      },
+      showToast: (t) => this.hud.showToast(t),
+    });
+
+    this.questTracker = mountQuestTracker({
+      onOpenLog: () => this.goQuestLog(),
+    });
+
     this.hud.setOnMarketSell((item, price) => {
       if (!this.state) return;
       this.state.hero.gold += price;
@@ -166,6 +207,24 @@ export class GameApp {
 
     this.hud.setOnPanelsClosed(() => {
       if (this.merchant.isOpen()) this.merchant.hide();
+      if (this.townHall.isOpen()) this.townHall.hide();
+      if (this.questLog.isOpen()) this.questLog.hide();
+    });
+
+    window.addEventListener("keydown", (ev) => {
+      if (ev.repeat || ev.ctrlKey || ev.metaKey || ev.altKey) return;
+      const target = ev.target;
+      const typing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement;
+      if (typing) return;
+      if (ev.code !== "KeyJ") return;
+      if (this.screen !== "hub" && this.screen !== "world_map" && this.screen !== "battle") {
+        return;
+      }
+      ev.preventDefault();
+      this.goQuestLog();
     });
 
     this.reward = mountRewardScreen({
@@ -309,6 +368,7 @@ export class GameApp {
     this.screen = "settings";
     this.hud.setShellMode("title");
     this.syncGlobalEffectsHud();
+    this.syncQuestTracker();
     this.settings.show();
   }
 
@@ -320,8 +380,18 @@ export class GameApp {
     this.hub.hide();
     this.worldMap.hide();
     this.merchant.hide();
+    this.townHall.hide();
+    this.questLog.hide();
     this.reward.hide();
     this.defeat.hide();
+  }
+
+  /** Трекер: hub / карта / бой. */
+  private syncQuestTracker(): void {
+    const visible =
+      this.screen === "hub" || this.screen === "world_map" || this.screen === "battle";
+    this.questTracker.setVisible(visible);
+    this.questTracker.refresh(this.state);
   }
 
   private goTitle(): void {
@@ -332,6 +402,7 @@ export class GameApp {
     this.screen = "title";
     this.hud.setShellMode("title");
     this.syncGlobalEffectsHud();
+    this.syncQuestTracker();
     this.startMenu.show();
   }
 
@@ -340,6 +411,7 @@ export class GameApp {
     this.hud.closeOverlays();
     this.screen = "settings";
     this.hud.setShellMode("title");
+    this.syncQuestTracker();
     this.settings.show();
   }
 
@@ -347,6 +419,7 @@ export class GameApp {
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "slots";
+    this.syncQuestTracker();
     this.hud.setShellMode("title");
     this.slots.show(listSaveSlots());
   }
@@ -446,6 +519,7 @@ export class GameApp {
     ensureHeroGlobalEffects(state.hero, true);
     this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
+    this.syncQuestTracker();
     this.persist();
   }
 
@@ -475,6 +549,7 @@ export class GameApp {
     ensureHeroGlobalEffects(state.hero, false);
     this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
+    this.syncQuestTracker();
   }
 
   /** Закрыть экран награды: карта мира с открытым окном региона. */
@@ -496,7 +571,7 @@ export class GameApp {
         this.goWorldMap();
         return;
       case "town_hall":
-        this.hud.showToast("Ратуша - скоро");
+        this.goTownHall();
         return;
       case "forge":
         this.hud.showToast("Кузница - скоро");
@@ -526,6 +601,8 @@ export class GameApp {
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     ensureHeroStash(state.hero);
     this.merchant.hide();
+    this.townHall.hide();
+    this.questLog.hide();
     this.hud.openStash(state.hero.stash);
   }
 
@@ -544,8 +621,37 @@ export class GameApp {
     if (this.screen !== "hub") return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    this.townHall.hide();
+    this.questLog.hide();
     this.hud.openMarketSide();
     this.merchant.show(state);
+  }
+
+  /** Доска ратуши: взять / сдать. */
+  goTownHall(): void {
+    if (this.screen !== "hub") return;
+    const state = this.requireState();
+    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    this.merchant.hide();
+    this.questLog.hide();
+    this.hud.closeOverlays();
+    this.townHall.show(state);
+  }
+
+  /** Журнал взятых квестов (хаб / карта / бой). */
+  goQuestLog(): void {
+    if (this.screen !== "hub" && this.screen !== "world_map" && this.screen !== "battle") {
+      return;
+    }
+    const state = this.requireState();
+    if (this.questLog.isOpen()) {
+      this.questLog.hide();
+      this.syncQuestTracker();
+      return;
+    }
+    this.townHall.hide();
+    this.merchant.hide();
+    this.questLog.show(state);
   }
 
   startBattle(zoneId: ZoneId, pointId?: string): void {
@@ -574,11 +680,18 @@ export class GameApp {
     });
 
     const heroSnap = cloneGameState(state).hero;
+    this.syncQuestTracker();
     this.battle = new Battle(this.app, this.hud, {
       hero: heroSnap,
       zone,
       pointId: point.id,
       encounter,
+      onEnemyKilled: (kindId) => {
+        if (!this.state) return;
+        if (!applyKillProgress(this.state, kindId)) return;
+        this.syncQuestTracker();
+        if (this.questLog.isOpen()) this.questLog.show(this.state);
+      },
       onComplete: (result) => {
         queueMicrotask(() => this.onBattleComplete(result));
       },
@@ -629,6 +742,7 @@ export class GameApp {
       this.hud.setShellMode("title");
       this.hud.setCanChangeEquipment(() => false);
       this.syncGlobalEffectsHud();
+      this.syncQuestTracker();
       this.persist();
       this.defeat.show();
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
@@ -664,6 +778,7 @@ export class GameApp {
     this.bindHubEquipmentSync();
     this.rebuildHubUnit();
     this.syncGlobalEffectsHud();
+    this.syncQuestTracker();
 
     this.noteNewZones();
 

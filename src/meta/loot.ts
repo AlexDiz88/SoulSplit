@@ -134,6 +134,11 @@ function pickWeighted<T>(items: T[], weightOf: (t: T) => number, rng: () => numb
   return items[items.length - 1]!;
 }
 
+/** Случайный слот экипа по тем же весам, что и победный лут. */
+export function pickWeightedEquipSlot(rng: () => number = Math.random): EquipSlotId {
+  return pickWeighted(SLOT_WEIGHTS, (s) => s.weight, rng).slot;
+}
+
 function rollGearCount(table: PointLootTable, kills: number, rng: () => number): number {
   const bonus = Math.min(0.12 + kills * 0.02, 0.35);
   let count = table.gearMin;

@@ -11,6 +11,7 @@ import {
   isZoneUnlocked,
   type ZonePointDef,
 } from "../meta/zones";
+import { activeQuestNamesForZone } from "../quests/questLog";
 import { coverLayout, projectLocation } from "./hubLocations";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
@@ -235,6 +236,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   let openZoneId: ZoneId | null = null;
   let openPointId: string | null = null;
   let panelClosing = false;
+  let stateRef: GameState | null = null;
 
   const hideEnemyTip = (): void => {
     enemyTip.hidden = true;
@@ -384,11 +386,12 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     }
 
     questList.replaceChildren();
-    if (zone.quests.length === 0) {
+    const questNames = stateRef ? activeQuestNamesForZone(stateRef, zoneId) : [];
+    if (questNames.length === 0) {
       const empty = el("li", "wm-zone-quest-empty", "Нет активных квестов");
       questList.append(empty);
     } else {
-      for (const name of zone.quests) {
+      for (const name of questNames) {
         questList.append(el("li", undefined, name));
       }
     }
@@ -522,6 +525,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
 
   return {
     show(state, opts) {
+      stateRef = state;
       closeZonePanel();
       for (const spot of WORLD_MAP_SPOTS) {
         const btn = spotButtons.get(spot.id);
@@ -559,6 +563,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     hide() {
       closeZonePanel();
       root.hidden = true;
+      stateRef = null;
     },
     isOpen() {
       return !root.hidden;

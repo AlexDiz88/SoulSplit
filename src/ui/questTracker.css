@@ -1,0 +1,112 @@
+/* Правая колонка: кнопка журнала + трекер (выше середины). */
+
+.quest-side {
+  position: absolute;
+  top: 36%;
+  right: 14px;
+  /* Выше .hub-screen (40), ниже оверлеев ратуши/журнала (51+) и дока героя (52). */
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  width: min(280px, calc(100vw - 28px));
+  max-height: min(52vh, 420px);
+  transform: translateY(-30%);
+  pointer-events: none;
+  font-family: var(--font);
+  color: #e8e2d4;
+}
+
+.quest-side[hidden] {
+  display: none !important;
+}
+
+.quest-side-log-btn {
+  pointer-events: auto;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1px solid rgba(106, 90, 58, 0.75);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(40, 36, 28, 0.92), rgba(14, 14, 16, 0.94));
+  color: #f0e6c8;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: var(--cur-default);
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 163, 90, 0.2),
+    0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.quest-side-log-btn:hover,
+.quest-side-log-btn:focus-visible {
+  border-color: rgba(196, 163, 90, 0.85);
+  color: #fff4d4;
+}
+
+.quest-tracker {
+  pointer-events: none;
+  width: 100%;
+  max-height: min(42vh, 320px);
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quest-tracker-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid rgba(106, 90, 58, 0.65);
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgba(28, 26, 22, 0.88), rgba(10, 11, 12, 0.9));
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 163, 90, 0.18),
+    0 8px 20px rgba(0, 0, 0, 0.45);
+}
+
+.quest-tracker-name {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: #f0e6c8;
+}
+
+.quest-tracker-card.is-ready .quest-tracker-name {
+  color: #c8e6a0;
+}
+
+.quest-tracker-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.quest-tracker-line {
+  font-size: 0.78rem;
+  color: #c8c0a8;
+}
+
+.quest-tracker-line.is-done {
+  color: #a8c878;
+}
+
+.quest-tracker-ready-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c8e6a0;
+}

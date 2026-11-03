@@ -1,0 +1,381 @@
+/* Журнал заданий: просмотр и пин в трекер. */
+
+.questlog-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 52;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 5, 12, 0.55);
+  pointer-events: auto;
+  font-family: var(--font);
+  color: var(--text, #e8e2d4);
+}
+
+.questlog-overlay[hidden] {
+  display: none !important;
+}
+
+.questlog-window {
+  position: relative;
+  box-sizing: border-box;
+  width: min(920px, calc(100vw - 32px));
+  height: min(620px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #6a5a3a;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 55%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.38),
+    0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.questlog-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d8b86a;
+  cursor: var(--cur-default);
+  transition: color 0.15s, filter 0.15s;
+}
+
+.questlog-x span {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 14px;
+  height: 14px;
+}
+
+.questlog-x span::before,
+.questlog-x span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.questlog-x span::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.questlog-x span::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.questlog-x:hover {
+  color: #f4dfa2;
+  filter: drop-shadow(0 0 4px rgba(232, 207, 138, 0.45));
+}
+
+.questlog-head {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 48px;
+  padding: 14px 48px 8px;
+  border-bottom: none;
+}
+
+.questlog-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  background: linear-gradient(180deg, #f4dfa2, #b08a48);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.questlog-tabs {
+  flex-shrink: 0;
+  display: flex;
+  gap: 6px;
+  padding: 0 18px 12px;
+  border-bottom: 1px solid rgba(106, 90, 58, 0.55);
+}
+
+.questlog-tab {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #4a4538;
+  border-radius: 4px;
+  background: #141516;
+  color: #a8a090;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: var(--cur-default);
+}
+
+.questlog-tab:hover {
+  color: #e8e2d4;
+  border-color: #6a5a3a;
+}
+
+.questlog-tab.is-active {
+  color: #f0e2b0;
+  border-color: #8a7044;
+  background: linear-gradient(180deg, #3a3220, #241e14);
+}
+
+.questlog-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(220px, 280px) 1fr;
+}
+
+.questlog-list {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid rgba(106, 90, 58, 0.45);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.questlog-list-empty {
+  margin: 16px 8px;
+  color: #8a7a58;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.questlog-section-label {
+  margin: 8px 8px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7a58;
+}
+
+.questlog-quest-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: var(--cur-default);
+  font: inherit;
+}
+
+.questlog-quest-btn:hover {
+  background: rgba(196, 163, 90, 0.1);
+  border-color: rgba(106, 90, 58, 0.5);
+}
+
+.questlog-quest-btn.is-selected {
+  background: rgba(196, 163, 90, 0.16);
+  border-color: rgba(196, 163, 90, 0.55);
+}
+
+.questlog-quest-btn.is-ready .questlog-quest-name {
+  color: #c8e6a0;
+}
+
+.questlog-quest-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.questlog-detail {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.questlog-detail-empty {
+  margin: auto;
+  color: #8a7a58;
+  font-size: 0.95rem;
+}
+
+.questlog-detail-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f0e6c8;
+}
+
+.questlog-detail-desc {
+  margin: 0;
+  line-height: 1.45;
+  color: #c8c0a8;
+  white-space: pre-wrap;
+}
+
+.questlog-block-title {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a89870;
+}
+
+.questlog-objectives {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.questlog-objective {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(106, 90, 58, 0.35);
+  font-size: 0.9rem;
+}
+
+.questlog-objective.is-done {
+  color: #c8e6a0;
+}
+
+.questlog-rewards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #e0d6b8;
+  font-size: 0.9rem;
+}
+
+.questlog-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.questlog-hint {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #a89870;
+}
+
+.questlog-track {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 2px 0;
+  border: 0;
+  background: transparent;
+  color: #c8c0a8;
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: var(--cur-default);
+}
+
+.questlog-track:hover:not(:disabled) .questlog-track-box {
+  border-color: #c4a35a;
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 163, 90, 0.25),
+    0 0 8px rgba(196, 163, 90, 0.15);
+}
+
+.questlog-track:hover:not(:disabled) .questlog-track-text {
+  color: #f0e6c8;
+}
+
+.questlog-track.is-disabled,
+.questlog-track:disabled {
+  opacity: 0.45;
+  cursor: var(--cur-not-allowed);
+}
+
+.questlog-track-box {
+  position: relative;
+  box-sizing: border-box;
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  border: 1px solid #6a5a3a;
+  border-radius: 2px;
+  background:
+    linear-gradient(160deg, #2a2620, #141210 70%);
+  box-shadow: inset 0 0 0 1px rgba(10, 11, 12, 0.65);
+}
+
+.questlog-track-mark {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.questlog-track-mark::before {
+  content: "";
+  position: absolute;
+  left: 4px;
+  top: 1px;
+  width: 5px;
+  height: 9px;
+  border-right: 2px solid #e8cf8a;
+  border-bottom: 2px solid #e8cf8a;
+  transform: rotate(40deg);
+  filter: drop-shadow(0 0 2px rgba(232, 207, 138, 0.35));
+}
+
+.questlog-track.is-checked .questlog-track-box {
+  border-color: #8a7044;
+  background:
+    linear-gradient(160deg, #3a3220, #1e1a12 72%);
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 163, 90, 0.28),
+    0 0 6px rgba(196, 163, 90, 0.12);
+}
+
+.questlog-track.is-checked .questlog-track-mark {
+  opacity: 1;
+}
+
+.questlog-track.is-checked .questlog-track-text {
+  color: #e8d9a8;
+}
+
+.questlog-track-text {
+  letter-spacing: 0.02em;
+  user-select: none;
+}

@@ -1,0 +1,271 @@
+/* Ратуша: только взять / сдать квесты. */
+
+.townhall-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 51;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(4, 5, 12, 0.55);
+  pointer-events: auto;
+  font-family: var(--font);
+  color: var(--text, #e8e2d4);
+}
+
+.townhall-overlay[hidden] {
+  display: none !important;
+}
+
+.townhall-window {
+  position: relative;
+  box-sizing: border-box;
+  width: min(880px, calc(100vw - 32px));
+  height: min(560px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #6a5a3a;
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse at 50% -10%, rgba(196, 163, 90, 0.14), transparent 55%),
+    linear-gradient(180deg, #1d1f21, #0d0e0f);
+  box-shadow:
+    inset 0 0 0 4px #0a0b0c,
+    inset 0 0 0 5px rgba(196, 163, 90, 0.38),
+    0 20px 50px rgba(0, 0, 0, 0.6);
+}
+
+.townhall-x {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d8b86a;
+  cursor: var(--cur-default);
+  transition: color 0.15s, filter 0.15s;
+}
+
+.townhall-x span {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 14px;
+  height: 14px;
+}
+
+.townhall-x span::before,
+.townhall-x span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.townhall-x span::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.townhall-x span::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.townhall-x:hover {
+  color: #f4dfa2;
+  filter: drop-shadow(0 0 4px rgba(232, 207, 138, 0.45));
+}
+
+.townhall-head {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 14px 48px 12px;
+  border-bottom: 1px solid rgba(106, 90, 58, 0.55);
+}
+
+.townhall-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: center;
+  background: linear-gradient(180deg, #f4dfa2, #b08a48);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.townhall-subtitle {
+  margin: 0;
+  font-size: 0.78rem;
+  color: #a89870;
+  text-align: center;
+}
+
+.townhall-body {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+}
+
+.townhall-list {
+  min-height: 0;
+  overflow: auto;
+  border-right: 1px solid rgba(106, 90, 58, 0.45);
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.townhall-list-empty {
+  margin: 16px 8px;
+  color: #8a7a58;
+  font-size: 0.9rem;
+}
+
+.townhall-section-label {
+  margin: 8px 8px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8a7a58;
+}
+
+.townhall-quest-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.03);
+  color: inherit;
+  text-align: left;
+  cursor: var(--cur-default);
+  font: inherit;
+}
+
+.townhall-quest-btn:hover {
+  background: rgba(196, 163, 90, 0.1);
+  border-color: rgba(106, 90, 58, 0.5);
+}
+
+.townhall-quest-btn.is-selected {
+  background: rgba(196, 163, 90, 0.16);
+  border-color: rgba(196, 163, 90, 0.55);
+}
+
+.townhall-quest-btn.is-ready .townhall-quest-name {
+  color: #c8e6a0;
+}
+
+.townhall-quest-name {
+  font-weight: 700;
+  font-size: 0.92rem;
+}
+
+.townhall-quest-status {
+  font-size: 0.72rem;
+  color: #a89870;
+}
+
+.townhall-detail {
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.townhall-detail-empty {
+  margin: auto;
+  color: #8a7a58;
+  font-size: 0.95rem;
+}
+
+.townhall-detail-name {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: #f0e6c8;
+}
+
+.townhall-detail-desc {
+  margin: 0;
+  line-height: 1.45;
+  color: #c8c0a8;
+  white-space: pre-wrap;
+}
+
+.townhall-block-title {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a89870;
+}
+
+.townhall-objectives {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.townhall-objective {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(106, 90, 58, 0.35);
+  font-size: 0.9rem;
+}
+
+.townhall-objective.is-done {
+  color: #c8e6a0;
+}
+
+.townhall-rewards {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  color: #e0d6b8;
+  font-size: 0.9rem;
+}
+
+.townhall-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 8px;
+}

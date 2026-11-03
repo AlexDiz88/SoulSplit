@@ -785,6 +785,7 @@ export class Battle {
     const kindId = u.id.replace(/-\d+$/, "") || u.id;
     this.killed.push({ enemyId: u.id, kindId });
     this.statsTracker.noteKill(kindId);
+    this.config.onEnemyKilled?.(kindId);
   }
 
   private cloneGear(): { equipment: EquipmentMap; inventory: ReturnType<typeof cloneInventory> } {

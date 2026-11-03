@@ -37,4 +37,6 @@ export interface BattleConfig {
   pointId: string;
   encounter: SpawnedEnemy[];
   onComplete: (result: BattleResult) => void;
+  /** Сразу при смерти врага (для квест-прогресса). */
+  onEnemyKilled?: (kindId: string) => void;
 }

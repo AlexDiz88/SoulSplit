@@ -12,6 +12,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
+import { ensureQuestLog } from "../quests/questLog";
 
 /** Старые ZoneId → актуальные (разработка, свободный rename). */
 const ZONE_ID_REMAP: Record<string, ZoneId> = {
@@ -120,6 +121,7 @@ function normalizeState(parsed: GameState): GameState {
   ensureHeroBeltPotions(state.hero);
   ensureHeroGlobalEffects(state.hero);
   ensureMarket(state);
+  ensureQuestLog(state);
   return state;
 }
 
