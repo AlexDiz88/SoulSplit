@@ -1,5 +1,10 @@
 import { Application, Container, Graphics, Sprite, Text } from "pixi.js";
-import { ABILITIES, ASPECT_COLOR } from "../abilities/definitions";
+import {
+  ABILITIES,
+  ASPECT_COLOR,
+  attackSpeedIncreaseToHasteMult,
+  attackSpeedReduceToSlowPotency,
+} from "../abilities/definitions";
 import {
   airPocketCells,
   dragonBreathCells,
@@ -45,6 +50,7 @@ import { BattleStatsTracker } from "./battleStats";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
 import { ENEMY_CRIT_DAMAGE, enemyAutoAttackDamage, rollEnemyCrit } from "./enemies";
+import { packageTooltipDesc, packageTooltipTitle } from "../effects/combatStatusMeta";
 import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
 
 type AutoHand = "mainhand" | "offhand";
@@ -138,7 +144,7 @@ export class Battle {
   private readonly statsTracker = new BattleStatsTracker();
   private battleElapsed = 0;
   private completed = false;
-  private levelTipShown = false;
+  private boardTipKey: string | null = null;
 
   constructor(app: Application, hud: BattleHudApi, config: BattleConfig) {
     this.app = app;
@@ -202,12 +208,12 @@ export class Battle {
 
   private readonly onPointerMove = (ev: PointerEvent): void => {
     this.updateAbilityHover(ev);
-    this.updateLevelBadgeTip(ev);
+    this.updateBoardHoverTip(ev);
   };
 
   private readonly onPointerLeave = (): void => {
     this.clearHoverTelegraph();
-    this.hideLevelBadgeTip();
+    this.hideBoardHoverTip();
   };
 
   private pointerLocal(ev: PointerEvent): { x: number; y: number } {
@@ -230,33 +236,56 @@ export class Battle {
   private static readonly LEVEL_TIP_DESC =
     "Чем выше - тем лучше его показатели атаки, защиты, здоровья и других параметров.";
 
-  private hideLevelBadgeTip(): void {
-    if (!this.levelTipShown) return;
-    this.levelTipShown = false;
+  private hideBoardHoverTip(): void {
+    if (this.boardTipKey == null) return;
+    this.boardTipKey = null;
     this.hud.hideScreenTooltip();
   }
 
-  private updateLevelBadgeTip(ev: PointerEvent): void {
+  private showBoardHoverTip(
+    key: string,
+    boardX: number,
+    boardY: number,
+    title: string,
+    desc: string,
+  ): void {
+    if (this.boardTipKey === key) return;
+    this.boardTipKey = key;
+    const screen = this.boardToClient(boardX, boardY);
+    this.hud.showScreenTooltip(screen.x, screen.y, title, desc);
+  }
+
+  private updateBoardHoverTip(ev: PointerEvent): void {
     const local = this.pointerLocal(ev);
     for (let i = this.units.length - 1; i >= 0; i--) {
       const u = this.units[i]!;
       if (!u.alive || !u.view.visible) continue;
+
+      const statusPkg = u.hitStatusIcon(local.x, local.y);
+      if (statusPkg) {
+        this.showBoardHoverTip(
+          `status:${u.id}:${statusPkg.key}`,
+          local.x,
+          local.y,
+          packageTooltipTitle(statusPkg),
+          packageTooltipDesc(statusPkg),
+        );
+        return;
+      }
+
       if (!u.hitLevelBadge(local.x, local.y)) continue;
       const c = u.levelBadgeLocalCenter();
       if (!c) continue;
-      if (!this.levelTipShown) {
-        const screen = this.boardToClient(u.view.x + c.x, u.view.y + c.y);
-        this.hud.showScreenTooltip(
-          screen.x,
-          screen.y,
-          Battle.LEVEL_TIP_TITLE,
-          Battle.LEVEL_TIP_DESC,
-        );
-        this.levelTipShown = true;
-      }
+      this.showBoardHoverTip(
+        `level:${u.id}`,
+        u.view.x + c.x,
+        u.view.y + c.y,
+        Battle.LEVEL_TIP_TITLE,
+        Battle.LEVEL_TIP_DESC,
+      );
       return;
     }
-    this.hideLevelBadgeTip();
+    this.hideBoardHoverTip();
   }
 
   private readonly onContextMenu = (ev: MouseEvent): void => {
@@ -300,7 +329,7 @@ export class Battle {
   destroy(): void {
     if (this.destroyed) return;
     this.destroyed = true;
-    this.hideLevelBadgeTip();
+    this.hideBoardHoverTip();
     this.clearTornados();
     this.app.ticker.remove(this.onTick);
     this.app.canvas.removeEventListener("pointerdown", this.onPointer);
@@ -1117,7 +1146,7 @@ export class Battle {
         if (!aim) return;
         const to = this.cellCenter(aim);
         const slowDur = def.effects?.slowDuration ?? 3;
-        const slowPot = def.effects?.slowPotency ?? 0.35;
+        const slowPot = def.effects?.slowPotency ?? attackSpeedReduceToSlowPotency(0.35);
         await this.vfx.iceArrow(from, to, () => {
           const hit = this.occupantAtImpact(aim, to);
           if (!hit) return;
@@ -1134,7 +1163,13 @@ export class Battle {
         );
         const shieldAmt = def.effects?.shieldAmount ?? 55;
         const shieldDur = def.effects?.shieldDuration ?? 6;
-        caster.addStatus({ id: "shield", kind: "shield", remaining: shieldDur, potency: shieldAmt });
+        caster.addStatus({
+          id: "shield",
+          kind: "shield",
+          remaining: shieldDur,
+          potency: shieldAmt,
+          sourceAbilityId: def.id,
+        });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ЩИТ", 0x7ec8e8);
         break;
       }
@@ -1201,7 +1236,13 @@ export class Battle {
         await this.vfx.titanMight(from, [caster.center]);
         const buffDur = def.effects?.atkBuffDuration ?? 5;
         const buffPot = def.effects?.atkBuffPotency ?? 0.35;
-        caster.addStatus({ id: "atk_buff", kind: "atk_buff", remaining: buffDur, potency: buffPot });
+        caster.addStatus({
+          id: "atk_buff",
+          kind: "atk_buff",
+          remaining: buffDur,
+          potency: buffPot,
+          sourceAbilityId: def.id,
+        });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "СИЛА", 0xc9b896);
         break;
       }
@@ -1210,7 +1251,13 @@ export class Battle {
         const debuffDur = def.effects?.atkDebuffDuration ?? 5;
         const debuffMult = def.effects?.atkDebuffMult ?? 0.7;
         for (const u of this.livingEnemies()) {
-          u.addStatus({ id: "atk_debuff", kind: "atk_debuff", remaining: debuffDur, potency: debuffMult });
+          u.addStatus({
+            id: "atk_debuff",
+            kind: "atk_debuff",
+            remaining: debuffDur,
+            potency: debuffMult,
+            sourceAbilityId: def.id,
+          });
           this.vfx.floatingText(u.center.x, u.center.y - 20, "СТРАХ", 0xc9b896);
         }
         break;
@@ -1236,7 +1283,13 @@ export class Battle {
         if (!clicked) return;
         const aim = { ...clicked.pos };
         const to = this.cellCenter(aim);
-        caster.addStatus({ id: "invuln", kind: "invuln", remaining: 99, potency: 1 });
+        caster.addStatus({
+          id: "invuln",
+          kind: "invuln",
+          remaining: 99,
+          potency: 1,
+          sourceAbilityId: def.id,
+        });
         caster.setHidden(true);
         try {
           await this.vfx.shadowDash(from, to, () => {
@@ -1272,9 +1325,15 @@ export class Battle {
       }
       case "wind_speed": {
         await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 0.7, 0.4);
-        const hasteMult = def.effects?.hasteIntervalMult ?? 0.75;
+        const hasteMult = def.effects?.hasteIntervalMult ?? attackSpeedIncreaseToHasteMult(0.25);
         const hasteDur = def.effects?.hasteDuration ?? 5;
-        caster.addStatus({ id: "haste", kind: "haste", remaining: hasteDur, potency: hasteMult });
+        caster.addStatus({
+          id: "haste",
+          kind: "haste",
+          remaining: hasteDur,
+          potency: hasteMult,
+          sourceAbilityId: def.id,
+        });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ВЕТЕР", 0xa8c8dc);
         break;
       }
@@ -1297,7 +1356,7 @@ export class Battle {
       case "dust_veil": {
         await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 1.2, 0.5);
         const slowDur = def.effects?.slowDuration ?? 4;
-        const slowPot = def.effects?.slowPotency ?? 0.3;
+        const slowPot = def.effects?.slowPotency ?? attackSpeedReduceToSlowPotency(0.3);
         for (const u of this.livingEnemies()) {
           u.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
           this.vfx.floatingText(u.center.x, u.center.y - 20, "ПЫЛЬ", 0xa8c8dc);
@@ -1310,7 +1369,7 @@ export class Battle {
         const hits = airPocketCells(aim);
         await this.vfx.flashCircle(this.cellCenter(aim).x, this.cellCenter(aim).y, ASPECT_COLOR.air, CELL * 0.5, 0.3);
         const slowDur = def.effects?.slowDuration ?? 5;
-        const slowPot = def.effects?.slowPotency ?? 0.35;
+        const slowPot = def.effects?.slowPotency ?? attackSpeedReduceToSlowPotency(0.35);
         for (const pos of hits) {
           const c = this.cellCenter(pos);
           void this.vfx.ring(c.x, c.y, ASPECT_COLOR.air, CELL * 0.4, 0.35);
@@ -1351,7 +1410,7 @@ export class Battle {
         const poisonDur = def.effects?.poisonDuration ?? 5;
         const poisonPot = this.scaleDotPotency(caster, def.aspect, def.effects?.poisonPerSec ?? 8);
         const slowDur = def.effects?.slowDuration ?? 5;
-        const slowPot = def.effects?.slowPotency ?? 1;
+        const slowPot = def.effects?.slowPotency ?? attackSpeedReduceToSlowPotency(0.5);
         await this.vfx.projectile(from, to, ASPECT_COLOR.nature, {
           size: 10,
           trail: true,
@@ -1360,7 +1419,13 @@ export class Battle {
           onArrive: () => {
             if (this.destroyed) return;
             if (!this.sameEnemyOnCell(target, aim, to)) return;
-            target.addStatus({ id: "root", kind: "root", remaining: rootDur, potency: 1 });
+            target.addStatus({
+              id: "root",
+              kind: "root",
+              remaining: rootDur,
+              potency: 1,
+              sourceAbilityId: def.id,
+            });
             target.addStatus({
               id: "poison",
               kind: "poison",
@@ -1368,7 +1433,13 @@ export class Battle {
               potency: poisonPot,
               sourceAbilityId: def.id,
             });
-            target.addStatus({ id: "slow", kind: "slow", remaining: slowDur, potency: slowPot });
+            target.addStatus({
+              id: "slow",
+              kind: "slow",
+              remaining: slowDur,
+              potency: slowPot,
+              sourceAbilityId: def.id,
+            });
             this.vfx.floatingText(target.center.x, target.center.y - 20, "КОРНИ", ASPECT_COLOR.nature);
           },
         });

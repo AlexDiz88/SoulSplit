@@ -1,6 +1,25 @@
 import type { AbilityDef, AbilityId } from "../types";
 export { ALL_ASPECTS, ASPECT_COLOR, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 
+/**
+ * Круглый % снижения скорости атаки → slowPotency для боя.
+ * Интервал ×(1+p); скорость = 1/интервал. Пример: 0.25 (-25%) → p = 1/3.
+ */
+export function attackSpeedReduceToSlowPotency(reduceFraction: number): number {
+  if (reduceFraction <= 0) return 0;
+  if (reduceFraction >= 1) return Number.POSITIVE_INFINITY;
+  return reduceFraction / (1 - reduceFraction);
+}
+
+/**
+ * Круглый % повышения скорости атаки → hasteIntervalMult.
+ * Пример: 0.25 (+25%) → интервал ×0.8.
+ */
+export function attackSpeedIncreaseToHasteMult(increaseFraction: number): number {
+  if (increaseFraction <= -1) return Number.POSITIVE_INFINITY;
+  return 1 / (1 + increaseFraction);
+}
+
 /** id карточки гримуара (design/abilities) → AbilityId боя. */
 export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   "ice-arrow": "ice_arrow",
@@ -37,7 +56,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     targetMode: "cell",
     range: "ranged",
     reach: 4,
-    effects: { slowDuration: 3, slowPotency: 0.35 },
+    effects: { slowDuration: 3, slowPotency: attackSpeedReduceToSlowPotency(0.35) },
   },
   ice_shield: {
     id: "ice_shield",
@@ -167,7 +186,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     targetMode: "ally",
     range: "any",
     reach: 0,
-    effects: { hasteIntervalMult: 0.75, hasteDuration: 5 },
+    effects: { hasteIntervalMult: attackSpeedIncreaseToHasteMult(0.25), hasteDuration: 5 },
   },
   squall: {
     id: "squall",
@@ -193,7 +212,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     targetMode: "all_enemies",
     range: "any",
     reach: 0,
-    effects: { slowDuration: 4, slowPotency: 0.3 },
+    effects: { slowDuration: 4, slowPotency: attackSpeedReduceToSlowPotency(0.3) },
   },
   air_pocket: {
     id: "air_pocket",
@@ -206,7 +225,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     targetMode: "zone",
     range: "any",
     reach: 4,
-    effects: { slowDuration: 5, slowPotency: 0.35 },
+    effects: { slowDuration: 5, slowPotency: attackSpeedReduceToSlowPotency(0.35) },
   },
   tornado: {
     id: "tornado",
@@ -276,7 +295,7 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
       poisonPerSec: 8,
       poisonDuration: 5,
       slowDuration: 5,
-      slowPotency: 1,
+      slowPotency: attackSpeedReduceToSlowPotency(0.5),
     },
   },
   poison_bush: {
@@ -301,12 +320,24 @@ function fmtNum(n: number): string {
   return Number.isInteger(n) ? String(n) : n.toFixed(1).replace(/\.0$/, "");
 }
 
-function fmtMult(potency: number): string {
-  return (1 + potency).toFixed(2).replace(/\.?0+$/, "");
+/** Доля → проценты для текста игрока (0.35 → "35"). */
+function fmtPct(fraction: number): string {
+  return String(Math.round(fraction * 100));
 }
 
-function fmtPct(potency: number): string {
-  return String(Math.round(potency * 100));
+/** slowPotency → % снижения скорости атаки: p/(1+p). */
+function fmtSlowPct(potency: number): string {
+  return fmtPct(potency / (1 + potency));
+}
+
+/** hasteIntervalMult → % повышения скорости атаки: 1/m - 1. */
+function fmtHastePct(intervalMult: number): string {
+  return fmtPct(1 / intervalMult - 1);
+}
+
+/** atkDebuffMult / rearDamageTakenMult 0.7 → "30" для "снижен на 30%". */
+function fmtReducePct(mult: number): string {
+  return fmtPct(1 - mult);
 }
 
 export function zoneSecondaryDamage(def: AbilityDef): number {
@@ -314,12 +345,12 @@ export function zoneSecondaryDamage(def: AbilityDef): number {
   return Math.round(def.damage * ratio);
 }
 
-/** Описание в духе классических RPG. Числа только из параметров способности. */
+/** Описание в духе классических RPG. Эффекты - язык игрока (%), не множители интервала. */
 export function describeAbility(def: AbilityDef): string {
   const e = def.effects ?? {};
   switch (def.id) {
     case "ice_arrow":
-      return `Выпускает ледяную стрелу, наносящую ${def.damage} ед. урона льдом. Сковывает цель холодом, увеличивая интервал ее автоатаки в ${fmtMult(e.slowPotency ?? 0)} раза на ${fmtNum(e.slowDuration ?? 0)} сек.`;
+      return `Выпускает ледяную стрелу, наносящую ${def.damage} ед. урона льдом. Сковывает цель холодом: скорость атаки снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} сек.`;
     case "ice_shield":
       return `Окутывает вас ледяным щитом, поглощающим ${fmtNum(e.shieldAmount ?? 0)} ед. урона. Действует ${fmtNum(e.shieldDuration ?? 0)} сек. или пока щит не будет разрушен.`;
     case "fireball":
@@ -329,9 +360,9 @@ export function describeAbility(def: AbilityDef): string {
     case "hammer_throw":
       return `Швыряет молот во врага, нанося ${def.damage} ед. урона светом и оглушая цель на ${fmtNum(e.stunDuration ?? 0)} сек.`;
     case "titan_might":
-      return `Наполняет вас мощью титана, увеличивая урон от атак на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} сек.`;
+      return `Наполняет вас мощью титана, повышая урон атаки на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} сек.`;
     case "demoralizing_shout":
-      return `Издает устрашающий крик. Урон атаки всех врагов ×${fmtNum(e.atkDebuffMult ?? 0)} на ${fmtNum(e.atkDebuffDuration ?? 0)} сек.`;
+      return `Издает устрашающий крик. Урон атаки всех врагов снижен на ${fmtReducePct(e.atkDebuffMult ?? 1)}% на ${fmtNum(e.atkDebuffDuration ?? 0)} сек.`;
     case "sever_artery":
       return `Вскрывает артерию цели, нанося ${def.damage} ед. физического урона и вызывая кровотечение: ${fmtNum(e.bleedPerSec ?? 0)} ед. физического урона в секунду в течение ${fmtNum(e.bleedDuration ?? 0)} сек.`;
     case "shadow_strike":
@@ -339,23 +370,23 @@ export function describeAbility(def: AbilityDef): string {
     case "wind_gust":
       return `Сжимает воздух в удар по выбранному врагу, нанося ${def.damage} ед. урона воздухом, и отбрасывает его на клетку дальше от героя.`;
     case "wind_speed":
-      return `Обвивает вас быстрым потоком ветра, ускоряя автоатаки: интервал атаки ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
+      return `Обвивает вас быстрым потоком ветра: скорость атаки повышена на ${fmtHastePct(e.hasteIntervalMult ?? 1)}% на ${fmtNum(e.hasteDuration ?? 0)} сек.`;
     case "squall":
       return `Рассекает воздух вокруг выбранной клетки. Сам клик пуст: соседние клетки крестом получают ${def.damage} ед. урона воздухом.`;
     case "dust_veil":
-      return `Поднимает пыль по всему полю. Интервал автоатаки всех врагов ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек.`;
+      return `Поднимает пыль по всему полю. Скорость атаки всех врагов снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} сек.`;
     case "air_pocket":
-      return `Сжимает воздух в карман на клике и соседних клетках. Интервал автоатаки врагов в зоне ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек.`;
+      return `Сжимает воздух в карман на клике и соседних клетках. Скорость атаки врагов в зоне снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} сек.`;
     case "tornado":
       return `На клетке поднимается смерч, нанося ${fmtNum(e.tornadoDps ?? def.damage)} ед. урона воздухом в секунду. Через ${fmtNum(e.tornadoStaySec ?? 0)} сек. он сам прыгает на соседнюю клетку, затем ещё раз, и рассеивается после ${fmtNum(e.tornadoStays ?? 0)} стоянок.`;
     case "dark_arrow":
       return `Враг готовит стрелу тьмы и выпускает ее в героя. Пока идет подготовка, он не атакует.`;
     case "behind_backs":
-      return `Пока носитель стоит не в ближнем ряду, любой входящий урон снижается вдвое. В первом ряду прикрытие срывается.`;
+      return `Пока носитель стоит не в ближнем ряду, входящий урон снижен на ${fmtReducePct(e.rearDamageTakenMult ?? 0.5)}%. В первом ряду прикрытие срывается.`;
     case "rejuvenation":
       return `Сила природы омолаживает вас, восстанавливая ${fmtNum(e.regenPerSec ?? 0)} ед. здоровья в секунду в течение ${fmtNum(e.regenDuration ?? 0)} сек.`;
     case "root_grasp":
-      return `Корни смыкаются вокруг врага и удерживают его на клетке на ${fmtNum(e.rootDuration ?? 0)} сек. Цель получает ${fmtNum(e.poisonPerSec ?? 0)} ед. урона природы в секунду и замедляет автоатаки: интервал ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} сек. Мгновенного урона нет.`;
+      return `Корни смыкаются вокруг врага и удерживают его на клетке на ${fmtNum(e.rootDuration ?? 0)} сек. Цель получает ${fmtNum(e.poisonPerSec ?? 0)} ед. урона природы в секунду; скорость атаки снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} сек. Мгновенного урона нет.`;
     case "poison_bush":
       return `Отмечает клетку. На четырёх диагоналях всходит ядовитый куст: враги там получают ${fmtNum(e.poisonPerSec ?? 0)} ед. урона ядом в секунду в течение ${fmtNum(e.poisonDuration ?? 0)} сек. Клетка клика без эффекта.`;
   }
@@ -368,7 +399,7 @@ export function abilityNumberLines(def: AbilityDef): string[] {
   switch (def.id) {
     case "ice_arrow":
       lines.push(`${def.damage} урона льда`);
-      lines.push(`интервал автоатаки ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      lines.push(`скорость атаки цели снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} с`);
       break;
     case "ice_shield":
       lines.push(`поглощение ${fmtNum(e.shieldAmount ?? 0)}`);
@@ -389,10 +420,10 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(`стан ${fmtNum(e.stunDuration ?? 0)} с`);
       break;
     case "titan_might":
-      lines.push(`урон атаки ×${fmtMult(e.atkBuffPotency ?? 0)} на ${fmtNum(e.atkBuffDuration ?? 0)} с`);
+      lines.push(`урон атаки повышен на ${fmtPct(e.atkBuffPotency ?? 0)}% на ${fmtNum(e.atkBuffDuration ?? 0)} с`);
       break;
     case "demoralizing_shout":
-      lines.push(`урон атаки всех врагов ×${fmtNum(e.atkDebuffMult ?? 0)} на ${fmtNum(e.atkDebuffDuration ?? 0)} с`);
+      lines.push(`урон атаки всех врагов снижен на ${fmtReducePct(e.atkDebuffMult ?? 1)}% на ${fmtNum(e.atkDebuffDuration ?? 0)} с`);
       break;
     case "sever_artery":
       lines.push(`${def.damage} физического урона`);
@@ -409,16 +440,16 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push("отброс на 1 клетку дальше от героя");
       break;
     case "wind_speed":
-      lines.push(`интервал автоатаки героя ×${fmtNum(e.hasteIntervalMult ?? 0)} на ${fmtNum(e.hasteDuration ?? 0)} с`);
+      lines.push(`скорость атаки повышена на ${fmtHastePct(e.hasteIntervalMult ?? 1)}% на ${fmtNum(e.hasteDuration ?? 0)} с`);
       break;
     case "squall":
       lines.push(`каждая клетка креста: ${def.damage} урона воздуха`);
       break;
     case "dust_veil":
-      lines.push(`интервал автоатаки всех врагов ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      lines.push(`скорость атаки всех врагов снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} с`);
       break;
     case "air_pocket":
-      lines.push(`клик и 3 соседа: интервал автоатаки ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      lines.push(`клик и 3 соседа: скорость атаки снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} с`);
       break;
     case "tornado":
       lines.push(`${fmtNum(e.tornadoDps ?? def.damage)} урона воздуха в секунду по врагам на клетке смерча`);
@@ -432,7 +463,7 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push("после завершенной подготовки кулдаун автоатаки начинается с нуля и заполняется заново");
       break;
     case "behind_backs":
-      lines.push(`вне 1 ряда: входящий урон ×${fmtNum(e.rearDamageTakenMult ?? 0.5)}`);
+      lines.push(`вне 1 ряда: входящий урон снижен на ${fmtReducePct(e.rearDamageTakenMult ?? 0.5)}%`);
       lines.push("в 1 ряду: входящий урон без снижения");
       break;
     case "rejuvenation":
@@ -445,7 +476,7 @@ export function abilityNumberLines(def: AbilityDef): string[] {
       lines.push(
         `${fmtNum(e.poisonPerSec ?? 0)} урона природы в секунду, ${fmtNum(e.poisonDuration ?? 0)} с (итого ${fmtNum((e.poisonPerSec ?? 0) * (e.poisonDuration ?? 0))})`,
       );
-      lines.push(`интервал автоатаки ×${fmtMult(e.slowPotency ?? 0)} на ${fmtNum(e.slowDuration ?? 0)} с`);
+      lines.push(`скорость атаки снижена на ${fmtSlowPct(e.slowPotency ?? 0)}% на ${fmtNum(e.slowDuration ?? 0)} с`);
       lines.push("каст не блокирует, перемещение блокирует");
       break;
     case "poison_bush":

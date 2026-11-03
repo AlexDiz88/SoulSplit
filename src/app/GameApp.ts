@@ -9,10 +9,12 @@ import {
   beltRefillShortageText,
   refillBeltFromInventory,
 } from "../items/potions";
+import { tickGlobalEffectsOutsideCombat } from "../effects/tickGlobalEffects";
 import {
   addXpToProfile,
   applyProfileVitals,
   clampUnitBeltToEquipment,
+  ensureHeroGlobalEffects,
   ensureHeroStash,
   hydrateCombatUnit,
   sheetBaseFromProfile,
@@ -20,7 +22,6 @@ import {
   syncProfileVitals,
   type NewHeroOptions,
 } from "../meta/heroProfile";
-import { getStat } from "../stats/sheet";
 import { rollVictoryLoot, victoryXp } from "../meta/loot";
 import {
   clearSlot,
@@ -33,6 +34,7 @@ import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
 import { mountCharacterCreateScreen } from "../ui/characterCreateScreen";
 import { mountDefeatScreen } from "../ui/defeatScreen";
+import { mountGlobalEffectsHud } from "../ui/globalEffectsHud";
 import type { HubLocationId } from "../ui/hubLocations";
 import { mountHubScreen } from "../ui/hubScreen";
 import { mountMerchantScreen } from "../ui/merchantScreen";
@@ -62,11 +64,12 @@ export class GameApp {
   private prevUnlocked = new Set<ZoneId>();
   /** Куда вернуть игрока с экрана награды (карта + окно региона). */
   private rewardReturn: { zoneId: ZoneId; pointId: string } | null = null;
-  /** Реген HP/маны в городе (+1/сек). */
-  private hubRegenTimer: ReturnType<typeof setInterval> | null = null;
+  /** Тик глобальных эффектов вне боя (1 с). */
+  private globalEffectsTimer: ReturnType<typeof setInterval> | null = null;
 
   private readonly app: Application;
   private readonly hud: BattleHudApi;
+  private readonly globalEffectsHud: ReturnType<typeof mountGlobalEffectsHud>;
   private readonly startMenu: ReturnType<typeof mountStartMenu>;
   private readonly settings: ReturnType<typeof mountSettingsScreen>;
   private readonly slots: ReturnType<typeof mountSaveSlotsScreen>;
@@ -80,6 +83,7 @@ export class GameApp {
   constructor(app: Application, hud: BattleHudApi) {
     this.app = app;
     this.hud = hud;
+    this.globalEffectsHud = mountGlobalEffectsHud(document.getElementById("hud")!);
 
     this.startMenu = mountStartMenu({
       onPlay: () => this.goSlots(),
@@ -229,32 +233,42 @@ export class GameApp {
     saveSlot(this.activeSlot, this.state);
   }
 
-  private stopHubRegen(): void {
-    if (this.hubRegenTimer == null) return;
-    clearInterval(this.hubRegenTimer);
-    this.hubRegenTimer = null;
+  private stopGlobalEffectsTick(): void {
+    if (this.globalEffectsTimer == null) return;
+    clearInterval(this.globalEffectsTimer);
+    this.globalEffectsTimer = null;
   }
 
-  /** В городе +1 HP и +1 маны в секунду. Вне города не регенерирует. */
-  private startHubRegen(): void {
-    this.stopHubRegen();
-    this.hubRegenTimer = setInterval(() => {
-      if (this.screen !== "hub" || !this.state || !this.hubUnit) return;
-      const unit = this.hubUnit;
-      const maxHp = unit.stats.maxHp;
-      const maxMana = unit.sheet ? getStat(unit.sheet, "maxMana") : 0;
-      let changed = false;
-      if (unit.hp < maxHp) {
-        unit.hp = Math.min(maxHp, unit.hp + 1);
-        changed = true;
+  private syncGlobalEffectsHud(): void {
+    if (!this.state) {
+      this.globalEffectsHud.setVisible(false);
+      return;
+    }
+    const meta = this.screen === "hub" || this.screen === "world_map";
+    this.globalEffectsHud.setVisible(meta);
+    if (!meta) return;
+    ensureHeroGlobalEffects(this.state.hero);
+    this.globalEffectsHud.sync(this.state.hero.globalEffects);
+  }
+
+  /** Тик глобальных эффектов: vitals только в городе, таймеры и на карте. */
+  private startGlobalEffectsTick(): void {
+    this.stopGlobalEffectsTick();
+    this.globalEffectsTimer = setInterval(() => {
+      if (!this.state) return;
+      if (this.screen !== "hub" && this.screen !== "world_map") return;
+      ensureHeroGlobalEffects(this.state.hero);
+      const result = tickGlobalEffectsOutsideCombat(
+        this.state.hero.globalEffects,
+        this.hubUnit,
+        { inHub: this.screen === "hub", dt: 1 },
+      );
+      this.state.hero.globalEffects = result.effects;
+      if (result.changed && this.hubUnit) {
+        syncProfileVitals(this.state.hero, this.hubUnit);
+        this.hub.showHeroDock(this.state);
       }
-      if (unit.mana < maxMana) {
-        unit.mana = Math.min(maxMana, unit.mana + 1);
-        changed = true;
-      }
-      if (!changed) return;
-      syncProfileVitals(this.state.hero, unit);
-      this.hub.showHeroDock(this.state);
+      this.globalEffectsHud.sync(this.state.hero.globalEffects);
     }, 1000);
   }
 
@@ -274,7 +288,7 @@ export class GameApp {
   }
 
   private leaveActiveGame(): void {
-    this.stopHubRegen();
+    this.stopGlobalEffectsTick();
     this.persist();
     this.destroyBattle();
     this.hubUnit = null;
@@ -282,6 +296,7 @@ export class GameApp {
     this.activeSlot = -1;
     this.prevUnlocked = new Set();
     this.hud.closeOverlays();
+    this.syncGlobalEffectsHud();
   }
 
   private goSettingsFromHub(): void {
@@ -289,11 +304,12 @@ export class GameApp {
       syncProfileFromUnit(this.state.hero, this.hubUnit);
       syncProfileVitals(this.state.hero, this.hubUnit);
     }
-    this.stopHubRegen();
+    this.stopGlobalEffectsTick();
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "settings";
     this.hud.setShellMode("title");
+    this.syncGlobalEffectsHud();
     this.settings.show();
   }
 
@@ -311,10 +327,12 @@ export class GameApp {
 
   private goTitle(): void {
     this.destroyBattle();
+    this.stopGlobalEffectsTick();
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "title";
     this.hud.setShellMode("title");
+    this.syncGlobalEffectsHud();
     this.startMenu.show();
   }
 
@@ -428,7 +446,9 @@ export class GameApp {
     this.noteNewZones();
     this.rebuildHubUnit();
     this.hub.show(state);
-    this.startHubRegen();
+    ensureHeroGlobalEffects(state.hero);
+    this.startGlobalEffectsTick();
+    this.syncGlobalEffectsHud();
     this.persist();
   }
 
@@ -447,7 +467,6 @@ export class GameApp {
       syncProfileFromUnit(state.hero, this.hubUnit);
       syncProfileVitals(state.hero, this.hubUnit);
     }
-    this.stopHubRegen();
     this.hideAll();
     this.hud.closeOverlays();
     this.screen = "world_map";
@@ -456,6 +475,9 @@ export class GameApp {
     this.bindHubEquipmentSync();
     this.worldMap.show(state, opts);
     this.hub.showHeroDock(state);
+    ensureHeroGlobalEffects(state.hero);
+    this.startGlobalEffectsTick();
+    this.syncGlobalEffectsHud();
   }
 
   /** Закрыть экран награды: карта мира с открытым окном региона. */
@@ -536,7 +558,7 @@ export class GameApp {
       syncProfileVitals(state.hero, this.hubUnit);
       this.persist();
     }
-    this.stopHubRegen();
+    this.stopGlobalEffectsTick();
     const zone = getZone(zoneId);
     const point = getZonePoint(zone, pointId);
     state.lastZoneId = zoneId;
@@ -545,6 +567,7 @@ export class GameApp {
     this.hud.closeOverlays();
     this.screen = "battle";
     this.hud.setShellMode("battle");
+    this.syncGlobalEffectsHud();
 
     const encounter = rollEncounter({
       threatBudget: point.encounter.threatBudget,
@@ -599,7 +622,7 @@ export class GameApp {
       // После смерти - полный запас (возрождение в городе).
       state.hero.currentHp = null;
       state.hero.currentMana = null;
-      this.stopHubRegen();
+      this.stopGlobalEffectsTick();
       this.persist();
       this.destroyBattle();
       this.hideAll();
@@ -608,6 +631,7 @@ export class GameApp {
       this.hud.setCanChangeEquipment(() => true);
       this.bindHubEquipmentSync();
       this.rebuildHubUnit();
+      this.syncGlobalEffectsHud();
       this.defeat.show();
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
@@ -634,12 +658,14 @@ export class GameApp {
 
     this.persist();
     this.destroyBattle();
+    this.stopGlobalEffectsTick();
     this.hideAll();
     this.screen = "reward";
     this.hud.setShellMode("hub");
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.rebuildHubUnit();
+    this.syncGlobalEffectsHud();
 
     this.noteNewZones();
 

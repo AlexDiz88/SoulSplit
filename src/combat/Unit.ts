@@ -26,6 +26,8 @@ import {
 } from "../stats/formulas";
 import type { AbilityId, GridPos, Aspect, StatusEffect, Team, UnitStats } from "../types";
 import type { SummonSlot } from "./board";
+import type { StatusDisplayPackage } from "../effects/combatStatusMeta";
+import { StatusIconStrip, statusStripLayoutForUnit } from "./StatusIconStrip";
 
 export interface UnitCast {
   id: AbilityId;
@@ -136,7 +138,7 @@ export class Unit {
   private nameText: Text;
   private levelBadge: Graphics;
   private levelText: Text;
-  private statusText: Text;
+  private statusStrip: StatusIconStrip;
   private subText: Text;
   private flashGfx: Graphics;
   private shieldGfx: Graphics;
@@ -250,16 +252,9 @@ export class Unit {
     });
     this.levelText.anchor.set(0.5);
     this.levelText.visible = false;
-    this.statusText = new Text({
-      text: "",
-      style: {
-        fontFamily: "Exo 2, sans-serif",
-        fontSize: 10,
-        fontWeight: "700",
-        fill: 0xe8e2d4,
-      },
-    });
-    this.statusText.anchor.set(0.5, 0);
+    this.statusStrip = new StatusIconStrip(
+      statusStripLayoutForUnit({ team: this.team, summonSlot: this.summonSlot }),
+    );
     this.subText = new Text({
       text: init.elite ? "Элита" : (init.subtitle ?? ""),
       style: {
@@ -296,7 +291,7 @@ export class Unit {
       this.manaText,
       this.nameText,
       this.subText,
-      this.statusText,
+      this.statusStrip.view,
     );
 
     if (this.portraitUrl) {
@@ -447,41 +442,15 @@ export class Unit {
       this.manaText.text = "";
     }
 
-    const icons = this.statuses.map((s) => {
-      switch (s.kind) {
-        case "stun":
-          return "💫";
-        case "shield":
-          return "🛡";
-        case "bleed":
-          return "🩸";
-        case "burn":
-          return "🔥";
-        case "poison":
-          return "☠";
-        case "regen":
-          return "💚";
-        case "root":
-          return "🌱";
-        case "atk_buff":
-          return "⬆";
-        case "atk_debuff":
-          return "⬇";
-        case "slow":
-          return "❄";
-        case "haste":
-          return "💨";
-        case "invuln":
-          return "◈";
-        default:
-          return "";
-      }
-    });
-    this.statusText.text = icons.join("");
-    this.statusText.position.set(0, -this.half - 14);
+    this.statusStrip.sync(this.statuses, half, half);
     this.drawShieldAura();
     this.drawAttackCharge();
     if (!this.alive) this.view.visible = false;
+  }
+
+  /** Попадание в иконку пакета статуса (координаты доски). */
+  hitStatusIcon(boardX: number, boardY: number): StatusDisplayPackage | null {
+    return this.statusStrip.hitTest(boardX - this.view.x, boardY - this.view.y);
   }
 
   private drawShieldAura(): void {

@@ -21,6 +21,11 @@ import {
 } from "../items/potions";
 import type { StatId } from "../stats/statIds";
 import { createBaseHeroSheet, getStat, type HeroStatSheet } from "../stats/sheet";
+import {
+  cloneGlobalEffects,
+  ensureDefaultGlobalEffects,
+  type GlobalEffect,
+} from "../effects/globalEffects";
 import type { AbilityId, Aspect } from "../types";
 import { applyXpGain, levelBonusesAsStatDelta, type AddXpResult } from "./progression";
 
@@ -143,6 +148,8 @@ export interface HeroProfile {
   beltHpPotions: number;
   /** Заряды зелий маны на поясе. */
   beltManaPotions: number;
+  /** Глобальные эффекты вне боя (город / карта). */
+  globalEffects: GlobalEffect[];
 }
 
 function cloneEquipment(src: EquipmentMap): EquipmentMap {
@@ -167,6 +174,7 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     currentMana: src.currentMana ?? null,
     beltHpPotions: Math.max(0, Math.floor(src.beltHpPotions ?? 0)),
     beltManaPotions: Math.max(0, Math.floor(src.beltManaPotions ?? 0)),
+    globalEffects: cloneGlobalEffects(src.globalEffects),
   };
 }
 
@@ -203,6 +211,7 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     currentMana: null,
     beltHpPotions: 0,
     beltManaPotions: 0,
+    globalEffects: ensureDefaultGlobalEffects([]),
   };
 }
 
@@ -215,6 +224,11 @@ export function ensureHeroStash(profile: HeroProfile): void {
 export function ensureHeroBeltPotions(profile: HeroProfile): void {
   profile.beltHpPotions = Math.max(0, Math.floor(profile.beltHpPotions ?? 0));
   profile.beltManaPotions = Math.max(0, Math.floor(profile.beltManaPotions ?? 0));
+}
+
+/** Дозаполнить глобальные эффекты у старых сейвов. */
+export function ensureHeroGlobalEffects(profile: HeroProfile): void {
+  profile.globalEffects = ensureDefaultGlobalEffects(profile.globalEffects);
 }
 
 /** Данные для `new Unit(...)` из профиля. Экип/инвентарь - глубокие копии. */

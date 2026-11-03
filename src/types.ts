@@ -98,7 +98,10 @@ export interface UnitStats {
 /** Числовые эффекты способности. Описания и бой читают отсюда, не из хардкода в тексте. */
 export interface AbilityEffects {
   slowDuration?: number;
-  /** Прибавка к множителю интервала автоатаки (0.35 → ×1.35). */
+  /**
+   * Прибавка к множителю интервала автоатаки.
+   * Задавай из круглого % скорости: `attackSpeedReduceToSlowPotency(0.35)` для "-35%".
+   */
   slowPotency?: number;
   shieldAmount?: number;
   shieldDuration?: number;
@@ -108,15 +111,18 @@ export interface AbilityEffects {
   bleedDuration?: number;
   stunDuration?: number;
   atkBuffDuration?: number;
-  /** Прибавка к урону атаки (0.35 → +35% / ×1.35). */
+  /** Прибавка к урону атаки (0.35 → +35%). В тексте игрока: урон атаки повышен на 35%. */
   atkBuffPotency?: number;
   atkDebuffDuration?: number;
-  /** Множитель урона атаки врагов (0.7 → ×0.7). */
+  /** Множитель урона атаки врагов (0.7 → ×0.7). В тексте игрока: урон атаки снижен на 30%. */
   atkDebuffMult?: number;
   /** Доля урона вторичных клеток зоны от damage (0.55 → 55%). */
   zoneSecondaryRatio?: number;
   invulnerableDuringCast?: boolean;
-  /** Множитель интервала автоатаки героя (0.75 → быстрее). */
+  /**
+   * Множитель интервала автоатаки героя.
+   * Задавай из круглого % скорости: `attackSpeedIncreaseToHasteMult(0.25)` для "+25%".
+   */
   hasteIntervalMult?: number;
   hasteDuration?: number;
   /** Урон смерча за тик (раз в секунду). */

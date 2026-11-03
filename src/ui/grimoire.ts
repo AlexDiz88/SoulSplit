@@ -195,17 +195,19 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
       btn.style.setProperty("--aspect", aspect.color);
       const badge = document.createElement("b");
       badge.textContent = String(count);
+      const lead = document.createElement("span");
+      lead.className = "grimoire-aspect-lead";
       if (isHeroAspect(aspect.id)) {
         const iconWrap = document.createElement("span");
         iconWrap.className = "grimoire-aspect-icon";
         iconWrap.append(createAspectIconImg(aspect.id, "aspect-icon"));
-        btn.append(iconWrap, badge);
-        wireAspectNameTooltip(btn, aspect.id, aspectTip);
-      } else {
-        const aspectName = document.createElement("span");
-        aspectName.textContent = aspect.name;
-        btn.append(aspectName, badge);
+        lead.append(iconWrap);
       }
+      const aspectName = document.createElement("span");
+      aspectName.className = "grimoire-aspect-name";
+      aspectName.textContent = aspect.name;
+      lead.append(aspectName);
+      btn.append(lead, badge);
       btn.addEventListener("click", () => {
         hideAspectNameTip(aspectTip);
         aspectId = aspect.id;

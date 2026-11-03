@@ -1114,7 +1114,7 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(180px, 240px) minmax(220px, 300px) minmax(0, 1fr);
+  grid-template-columns: minmax(220px, 270px) minmax(220px, 300px) minmax(0, 1fr);
   gap: 16px;
   overflow: hidden;
 }
