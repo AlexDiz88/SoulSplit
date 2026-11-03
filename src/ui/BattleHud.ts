@@ -77,8 +77,14 @@ export interface BattleHudApi {
   showToast(text: string): void;
   /** Модальный алерт с одной кнопкой (например нехватка зелий после боя). */
   showAlert(title: string, message: string): void;
-  /** Простой тултип у точки экрана (например кружок уровня на канвасе). */
-  showScreenTooltip(clientX: number, clientY: number, title: string, desc: string): void;
+  /** Тултип у точки экрана (уровень, эффекты на канвасе). */
+  showScreenTooltip(
+    clientX: number,
+    clientY: number,
+    title: string,
+    desc: string,
+    opts?: { iconUrl?: string; aspectId?: string },
+  ): void;
   hideScreenTooltip(): void;
   setPause(paused: boolean): void;
   setSpeed(mult: number): void;
@@ -691,12 +697,34 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       alertOverlay.hidden = false;
     },
 
-    showScreenTooltip(clientX: number, clientY: number, title: string, desc: string) {
+    showScreenTooltip(
+      clientX: number,
+      clientY: number,
+      title: string,
+      desc: string,
+      opts?: { iconUrl?: string; aspectId?: string },
+    ) {
       if (!canHoverTooltip()) return;
-      tooltip.className = "skill-tooltip";
-      tooltip.style.removeProperty("--aspect-color");
+      const aspectId = opts?.aspectId;
+      const aspectColor =
+        aspectId && aspectId in ASPECT_HEX
+          ? ASPECT_HEX[aspectId as keyof typeof ASPECT_HEX]
+          : null;
+      if (aspectId && aspectColor) {
+        tooltip.className = `skill-tooltip aspect-${aspectId}`;
+        tooltip.style.setProperty("--aspect-color", aspectColor);
+      } else {
+        tooltip.className = "skill-tooltip";
+        tooltip.style.removeProperty("--aspect-color");
+      }
+      const iconHtml = opts?.iconUrl
+        ? `<img class="tt-icon" src="${opts.iconUrl}" alt="" draggable="false" />`
+        : "";
       tooltip.innerHTML = `
-        <div class="tt-name">${title}</div>
+        <div class="tt-head${opts?.iconUrl ? " has-icon" : ""}">
+          ${iconHtml}
+          <div class="tt-name">${title}</div>
+        </div>
         <div class="tt-desc">${desc}</div>
       `;
       tooltip.hidden = false;

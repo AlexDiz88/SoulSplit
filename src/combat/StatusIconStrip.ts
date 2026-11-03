@@ -1,4 +1,4 @@
-import { Container, Graphics, Sprite, Text, Texture } from "pixi.js";
+import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import {
   STATUS_ICON_MAX_VISIBLE,
   formatStatusTimer,
@@ -15,20 +15,76 @@ interface IconSlot {
   root: Container;
   bg: Graphics;
   sprite: Sprite;
+  /** Круглая маска под арт способности (как на панели скиллов). */
+  maskGfx: Graphics;
   frame: Graphics;
   timer: Text;
   package: StatusDisplayPackage | null;
+  /** URL, под который ждём Assets.load. */
+  pendingUrl: string | null;
 }
 
-const textureCache = new Map<string, Texture>();
+const loadingUrls = new Set<string>();
 
-function textureFor(url: string): Texture {
-  let tex = textureCache.get(url);
-  if (!tex) {
-    tex = Texture.from(url);
-    textureCache.set(url, tex);
-  }
+function textureReady(url: string): Texture | null {
+  const tex = Assets.get<Texture>(url);
+  if (!tex || tex === Texture.EMPTY) return null;
+  if (tex.width <= 0 || tex.height <= 0) return null;
   return tex;
+}
+
+function requestTexture(url: string, onReady: (tex: Texture) => void): void {
+  const ready = textureReady(url);
+  if (ready) {
+    onReady(ready);
+    return;
+  }
+  if (loadingUrls.has(url)) {
+    void Assets.load<Texture>(url).then((tex) => {
+      if (tex && tex !== Texture.EMPTY) onReady(tex);
+    });
+    return;
+  }
+  loadingUrls.add(url);
+  void Assets.load<Texture>(url)
+    .then((tex) => {
+      loadingUrls.delete(url);
+      if (tex && tex !== Texture.EMPTY) onReady(tex);
+    })
+    .catch(() => {
+      loadingUrls.delete(url);
+    });
+}
+
+function fitSprite(sprite: Sprite, tex: Texture, box: number): void {
+  sprite.texture = tex;
+  sprite.visible = true;
+  // Явный scale от реальных размеров - иначе width при tex.width=0 ломает масштаб навсегда.
+  const tw = Math.max(1, tex.width);
+  const th = Math.max(1, tex.height);
+  sprite.scale.set(box / tw, box / th);
+}
+
+function paintIconArt(slot: IconSlot, url: string, size: number): void {
+  const pad = size * 0.08;
+  const box = size - pad * 2;
+
+  const apply = (tex: Texture): void => {
+    if (slot.pendingUrl !== url) return;
+    fitSprite(slot.sprite, tex, box);
+  };
+
+  const ready = textureReady(url);
+  if (ready) {
+    slot.pendingUrl = url;
+    apply(ready);
+    return;
+  }
+  // Уже ждём этот URL - не плодим колбэки на каждый sync.
+  if (slot.pendingUrl === url) return;
+  slot.pendingUrl = url;
+  slot.sprite.visible = false;
+  requestTexture(url, apply);
 }
 
 function makeSlot(fontSize: number): IconSlot {
@@ -39,6 +95,10 @@ function makeSlot(fontSize: number): IconSlot {
   const sprite = new Sprite();
   sprite.anchor.set(0.5);
   sprite.eventMode = "none";
+
+  const maskGfx = new Graphics();
+  maskGfx.eventMode = "none";
+  sprite.mask = maskGfx;
 
   const frame = new Graphics();
   frame.eventMode = "none";
@@ -56,8 +116,8 @@ function makeSlot(fontSize: number): IconSlot {
   timer.anchor.set(1, 1);
   timer.eventMode = "none";
 
-  root.addChild(bg, sprite, frame, timer);
-  return { root, bg, sprite, frame, timer, package: null };
+  root.addChild(bg, sprite, maskGfx, frame, timer);
+  return { root, bg, sprite, maskGfx, frame, timer, package: null, pendingUrl: null };
 }
 
 function paintPackage(slot: IconSlot, pkg: StatusDisplayPackage, size: number): void {
@@ -66,19 +126,16 @@ function paintPackage(slot: IconSlot, pkg: StatusDisplayPackage, size: number): 
   const stroke = frameColorForPolarity(pkg.polarity);
   const fill =
     pkg.polarity === "buff" ? 0x1a2a1a : pkg.polarity === "mixed" ? 0x2a2418 : 0x2a1a1a;
+  const radius = size * 0.5;
 
-  slot.bg.clear().roundRect(-half, -half, size, size, 3).fill({ color: fill, alpha: 0.95 });
+  slot.bg.clear().circle(0, 0, radius).fill({ color: fill, alpha: 0.95 });
+  slot.maskGfx.clear().circle(0, 0, radius - size * 0.04).fill({ color: 0xffffff });
   slot.frame
     .clear()
-    .roundRect(-half, -half, size, size, 3)
+    .circle(0, 0, radius)
     .stroke({ color: stroke, width: Math.max(1.5, size * 0.08) });
 
-  const url = resolveStatusIconUrl(pkg.representative);
-  slot.sprite.texture = textureFor(url);
-  slot.sprite.visible = true;
-  const pad = size * 0.12;
-  slot.sprite.width = size - pad * 2;
-  slot.sprite.height = size - pad * 2;
+  paintIconArt(slot, resolveStatusIconUrl(pkg.representative), size);
 
   slot.timer.anchor.set(1, 1);
   slot.timer.text = formatStatusTimer(pkg.remaining);
@@ -88,11 +145,14 @@ function paintPackage(slot: IconSlot, pkg: StatusDisplayPackage, size: number): 
 
 function paintOverflow(slot: IconSlot, count: number, size: number): void {
   slot.package = null;
+  slot.pendingUrl = null;
   const half = size / 2;
-  slot.bg.clear().roundRect(-half, -half, size, size, 3).fill({ color: 0x1a2018, alpha: 0.95 });
+  const radius = size * 0.5;
+  slot.bg.clear().circle(0, 0, radius).fill({ color: 0x1a2018, alpha: 0.95 });
+  slot.maskGfx.clear();
   slot.frame
     .clear()
-    .roundRect(-half, -half, size, size, 3)
+    .circle(0, 0, radius)
     .stroke({ color: 0x8a8070, width: Math.max(1.5, size * 0.08) });
   slot.sprite.visible = false;
   slot.timer.anchor.set(0.5);
@@ -103,7 +163,8 @@ function paintOverflow(slot: IconSlot, count: number, size: number): void {
 
 /**
  * Иконки боевых статусов на карточке юнита.
- * Пакеты по способности (1 скилл = 1 иконка). unit - ряд под картой; hero - баффы слева / дебаффы справа.
+ * Пакеты по способности (1 скилл = 1 иконка).
+ * unit - ряд внутри портрета над полоской HP; hero - баффы слева / дебаффы справа.
  */
 export class StatusIconStrip {
   readonly view = new Container();
@@ -118,9 +179,10 @@ export class StatusIconStrip {
 
   constructor(layout: StatusStripLayout) {
     this.layout = layout;
-    this.iconSize = layout === "hero" ? 46 : 20;
-    this.gap = layout === "hero" ? 6 : 3;
-    this.fontSize = layout === "hero" ? 14 : 9;
+    // unit: круг над HP внутри портрета; hero: крупнее у большой карты
+    this.iconSize = layout === "hero" ? 44 : 28;
+    this.gap = layout === "hero" ? 6 : 4;
+    this.fontSize = layout === "hero" ? 13 : 10;
     this.view.eventMode = "none";
 
     const max = STATUS_ICON_MAX_VISIBLE;
@@ -147,17 +209,17 @@ export class StatusIconStrip {
 
   /**
    * @param cardHalf - половина cardSize
-   * @param barBottomY - нижний край колонки HP/мана (обычно half)
+   * @param barEdgeY - hero: низ колонки баров; unit: верх полоски HP
    */
-  sync(statuses: StatusEffect[], cardHalf: number, barBottomY: number): void {
+  sync(statuses: StatusEffect[], cardHalf: number, barEdgeY: number): void {
     this.hideAll();
     if (statuses.length === 0) return;
     const packages = groupStatusesForDisplay(statuses);
 
     if (this.layout === "hero") {
-      this.syncHero(packages, cardHalf, barBottomY);
+      this.syncHero(packages, cardHalf, barEdgeY);
     } else {
-      this.syncUnit(packages, cardHalf);
+      this.syncUnit(packages, barEdgeY);
     }
   }
 
@@ -207,13 +269,14 @@ export class StatusIconStrip {
     }
   }
 
-  private syncUnit(packages: StatusDisplayPackage[], cardHalf: number): void {
+  /** Внутри портрета, ряд сразу над верхней кромкой полоски HP. */
+  private syncUnit(packages: StatusDisplayPackage[], barTopY: number): void {
     const visible = packages.slice(0, STATUS_ICON_MAX_VISIBLE);
     const overflow = packages.length - visible.length;
     const count = visible.length + (overflow > 0 ? 1 : 0);
     const totalW = count * this.iconSize + Math.max(0, count - 1) * this.gap;
     let x = -totalW / 2 + this.iconSize / 2;
-    const y = cardHalf + 4 + this.iconSize / 2;
+    const y = barTopY - 2 - this.iconSize / 2;
 
     for (let i = 0; i < visible.length; i++) {
       const slot = this.unitSlots[i]!;
@@ -240,7 +303,6 @@ export class StatusIconStrip {
     for (const s of this.unitSlots) {
       s.root.visible = false;
       s.package = null;
-      s.sprite.visible = true;
       s.timer.anchor.set(1, 1);
     }
     this.overflowSlot.root.visible = false;

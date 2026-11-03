@@ -247,7 +247,8 @@ export class GameApp {
     const meta = this.screen === "hub" || this.screen === "world_map";
     this.globalEffectsHud.setVisible(meta);
     if (!meta) return;
-    ensureHeroGlobalEffects(this.state.hero);
+    const inHub = this.screen === "hub";
+    ensureHeroGlobalEffects(this.state.hero, inHub);
     this.globalEffectsHud.sync(this.state.hero.globalEffects);
   }
 
@@ -257,11 +258,12 @@ export class GameApp {
     this.globalEffectsTimer = setInterval(() => {
       if (!this.state) return;
       if (this.screen !== "hub" && this.screen !== "world_map") return;
-      ensureHeroGlobalEffects(this.state.hero);
+      const inHub = this.screen === "hub";
+      ensureHeroGlobalEffects(this.state.hero, inHub);
       const result = tickGlobalEffectsOutsideCombat(
         this.state.hero.globalEffects,
         this.hubUnit,
-        { inHub: this.screen === "hub", dt: 1 },
+        { inHub, dt: 1 },
       );
       this.state.hero.globalEffects = result.effects;
       if (result.changed && this.hubUnit) {
@@ -446,7 +448,7 @@ export class GameApp {
     this.noteNewZones();
     this.rebuildHubUnit();
     this.hub.show(state);
-    ensureHeroGlobalEffects(state.hero);
+    ensureHeroGlobalEffects(state.hero, true);
     this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
     this.persist();
@@ -475,7 +477,7 @@ export class GameApp {
     this.bindHubEquipmentSync();
     this.worldMap.show(state, opts);
     this.hub.showHeroDock(state);
-    ensureHeroGlobalEffects(state.hero);
+    ensureHeroGlobalEffects(state.hero, false);
     this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
   }

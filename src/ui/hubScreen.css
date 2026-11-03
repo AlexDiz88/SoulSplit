@@ -97,7 +97,7 @@
   color: inherit;
   font: inherit;
   text-align: left;
-  cursor: pointer;
+  cursor: var(--cur-pointer);
   display: flex;
   flex-direction: row;
   align-items: stretch;

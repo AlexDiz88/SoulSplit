@@ -1,0 +1,28 @@
+---
+description: Только кастомные курсоры проекта, никогда системные браузерные
+alwaysApply: true
+---
+
+# Курсоры
+
+Всегда используй **кастомные** курсоры проекта через CSS-переменные `--cur-*` из `src/style.css`. Никогда системные / браузерные ключевые слова.
+
+## Запрещено
+
+- `cursor: help` (стрелка с вопросиком)
+- `cursor: pointer` (рука)
+- `cursor: not-allowed`, `default`, `text`, `wait`, `grab`, `crosshair`, `move` и любые другие системные keywords напрямую
+- `element.style.cursor = "help"` / `"pointer"` / и т.п. в JS/TS
+- fallback на системный keyword в `var(--cur-..., pointer)` и подобных
+
+## Как делать
+
+- кликабельные кнопки / иконки с тултипом: `cursor: var(--cur-default)` или `var(--cur-pointer)` / `var(--cur-help)` (оба сейчас = кастомный default)
+- недоступно: `var(--cur-not-allowed)`
+- текст: `var(--cur-text)`
+- прицел / таргет: `var(--cur-crosshair)` / `var(--cur-target)`
+- ожидание: `var(--cur-wait)` / `var(--cur-progress)`
+- drag: `var(--cur-grab)` / `var(--cur-grabbing)`
+- перемещение / ресайз: `var(--cur-move)`, `var(--cur-ew-resize)` и соседние `--cur-*-resize`
+
+Новые курсоры - только SVG в `assets/ui/cursors/` + переменная `--cur-*` в `:root` `src/style.css`. Для подсказок и "можно кликнуть" не добавляй отдельный арт с вопросиком - бери `--cur-default` / `--cur-help` / `--cur-pointer`.

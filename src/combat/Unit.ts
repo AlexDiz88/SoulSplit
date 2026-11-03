@@ -442,7 +442,12 @@ export class Unit {
       this.manaText.text = "";
     }
 
-    this.statusStrip.sync(this.statuses, half, half);
+    // hero: низ колонки баров; unit/enemy: верх HP - иконки эффектов над полоской внутри портрета
+    const stripAsHero = statusStripLayoutForUnit({
+      team: this.team,
+      summonSlot: this.summonSlot,
+    }) === "hero";
+    this.statusStrip.sync(this.statuses, half, stripAsHero ? half : hpY);
     this.drawShieldAura();
     this.drawAttackCharge();
     if (!this.alive) this.view.visible = false;

@@ -234,7 +234,7 @@
   --slot: var(--hand);
   width: var(--hand);
   height: var(--hand);
-  cursor: var(--cur-default, pointer);
+  cursor: var(--cur-default);
 }
 
 .reward-loot-cell:hover {

@@ -24,6 +24,7 @@ import { createBaseHeroSheet, getStat, type HeroStatSheet } from "../stats/sheet
 import {
   cloneGlobalEffects,
   ensureDefaultGlobalEffects,
+  syncGlobalEffectsPresence,
   type GlobalEffect,
 } from "../effects/globalEffects";
 import type { AbilityId, Aspect } from "../types";
@@ -148,7 +149,7 @@ export interface HeroProfile {
   beltHpPotions: number;
   /** Заряды зелий маны на поясе. */
   beltManaPotions: number;
-  /** Глобальные эффекты вне боя (город / карта). */
+  /** Глобальные эффекты вне боя (город; часть только в городе). */
   globalEffects: GlobalEffect[];
 }
 
@@ -226,9 +227,12 @@ export function ensureHeroBeltPotions(profile: HeroProfile): void {
   profile.beltManaPotions = Math.max(0, Math.floor(profile.beltManaPotions ?? 0));
 }
 
-/** Дозаполнить глобальные эффекты у старых сейвов. */
-export function ensureHeroGlobalEffects(profile: HeroProfile): void {
-  profile.globalEffects = ensureDefaultGlobalEffects(profile.globalEffects);
+/**
+ * Синхронизировать глобальные эффекты с местом героя.
+ * `inHub: true` (по умолчанию) - для сейва / входа в город; на карте передавать false.
+ */
+export function ensureHeroGlobalEffects(profile: HeroProfile, inHub = true): void {
+  profile.globalEffects = syncGlobalEffectsPresence(profile.globalEffects, { inHub });
 }
 
 /** Данные для `new Unit(...)` из профиля. Экип/инвентарь - глубокие копии. */

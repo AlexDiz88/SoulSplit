@@ -587,7 +587,7 @@ textarea,
   background: rgba(14, 18, 14, 0.92);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
-  cursor: help;
+  cursor: var(--cur-help);
   overflow: hidden;
 }
 
@@ -632,12 +632,39 @@ textarea,
   display: none;
 }
 
+.skill-tooltip .tt-head {
+  margin-bottom: 4px;
+}
+
+.skill-tooltip .tt-head.has-icon {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Круг как на панели способностей, рядом с названием. */
+.skill-tooltip .tt-icon {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--aspect-color, var(--accent-dim)) 55%, transparent);
+  background: rgb(14, 18, 14);
+  pointer-events: none;
+}
+
 .skill-tooltip .tt-name {
   font-family: var(--font);
   font-size: 1.15rem;
   font-weight: 700;
   color: var(--accent);
   margin-bottom: 4px;
+}
+
+.skill-tooltip .tt-head .tt-name {
+  margin-bottom: 0;
+  line-height: 1.25;
 }
 
 .skill-tooltip .tt-passive {

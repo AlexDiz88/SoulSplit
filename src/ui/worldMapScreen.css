@@ -60,7 +60,7 @@
 
 .world-map-spot-btn.is-locked {
   opacity: 0.55;
-  cursor: not-allowed;
+  cursor: var(--cur-not-allowed);
 }
 
 .world-map-spot-btn.is-locked:hover,
@@ -248,7 +248,7 @@
   font-size: 0.98rem;
   letter-spacing: 0.04em;
   text-align: center;
-  cursor: pointer;
+  cursor: var(--cur-pointer);
   transition:
     border-color 0.12s ease,
     background 0.12s ease,

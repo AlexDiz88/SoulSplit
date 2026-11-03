@@ -50,7 +50,11 @@ import { BattleStatsTracker } from "./battleStats";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
 import { ENEMY_CRIT_DAMAGE, enemyAutoAttackDamage, rollEnemyCrit } from "./enemies";
-import { packageTooltipDesc, packageTooltipTitle } from "../effects/combatStatusMeta";
+import {
+  packageTooltipDesc,
+  packageTooltipTitle,
+  resolveStatusIconUrl,
+} from "../effects/combatStatusMeta";
 import { SKILL_HOTKEY_CODES, type BattleHudApi } from "../ui/BattleHud";
 
 type AutoHand = "mainhand" | "offhand";
@@ -248,11 +252,12 @@ export class Battle {
     boardY: number,
     title: string,
     desc: string,
+    opts?: { iconUrl?: string; aspectId?: string },
   ): void {
     if (this.boardTipKey === key) return;
     this.boardTipKey = key;
     const screen = this.boardToClient(boardX, boardY);
-    this.hud.showScreenTooltip(screen.x, screen.y, title, desc);
+    this.hud.showScreenTooltip(screen.x, screen.y, title, desc, opts);
   }
 
   private updateBoardHoverTip(ev: PointerEvent): void {
@@ -263,12 +268,18 @@ export class Battle {
 
       const statusPkg = u.hitStatusIcon(local.x, local.y);
       if (statusPkg) {
+        const srcId = statusPkg.representative.sourceAbilityId;
+        const aspectId = srcId ? ABILITIES[srcId as AbilityId]?.aspect : undefined;
         this.showBoardHoverTip(
           `status:${u.id}:${statusPkg.key}`,
           local.x,
           local.y,
           packageTooltipTitle(statusPkg),
           packageTooltipDesc(statusPkg),
+          {
+            iconUrl: resolveStatusIconUrl(statusPkg.representative),
+            aspectId,
+          },
         );
         return;
       }
