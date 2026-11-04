@@ -649,12 +649,12 @@
   height: 24px;
   margin: 0;
   padding: 0;
-  border: 1px solid rgba(196, 163, 90, 0.85);
+  border: 1px solid rgba(200, 80, 70, 0.9);
   border-radius: 3px;
   background:
-    linear-gradient(180deg, rgba(72, 48, 18, 0.95), rgba(28, 18, 10, 0.96)),
-    #1a1208;
-  color: #e8c76a;
+    linear-gradient(180deg, rgba(72, 22, 18, 0.95), rgba(28, 10, 10, 0.96)),
+    #1a0808;
+  color: #e85a4a;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
   cursor: var(--cur-default);
 }
@@ -662,8 +662,8 @@
 .wm-region-enemy-boss:hover,
 .wm-region-enemy-boss:focus-visible {
   outline: none;
-  color: #f3df9a;
-  border-color: #f0d78a;
+  color: #f07868;
+  border-color: #f09080;
 }
 
 .wm-region-enemy-boss-icon {
@@ -673,21 +673,10 @@
 }
 
 .wm-region-enemy-boss-tip {
-  position: absolute;
+  /* Визуал из .rank-label-tip; здесь только якорь к бейджу. */
   left: 0;
   bottom: calc(100% + 6px);
   z-index: 8;
-  padding: 5px 8px;
-  border: 1px solid rgba(196, 163, 90, 0.55);
-  border-radius: 3px;
-  background: linear-gradient(180deg, #1a1c1e, #0e1012);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
-  color: var(--theme-corona, #e8d9a8);
-  font-size: 0.82rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  white-space: nowrap;
-  pointer-events: none;
   opacity: 0;
   visibility: hidden;
   transition:

@@ -14,6 +14,7 @@ import {
 import { activeQuestNamesForRegion } from "../quests/questLog";
 import { coverLayout, projectLocation } from "./hubLocations";
 import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
+import { SKULL_ICON_PATH } from "./enemyRankIcons";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
 
@@ -68,7 +69,7 @@ function createThreatIcon(): SVGSVGElement {
   return svg;
 }
 
-/** Корона / рогатая голова для бейджа босса. */
+/** Красный череп для бейджа босса. */
 function createBossIcon(): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("class", "wm-region-enemy-boss-icon");
@@ -76,10 +77,7 @@ function createBossIcon(): SVGSVGElement {
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
   const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
-  path.setAttribute(
-    "d",
-    "M3.2 13.2h9.6v1.2H3.2zm.6-1.6 1.1-5.2 2.1 2.4L8 4.4l1 4.4 2.1-2.4 1.1 5.2H3.8zM8 2.2l1.1 1.5L8 5.1 6.9 3.7 8 2.2zm-4.4 1.6.9 1.6-.4 1.8-1.6-1.2 1.1-2.2zm8.8 0 1.1 2.2-1.6 1.2-.4-1.8.9-1.6z",
-  );
+  path.setAttribute("d", SKULL_ICON_PATH);
   path.setAttribute("fill", "currentColor");
   svg.append(path);
   return svg;
@@ -332,7 +330,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         const badge = el("button", "wm-region-enemy-boss");
         badge.type = "button";
         badge.setAttribute("aria-label", "Босс");
-        const bossTip = el("span", "wm-region-enemy-boss-tip", "Босс");
+        const bossTip = el("span", "rank-label-tip wm-region-enemy-boss-tip", "Босс");
         badge.append(createBossIcon(), bossTip);
         badge.addEventListener("pointerenter", () => {
           hideEnemyTip();

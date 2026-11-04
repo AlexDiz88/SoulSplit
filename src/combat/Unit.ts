@@ -29,6 +29,9 @@ import type { SummonSlot } from "./board";
 import type { StatusDisplayPackage } from "../effects/combatStatusMeta";
 import { StatusIconStrip, statusStripLayoutForUnit } from "./StatusIconStrip";
 
+const CROWN_ICON_COLOR = 0xe8c76a;
+const SKULL_ICON_COLOR = 0xe85a4a;
+
 export interface UnitCast {
   id: AbilityId;
   elapsed: number;
@@ -70,8 +73,10 @@ export interface UnitInit {
   beltManaPotions?: number;
   /** Уровень героя или итоговый уровень врага в этом бою. */
   level?: number;
-  /** Элитный враг - золотая рамка и тег. */
+  /** Элитный враг - золотая рамка и корона на HP. */
   elite?: boolean;
+  /** Босс локации - красный череп на HP. */
+  boss?: boolean;
   /** Слот суммона у героя (0 - слева, 1 - справа). Только у призванных союзников. */
   summonSlot?: SummonSlot | null;
 }
@@ -103,6 +108,7 @@ export class Unit {
   /** Уровень героя или врага в этом бою. */
   level: number;
   readonly elite: boolean;
+  readonly boss: boolean;
   /** Слот суммона у портрета героя; null у героя и врагов. */
   summonSlot: SummonSlot | null;
   autoTimer: number;
@@ -132,6 +138,9 @@ export class Unit {
   private hpBarBg: Graphics;
   private hpBarFg: Graphics;
   private hpText: Text;
+  private rankIcon: Graphics;
+  /** Локальный прямоугольник иконки ранга для hit-test тултипа. */
+  private rankIconHit: { x: number; y: number; w: number; h: number } | null = null;
   private manaBarBg: Graphics;
   private manaBarFg: Graphics;
   private manaText: Text;
@@ -164,6 +173,7 @@ export class Unit {
     this.beltManaPotions = Math.max(0, Math.floor(init.beltManaPotions ?? 0));
     this.level = init.level ?? (init.team === "player" ? 1 : 0);
     this.elite = init.elite ?? false;
+    this.boss = init.boss ?? false;
     this.summonSlot = init.summonSlot ?? null;
     this.sheetBase = createBaseHeroSheet();
     this.sheet =
@@ -208,6 +218,9 @@ export class Unit {
     this.cdBarFg.eventMode = "none";
     this.hpBarBg = new Graphics();
     this.hpBarFg = new Graphics();
+    this.rankIcon = new Graphics();
+    this.rankIcon.eventMode = "none";
+    this.rankIcon.visible = false;
     // Как .hub-vital-label: белый + тень, без stroke (stroke ломает визуальный центр).
     const makeBarLabelStyle = () => ({
       fontFamily: "Exo 2, sans-serif",
@@ -259,7 +272,7 @@ export class Unit {
       statusStripLayoutForUnit({ team: this.team, summonSlot: this.summonSlot }),
     );
     this.subText = new Text({
-      text: init.elite ? "Элита" : (init.subtitle ?? ""),
+      text: init.subtitle ?? "",
       style: {
         fontFamily: "Exo 2, sans-serif",
         fontSize: 12,
@@ -289,6 +302,7 @@ export class Unit {
       this.hpBarBg,
       this.hpBarFg,
       this.hpText,
+      this.rankIcon,
       this.manaBarBg,
       this.manaBarFg,
       this.manaText,
@@ -366,6 +380,35 @@ export class Unit {
     return dx * dx + dy * dy <= r * r;
   }
 
+  /** "boss" / "elite" если на HP есть значок ранга. */
+  rankKind(): "boss" | "elite" | null {
+    if (this.boss) return "boss";
+    if (this.elite) return "elite";
+    return null;
+  }
+
+  /** Центр иконки ранга в локальных координатах юнита. */
+  rankIconLocalCenter(): { x: number; y: number } | null {
+    const r = this.rankIconHit;
+    if (!r) return null;
+    return { x: r.x + r.w / 2, y: r.y + r.h / 2 };
+  }
+
+  /** Попадание в корону / череп на полосе HP (координаты доски). */
+  hitRankIcon(boardX: number, boardY: number): boolean {
+    const r = this.rankIconHit;
+    if (!r || !this.rankIcon.visible) return false;
+    const pad = 3;
+    const lx = boardX - this.view.x;
+    const ly = boardY - this.view.y;
+    return (
+      lx >= r.x - pad &&
+      lx <= r.x + r.w + pad &&
+      ly >= r.y - pad &&
+      ly <= r.y + r.h + pad
+    );
+  }
+
   redraw(): void {
     const half = this.half;
     const barW = this.cardSize - 6;
@@ -395,11 +438,7 @@ export class Unit {
       this.subText.position.set(0, 8);
     } else {
       this.nameText.visible = false;
-      this.subText.visible = this.elite;
-      if (this.elite) {
-        // Ниже кружка уровня, чтобы "Элита" не наезжала на бейдж.
-        this.subText.position.set(0, -half + (this.level > 0 ? 28 : 10));
-      }
+      this.subText.visible = false;
     }
 
     if (this.team === "enemy" && this.level > 0) {
@@ -427,6 +466,7 @@ export class Unit {
     });
     this.hpText.text = `${Math.ceil(this.hp)}/${this.stats.maxHp}`;
     this.hpText.position.set(0, Math.round(hpY + hpBarH / 2));
+    this.drawRankIcon(-barW / 2, hpY, hpBarH);
 
     this.manaBarBg.clear();
     this.manaBarFg.clear();
@@ -534,6 +574,86 @@ export class Unit {
       color: 0xa8d8f0,
       alpha: 0.14,
     });
+  }
+
+  /** Корона (элита) или красный череп (босс) слева на полосе HP. Без SVG - иначе Pixi ломает bounds/layout. */
+  private drawRankIcon(barLeft: number, hpY: number, hpBarH: number): void {
+    this.rankIcon.clear();
+    const showBoss = this.boss;
+    const showElite = !showBoss && this.elite;
+    if (!showBoss && !showElite) {
+      this.rankIcon.visible = false;
+      this.rankIconHit = null;
+      return;
+    }
+    const size = Math.max(11, hpBarH + 1);
+    const x = barLeft + 1;
+    const y = hpY + (hpBarH - size) / 2;
+    this.rankIconHit = { x, y, w: size, h: size };
+    this.rankIcon
+      .roundRect(x - 0.5, y - 0.5, size + 1, size + 1, 2)
+      .fill({ color: 0x0c0f0c, alpha: 0.72 });
+    if (showBoss) this.drawSkullIcon(x, y, size);
+    else this.drawCrownIcon(x, y, size);
+    this.rankIcon.visible = true;
+  }
+
+  private drawCrownIcon(x: number, y: number, size: number): void {
+    const s = size / 16;
+    const g = this.rankIcon;
+    const c = CROWN_ICON_COLOR;
+    // Основание короны.
+    g.rect(x + 3.2 * s, y + 13.2 * s, 9.6 * s, 1.2 * s).fill(c);
+    // Зубцы: левый, центр, правый.
+    g.poly([
+      x + 3.8 * s, y + 11.6 * s,
+      x + 4.9 * s, y + 6.4 * s,
+      x + 7.0 * s, y + 8.8 * s,
+      x + 8.0 * s, y + 4.4 * s,
+      x + 9.0 * s, y + 8.8 * s,
+      x + 11.1 * s, y + 6.4 * s,
+      x + 12.2 * s, y + 11.6 * s,
+    ]).fill(c);
+    // Верхние пики.
+    g.poly([
+      x + 8.0 * s, y + 2.2 * s,
+      x + 9.1 * s, y + 3.7 * s,
+      x + 8.0 * s, y + 5.1 * s,
+      x + 6.9 * s, y + 3.7 * s,
+    ]).fill(c);
+    g.poly([
+      x + 3.6 * s, y + 3.8 * s,
+      x + 4.5 * s, y + 5.4 * s,
+      x + 4.1 * s, y + 7.2 * s,
+      x + 2.5 * s, y + 6.0 * s,
+    ]).fill(c);
+    g.poly([
+      x + 12.4 * s, y + 3.8 * s,
+      x + 13.5 * s, y + 6.0 * s,
+      x + 11.9 * s, y + 7.2 * s,
+      x + 11.5 * s, y + 5.4 * s,
+    ]).fill(c);
+  }
+
+  private drawSkullIcon(x: number, y: number, size: number): void {
+    const s = size / 16;
+    const g = this.rankIcon;
+    const c = SKULL_ICON_COLOR;
+    const cx = x + 8 * s;
+    const cy = y + 7.2 * s;
+    // Череп.
+    g.ellipse(cx, cy, 5.8 * s, 5.4 * s).fill(c);
+    // Челюсть.
+    g.roundRect(x + 4.4 * s, y + 10.2 * s, 7.2 * s, 3.6 * s, 1.2 * s).fill(c);
+    // Глазницы.
+    g.circle(x + 5.55 * s, y + 7.0 * s, 1.45 * s).fill(0x0c0f0c);
+    g.circle(x + 10.45 * s, y + 7.0 * s, 1.45 * s).fill(0x0c0f0c);
+    // Нос.
+    g.poly([
+      cx, y + 8.4 * s,
+      cx - 1.0 * s, y + 10.0 * s,
+      cx + 1.0 * s, y + 10.0 * s,
+    ]).fill(0x0c0f0c);
   }
 
   /** Левый край полосы КД: справа от кружка уровня, если он есть. */

@@ -628,6 +628,35 @@ textarea,
   color: var(--text);
 }
 
+/* Компактная подпись ранга (босс / элита) - как бейдж в окне региона. */
+.rank-label-tip {
+  position: absolute;
+  z-index: 80;
+  min-width: 0;
+  max-width: none;
+  padding: 5px 8px;
+  border: 1px solid rgba(200, 80, 70, 0.55);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #1a1c1e, #0e1012);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  color: var(--theme-corona, #e8d9a8);
+  font-family: var(--font);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.rank-label-tip--elite {
+  border-color: rgba(196, 163, 90, 0.55);
+}
+
+.rank-label-tip[hidden] {
+  display: none;
+}
+
 .skill-tooltip[hidden] {
   display: none;
 }

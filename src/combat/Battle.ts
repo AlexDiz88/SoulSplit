@@ -252,6 +252,8 @@ export class Battle {
   private static readonly LEVEL_TIP_TITLE = "Уровень юнита";
   private static readonly LEVEL_TIP_DESC =
     "Чем выше - тем лучше его показатели атаки, защиты, здоровья и других параметров.";
+  private static readonly BOSS_TIP_TITLE = "Босс";
+  private static readonly ELITE_TIP_TITLE = "Элита";
 
   private hideBoardHoverTip(): void {
     if (this.boardTipKey == null) return;
@@ -265,7 +267,12 @@ export class Battle {
     boardY: number,
     title: string,
     desc: string,
-    opts?: { iconUrl?: string; aspectId?: string },
+    opts?: {
+      iconUrl?: string;
+      aspectId?: string;
+      compact?: boolean;
+      rank?: "boss" | "elite";
+    },
   ): void {
     if (this.boardTipKey === key) return;
     this.boardTipKey = key;
@@ -295,6 +302,22 @@ export class Battle {
           },
         );
         return;
+      }
+
+      if (u.hitRankIcon(local.x, local.y)) {
+        const kind = u.rankKind();
+        const c = u.rankIconLocalCenter();
+        if (kind && c) {
+          this.showBoardHoverTip(
+            `rank:${u.id}:${kind}`,
+            u.view.x + c.x,
+            u.view.y + c.y,
+            kind === "boss" ? Battle.BOSS_TIP_TITLE : Battle.ELITE_TIP_TITLE,
+            "",
+            { compact: true, rank: kind },
+          );
+          return;
+        }
       }
 
       if (!u.hitLevelBadge(local.x, local.y)) continue;
@@ -754,6 +777,7 @@ export class Battle {
     this.config.encounter.forEach((spawn, index) => {
       const kind = spawn.kind;
       const elite = spawn.elite === true;
+      const boss = kind.boss === true;
       const u = new Unit({
         id: `${kind.id}-${index}`,
         name: elite ? `Элита: ${kind.name}` : kind.name,
@@ -772,6 +796,7 @@ export class Battle {
         portraitUrl: kind.portraitUrl,
         level: spawn.level,
         elite,
+        boss,
       });
       this.unitsLayer.addChild(u.view);
       this.units.push(u);
