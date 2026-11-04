@@ -11,6 +11,8 @@ export type { BattleStats, AbilityBattleStats, AutoAttackBattleStats, EnemyKillS
 export interface BattleKill {
   enemyId: string;
   kindId: string;
+  level: number;
+  elite: boolean;
 }
 
 export interface BattleResult {

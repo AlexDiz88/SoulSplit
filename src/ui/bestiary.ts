@@ -22,11 +22,6 @@ const PORTRAIT = window.matchMedia("(max-width: 480px)");
 
 type PhoneView = "list" | "detail";
 
-function displayEnemyStatus(status: string): string {
-  if (status === "прототип" || status === "взято") return "одобрено";
-  return status;
-}
-
 function enemyStatusClass(status: string): string {
   if (status === "черновик") return " draft";
   if (status === "одобрено") return " approved";
@@ -225,9 +220,8 @@ export function mountBestiary(mountEl: HTMLElement, tooltipHost: BestiaryTooltip
     portraitId.className = "grimoire-icon-id";
     portraitId.textContent = card.portrait;
     const status = document.createElement("span");
-    const statusLabel = displayEnemyStatus(card.status);
-    status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
-    status.textContent = statusLabel;
+    status.className = `grimoire-status${enemyStatusClass(card.status)}`;
+    status.textContent = card.status;
     const atkRange = enemyAtkRange(card.atk);
     const atkLabel =
       atkRange.min === atkRange.max ? String(atkRange.min) : `${atkRange.min}-${atkRange.max}`;
@@ -288,9 +282,8 @@ export function mountBestiary(mountEl: HTMLElement, tooltipHost: BestiaryTooltip
       name.className = "bestiary-name";
       name.textContent = card.name;
       const status = document.createElement("span");
-      const statusLabel = displayEnemyStatus(card.status);
-      status.className = `grimoire-status${enemyStatusClass(statusLabel)}`;
-      status.textContent = statusLabel;
+      status.className = `grimoire-status${enemyStatusClass(card.status)}`;
+      status.textContent = card.status;
       const type = document.createElement("span");
       type.className = "bestiary-type";
       type.textContent = `уровень ${card.baseLevel}`;

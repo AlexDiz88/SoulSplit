@@ -783,7 +783,12 @@ export class Battle {
     if (u.team !== "enemy" || this.killLogged.has(u.id)) return;
     this.killLogged.add(u.id);
     const kindId = u.id.replace(/-\d+$/, "") || u.id;
-    this.killed.push({ enemyId: u.id, kindId });
+    this.killed.push({
+      enemyId: u.id,
+      kindId,
+      level: u.level > 0 ? u.level : 1,
+      elite: u.elite,
+    });
     this.statsTracker.noteKill(kindId);
     this.config.onEnemyKilled?.(kindId);
   }

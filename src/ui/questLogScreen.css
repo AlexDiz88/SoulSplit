@@ -20,8 +20,8 @@
 .questlog-window {
   position: relative;
   box-sizing: border-box;
-  width: min(920px, calc(100vw - 32px));
-  height: min(620px, calc(100vh - 48px));
+  width: min(1180px, calc(100vw - 28px));
+  height: min(820px, calc(100vh - 36px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -38,11 +38,11 @@
 
 .questlog-x {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   z-index: 3;
-  width: 34px;
-  height: 34px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -56,8 +56,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
 }
 
 .questlog-x span::before,
@@ -90,14 +90,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 48px;
-  padding: 14px 48px 8px;
+  min-height: 58px;
+  padding: 18px 56px 10px;
   border-bottom: none;
 }
 
 .questlog-title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 1.45rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -111,20 +111,20 @@
 .questlog-tabs {
   flex-shrink: 0;
   display: flex;
-  gap: 6px;
-  padding: 0 18px 12px;
+  gap: 8px;
+  padding: 0 22px 14px;
   border-bottom: 1px solid rgba(106, 90, 58, 0.55);
 }
 
 .questlog-tab {
-  height: 34px;
-  padding: 0 14px;
+  height: 40px;
+  padding: 0 18px;
   border: 1px solid #4a4538;
   border-radius: 4px;
   background: #141516;
   color: #a8a090;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   font-weight: 700;
   cursor: var(--cur-default);
 }
@@ -144,29 +144,29 @@
   flex: 1;
   min-height: 0;
   display: grid;
-  grid-template-columns: minmax(220px, 280px) 1fr;
+  grid-template-columns: minmax(280px, 340px) 1fr;
 }
 
 .questlog-list {
   min-height: 0;
   overflow: auto;
   border-right: 1px solid rgba(106, 90, 58, 0.45);
-  padding: 10px 8px;
+  padding: 14px 10px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .questlog-list-empty {
-  margin: 16px 8px;
+  margin: 20px 10px;
   color: #8a7a58;
-  font-size: 0.9rem;
-  line-height: 1.4;
+  font-size: 1.05rem;
+  line-height: 1.45;
 }
 
 .questlog-section-label {
-  margin: 8px 8px 4px;
-  font-size: 0.68rem;
+  margin: 10px 10px 4px;
+  font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -177,7 +177,7 @@
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid transparent;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.03);
@@ -203,41 +203,42 @@
 
 .questlog-quest-name {
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 1.1rem;
 }
 
 .questlog-detail {
   min-height: 0;
   overflow: auto;
-  padding: 16px 20px 18px;
+  padding: 22px 26px 22px;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
 
 .questlog-detail-empty {
   margin: auto;
   color: #8a7a58;
-  font-size: 0.95rem;
+  font-size: 1.15rem;
 }
 
 .questlog-detail-name {
   margin: 0;
-  font-size: 1.25rem;
+  font-size: 1.55rem;
   font-weight: 800;
   color: #f0e6c8;
 }
 
 .questlog-detail-desc {
   margin: 0;
-  line-height: 1.45;
+  font-size: 1.08rem;
+  line-height: 1.5;
   color: #c8c0a8;
   white-space: pre-wrap;
 }
 
 .questlog-block-title {
   margin: 4px 0 0;
-  font-size: 0.72rem;
+  font-size: 0.88rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -250,18 +251,18 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
 }
 
 .questlog-objective {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
-  padding: 8px 10px;
+  gap: 14px;
+  padding: 10px 12px;
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.28);
   border: 1px solid rgba(106, 90, 58, 0.35);
-  font-size: 0.9rem;
+  font-size: 1.05rem;
 }
 
 .questlog-objective.is-done {
@@ -274,9 +275,9 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
   color: #e0d6b8;
-  font-size: 0.9rem;
+  font-size: 1.05rem;
 }
 
 .questlog-actions {
@@ -284,27 +285,27 @@
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 12px;
-  padding-top: 8px;
+  gap: 14px;
+  padding-top: 10px;
 }
 
 .questlog-hint {
   margin: 0;
-  font-size: 0.78rem;
+  font-size: 0.95rem;
   color: #a89870;
 }
 
 .questlog-track {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   margin: 0;
   padding: 2px 0;
   border: 0;
   background: transparent;
   color: #c8c0a8;
   font: inherit;
-  font-size: 0.88rem;
+  font-size: 1.05rem;
   cursor: var(--cur-default);
 }
 
@@ -328,8 +329,8 @@
 .questlog-track-box {
   position: relative;
   box-sizing: border-box;
-  width: 16px;
-  height: 16px;
+  width: 20px;
+  height: 20px;
   flex-shrink: 0;
   border: 1px solid #6a5a3a;
   border-radius: 2px;
@@ -348,10 +349,10 @@
 .questlog-track-mark::before {
   content: "";
   position: absolute;
-  left: 4px;
-  top: 1px;
-  width: 5px;
-  height: 9px;
+  left: 5px;
+  top: 2px;
+  width: 6px;
+  height: 11px;
   border-right: 2px solid #e8cf8a;
   border-bottom: 2px solid #e8cf8a;
   transform: rotate(40deg);

@@ -5,8 +5,9 @@ export const QUEST_DEFS: Record<QuestId, QuestDef> = {
     id: "cull_bandits",
     name: "Зачистка бандитов",
     description:
-      "Банды грабят Северную дорогу. Ратуша просит сократить их число - любой бандит засчитывается.",
+      "Северная дорога перестала быть дорогой. Обозы не доходят, а те, кто всё же выезжает из ворот, возвращаются без товара - или не возвращаются вовсе.\n\nРатуша вывешивает простое поручение: проредить шайки на тракте, пока страх не добрался до самой стены. Городу нужна снова дорога, а не тропа добычи.",
     giver: "town_hall",
+    questLevel: 1,
     objectives: [
       {
         type: "kill_group",
@@ -16,7 +17,8 @@ export const QUEST_DEFS: Record<QuestId, QuestDef> = {
       },
     ],
     rewards: {
-      xp: 100,
+      /** ≤10% полосы questLevel 1 (800) → 80. */
+      xp: 80,
       gold: 50,
       item: { rarity: "uncommon", itemLevel: 1 },
     },

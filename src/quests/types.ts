@@ -34,6 +34,10 @@ export interface QuestDef {
   name: string;
   description: string;
   giver: "town_hall";
+  /** Дизайн-уровень задания (бэнд контента для XP и оверлевел-штрафа). */
+  questLevel: number;
+  /** После сдачи снова доступен (без вечного completed). */
+  repeatable?: boolean;
   objectives: QuestObjective[];
   rewards: QuestRewards;
   /** Регион, где квест виден в блоке карты. */

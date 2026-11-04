@@ -8,6 +8,11 @@ export interface QuestTrackerApi {
   destroy(): void;
 }
 
+export interface QuestTrackerHandlers {
+  /** Клик по трекеру: открыть / закрыть журнал заданий. */
+  onToggle: () => void;
+}
+
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
@@ -19,13 +24,22 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-export function mountQuestTracker(): QuestTrackerApi {
+export function mountQuestTracker(handlers: QuestTrackerHandlers): QuestTrackerApi {
   const side = el("div", "quest-side");
   side.hidden = true;
 
   const tracker = el("div", "quest-tracker");
-  tracker.setAttribute("aria-label", "Трекер заданий");
+  tracker.setAttribute("role", "button");
+  tracker.tabIndex = 0;
+  tracker.setAttribute("aria-label", "Журнал заданий");
   side.append(tracker);
+
+  tracker.addEventListener("click", () => handlers.onToggle());
+  tracker.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Enter" && ev.key !== " ") return;
+    ev.preventDefault();
+    handlers.onToggle();
+  });
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");

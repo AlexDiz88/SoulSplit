@@ -616,7 +616,7 @@ textarea,
 
 .skill-tooltip {
   position: absolute;
-  z-index: 60;
+  z-index: 80;
   min-width: 200px;
   max-width: 260px;
   padding: 10px 12px 11px;

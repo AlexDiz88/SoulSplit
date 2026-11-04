@@ -167,9 +167,8 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
       rowName.className = "grimoire-name";
       rowName.textContent = card.name;
       const status = document.createElement("span");
-      const statusLabel = displayStatus(card.status);
-      status.className = `grimoire-status${statusClass(statusLabel)}`;
-      status.textContent = statusLabel;
+      status.className = `grimoire-status${statusClass(card.status)}`;
+      status.textContent = card.status;
       text.append(rowName, status);
       row.append(rowImg, text);
       row.addEventListener("click", () => {
@@ -249,12 +248,6 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
       return true;
     },
   };
-}
-
-/** Старые метки прототип/взято показываем как "одобрено". */
-function displayStatus(status: string): string {
-  if (status === "прототип" || status === "взято") return "одобрено";
-  return status;
 }
 
 function statusClass(status: string): string {

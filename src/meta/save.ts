@@ -12,6 +12,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
+import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
 
 /** Старые ZoneId → актуальные (разработка, свободный rename). */
@@ -93,6 +94,21 @@ function normalizeState(parsed: GameState): GameState {
   if (typeof state.hero.gold !== "number" || !Number.isFinite(state.hero.gold)) {
     state.hero.gold = 0;
   }
+  // Кап уровней v2: старые сейвы >20 обрезаем.
+  if (!Number.isFinite(state.hero.level) || state.hero.level < 1) {
+    state.hero.level = 1;
+    state.hero.xp = 0;
+  } else if (state.hero.level > MAX_HERO_LEVEL) {
+    state.hero.level = MAX_HERO_LEVEL;
+    state.hero.xp = 0;
+  } else {
+    state.hero.level = Math.floor(state.hero.level);
+    const need = xpToNextLevel(state.hero.level);
+    if (!Number.isFinite(state.hero.xp) || state.hero.xp < 0) state.hero.xp = 0;
+    else if (need > 0) state.hero.xp = Math.min(Math.floor(state.hero.xp), need - 1);
+    else state.hero.xp = 0;
+  }
+  state.hero.levelBonuses = levelBonusesAsStatDelta(state.hero.level);
   state.hero.aspect = remapAspect(state.hero.aspect);
   state.hero.learnedAspects = [
     ...new Set(state.hero.learnedAspects.map((a) => remapAspect(String(a)))),

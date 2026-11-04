@@ -3,6 +3,7 @@ import { createPotionItem, type PotionId } from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
 import type { Aspect } from "../types";
+import { xpForKills } from "./progression";
 import type { ZoneDef, ZonePointDef } from "./zones";
 
 const SLOT_WEIGHTS: { slot: EquipSlotId; weight: number }[] = [
@@ -191,6 +192,15 @@ export function rollVictoryLoot(opts: LootRollOptions): ItemDef[] {
   return items;
 }
 
-export function victoryXp(zone: ZoneDef, kills: number): number {
-  return zone.xpBase + kills * zone.xpPerKill;
+export interface VictoryKillXp {
+  level: number;
+  elite?: boolean;
+}
+
+/** XP за победу: сумма по убитым с учётом уровня героя (см. progression). */
+export function victoryXp(heroLevel: number, kills: readonly VictoryKillXp[]): number {
+  return xpForKills(
+    heroLevel,
+    kills.map((k) => ({ enemyLevel: k.level, elite: k.elite })),
+  );
 }

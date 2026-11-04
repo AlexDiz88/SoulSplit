@@ -5,8 +5,8 @@
   /* Под системными кнопками хаба (.hub-tools: top 16px + 56px). */
   top: 88px;
   right: 14px;
-  /* Выше .hub-screen (40), ниже оверлеев ратуши/журнала (51+) и дока героя (52). */
-  z-index: 45;
+  /* Выше оверлея журнала (52), чтобы клик по трекеру тогглил журнал. */
+  z-index: 53;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
@@ -22,13 +22,30 @@
 }
 
 .quest-tracker {
-  pointer-events: none;
+  pointer-events: auto;
+  box-sizing: border-box;
   width: 100%;
   max-height: min(48vh, 360px);
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
   overflow: auto;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  cursor: var(--cur-pointer);
+}
+
+.quest-tracker:hover .quest-tracker-card {
+  border-color: rgba(196, 163, 90, 0.85);
+  box-shadow:
+    inset 0 0 0 1px rgba(196, 163, 90, 0.28),
+    0 8px 20px rgba(0, 0, 0, 0.45),
+    0 0 12px rgba(196, 163, 90, 0.12);
 }
 
 .quest-tracker-card {
@@ -43,6 +60,7 @@
   box-shadow:
     inset 0 0 0 1px rgba(196, 163, 90, 0.18),
     0 8px 20px rgba(0, 0, 0, 0.45);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .quest-tracker-name {

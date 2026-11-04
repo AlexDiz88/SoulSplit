@@ -195,7 +195,9 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
-    this.questTracker = mountQuestTracker();
+    this.questTracker = mountQuestTracker({
+      onToggle: () => this.goQuestLog(),
+    });
 
     this.hud.setOnMarketSell((item, price) => {
       if (!this.state) return;
@@ -756,7 +758,7 @@ export class GameApp {
     const zone = getZone(result.zoneId);
     const point = getZonePoint(zone, result.pointId);
     const kills = result.killed.length;
-    const xp = victoryXp(zone, kills);
+    const xp = victoryXp(state.hero.level, result.killed);
     const gold = victoryGold(point.itemLevel, kills);
     const levelResult = addXpToProfile(state.hero, xp);
     state.hero.gold += gold;

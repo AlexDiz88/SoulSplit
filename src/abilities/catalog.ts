@@ -210,10 +210,23 @@ export function loadAbilityCards(): AbilityCard[] {
   return cards;
 }
 
+/** Порядок листа гримуара: одобрено → черновик → под вопросом → отказ. */
+function statusSortRank(status: string): number {
+  if (status === "одобрено") return 0;
+  if (status === "черновик") return 1;
+  if (status === "под вопросом") return 2;
+  if (status === "отказ") return 3;
+  return 4;
+}
+
 export function cardsInAspect(aspectId: string): AbilityCard[] {
   return loadAbilityCards()
     .filter((card) => card.aspectId === aspectId)
-    .sort((a, b) => a.name.localeCompare(b.name, "ru"));
+    .sort((a, b) => {
+      const byStatus = statusSortRank(a.status) - statusSortRank(b.status);
+      if (byStatus !== 0) return byStatus;
+      return a.name.localeCompare(b.name, "ru");
+    });
 }
 
 /** Карточка гримуара по id из бестиария / дизайна (`dark-arrow`, `dark_arrow`, либо имя). */
@@ -279,20 +292,15 @@ export function resolveAbilityList(raw: string): string {
     .join(", ");
 }
 
-/** Старые метки прототип/взято считаем одобренными (как в гримуаре). */
-function isApprovedStatus(status: string): boolean {
-  return status === "одобрено" || status === "прототип" || status === "взято";
-}
-
 /**
  * Способности аспекта для создания персонажа:
- * только `одобрено` (+ старые прототип/взято) и уже есть в боевом коде.
+ * только `одобрено` и уже есть в боевом коде.
  */
 export function approvedAbilitiesForAspect(aspect: Aspect): AbilityId[] {
   const out: AbilityId[] = [];
   const seen = new Set<AbilityId>();
   for (const card of cardsInAspect(aspect)) {
-    if (!isApprovedStatus(card.status)) continue;
+    if (card.status !== "одобрено") continue;
     const def = abilityDefForGrimoireId(card.id);
     if (!def || def.aspect !== aspect) continue;
     if (seen.has(def.id)) continue;

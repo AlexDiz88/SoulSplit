@@ -6,6 +6,7 @@ import type { ItemDef } from "../items/types";
 import type { GameState, ZoneId } from "../meta/gameState";
 import { addXpToProfile } from "../meta/heroProfile";
 import { pickWeightedEquipSlot } from "../meta/loot";
+import { questXpAward } from "../meta/progression";
 import { ALL_QUEST_IDS, getQuestDef, isQuestId } from "./definitions";
 import {
   MAX_TRACKED_QUESTS,
@@ -249,7 +250,7 @@ export function getQuestDetailView(state: GameState, id: QuestId): QuestDetailVi
       (tracked || log.tracked.length < MAX_TRACKED_QUESTS),
     objectives,
     rewards: {
-      xp: def.rewards.xp,
+      xp: questXpAward(state.hero.level, def.questLevel, def.rewards.xp),
       gold: def.rewards.gold,
       rewardItem,
     },
@@ -375,14 +376,21 @@ export function turnInQuest(state: GameState, id: QuestId): TurnInResult {
     }
   }
 
-  const xp = def.rewards.xp;
+  const xp = questXpAward(state.hero.level, def.questLevel, def.rewards.xp);
   const gold = def.rewards.gold;
   const levelResult = addXpToProfile(state.hero, xp);
   state.hero.gold += gold;
 
-  entry.status = "completed";
   const tIdx = log.tracked.indexOf(id);
   if (tIdx >= 0) log.tracked.splice(tIdx, 1);
+
+  if (def.repeatable) {
+    const eIdx = log.entries.indexOf(entry);
+    if (eIdx >= 0) log.entries.splice(eIdx, 1);
+    delete log.pendingRewards[id];
+  } else {
+    entry.status = "completed";
+  }
 
   return {
     ok: true,

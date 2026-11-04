@@ -37,8 +37,6 @@ export interface ZoneDef {
   quests: string[];
   /** Stem арта превью в `assets/art/regions` (обычно = ZoneId). */
   previewStem: string;
-  xpBase: number;
-  xpPerKill: number;
   /** Точки внутри зоны. У разных зон разное число. */
   points: ZonePointDef[];
 }
@@ -58,8 +56,6 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     minLevel: 1,
     quests: [],
     previewStem: "north_road",
-    xpBase: 140,
-    xpPerKill: 40,
     points: [
       {
         id: "wall",
@@ -126,8 +122,6 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     minLevel: 1,
     quests: [],
     previewStem: "ruins",
-    xpBase: 220,
-    xpPerKill: 55,
     points: [
       {
         id: "courtyard",
