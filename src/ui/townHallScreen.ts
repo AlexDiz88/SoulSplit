@@ -131,9 +131,6 @@ export function mountTownHallScreen(handlers: TownHallScreenHandlers): TownHallS
           handlers.showToast(res.reason);
           return;
         }
-        handlers.showToast(
-          res.autoTracked ? "Квест взят и добавлен в трекер" : "Квест взят",
-        );
         selectedId = null;
         handlers.onChanged();
         render();

@@ -788,6 +788,13 @@ export class Battle {
     this.config.onEnemyKilled?.(kindId);
   }
 
+  /** Сразу после смерти (не ждать обвала рядов) - иначе квест-трекер отстаёт до конца боя. */
+  private flushEnemyKills(): void {
+    for (const u of this.units) {
+      if (u.team === "enemy" && !u.alive) this.noteKill(u);
+    }
+  }
+
   private cloneGear(): { equipment: EquipmentMap; inventory: ReturnType<typeof cloneInventory> } {
     const equipment: EquipmentMap = {};
     for (const [slot, item] of Object.entries(this.hero.equipment)) {
@@ -1841,10 +1848,7 @@ export class Battle {
     }
     if (!movers.length) return;
     for (const u of this.units) {
-      if (u.team === "enemy" && !u.alive) {
-        this.noteKill(u);
-        u.view.visible = false;
-      }
+      if (u.team === "enemy" && !u.alive) u.view.visible = false;
     }
     // Логическую клетку освобождаем сразу: снаряд в старую клетку = промах, даже пока идёт анимация.
     this.collapsing = true;
@@ -2035,6 +2039,7 @@ export class Battle {
       }
     }
 
+    this.flushEnemyKills();
     this.maybeStartDrop();
     this.tryFlushPendingCast();
     this.refreshSkillBar();

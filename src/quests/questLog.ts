@@ -94,8 +94,22 @@ export function cloneQuestLog(src: QuestLogState | null | undefined): QuestLogSt
   return { entries, tracked, pendingRewards };
 }
 
+/**
+ * Гарантирует валидный quest log на state.
+ * Не переклонирует живой лог: иначе мутации (accept и т.п.) пишут в orphan-копию.
+ */
 export function ensureQuestLog(state: GameState): QuestLogState {
-  state.quests = cloneQuestLog(state.quests);
+  const q = state.quests as QuestLogState | null | undefined;
+  const needsRebuild =
+    !q ||
+    typeof q !== "object" ||
+    !Array.isArray(q.entries) ||
+    !Array.isArray(q.tracked);
+  if (needsRebuild) {
+    state.quests = cloneQuestLog(q);
+  } else if (!q.pendingRewards || typeof q.pendingRewards !== "object") {
+    q.pendingRewards = {};
+  }
   for (const entry of state.quests.entries) {
     ensureEntryRewardItem(state, entry);
   }
