@@ -3,16 +3,18 @@ import { ALL_ASPECTS, ASPECT_HEX, ASPECT_LABEL } from "./aspects";
 import {
   ABILITIES,
   abilityDefForGrimoireId,
-  abilityNumberLines,
-  describeAbility,
 } from "./definitions";
+import {
+  ALL_ABILITY_DEFS,
+  abilityCatalogKebabId,
+  approvedCombatAbilityIdsForAspect,
+  defsInAspect,
+  getAbilityCatalogDef,
+  type AbilityCatalogDef,
+  type AbilityZoneDef,
+} from "./abilityDefs";
 
-export interface AbilityZone {
-  anchor: string;
-  damage: string;
-  rows: string[][];
-  notes: string[];
-}
+export type { AbilityZoneDef as AbilityZone };
 
 export interface AbilityCard {
   id: string;
@@ -29,19 +31,7 @@ export interface AbilityCard {
   effect: string;
   numbers: string[];
   extra: string;
-  zone: AbilityZone | null;
-}
-
-/** Подставляет имя, описание и числа из боевых параметров, если карточка привязана к прототипу. */
-export function presentAbilityCard(card: AbilityCard): AbilityCard {
-  const def = abilityDefForGrimoireId(card.id);
-  if (!def) return card;
-  return {
-    ...card,
-    name: def.name,
-    description: describeAbility(def),
-    numbers: abilityNumberLines(def),
-  };
+  zone: AbilityZoneDef | null;
 }
 
 export interface GrimoireAspect {
@@ -60,12 +50,6 @@ export const GRIMOIRE_ASPECTS: GrimoireAspect[] = [
   { id: "enemies", name: "Враги", color: "#c45a4a" },
 ];
 
-const rawCards = import.meta.glob("../../design/abilities/**/*.md", {
-  eager: true,
-  query: "?raw",
-  import: "default",
-}) as Record<string, string>;
-
 const iconModules = import.meta.glob("../../assets/art/skills/*.png", {
   eager: true,
   query: "?url",
@@ -81,121 +65,40 @@ for (const [path, url] of Object.entries(iconModules)) {
 
 const FALLBACK_ICON = ICONS["no_image.png"] ?? "";
 
-function unquote(value: string): string {
-  const trimmed = value.trim();
-  if (
-    (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
-    (trimmed.startsWith("'") && trimmed.endsWith("'"))
-  ) {
-    return trimmed.slice(1, -1);
-  }
-  return trimmed;
+function aspectLabel(aspectId: string): string {
+  if (aspectId === "enemies") return "враги";
+  return ASPECT_LABEL[aspectId as Aspect] ?? aspectId;
 }
 
-function parseFrontmatter(block: string): Record<string, string> {
-  const out: Record<string, string> = {};
-  for (const line of block.split(/\r?\n/)) {
-    const sep = line.indexOf(":");
-    if (sep <= 0) continue;
-    out[line.slice(0, sep).trim()] = unquote(line.slice(sep + 1));
-  }
-  return out;
+function formatCooldown(def: AbilityCatalogDef): string {
+  if (def.cooldown === null) return "нет";
+  const n = def.cooldown;
+  const s = Number.isInteger(n) ? String(n) : String(n);
+  return `${s} с`;
 }
 
-function parseGrid(block: string): string[][] {
-  const rows: string[][] = [];
-  for (const line of block.split(/\r?\n/)) {
-    const parts = line.trim().split(/\s+/);
-    if (parts.length >= 5 && /^[0-3]$/.test(parts[0] ?? "")) {
-      rows.push(parts.slice(1, 5));
-    }
-  }
-  return rows;
+function formatMana(def: AbilityCatalogDef): string {
+  if (def.manaCost === null) return "нет";
+  return String(def.manaCost);
 }
 
-function parseCard(path: string, raw: string): AbilityCard {
-  // UTF-8 BOM ломает ^--- и frontmatter (status/aspect и т.п.).
-  const source = raw.replace(/^\uFEFF/, "");
-  const matched = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
-  const front = parseFrontmatter(matched?.[1] ?? "");
-  const body = matched?.[2] ?? source;
-  const parts = path.replaceAll("\\", "/").split("/");
-  const folder = parts.at(-2) ?? "enemies";
-  const fileId = (parts.at(-1) ?? "ability").replace(/\.md$/, "");
-
-  const fields = new Map<string, string[]>();
-  let current = "";
-  const zoneLines: string[] = [];
-  let inZone = false;
-  let inFence = false;
-  let fence = "";
-
-  for (const line of body.split(/\r?\n/)) {
-    if (line.startsWith("## ")) {
-      inZone = line.replace(/^##\s+/, "").trim() === "Зона";
-      current = "";
-      continue;
-    }
-    if (inZone) {
-      if (line.trim().startsWith("```")) {
-        if (inFence) {
-          inFence = false;
-        } else {
-          inFence = true;
-          fence = "";
-        }
-        continue;
-      }
-      if (inFence) {
-        fence += `${line}\n`;
-        continue;
-      }
-      zoneLines.push(line);
-      continue;
-    }
-    const field = line.match(/^- \*\*(.+?):\*\*\s*(.*)$/);
-    if (field) {
-      current = field[1] ?? "";
-      fields.set(current, field[2] ? [field[2]] : []);
-      continue;
-    }
-    const item = line.match(/^\s+-\s+(.*)$/);
-    if (item && current) {
-      fields.get(current)?.push(item[1] ?? "");
-      continue;
-    }
-    if (current && line.trim()) fields.get(current)?.push(line.trim());
-  }
-
-  const text = (key: string): string => (fields.get(key) ?? []).join(" ").trim();
-  const numbers = fields.get("Числа") ?? [];
-  const rows = parseGrid(fence);
-  const notes = zoneLines
-    .map((line) => line.trim())
-    .filter((line) => line.startsWith("- "))
-    .map((line) => line.replace(/^- /, ""));
-  const anchor = zoneLines.find((line) => line.trim().startsWith("якорь:"))?.split(":").slice(1).join(":").trim() ?? "";
-  const damage = zoneLines.find((line) => line.trim().startsWith("урон по клеткам:"))?.split(":").slice(1).join(":").trim() ?? "";
-
+export function catalogDefToCard(def: AbilityCatalogDef): AbilityCard {
   return {
-    id: front.id || fileId,
-    name: front.name || fileId,
-    aspect: front.aspect || folder,
-    aspectId: front.aspect_id || folder,
-    status: front.status || "черновик",
-    icon: front.icon || `${(front.id || fileId).replace(/-/g, "_")}.png`,
-    description: text("Описание"),
-    cooldown: text("Кулдаун"),
-    mana: text("Затраты по мане"),
-    application: text("Тип применения"),
-    zoneLabel: text("Зона применения"),
-    effect: text("Тип эффекта"),
-    numbers: numbers.map((line) => line.trim()).filter(Boolean),
-    extra: text("Доп"),
-    zone:
-      rows.length > 0
-        ? { anchor, damage, rows, notes }
-        : null,
+    id: abilityCatalogKebabId(def.id),
+    name: def.name,
+    aspect: aspectLabel(def.aspectId),
+    aspectId: def.aspectId,
+    status: def.status,
+    icon: def.icon,
+    description: def.description,
+    cooldown: formatCooldown(def),
+    mana: formatMana(def),
+    application: def.application,
+    zoneLabel: def.zoneLabel,
+    effect: def.effect,
+    numbers: [...def.numbers],
+    extra: def.extra ?? "",
+    zone: def.zone ?? null,
   };
 }
 
@@ -203,46 +106,23 @@ let cached: AbilityCard[] | null = null;
 
 export function loadAbilityCards(): AbilityCard[] {
   if (cached) return cached;
-  const cards: AbilityCard[] = [];
-  for (const [path, raw] of Object.entries(rawCards)) {
-    if (path.replaceAll("\\", "/").endsWith("/INDEX.md") || typeof raw !== "string") continue;
-    cards.push(presentAbilityCard(parseCard(path, raw)));
-  }
-  cached = cards;
-  return cards;
-}
-
-/** Порядок листа гримуара: одобрено → черновик → под вопросом → отказ. */
-function statusSortRank(status: string): number {
-  if (status === "одобрено") return 0;
-  if (status === "черновик") return 1;
-  if (status === "под вопросом") return 2;
-  if (status === "отказ") return 3;
-  return 4;
+  cached = ALL_ABILITY_DEFS.map(catalogDefToCard);
+  return cached;
 }
 
 export function cardsInAspect(aspectId: string): AbilityCard[] {
-  return loadAbilityCards()
-    .filter((card) => card.aspectId === aspectId)
-    .sort((a, b) => {
-      const byStatus = statusSortRank(a.status) - statusSortRank(b.status);
-      if (byStatus !== 0) return byStatus;
-      return a.name.localeCompare(b.name, "ru");
-    });
+  return defsInAspect(aspectId).map(catalogDefToCard);
 }
 
 /** Карточка гримуара по id из бестиария / дизайна (`dark-arrow`, `dark_arrow`, либо имя). */
 export function findAbilityCard(ref: string): AbilityCard | undefined {
   const trimmed = ref.trim();
   if (!trimmed || trimmed === "-" || trimmed === "нет") return undefined;
-  const kebab = trimmed.replace(/_/g, "-");
-  const snake = trimmed.replace(/-/g, "_");
-  const cards = loadAbilityCards();
-  return (
-    cards.find(
-      (card) => card.id === kebab || card.id === trimmed || card.id.replace(/-/g, "_") === snake,
-    ) ?? cards.find((card) => card.name.toLowerCase() === trimmed.toLowerCase())
-  );
+  const def = getAbilityCatalogDef(trimmed);
+  if (def) return catalogDefToCard(def);
+  const lower = trimmed.toLowerCase();
+  const byName = ALL_ABILITY_DEFS.find((d) => d.name.toLowerCase() === lower);
+  return byName ? catalogDefToCard(byName) : undefined;
 }
 
 /** URL иконки по ссылке из карточки врага; без арта - `no_image`. */
@@ -255,7 +135,7 @@ export function abilityIconUrlForRef(ref: string): string {
   return ICONS[snake] ?? ICONS[kebab] ?? ICONS[`${snake}.png`] ?? FALLBACK_ICON;
 }
 
-/** Боевой AbilityId, если способность уже в коде. */
+/** Боевой AbilityId, если способность уже в коде боя. */
 export function combatAbilityIdForRef(ref: string): AbilityId | undefined {
   const trimmed = ref.trim();
   if (!trimmed || trimmed === "-" || trimmed === "нет") return undefined;
@@ -273,7 +153,7 @@ export function isPassiveAbilityRef(ref: string): boolean {
   return /пассив/i.test(card.application);
 }
 
-/** Русское имя по id из дизайн-карточки или боевого кода (`order` → "Приказ"). */
+/** Русское имя по id из каталога или боевого кода (`order` → "Приказ"). */
 export function abilityDisplayName(ref: string): string {
   const trimmed = ref.trim();
   if (!trimmed || trimmed === "-" || trimmed === "нет") return trimmed;
@@ -296,22 +176,18 @@ export function resolveAbilityList(raw: string): string {
 
 /**
  * Способности аспекта для создания персонажа:
- * только `одобрено` и уже есть в боевом коде.
+ * только `одобрено` и уже есть боевой блок.
  */
 export function approvedAbilitiesForAspect(aspect: Aspect): AbilityId[] {
-  const out: AbilityId[] = [];
-  const seen = new Set<AbilityId>();
-  for (const card of cardsInAspect(aspect)) {
-    if (card.status !== "одобрено") continue;
-    const def = abilityDefForGrimoireId(card.id);
-    if (!def || def.aspect !== aspect) continue;
-    if (seen.has(def.id)) continue;
-    seen.add(def.id);
-    out.push(def.id);
-  }
-  return out;
+  return approvedCombatAbilityIdsForAspect(aspect);
 }
 
 export function abilityIconUrl(card: AbilityCard): string {
-  return ICONS[card.icon] ?? ICONS[card.icon.replace(/\.png$/i, "")] ?? ICONS[card.id] ?? ICONS[card.id.replace(/-/g, "_")] ?? FALLBACK_ICON;
+  return (
+    ICONS[card.icon] ??
+    ICONS[card.icon.replace(/\.png$/i, "")] ??
+    ICONS[card.id] ??
+    ICONS[card.id.replace(/-/g, "_")] ??
+    FALLBACK_ICON
+  );
 }

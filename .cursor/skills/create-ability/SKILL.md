@@ -1,20 +1,19 @@
 ---
 name: create-ability
 description: >-
-  Designs Soul Split abilities and saves them to the catalog. One card from a
-  name and an aspect (/create-ability название, аспект), or a batch of new
-  abilities for one aspect (/create-abilities). Reads existing aspect and
-  enemy abilities, refuses same-aspect duplicates and renamed copies from
-  other aspects, and records cooldown, mana, application type, a
-  4×4 zone, and numbers. Use when the user invokes create-ability,
-  create-abilities, or asks to generate, invent, or design a Soul Split
-  ability.
+  Designs Soul Split abilities and saves them to the TypeScript catalog. One
+  card from a name and an aspect (/create-ability название, аспект), or a batch
+  of new abilities for one aspect (/create-abilities). Reads existing aspect and
+  enemy ability defs, refuses same-aspect duplicates and renamed copies from
+  other aspects, and records cooldown, mana, application type, a 4×4 zone, and
+  numbers. Use when the user invokes create-ability, create-abilities, or asks
+  to generate, invent, or design a Soul Split ability.
 disable-model-invocation: true
 ---
 
 # Create Ability - Soul Split
 
-Генератор карточек способностей. В код боя ничего не пишет: игрок потом сам отбирает черновики.
+Генератор карточек способностей в `src/abilities/abilityDefs/`. В код боя (`Battle.ts`, `AbilityId`) ничего не пишет: игрок потом сам отбирает черновики и добавляет блок `combat`.
 
 ## Когда какой режим
 
@@ -26,8 +25,8 @@ disable-model-invocation: true
 1. Прочитай [aspects.md](aspects.md), [format.md](format.md) и канон [EFFECTS_AND_DOTS.md](../../../design/meta/EFFECTS_AND_DOTS.md) (DoT, `any_dot`, dual-aspect).
 2. Столбы 20 школ (ориентир пула): [ASPECTS.md](../../../design/meta/ASPECTS.md).
 3. Прочитай [INDEX.md](../../../design/abilities/INDEX.md).
-4. Прочитай **целиком** все карточки целевого аспекта (или `design/abilities/enemies/`, если кластер врагов).
-5. По INDEX просмотри крючки остальных аспектов и врагов. Если крючок похож на задумку - открой ту карточку.
+4. Прочитай **целиком** все дефы целевого аспекта в `src/abilities/abilityDefs/{aspect_id}/` (или `enemies/`).
+5. По INDEX просмотри крючки остальных аспектов и врагов. Если крючок похож на задумку - открой тот деф.
 6. Аспект не выдумывай. Нет аспекта или название двусмысленно (`тень`) - спроси один раз.
 
 Разбор вызова одной способности:
@@ -66,13 +65,13 @@ disable-model-invocation: true
 
 ## Текст для игрока
 
-Описание - подсказка способности, как в Warcraft 3 или Diablo. Одно или два предложения: что делает герой и что происходит с целью. Числа не повторяй, они в поле **Числа**.
+Описание - подсказка способности, как в Warcraft 3 или Diablo. Одно или два предложения: что делает герой и что происходит с целью. Числа не повторяй, они в поле `numbers`.
 
-Не пиши заметки разработчика: прототип, старое имя аспекта, "в коде этого нет", "мана - оценка". Поле **Доп** только для правила, которое игрок должен знать и которое не вошло в описание. Если такого правила нет, **Доп** не добавляй.
+Не пиши заметки разработчика: прототип, старое имя аспекта, "в коде этого нет", "мана - оценка". Поле `extra` только для правила, которое игрок должен знать и которое не вошло в описание. Если такого правила нет, `extra` не добавляй.
 
 ### Баффы, дебаффы, скорость и урон - только язык игрока
 
-В **Описание**, **Числа**, крючке INDEX: эффект глазами игрока (% повышения / снижения), **не** множители интервала или `×0.7`.
+В `description`, `numbers`, крючке INDEX: эффект глазами игрока (% повышения / снижения), **не** множители интервала или `×0.7`.
 
 - Плохо: `интервал автоатаки ×1.25 на 4 с`
 - Хорошо: `скорость атаки снижена на 25% на 4 с`
@@ -87,22 +86,23 @@ disable-model-invocation: true
 
 Шкала чисел - в [format.md](format.md). Не выходи из полосы без игровой причины, и эту причину формулируй как правило для игрока, а не как заметку о балансной таблице.
 
-Стаки, новые статусы, лечение, мана и зоны-узоры описывай так, как их прочитает игрок (проценты и "снижена / повышена", не `×`). Потолок стака пиши в **Числа**. DoT и cross-aspect - по [EFFECTS_AND_DOTS.md](../../../design/meta/EFFECTS_AND_DOTS.md): без супер-пар, `any_dot` / `any_debuff` вместо «только яд природы». Не объясняй, чего текущий код боя еще не умеет.
+Стаки, новые статусы, лечение, мана и зоны-узоры описывай так, как их прочитает игрок (проценты и "снижена / повышена", не `×`). Потолок стака пиши в `numbers`. DoT и cross-aspect - по [EFFECTS_AND_DOTS.md](../../../design/meta/EFFECTS_AND_DOTS.md): без супер-пар, `any_dot` / `any_debuff` вместо «только яд природы». Не объясняй, чего текущий код боя еще не умеет.
 
 ## Запись
 
-1. Собери карточку по шаблону из [format.md](format.md).
-2. Сохрани в `design/abilities/{aspect_id}/{id}.md`. `id` - латиница, kebab-case, уникальный в каталоге.
-3. Иконка-заглушка. Английское имя файла - `id` через подчёркивания: `ice-arrow` → `ice_arrow.png`. Скопируй `assets/art/skills/no_image.png` в `assets/art/skills/{имя}.png`. Если файл уже есть - не затирай, там может быть готовый арт. В шапку карточки запиши `icon: {имя}.png`.
+1. Собери деф по шаблону из [format.md](format.md).
+2. Сохрани в `src/abilities/abilityDefs/{aspect_id}/{id}.ts`. `id` - латиница, **snake_case**, уникальный в каталоге.
+3. Иконка-заглушка. Английское имя файла - тот же `id`: `ice_arrow.png`. Скопируй `assets/art/skills/no_image.png` в `assets/art/skills/{id}.png`. Если файл уже есть - не затирай. В деф запиши `icon: "{id}.png"`.
 4. В ответе пользователю всегда указывай английский id и имя файла иконки. При смене русского названия способности одновременно меняй id везде (см. `.cursor/rules/ability-rename.mdc`).
-5. Допиши строку в INDEX. Крючок обязан содержать тип применения, урон или его отсутствие и решение. По крючку следующая генерация должна узнать копию, не открывая файл.
-6. Статус новой карточки - `черновик`. Карточки со статусом `одобрено`, `отказ` или `под вопросом` не трогай (игрока не перебивай).
+5. Допиши строку в INDEX. Крючок обязан содержать тип применения, урон или его отсутствие и решение. По крючку следующая генерация должна узнать копию, не открывая файл. Колонка `файл` - путь к `.ts`.
+6. Статус новой карточки - `"черновик"`. Дефы со статусом `"одобрено"`, `"отказ"` или `"под вопросом"` не трогай (игрока не перебивай).
+7. Блок `combat` **не** добавляй черновику. Его пишут при переносе в бой вместе с `AbilityId` и `Battle.ts`.
 
-Гримуар в игре читает эти карточки и `icon`. Формат не ломай.
+Гримуар в игре читает эти `.ts` дефы и `icon`. Формат `AbilityCatalogDef` не ломай.
 
 ## Ответ в чате
 
-Одна способность: карточка целиком (со сеткой, если она есть) и путь к файлу.
+Одна способность: ключевые поля дефа (описание, числа, зона если есть) и путь к файлу.
 
 Пачка: не разворачивай десяток полных карточек. Таблица - название, тип, крючок, файл. Полный текст только в файлах.
 

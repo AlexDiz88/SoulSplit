@@ -4,7 +4,7 @@
 
 Столбы школ (DoT, контроль, слабые зоны, dual-aspect 7+3): [design/meta/ASPECTS.md](../../../design/meta/ASPECTS.md). Эффекты и DoT: [design/meta/EFFECTS_AND_DOTS.md](../../../design/meta/EFFECTS_AND_DOTS.md).
 
-`aspect_id` - папка в `design/abilities/` и технический id в коде.
+`aspect_id` - папка в `src/abilities/abilityDefs/` и технический id в коде.
 
 Прототип называл молот и "Мощь титана" аспектом "Железо". В каталоге это **Сила**. Новый аспект "Железо" не заводи.
 

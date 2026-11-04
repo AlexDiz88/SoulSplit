@@ -2,7 +2,7 @@
 name: create-enemy
 description: >-
   Designs Soul Split enemies and saves them as TypeScript defs (drafts).
-  Optionally creates matching enemy-cluster abilities (design/abilities/enemies)
+  Optionally creates matching enemy-cluster abilities (abilityDefs/enemies)
   when the user asks for one or describes it. Invoke with a region ("Руины") or
   enemy group ("Бандиты"), a named unit, optional count (default 3), optional
   traits, and optional ability requests. Use when the user invokes create-enemy
@@ -46,7 +46,7 @@ disable-model-invocation: true
 2. Прочитай [INDEX.md](../../../design/enemies/INDEX.md).
 3. Прочитай **целиком** дефы целевой группы (`src/combat/enemyDefs/{group_id}/`), если папка есть.
 4. По INDEX просмотри крючки других групп - для ориентира лора и ролей, не как запрет на похожесть.
-5. Если нужны способности - прочитай [abilities.md](abilities.md) и при необходимости [format.md](../create-ability/format.md) / раздел "Враги" в [aspects.md](../create-ability/aspects.md). Глянь `design/abilities/INDEX.md` и папку `design/abilities/enemies/`.
+5. Если нужны способности - прочитай [abilities.md](abilities.md) и при необходимости [format.md](../create-ability/format.md) / раздел "Враги" в [aspects.md](../create-ability/aspects.md). Глянь `design/abilities/INDEX.md` и папку `src/abilities/abilityDefs/enemies/`.
 6. Регион / группу не подменяй молча. Нет в каноне - либо спроси один раз, либо заведи новую группу с честным `groupId`.
 
 ## Разнообразие и повторы
@@ -77,7 +77,7 @@ disable-model-invocation: true
 
 Правила создания и привязки - в [abilities.md](abilities.md). Кратко:
 
-- По запросу создай 1+ карточек в `design/abilities/enemies/` и пропиши их боевые id в `abilities` дефа (`["crushing_blow"]`).
+- По запросу создай 1+ дефов в `src/abilities/abilityDefs/enemies/` и пропиши их боевые id в `abilities` дефа (`["crushing_blow"]`).
 - Пользователь описал приём - следуй описанию. Не описал - придумай под роль юнита.
 - Похожие способности врагов **можно** дублировать. Можно и переиспользовать существующий id.
 - Без запроса способностей большинству черновиков поле `abilities` не ставь.

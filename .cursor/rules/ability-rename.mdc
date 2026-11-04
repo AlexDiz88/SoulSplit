@@ -9,18 +9,19 @@ alwaysApply: true
 
 ## Что переименовать вместе
 
-1. `AbilityId` в `src/types.ts`
-2. ключ и `id` в `src/abilities/definitions.ts` (+ `ABILITY_BY_GRIMOIRE_ID`, `describeAbility`, `abilityNumberLines`, `ALL_ABILITY_IDS`)
-3. `case` и вызовы в `src/combat/Battle.ts`
-4. ключ в `src/art/abilityIcons.ts`
-5. карточка гримуара: файл `design/abilities/{aspect}/{id}.md` (kebab-case) и строка в `design/abilities/INDEX.md`
-6. иконка: `assets/art/skills/{snake_case}.png` - переименуй файл или скопируй под новым именем, обнови `icon:` в md
+1. `AbilityId` в `src/types.ts` (если способность уже в бою)
+2. файл дефа `src/abilities/abilityDefs/{aspectId}/{id}.ts` (переименуй файл + поля `id` / `icon` / `hook` при нужде)
+3. строка в `design/abilities/INDEX.md`
+4. `case` и вызовы в `src/combat/Battle.ts` (если есть в бою)
+5. ключ в `src/art/abilityIcons.ts` (если есть)
+6. иконка: `assets/art/skills/{snake_case}.png` - переименуй файл или скопируй под новым именем
 7. VFX способности, если метод/файл названы по старому id (например `SlashVfx` → `SeverArteryVfx`)
+8. ссылки у врагов: `abilities: [...]` в `src/combat/enemyDefs/`
 
 Форматы id:
 
-- код / иконка: `snake_case` (`sever_artery`, `sever_artery.png`)
-- карточка гримуара: `kebab-case` (`sever-artery`)
+- код / деф / иконка: `snake_case` (`sever_artery`, `sever_artery.png`)
+- гримуар UI может показывать kebab (`sever-artery`) - это только отображение из `id`
 
 ## Ответ пользователю
 
@@ -28,7 +29,7 @@ alwaysApply: true
 
 - id в коде: `sever_artery`
 - файл иконки: `sever_artery.png`
-- карточка: `sever-artery.md`
+- деф: `src/abilities/abilityDefs/{aspect}/sever_artery.ts`
 
 Чтобы было ясно, как назвать арт в `assets/art/skills/`.
 

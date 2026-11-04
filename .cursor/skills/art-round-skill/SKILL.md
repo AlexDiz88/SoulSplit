@@ -4,11 +4,11 @@ description: >-
   Writes ready-to-paste Gemini prompts for Soul Split medallion ability icons
   (circular frame by default; diamond/rhombus frame for passives; thick black
   ink, jagged aspect-colored aura, painterly fill). Before drafting, fully reads
-  the ability catalog card (INDEX + full design/abilities markdown) so the
+  the ability catalog def (INDEX + full abilityDefs TypeScript) so the
   subject matches description, application type, zone, and effect. Passive
-  abilities (user said "пассивное", or card/combat marks пассив / targetMode
+  abilities (user said "пассивное", or def/combat marks пассив / targetMode
   passive) must be drawn for a diamond medallion, not a circle. Aspect comes
-  from the catalog card when the ability already exists - the user only needs
+  from the catalog def when the ability already exists - the user only needs
   the ability name (optional aspect override; optional parentheses = required
   visual motif that must not appear in Negatives). Enemy / враги abilities
   default to neutral accents from no_image.png, unless the ability name clearly
@@ -199,28 +199,27 @@ Do **not** draft the Gemini prompt until ability data is fully read. Guessing fr
    the row by **название** (param 1, without motif / without `пассивное`). Note
    `id`, `aspect_id`, `аспект`, `тип`, and `крючок`. Do not require the user to
    pass aspect for a catalog hit.
-3. If no INDEX match: search `design/abilities/**/*.md` by frontmatter `name` /
-   heading / Russian aliases. If still missing - ask once for ability (and for
+3. If no INDEX match: search `src/abilities/abilityDefs/**/*.ts` by `name` /
+   Russian aliases. If still missing - ask once for ability (and for
    aspect if unset); do **not** invent a card or visual from the name alone.
-4. Read the matched card **in full** (`design/abilities/{aspect_id}/{id}.md`):
-   - frontmatter: `id`, `icon`, `name`, `aspect`, `aspect_id` ← **source of
-     aspect for accents**
-   - body: **Описание**, **Тип применения**, **Зона применения**, **Тип эффекта**, **Числа**, **Доп** (if any)
-   - for `зона`: the whole `## Зона` block (anchor, pattern, damage tiers) - use only as **visual metaphor** (direction, spread, focus), never draw a grid / UI / numbers
-5. Resolve **Passive / diamond frame**: invocation flag, INDEX `тип`, card
-   **Тип применения**, and optional combat `targetMode: "passive"`. Choose
+4. Read the matched def **in full** (`src/abilities/abilityDefs/{aspect_id}/{id}.ts`):
+   - fields: `id`, `icon`, `name`, `aspectId` ← **source of aspect for accents**
+   - `description`, `application`, `zoneLabel`, `effect`, `numbers`, `extra` (if any)
+   - for `зона`: the whole `zone` object (anchor, rows, notes) - use only as **visual metaphor** (direction, spread, focus), never draw a grid / UI / numbers
+5. Resolve **Passive / diamond frame**: invocation flag, INDEX `тип`, def
+   `application`, and optional `combat.targetMode: "passive"`. Choose
    circle vs diamond locks before drafting.
 6. Map accents: for normal aspects use the table; for `враги` / `enemies` run
    **Enemy accent resolution** (element cue in name → elemental palette;
    otherwise neutral `no_image.png`).
 7. If motif is set, plan Subject + Negatives per Motif override (never ban the
    requested motif).
-8. If the card `icon:` already points at a real file under `assets/art/skills/` (not `no_image.png`), glance at it so the new prompt stays consistent with an approved look when regenerating. For enemy skills on the **neutral** path, keep
+8. If the def `icon` already points at a real file under `assets/art/skills/` (not `no_image.png`), glance at it so the new prompt stays consistent with an approved look when regenerating. For enemy skills on the **neutral** path, keep
    [`assets/art/skills/no_image.png`](../../../assets/art/skills/no_image.png) in
    mind as the color reference (attach in Gemini when useful).
-9. Optionally cross-check combat wiring in `src/abilities/definitions.ts` / `src/abilities/catalog.ts` only if the card is ambiguous; **design card wins** for what the icon should depict.
+9. Optionally cross-check combat wiring in `src/abilities/definitions.ts` / `src/abilities/catalog.ts` only if the def is ambiguous; **catalog def wins** for what the icon should depict.
 10. Prefer attaching [`assets/art/approved/ability_icon_round_example.png`](../../../assets/art/approved/ability_icon_round_example.png) as style reference in Gemini (framing / ink / medallion). For enemy abilities on the **neutral** path, also attach `no_image.png` for palette. Passive prompts still attach the round example for ink language, but demand a **diamond** frame in the text.
-11. Output path after approval: `assets/art/skills/{icon from card, or id with underscores}.png` (crop one panel from the sheet).
+11. Output path after approval: `assets/art/skills/{icon from def, or id}.png` (crop one panel from the sheet).
 
 ### Ground the Subject from the card (do not invent)
 

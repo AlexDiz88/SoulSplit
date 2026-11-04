@@ -39,6 +39,6 @@ alwaysApply: true
 
 Урон атаки / входящий урон: процент = `|1 - множитель|` (×0.7 → −30%). Это не скорость.
 
-Множители интервала допустимы **только** во внутреннем коде и комментариях, не в карточках `design/abilities/` и не в строках `describeAbility` / `abilityNumberLines` / meta статусов.
+Множители интервала допустимы **только** во внутреннем коде и комментариях, не в полях `description` / `numbers` / `hook` дефов `src/abilities/abilityDefs/` и не в meta статусов.
 
 Генератор: `.cursor/skills/create-ability/format.md` (раздел "Язык чисел для игрока") и `SKILL.md`.
