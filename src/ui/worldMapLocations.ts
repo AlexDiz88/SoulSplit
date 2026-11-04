@@ -36,7 +36,7 @@ function zoneSpot(
  * Координаты можно править вручную.
  */
 export const WORLD_MAP_SPOTS: readonly WorldMapSpotDef[] = [
-  { id: "town", kind: "town", label: CURRENT_HUB_CITY_NAME, x: 0.5, y: 0.46 },
+  { id: "town", kind: "town", label: CURRENT_HUB_CITY_NAME, x: 0.495, y: 0.46 },
   zoneSpot("witch_house", "Ведьмин дом", 0.29, 0.13),
   zoneSpot("black_forest", "Черный лес", 0.33, 0.22),
   zoneSpot("flooded_barn", "Затопленный амбар", 0.11, 0.23),
@@ -45,7 +45,7 @@ export const WORLD_MAP_SPOTS: readonly WorldMapSpotDef[] = [
   zoneSpot("grey_fang_foothills", "Предгорье Седого клыка", 0.5, 0.19),
   zoneSpot("north_road", "Северная дорога", 0.69, 0.36),
   zoneSpot("northville", "Нортвилл", 0.74, 0.21),
-  zoneSpot("oak_grove", "Дубовая роща", 0.62, 0.53),
+  zoneSpot("oak_grove", "Дубовая роща", 0.61, 0.53),
   zoneSpot("crossing", "Переправа", 0.64, 0.65),
   zoneSpot("riverholt", "Риверхолт", 0.54, 0.91),
   zoneSpot("quarry", "Каменоломня", 0.56, 0.71),

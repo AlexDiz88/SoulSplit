@@ -291,6 +291,17 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     }
   };
 
+  const clearPointDetails = (): void => {
+    openPointId = null;
+    hideEnemyTip();
+    if (openZoneId) fillPointQuests(openZoneId, "");
+    enemyLevelEl.textContent = "";
+    threatValueEl.textContent = "-";
+    threatBtn.setAttribute("aria-label", "Угроза");
+    enemyRow.replaceChildren();
+    btnGo.disabled = true;
+  };
+
   const fillPointDetails = (point: ZonePointDef): void => {
     openPointId = point.id;
     hideEnemyTip();
@@ -300,6 +311,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     enemyLevelEl.textContent = formatEnemyLevels(levelRange);
     threatValueEl.textContent = String(threat);
     threatBtn.setAttribute("aria-label", `Угроза ${threat}`);
+    btnGo.disabled = false;
 
     enemyRow.replaceChildren();
     for (const id of encounterEnemyIds(point)) {
@@ -399,7 +411,9 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       pointsRow.append(btn);
     }
 
-    fillPointDetails(getZonePoint(zone, pointId));
+    const point = getZonePoint(zone, pointId);
+    if (point) fillPointDetails(point);
+    else clearPointDetails();
     panel.setAttribute("aria-labelledby", "wm-zone-title");
   };
 
@@ -547,7 +561,9 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         btn.dataset.unlocked = unlocked ? "1" : "0";
         const point = getZonePoint(zone);
         const hint = unlocked
-          ? `${zone.description} (${zone.points.length} локации, ilvl ${point.itemLevel}+)`
+          ? point
+            ? `${zone.description} (${zone.points.length} локации, ilvl ${point.itemLevel}+)`
+            : zone.description
           : lockHint(zoneId, state.hero.level);
         btn.dataset.lockHint = unlocked ? "" : hint;
         btn.textContent = zone.name;

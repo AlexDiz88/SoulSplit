@@ -667,6 +667,7 @@ export class GameApp {
     this.stopGlobalEffectsTick();
     const zone = getZone(zoneId);
     const point = getZonePoint(zone, pointId);
+    if (!point) return;
     state.lastZoneId = zoneId;
     this.destroyBattle();
     this.hideAll();
@@ -764,6 +765,7 @@ export class GameApp {
     state.hero.currentMana = Math.max(0, result.heroMana);
     const zone = getZone(result.zoneId);
     const point = getZonePoint(zone, result.pointId);
+    if (!point) return;
     const kills = result.killed.length;
     const xp = victoryXp(state.hero.level, result.killed);
     const gold = victoryGold(point.itemLevel, kills);

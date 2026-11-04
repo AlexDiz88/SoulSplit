@@ -48,9 +48,7 @@ const NORTH_BANDITS_CORE = [
   "bandit_brigadier",
 ] as const;
 
-const STUB_POOL = ["bandit_vagabond", "bandit_slinger", "bandit_magpie"] as const;
-
-/** Заглушка региона: одна локация с лёгким пулом, пока нет своего контента. */
+/** Заглушка региона: без локаций и врагов, пока нет своего контента. */
 function stubZone(
   id: ZoneId,
   name: string,
@@ -64,21 +62,7 @@ function stubZone(
     minLevel,
     quests: [],
     previewStem: id,
-    points: [
-      {
-        id: "main",
-        name,
-        encounter: {
-          threatBudget: [3, 6],
-          pool: [...STUB_POOL],
-          guarantee: [
-            { id: "bandit_vagabond", count: 1 },
-            { id: "bandit_slinger", count: 1 },
-          ],
-        },
-        itemLevel: Math.max(1, minLevel),
-      },
-    ],
+    points: [],
   };
 }
 
@@ -297,12 +281,12 @@ export function getZone(id: ZoneId): ZoneDef {
   return ZONES[id];
 }
 
-export function getZonePoint(zone: ZoneDef, pointId?: string | null): ZonePointDef {
+export function getZonePoint(zone: ZoneDef, pointId?: string | null): ZonePointDef | null {
   if (pointId) {
     const found = zone.points.find((p) => p.id === pointId);
     if (found) return found;
   }
-  return zone.points[0]!;
+  return zone.points[0] ?? null;
 }
 
 export function isZoneUnlocked(id: ZoneId, heroLevel: number, unlocked: ZoneId[]): boolean {
