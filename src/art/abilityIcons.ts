@@ -15,6 +15,7 @@ import airPocketIconUrl from "../../assets/art/skills/air_pocket.png";
 import tornadoIconUrl from "../../assets/art/skills/tornado.png";
 import darkArrowIconUrl from "../../assets/art/skills/dark_arrow.png";
 import behindBacksIconUrl from "../../assets/art/skills/behind_backs.png";
+import livingBonesIconUrl from "../../assets/art/skills/living_bones.png";
 import demoralizingShoutIconUrl from "../../assets/art/skills/demoralizing_shout.png";
 import rejuvenationIconUrl from "../../assets/art/skills/rejuvenation.png";
 import rootGraspIconUrl from "../../assets/art/skills/root_grasp.png";
@@ -43,6 +44,7 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   tornado: tornadoIconUrl,
   dark_arrow: darkArrowIconUrl,
   behind_backs: behindBacksIconUrl,
+  living_bones: livingBonesIconUrl,
   rejuvenation: rejuvenationIconUrl,
   root_grasp: rootGraspIconUrl,
   poison_bush: poisonBushIconUrl,

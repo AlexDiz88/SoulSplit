@@ -9,6 +9,7 @@ import huntressUrl from "../../assets/art/enemies/huntress.png";
 import scavengerUrl from "../../assets/art/enemies/scavenger.png";
 import skeletonArcherUrl from "../../assets/art/enemies/skeleton_archer.png";
 import skeletonGuardUrl from "../../assets/art/enemies/skeleton_guard.png";
+import skeletonKingUrl from "../../assets/art/enemies/skeleton_king.png";
 import skeletonMageUrl from "../../assets/art/enemies/skeleton_mage.png";
 import skeletonSpearmanUrl from "../../assets/art/enemies/skeleton_spearman.png";
 import wanderingUrl from "../../assets/art/enemies/wandering.png";
@@ -54,6 +55,7 @@ export const PORTRAIT_URLS = {
   skeleton_archer: skeletonArcherUrl,
   skeleton_spearman: skeletonSpearmanUrl,
   scavenger: scavengerUrl,
+  skeleton_king: skeletonKingUrl,
 };
 
 /** Настройки даунскейла: без mipmaps GPU семплит full-res и даёт зерно/кашу. */

@@ -49,7 +49,15 @@ import type { BattleConfig, BattleKill, BattleResult } from "./battleTypes";
 import { BattleStatsTracker } from "./battleStats";
 import { Unit } from "./Unit";
 import { WEAPON_LABEL, WEAPON_REACH } from "./weapons";
-import { ENEMY_CRIT_DAMAGE, enemyAutoAttackDamage, rollEnemyCrit } from "./enemies";
+import {
+  distToGridRow,
+  ENEMY_CRIT_DAMAGE,
+  enemyAutoAttackDamage,
+  getEnemyKind,
+  orderedSpawnDists,
+  rollEnemyCrit,
+  scaleEnemyStats,
+} from "./enemies";
 import {
   packageTooltipDesc,
   packageTooltipTitle,
@@ -152,6 +160,8 @@ export class Battle {
   /** Секунды до экрана победы после смерти последнего врага; null = нет отсчёта. */
   private victoryDelaySec: number | null = null;
   private static readonly VICTORY_DELAY_SEC = 2;
+  /** Счётчик id для призывов врагов посреди боя. */
+  private enemySummonSeq = 0;
 
   constructor(app: Application, hud: BattleHudApi, config: BattleConfig) {
     this.app = app;
@@ -1551,9 +1561,75 @@ export class Battle {
         this.dealAbilityDamage(caster, target, def.damage, def);
         break;
       }
+      case "living_bones": {
+        const level = caster.level > 0 ? caster.level : 1;
+        this.spawnEnemyMidFight("skeleton_guard", [1], level);
+        this.spawnEnemyMidFight("skeleton_archer", [2, 3], level);
+        this.vfx.floatingText(caster.center.x, caster.center.y - 36, "ЖИВЫЕ КОСТИ", 0xc8b89a);
+        break;
+      }
       default:
         break;
     }
+  }
+
+  /**
+   * Призыв врага посреди боя в свободную клетку (желаемые ряды, иначе ближайшие).
+   * Нет места - null.
+   */
+  private spawnEnemyMidFight(
+    kindId: string,
+    preferredRows: number[],
+    level: number,
+  ): Unit | null {
+    const kind = getEnemyKind(kindId);
+    if (!kind) return null;
+
+    const taken = new Set<string>();
+    for (const u of this.units) {
+      if (u.team !== "enemy" || !u.alive) continue;
+      taken.add(`${u.pos.col}:${u.pos.row}`);
+    }
+
+    let cell: GridPos | null = null;
+    for (const dist of orderedSpawnDists(preferredRows.length ? preferredRows : kind.spawnRows)) {
+      const row = distToGridRow(dist);
+      const open: number[] = [];
+      for (let col = 0; col < GRID_SIZE; col++) {
+        if (!taken.has(`${col}:${row}`)) open.push(col);
+      }
+      if (!open.length) continue;
+      cell = { col: open[Math.floor(Math.random() * open.length)]!, row };
+      break;
+    }
+    if (!cell) return null;
+
+    const scaled = scaleEnemyStats(kind, level, false);
+    const seq = this.enemySummonSeq++;
+    const u = new Unit({
+      // Суффикс только цифры: noteKill снимает `-\d+$` и получает kind.id.
+      id: `${kind.id}-${9000 + seq}`,
+      name: kind.name,
+      short: kind.short,
+      team: "enemy",
+      aspect: kind.aspect,
+      pos: { ...cell },
+      stats: {
+        maxHp: scaled.hp,
+        atk: scaled.atk,
+        autoAttackCd: kind.cd,
+        range: kind.reach <= 2 ? "melee" : "ranged",
+        reach: kind.reach,
+      },
+      abilities: kind.abilities ?? [],
+      portraitUrl: kind.portraitUrl,
+      level,
+    });
+    this.unitsLayer.addChild(u.view);
+    this.units.push(u);
+    const c = this.cellCenter(u.pos);
+    u.view.position.set(c.x, c.y);
+    return u;
   }
 
   private spawnTornado(pos: GridPos, def: AbilityDef): void {

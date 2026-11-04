@@ -41,6 +41,7 @@ export type AbilityId =
   | "tornado"
   | "dark_arrow"
   | "behind_backs"
+  | "living_bones"
   | "rejuvenation"
   | "root_grasp"
   | "poison_bush";
@@ -144,6 +145,8 @@ export interface AbilityEffects {
    * 0.5 → половина урона. В 1 ряду не применяется.
    */
   rearDamageTakenMult?: number;
+  /** При старте боя способность сразу на полном кулдауне (не 70-100%). */
+  startOnFullCooldown?: boolean;
 }
 
 export interface AbilityDef {

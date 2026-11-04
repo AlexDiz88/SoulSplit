@@ -39,6 +39,7 @@ export const ABILITY_BY_GRIMOIRE_ID: Record<string, AbilityId> = {
   tornado: "tornado",
   "dark-arrow": "dark_arrow",
   "behind-backs": "behind_backs",
+  "living-bones": "living_bones",
   rejuvenation: "rejuvenation",
   "root-grasp": "root_grasp",
   "poison-bush": "poison_bush",
@@ -266,6 +267,19 @@ export const ABILITIES: Record<AbilityId, AbilityDef> = {
     reach: 0,
     effects: { rearDamageTakenMult: 0.5 },
   },
+  living_bones: {
+    id: "living_bones",
+    name: "Живые кости",
+    aspect: "necromancy",
+    glyph: "💀",
+    cooldown: 30,
+    damage: 0,
+    manaCost: 0,
+    targetMode: "self",
+    range: "any",
+    reach: 0,
+    effects: { startOnFullCooldown: true },
+  },
   rejuvenation: {
     id: "rejuvenation",
     name: "Омоложение",
@@ -383,6 +397,8 @@ export function describeAbility(def: AbilityDef): string {
       return `Враг готовит стрелу тьмы и выпускает ее в героя. Пока идет подготовка, он не атакует.`;
     case "behind_backs":
       return `Пока носитель стоит не в ближнем ряду, входящий урон снижен на ${fmtReducePct(e.rearDamageTakenMult ?? 0.5)}%. В первом ряду прикрытие срывается.`;
+    case "living_bones":
+      return `Мгновенно поднимает двух скелетов: защитника (по возможности в 1 ряду) и лучника (ряды 2-3). При старте боя способность сразу на кулдауне.`;
     case "rejuvenation":
       return `Сила природы омолаживает вас, восстанавливая ${fmtNum(e.regenPerSec ?? 0)} ед. здоровья в секунду в течение ${fmtNum(e.regenDuration ?? 0)} сек.`;
     case "root_grasp":
@@ -465,6 +481,10 @@ export function abilityNumberLines(def: AbilityDef): string[] {
     case "behind_backs":
       lines.push(`вне 1 ряда: входящий урон снижен на ${fmtReducePct(e.rearDamageTakenMult ?? 0.5)}%`);
       lines.push("в 1 ряду: входящий урон без снижения");
+      break;
+    case "living_bones":
+      lines.push("мгновенно: Скелет-защитник (ряд 1 по возможности) и Скелет-лучник (ряды 2-3)");
+      lines.push("при старте боя сразу на полном кулдауне (первое применение через 30 с)");
       break;
     case "rejuvenation":
       lines.push(

@@ -186,9 +186,12 @@ export class Unit {
         this.abilityCd[a] = 0;
         continue;
       }
-      const cd = ABILITIES[a]?.cooldown ?? 8;
-      // В начале боя у монстров 70-100% кулдауна, чтобы не били скиллом сразу.
-      this.abilityCd[a] = cd * (0.7 + Math.random() * 0.3);
+      const def = ABILITIES[a];
+      const cd = def?.cooldown ?? 8;
+      // Полный кд с старта (босс-призывы и т.п.) либо 70-100%, чтобы не били скиллом сразу.
+      this.abilityCd[a] = def?.effects?.startOnFullCooldown
+        ? cd
+        : cd * (0.7 + Math.random() * 0.3);
     }
 
     this.view.eventMode = "none";

@@ -72,9 +72,11 @@ function parseNumber(value: string, fallback: number): number {
 }
 
 function parseCard(path: string, raw: string): EnemyCard {
-  const matched = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  // UTF-8 BOM ломает ^--- и тогда status падает в "черновик".
+  const source = raw.replace(/^\uFEFF/, "");
+  const matched = source.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
   const front = parseFrontmatter(matched?.[1] ?? "");
-  const body = matched?.[2] ?? raw;
+  const body = matched?.[2] ?? source;
   const parts = path.replaceAll("\\", "/").split("/");
   const folder = parts.at(-2) ?? "common";
   const fileId = (parts.at(-1) ?? "enemy").replace(/\.md$/, "");
