@@ -94,14 +94,14 @@
     2% 10%
   );
   background:
-    radial-gradient(90% 70% at 12% 18%, rgba(232, 214, 160, 0.5), transparent 58%),
-    radial-gradient(85% 75% at 88% 82%, rgba(150, 120, 55, 0.18), transparent 55%),
+    radial-gradient(90% 70% at 12% 18%, rgba(220, 202, 148, 0.5), transparent 58%),
+    radial-gradient(85% 75% at 88% 82%, rgba(140, 110, 45, 0.2), transparent 55%),
     linear-gradient(
       145deg,
-      #d8c79a 0%,
-      #cbb686 38%,
-      #b9a06e 68%,
-      #d0bc90 100%
+      #d0bf92 0%,
+      #c3ae7e 38%,
+      #b19866 68%,
+      #c8b488 100%
     );
   box-shadow:
     inset 0 1px 0 rgba(235, 228, 200, 0.4),
@@ -215,14 +215,14 @@
     drop-shadow(0 4px 3px rgba(40, 32, 18, 0.26))
     drop-shadow(0 8px 14px rgba(28, 22, 12, 0.28));
   background:
-    radial-gradient(90% 70% at 14% 16%, rgba(240, 224, 175, 0.55), transparent 58%),
-    radial-gradient(85% 75% at 86% 80%, rgba(160, 128, 58, 0.16), transparent 55%),
+    radial-gradient(90% 70% at 14% 16%, rgba(228, 212, 163, 0.55), transparent 58%),
+    radial-gradient(85% 75% at 86% 80%, rgba(148, 116, 48, 0.18), transparent 55%),
     linear-gradient(
       145deg,
-      #e2d2a6 0%,
-      #d4c090 38%,
-      #c4ae78 68%,
-      #d8c698 100%
+      #dac89e 0%,
+      #ccb888 38%,
+      #bca670 68%,
+      #d0be90 100%
     );
   box-shadow:
     inset 0 1px 0 rgba(240, 234, 210, 0.45),
@@ -247,12 +247,12 @@
     drop-shadow(0 1px 0 rgba(60, 55, 40, 0.16))
     drop-shadow(0 3px 4px rgba(28, 22, 12, 0.2));
   background:
-    radial-gradient(90% 70% at 16% 18%, rgba(210, 195, 155, 0.28), transparent 55%),
+    radial-gradient(90% 70% at 16% 18%, rgba(198, 183, 143, 0.28), transparent 55%),
     linear-gradient(
       145deg,
-      #bba888 0%,
-      #a8946e 50%,
-      #b8a580 100%
+      #b3a080 0%,
+      #a08c66 50%,
+      #b09d78 100%
     );
   text-shadow: 0 1px 0 rgba(220, 214, 190, 0.22);
   box-shadow:
@@ -267,12 +267,12 @@
     drop-shadow(0 1px 0 rgba(60, 55, 40, 0.16))
     drop-shadow(0 3px 4px rgba(28, 22, 12, 0.2));
   background:
-    radial-gradient(90% 70% at 16% 18%, rgba(210, 195, 155, 0.28), transparent 55%),
+    radial-gradient(90% 70% at 16% 18%, rgba(198, 183, 143, 0.28), transparent 55%),
     linear-gradient(
       145deg,
-      #bba888 0%,
-      #a8946e 50%,
-      #b8a580 100%
+      #b3a080 0%,
+      #a08c66 50%,
+      #b09d78 100%
     );
   text-shadow: 0 1px 0 rgba(220, 214, 190, 0.22);
   box-shadow:
