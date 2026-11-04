@@ -44,7 +44,7 @@ description: >-
 2. [WORLD_HIERARCHY.md](../../../design/meta/WORLD_HIERARCHY.md) - имена мест.
 3. [style.md](style.md) - тон и антипримеры.
 4. [INDEX.md](../../../design/quests/INDEX.md) и карточку квеста `design/quests/{id}.md`, если есть.
-5. При необходимости: связанные враги/регион в `design/enemies/`, описание региона в `src/meta/regions.ts`.
+5. При необходимости: связанные враги в `src/combat/enemyDefs/`, описание региона в `src/meta/regions.ts`.
 
 Не противоречь канону. Новый устойчивый факт лора (имя чиновника, причина войны банд, история руин), который должен жить дольше одного квеста, **допиши** короткой строкой в журнал `WORLD_LORE.md`.
 

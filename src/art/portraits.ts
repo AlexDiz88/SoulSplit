@@ -1,19 +1,6 @@
-import banditBrigadierUrl from "../../assets/art/enemies/bandit_brigadier.jpg";
-import banditLeaderUrl from "../../assets/art/enemies/bandit_leader.png";
-import banditMagpieUrl from "../../assets/art/enemies/bandit_magpie.png";
-import banditRavagerUrl from "../../assets/art/enemies/bandit_ravager.png";
-import banditSlingerUrl from "../../assets/art/enemies/bandit_slinger.png";
-import banditVagabondUrl from "../../assets/art/enemies/bandit_vagabond.png";
-import goblinSpearUrl from "../../assets/art/enemies/goblin_spear.png";
-import huntressUrl from "../../assets/art/enemies/huntress.png";
-import scavengerUrl from "../../assets/art/enemies/scavenger.png";
-import skeletonArcherUrl from "../../assets/art/enemies/skeleton_archer.png";
-import skeletonGuardUrl from "../../assets/art/enemies/skeleton_guard.png";
-import skeletonKingUrl from "../../assets/art/enemies/skeleton_king.png";
-import skeletonMageUrl from "../../assets/art/enemies/skeleton_mage.png";
-import skeletonSpearmanUrl from "../../assets/art/enemies/skeleton_spearman.png";
-import wanderingUrl from "../../assets/art/enemies/wandering.png";
 import { Assets, type Texture } from "pixi.js";
+import { ALL_ENEMY_DEFS } from "../combat/enemyDefs";
+import { resolveEnemyPortraitUrl } from "./enemyPortraits";
 
 export type HeroGender = "male" | "female";
 
@@ -39,24 +26,10 @@ const HERO_PORTRAITS: { url: string; gender: HeroGender | null }[] = Object.entr
 
 const HERO_PORTRAIT_URLS = HERO_PORTRAITS.map((p) => p.url);
 
-/** URL портретов врагов (герой - через pickRandomHeroPortraitUrl). */
-export const PORTRAIT_URLS = {
-  goblin_spear: goblinSpearUrl,
-  skeleton_guard: skeletonGuardUrl,
-  huntress: huntressUrl,
-  skeleton_mage: skeletonMageUrl,
-  bandit_vagabond: banditVagabondUrl,
-  bandit_slinger: banditSlingerUrl,
-  bandit_brigadier: banditBrigadierUrl,
-  bandit_magpie: banditMagpieUrl,
-  bandit_ravager: banditRavagerUrl,
-  bandit_leader: banditLeaderUrl,
-  wandering: wanderingUrl,
-  skeleton_archer: skeletonArcherUrl,
-  skeleton_spearman: skeletonSpearmanUrl,
-  scavenger: scavengerUrl,
-  skeleton_king: skeletonKingUrl,
-};
+/** URL портретов врагов по id (из EnemyDef.portrait). */
+export const PORTRAIT_URLS: Record<string, string> = Object.fromEntries(
+  ALL_ENEMY_DEFS.map((def) => [def.id, resolveEnemyPortraitUrl(def.portrait)]),
+);
 
 /** Настройки даунскейла: без mipmaps GPU семплит full-res и даёт зерно/кашу. */
 const PORTRAIT_TEXTURE_DATA = {

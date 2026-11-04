@@ -248,7 +248,7 @@ export function mountBestiary(mountEl: HTMLElement, tooltipHost: BestiaryTooltip
         detail.append(abilityIconsRow(refs, tooltipHost));
       }
     }
-    if (card.description) {
+    if (card.description || card.extra) {
       const desc = document.createElement("div");
       desc.className = "bestiary-desc";
       const label = document.createElement("span");
@@ -256,7 +256,7 @@ export function mountBestiary(mountEl: HTMLElement, tooltipHost: BestiaryTooltip
       label.textContent = "Описание";
       const text = document.createElement("div");
       text.className = "bestiary-desc-text";
-      text.textContent = card.description;
+      text.textContent = [card.description, card.extra].filter(Boolean).join(" ");
       desc.append(label, text);
       detail.append(desc);
     }
