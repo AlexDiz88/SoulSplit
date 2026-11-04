@@ -9,6 +9,7 @@ import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
 import { getStat } from "../stats/sheet";
 import { goldAmountNode } from "./goldIcon";
+import "./goldIcon.css";
 import {
   HUB_LOCATIONS,
   coverLayout,
@@ -30,6 +31,8 @@ export interface HubScreenApi {
 export interface HubScreenHandlers {
   onCharacter: () => void;
   onInventory: () => void;
+  /** Журнал заданий (кнопка у сумки). */
+  onQuestLog: () => void;
   onItemGenerator: () => void;
   onSave: () => void;
   onSettings: () => void;
@@ -66,6 +69,16 @@ function bagIcon(): HTMLElement {
   span.innerHTML =
     '<svg viewBox="0 0 24 24" focusable="false">' +
     '<path fill="currentColor" d="M7 8V6.8C7 4.15 9.02 2 12 2s5 2.15 5 4.8V8h2.2c.99 0 1.8.81 1.8 1.8v10.4c0 .99-.81 1.8-1.8 1.8H4.8c-.99 0-1.8-.81-1.8-1.8V9.8C3 8.81 3.81 8 4.8 8H7zm2 0h6V6.8c0-1.55-1.12-2.8-3-2.8s-3 1.25-3 2.8V8z"/>' +
+    "</svg>";
+  return span;
+}
+
+function journalIcon(): HTMLElement {
+  const span = el("span", "hub-bag-icon");
+  span.setAttribute("aria-hidden", "true");
+  span.innerHTML =
+    '<svg viewBox="0 0 24 24" focusable="false">' +
+    '<path fill="currentColor" d="M6.2 3h10.1c1.1 0 2 .9 2 2v14.2c0 1.1-.9 2-2 2H6.2c-1.1 0-2-.9-2-2V5c0-1.1.9-2 2-2zm0 1.6c-.22 0-.4.18-.4.4v14c0 .22.18.4.4.4h1.35V4.6H6.2zm2.95 0v14.8h7.15c.22 0 .4-.18.4-.4V5c0-.22-.18-.4-.4-.4H9.15zm1.4 2.2h4.6v1.4h-4.6V6.8zm0 3.2h4.6v1.4h-4.6V10zm0 3.2h3.2v1.4h-3.2V13.2z"/>' +
     "</svg>";
   return span;
 }
@@ -134,8 +147,14 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   heroBody.append(heroRow, hpBar.wrap, manaBar.wrap);
   heroDock.append(portraitWrap, heroBody);
   heroDock.addEventListener("click", () => handlers.onCharacter());
-  // Вне .hub-screen: иначе stacking context хаба держит блок под затемнением/блюром оверлеев.
-  heroDock.hidden = true;
+
+  const goldLine = el("div", "hub-hero-gold");
+  goldLine.setAttribute("aria-live", "polite");
+
+  /* Вне .hub-screen: иначе stacking context хаба держит блок под затемнением/блюром оверлеев. */
+  const heroStack = el("div", "hub-hero-stack");
+  heroStack.hidden = true;
+  heroStack.append(goldLine, heroDock);
 
   const syncPortraitSize = (): void => {
     // Квадрат по высоте колонки статов (aspect-ratio во flex с overflow схлопывался в 0).
@@ -195,19 +214,22 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   tools.append(timeBtn, addGoldBtn, fsBtn, menuWrap);
   root.append(tools);
 
-  /* ---- Сумка: правый нижний угол ---- */
+  /* ---- Сумка + журнал: правый нижний угол ---- */
   const bagDock = el("div", "hub-bag-dock");
+  const bagRow = el("div", "hub-bag-row");
+  const journalBtn = makeRoundBtn("hub-round-btn hub-bag-btn hub-journal-btn", "Журнал заданий");
+  journalBtn.append(journalIcon());
+  journalBtn.addEventListener("click", () => handlers.onQuestLog());
   const bagBtn = makeRoundBtn("hub-round-btn hub-bag-btn", "Инвентарь");
   bagBtn.append(bagIcon());
   bagBtn.addEventListener("click", () => handlers.onInventory());
-  const goldLine = el("div", "hub-bag-gold");
-  goldLine.setAttribute("aria-live", "polite");
-  bagDock.append(bagBtn, goldLine);
+  bagRow.append(journalBtn, bagBtn);
+  bagDock.append(bagRow);
   root.append(bagDock);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
-  hud.append(root, heroDock, xpTip);
+  hud.append(root, heroStack, xpTip);
 
   const hideXpTip = (): void => {
     xpTip.hidden = true;
@@ -447,14 +469,15 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     setVital(hpBar, hp, maxHp);
     setVital(manaBar, mana, maxMana);
 
-    heroDock.hidden = false;
+    goldLine.replaceChildren(
+      goldAmountNode(state.hero.gold, "gold-amount hub-hero-gold-amount"),
+    );
+    heroStack.hidden = false;
     requestAnimationFrame(syncPortraitSize);
   };
 
   return {
     show(state) {
-      goldLine.replaceChildren(goldAmountNode(state.hero.gold, "gold-amount hub-bag-gold-amount"));
-
       // Фон не рандомим: вечер по умолчанию, день/вечер только вручную.
       const opening = root.hidden;
       if (opening) applyTownTime(townTime);
@@ -470,13 +493,13 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     },
     hideHeroDock() {
       hideXpTip();
-      heroDock.hidden = true;
+      heroStack.hidden = true;
     },
     hide() {
       closeMenu();
       hideXpTip();
       root.hidden = true;
-      heroDock.hidden = true;
+      heroStack.hidden = true;
     },
     isOpen() {
       return !root.hidden;
@@ -491,7 +514,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       window.removeEventListener("keydown", onKeyDown);
       hideXpTip();
       xpTip.remove();
-      heroDock.remove();
+      heroStack.remove();
       root.remove();
     },
   };

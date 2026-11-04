@@ -8,6 +8,7 @@ import {
 } from "../quests/questLog";
 import type { QuestId } from "../quests/types";
 import { goldAmountNode } from "./goldIcon";
+import { createQuestRewardIcon } from "./questRewardIcon";
 import "./townHallScreen.css";
 
 export interface TownHallScreenApi {
@@ -42,10 +43,10 @@ function appendRewards(host: HTMLElement, view: QuestDetailView): void {
   goldLi.append(document.createTextNode("Золото: "));
   goldLi.append(goldAmountNode(view.rewards.gold));
   rewards.append(goldLi);
-  if (view.rewards.itemLabel) {
-    rewards.append(el("li", undefined, `Предмет: ${view.rewards.itemLabel}`));
-  }
   host.append(rewards);
+  if (view.rewards.rewardItem) {
+    host.append(createQuestRewardIcon(view.rewards.rewardItem));
+  }
 }
 
 export function mountTownHallScreen(handlers: TownHallScreenHandlers): TownHallScreenApi {

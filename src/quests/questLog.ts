@@ -1,3 +1,4 @@
+import { ensureItemIcon } from "../art/itemIcons";
 import { getEnemyCardById } from "../combat/enemyCatalog";
 import { generateItem, itemDisplayName } from "../items/generate";
 import { addItemToInventory, findEmptyInventorySlot } from "../items/inventory";
@@ -16,7 +17,39 @@ import {
 } from "./types";
 
 export function createEmptyQuestLog(): QuestLogState {
-  return { entries: [], tracked: [] };
+  return { entries: [], tracked: [], pendingRewards: {} };
+}
+
+function cloneRewardItem(raw: unknown): ItemDef | null {
+  if (!raw || typeof raw !== "object") return null;
+  const item = structuredClone(raw) as ItemDef;
+  if (typeof item.id !== "string" || typeof item.rarity !== "string") return null;
+  ensureItemIcon(item);
+  return item;
+}
+
+function rollQuestRewardItem(state: GameState, questId: QuestId): ItemDef | null {
+  const def = getQuestDef(questId);
+  if (!def.rewards.item) return null;
+  const item = generateItem({
+    slot: pickWeightedEquipSlot(),
+    rarity: def.rewards.item.rarity,
+    itemLevel: def.rewards.item.itemLevel,
+    learnedAspects: state.hero.learnedAspects,
+  });
+  ensureItemIcon(item);
+  return item;
+}
+
+/** Старые сейвы / дыры: докинуть rewardItem один раз, если в дефе есть предмет. */
+function ensureEntryRewardItem(state: GameState, entry: QuestProgress): void {
+  const def = getQuestDef(entry.questId);
+  if (!def.rewards.item) return;
+  if (entry.rewardItem) {
+    ensureItemIcon(entry.rewardItem);
+    return;
+  }
+  entry.rewardItem = rollQuestRewardItem(state, entry.questId);
 }
 
 export function cloneQuestLog(src: QuestLogState | null | undefined): QuestLogState {
@@ -32,7 +65,12 @@ export function cloneQuestLog(src: QuestLogState | null | undefined): QuestLogSt
         if (typeof v === "number" && Number.isFinite(v)) counters[k] = Math.max(0, Math.floor(v));
       }
     }
-    entries.push({ questId: raw.questId, status, counters });
+    entries.push({
+      questId: raw.questId,
+      status,
+      counters,
+      rewardItem: cloneRewardItem((raw as QuestProgress).rewardItem),
+    });
   }
   const tracked: QuestId[] = [];
   for (const id of src.tracked ?? []) {
@@ -43,12 +81,45 @@ export function cloneQuestLog(src: QuestLogState | null | undefined): QuestLogSt
     tracked.push(id);
     if (tracked.length >= MAX_TRACKED_QUESTS) break;
   }
-  return { entries, tracked };
+  const pendingRewards: Partial<Record<QuestId, ItemDef>> = {};
+  const rawPending = (src as QuestLogState).pendingRewards;
+  if (rawPending && typeof rawPending === "object") {
+    for (const [key, value] of Object.entries(rawPending)) {
+      if (!isQuestId(key)) continue;
+      if (entries.some((e) => e.questId === key)) continue;
+      const item = cloneRewardItem(value);
+      if (item) pendingRewards[key] = item;
+    }
+  }
+  return { entries, tracked, pendingRewards };
 }
 
 export function ensureQuestLog(state: GameState): QuestLogState {
   state.quests = cloneQuestLog(state.quests);
+  for (const entry of state.quests.entries) {
+    ensureEntryRewardItem(state, entry);
+  }
   return state.quests;
+}
+
+/** Ролл / чтение награды до взятия (сохраняется в pendingRewards). */
+export function ensurePendingReward(state: GameState, id: QuestId): ItemDef | null {
+  const log = ensureQuestLog(state);
+  const def = getQuestDef(id);
+  if (!def.rewards.item) return null;
+  const entry = getEntry(log, id);
+  if (entry) {
+    ensureEntryRewardItem(state, entry);
+    return entry.rewardItem ?? null;
+  }
+  const existing = log.pendingRewards[id];
+  if (existing) {
+    ensureItemIcon(existing);
+    return existing;
+  }
+  const rolled = rollQuestRewardItem(state, id);
+  if (rolled) log.pendingRewards[id] = rolled;
+  return rolled;
 }
 
 function getEntry(log: QuestLogState, id: QuestId): QuestProgress | undefined {
@@ -129,7 +200,8 @@ export interface QuestDetailView {
   rewards: {
     xp: number;
     gold: number;
-    itemLabel: string | null;
+    /** Конкретный предмет (pending до взятия / entry после). */
+    rewardItem: ItemDef | null;
   };
 }
 
@@ -151,9 +223,7 @@ export function getQuestDetailView(state: GameState, id: QuestId): QuestDetailVi
       done: current >= target,
     };
   });
-  const itemLabel = def.rewards.item
-    ? `случайный предмет (${def.rewards.item.rarity === "uncommon" ? "необычный" : def.rewards.item.rarity}, ур. ${def.rewards.item.itemLevel})`
-    : null;
+  const rewardItem = ensurePendingReward(state, id);
   return {
     id,
     name: def.name,
@@ -167,7 +237,7 @@ export function getQuestDetailView(state: GameState, id: QuestId): QuestDetailVi
     rewards: {
       xp: def.rewards.xp,
       gold: def.rewards.gold,
-      itemLabel,
+      rewardItem,
     },
   };
 }
@@ -183,7 +253,14 @@ export function acceptQuest(
   def.objectives.forEach((obj, i) => {
     counters[objectiveCounterKey(obj, i)] = 0;
   });
-  log.entries.push({ questId: id, status: "active", counters });
+  const rewardItem = ensurePendingReward(state, id);
+  delete log.pendingRewards[id];
+  log.entries.push({
+    questId: id,
+    status: "active",
+    counters,
+    rewardItem,
+  });
   let autoTracked = false;
   if (log.tracked.length < MAX_TRACKED_QUESTS) {
     log.tracked.push(id);
@@ -268,17 +345,17 @@ export function turnInQuest(state: GameState, id: QuestId): TurnInResult {
     return { ok: false, reason: "Квест ещё не готов к сдаче" };
   }
   const def = getQuestDef(id);
+  ensureEntryRewardItem(state, entry);
   let item: ItemDef | null = null;
   if (def.rewards.item) {
     if (findEmptyInventorySlot(state.hero.inventory) < 0) {
       return { ok: false, reason: "Сумка полна" };
     }
-    item = generateItem({
-      slot: pickWeightedEquipSlot(),
-      rarity: def.rewards.item.rarity,
-      itemLevel: def.rewards.item.itemLevel,
-      learnedAspects: state.hero.learnedAspects,
-    });
+    item = entry.rewardItem ? structuredClone(entry.rewardItem) : rollQuestRewardItem(state, id);
+    if (!item) {
+      return { ok: false, reason: "Нет предмета-награды" };
+    }
+    ensureItemIcon(item);
     if (addItemToInventory(state.hero.inventory, item) < 0) {
       return { ok: false, reason: "Сумка полна" };
     }

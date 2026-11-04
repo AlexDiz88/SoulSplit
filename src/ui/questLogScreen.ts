@@ -7,6 +7,7 @@ import {
 } from "../quests/questLog";
 import type { QuestId } from "../quests/types";
 import { goldAmountNode } from "./goldIcon";
+import { createQuestRewardIcon } from "./questRewardIcon";
 import "./questLogScreen.css";
 
 export interface QuestLogScreenApi {
@@ -129,10 +130,10 @@ export function mountQuestLogScreen(handlers: QuestLogScreenHandlers): QuestLogS
     goldLi.append(document.createTextNode("Золото: "));
     goldLi.append(goldAmountNode(view.rewards.gold));
     rewards.append(goldLi);
-    if (view.rewards.itemLabel) {
-      rewards.append(el("li", undefined, `Предмет: ${view.rewards.itemLabel}`));
-    }
     detail.append(rewards);
+    if (view.rewards.rewardItem) {
+      detail.append(createQuestRewardIcon(view.rewards.rewardItem));
+    }
 
     const actions = el("div", "questlog-actions");
     if (view.status === "active" || view.status === "ready") {

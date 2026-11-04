@@ -1,4 +1,4 @@
-import type { ItemRarity } from "../items/types";
+import type { ItemDef, ItemRarity } from "../items/types";
 import type { ZoneId } from "../meta/gameState";
 
 export type QuestId = "cull_bandits";
@@ -45,12 +45,19 @@ export interface QuestProgress {
   status: QuestProgressStatus;
   /** Ключ цели → текущий счётчик. */
   counters: Record<string, number>;
+  /** Предмет-награда (тот же, что был в pending при просмотре / взятии). */
+  rewardItem?: ItemDef | null;
 }
 
 export interface QuestLogState {
   entries: QuestProgress[];
   /** До MAX_TRACKED id для оверлея трекера. */
   tracked: QuestId[];
+  /**
+   * Ролл награды до взятия (ратуша). Один раз на questId;
+   * при accept переносится в entry.rewardItem.
+   */
+  pendingRewards: Partial<Record<QuestId, ItemDef>>;
 }
 
 export const MAX_TRACKED_QUESTS = 3;

@@ -8,10 +8,6 @@ export interface QuestTrackerApi {
   destroy(): void;
 }
 
-export interface QuestTrackerHandlers {
-  onOpenLog: () => void;
-}
-
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
   className?: string,
@@ -23,20 +19,13 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-export function mountQuestTracker(handlers: QuestTrackerHandlers): QuestTrackerApi {
+export function mountQuestTracker(): QuestTrackerApi {
   const side = el("div", "quest-side");
   side.hidden = true;
-  side.setAttribute("aria-label", "Квесты");
-
-  const logBtn = el("button", "quest-side-log-btn", "Журнал");
-  logBtn.type = "button";
-  logBtn.setAttribute("aria-label", "Открыть журнал заданий");
-  logBtn.addEventListener("click", () => handlers.onOpenLog());
 
   const tracker = el("div", "quest-tracker");
-  tracker.setAttribute("aria-label", "Трекер квестов");
-
-  side.append(logBtn, tracker);
+  tracker.setAttribute("aria-label", "Трекер заданий");
+  side.append(tracker);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
@@ -46,17 +35,17 @@ export function mountQuestTracker(handlers: QuestTrackerHandlers): QuestTrackerA
   let lastState: GameState | null = null;
 
   function paint(): void {
-    if (!allowVisible) {
+    if (!allowVisible || !lastState) {
       side.hidden = true;
       tracker.replaceChildren();
       return;
     }
-    side.hidden = false;
-    if (!lastState) {
+    const views = trackedQuestViews(lastState);
+    if (views.length === 0) {
+      side.hidden = true;
       tracker.replaceChildren();
       return;
     }
-    const views = trackedQuestViews(lastState);
     tracker.replaceChildren();
     for (const v of views) {
       const card = el("article", `quest-tracker-card${v.ready ? " is-ready" : ""}`);
@@ -73,6 +62,7 @@ export function mountQuestTracker(handlers: QuestTrackerHandlers): QuestTrackerA
       card.append(lines);
       tracker.append(card);
     }
+    side.hidden = false;
   }
 
   return {

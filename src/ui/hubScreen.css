@@ -74,13 +74,59 @@
     #161822;
 }
 
-/* ---- Герой: левый нижний угол (рамка как у окна персонажа / инвентаря) ---- */
-.hub-hero-dock {
-  appearance: none;
+/* ---- Герой: левый нижний угол (золото сверху + док) ---- */
+.hub-hero-stack {
   position: absolute;
   left: 16px;
   bottom: 16px;
   z-index: 52;
+  display: block;
+  width: max-content;
+  max-width: min(450px, calc(100vw - 140px));
+  pointer-events: none;
+}
+
+.hub-hero-stack[hidden] {
+  display: none !important;
+}
+
+.hub-hero-gold {
+  position: absolute;
+  left: 0;
+  bottom: calc(100% + 6px);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 2px;
+  min-height: 1.35em;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(10, 12, 20, 0.88);
+  border: 1px solid rgba(180, 150, 60, 0.55);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  color: #f0d878;
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.hub-hero-gold .gold-amount,
+.hub-hero-gold-amount {
+  color: #f0d878;
+  font-size: 1rem;
+  font-weight: 800;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
+}
+
+.hub-hero-dock {
+  appearance: none;
+  position: relative;
+  left: auto;
+  bottom: auto;
+  z-index: 1;
   margin: 0;
   padding: 0 5px 0 0;
   border: 1px solid #6a5a3a;
@@ -494,7 +540,7 @@
   box-shadow: var(--theme-shadow-panel);
 }
 
-/* ---- Сумка: правый нижний угол ---- */
+/* ---- Сумка + журнал: правый нижний угол ---- */
 .hub-bag-dock {
   position: absolute;
   right: 16px;
@@ -505,6 +551,13 @@
   align-items: center;
   gap: 8px;
   pointer-events: auto;
+}
+
+.hub-bag-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
 }
 
 .hub-bag-btn {
@@ -524,25 +577,6 @@
   display: block;
   width: 100%;
   height: 100%;
-}
-
-.hub-bag-gold {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 1.2em;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(10, 12, 20, 0.72);
-  border: 1px solid rgba(180, 150, 60, 0.35);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
-}
-
-.hub-bag-gold-amount {
-  font-size: 1rem;
-  font-weight: 800;
-  color: #f0d878;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.85);
 }
 
 .hub-game-menu[hidden] {

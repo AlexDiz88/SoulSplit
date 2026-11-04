@@ -1,0 +1,23 @@
+.quest-reward-slot {
+  position: relative;
+  display: inline-flex;
+  --slot: var(--inv-slot, 76px);
+  --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
+  --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
+  --slot-glyph: #c4a874;
+}
+
+.quest-reward-cell {
+  cursor: var(--cur-default);
+  pointer-events: auto;
+}
+
+.quest-reward-tip {
+  position: fixed;
+  z-index: 80;
+  pointer-events: none;
+}
+
+.quest-reward-tip[hidden] {
+  display: none !important;
+}

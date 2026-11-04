@@ -133,6 +133,7 @@ export class GameApp {
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
       },
+      onQuestLog: () => this.goQuestLog(),
       onItemGenerator: () => {
         this.merchant.hide();
         this.townHall.hide();
@@ -170,6 +171,8 @@ export class GameApp {
 
     this.townHall = mountTownHallScreen({
       onClose: () => {
+        // Pending-ролл награды при просмотре доски нужно сохранить.
+        this.persist();
         this.syncQuestTracker();
       },
       onChanged: () => {
@@ -192,9 +195,7 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
-    this.questTracker = mountQuestTracker({
-      onOpenLog: () => this.goQuestLog(),
-    });
+    this.questTracker = mountQuestTracker();
 
     this.hud.setOnMarketSell((item, price) => {
       if (!this.state) return;

@@ -122,6 +122,12 @@ function normalizeState(parsed: GameState): GameState {
   ensureHeroGlobalEffects(state.hero);
   ensureMarket(state);
   ensureQuestLog(state);
+  for (const entry of state.quests.entries) {
+    if (entry.rewardItem) remapItem(entry.rewardItem);
+  }
+  for (const item of Object.values(state.quests.pendingRewards ?? {})) {
+    if (item) remapItem(item);
+  }
   return state;
 }
 

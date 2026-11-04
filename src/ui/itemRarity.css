@@ -2,7 +2,18 @@
    Common - матовый серебристый обод без свечения.
    Uncommon+ - яркий цвет, глянцевый градиент и внешний неон. */
 
-:is(.inv-bag-root, .stash-root, .market-window, .cs-window, .reward-window, .item-drag-ghost, .item-tip) {
+:is(
+  .inv-bag-root,
+  .stash-root,
+  .market-window,
+  .cs-window,
+  .reward-window,
+  .item-drag-ghost,
+  .item-tip,
+  .quest-reward-slot,
+  .townhall-window,
+  .questlog-window
+) {
   --c-common: #b0aaa0;
   --c-uncommon: #3ad86a;
   --c-magic: #3dbcff;
