@@ -52,19 +52,19 @@ export function killXpMult(heroLevel: number, enemyLevel: number): number {
   if (Math.abs(delta) > XP_LEVEL_DELTA_MAX) return 0;
   switch (delta) {
     case -3:
-      return 0.4;
+      return 0.25;
     case -2:
-      return 0.7;
+      return 0.5;
     case -1:
-      return 0.9;
+      return 0.8;
     case 0:
       return 1;
     case 1:
-      return 1.15;
+      return 1.1;
     case 2:
-      return 1.3;
+      return 1.25;
     case 3:
-      return 1.45;
+      return 1.4;
     default:
       return 0;
   }
@@ -92,23 +92,39 @@ export function xpForKills(heroLevel: number, kills: readonly KillXpInput[]): nu
 }
 
 /**
- * Множитель XP квеста при оверлевеле: Δh = heroLevel - questLevel.
- * Δh ≤ 2 → 1; Δh = 3 → 0.35; Δh ≥ 4 → 0.
+ * Множитель XP квеста при сдаче: Δ = questLevel - heroLevel.
+ * +3…+1 бонус, 0 норма, −1…−3 штраф, |Δ| > 3 → 0.
  */
-export function questOverlevelMult(heroLevel: number, questLevel: number): number {
-  const delta = Math.floor(heroLevel) - Math.floor(questLevel);
-  if (delta <= 2) return 1;
-  if (delta === 3) return 0.35;
-  return 0;
+export function questLevelXpMult(heroLevel: number, questLevel: number): number {
+  const delta = Math.floor(questLevel) - Math.floor(heroLevel);
+  if (Math.abs(delta) > XP_LEVEL_DELTA_MAX) return 0;
+  switch (delta) {
+    case 3:
+      return 1.3;
+    case 2:
+      return 1.2;
+    case 1:
+      return 1.1;
+    case 0:
+      return 1;
+    case -1:
+      return 0.9;
+    case -2:
+      return 0.75;
+    case -3:
+      return 0.5;
+    default:
+      return 0;
+  }
 }
 
 /**
- * Итоговый XP за сдачу квеста: кламп ≤10% полосы questLevel, затем оверлевел-штраф.
+ * Итоговый XP за сдачу квеста: кламп ≤10% полосы questLevel, затем множитель уровней.
  */
 export function questXpAward(heroLevel: number, questLevel: number, rewardXp: number): number {
   const bar = xpToNextLevel(Math.max(1, Math.min(MAX_HERO_LEVEL - 1, Math.floor(questLevel))));
   const capped = Math.min(Math.max(0, Math.floor(rewardXp)), Math.floor(bar * QUEST_XP_BAR_CAP));
-  return Math.floor(capped * questOverlevelMult(heroLevel, questLevel));
+  return Math.floor(capped * questLevelXpMult(heroLevel, questLevel));
 }
 
 /** Суммарный XP от 1 уровня до начала `level` (не включая прогресс текущего). */

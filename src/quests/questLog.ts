@@ -13,6 +13,7 @@ import {
   objectiveCounterKey,
   type QuestId,
   type QuestLogState,
+  type QuestObjective,
   type QuestProgress,
   type QuestUiStatus,
 } from "./types";
@@ -312,8 +313,17 @@ function enemyMatchesGroup(kindId: string, groupId: string): boolean {
   return false;
 }
 
+export interface KillProgressContext {
+  zoneId: ZoneId;
+  pointId: string;
+}
+
 /** +1 к kill-целям; возвращает true если что-то изменилось. */
-export function applyKillProgress(state: GameState, kindId: string): boolean {
+export function applyKillProgress(
+  state: GameState,
+  kindId: string,
+  ctx?: KillProgressContext,
+): boolean {
   const log = ensureQuestLog(state);
   let changed = false;
   for (const entry of log.entries) {
@@ -326,8 +336,15 @@ export function applyKillProgress(state: GameState, kindId: string): boolean {
         allDone = false;
         return;
       }
+      const locationOk =
+        (!obj.zoneId || obj.zoneId === ctx?.zoneId) &&
+        (!obj.pointId || obj.pointId === ctx?.pointId);
       const cur = entry.counters[key] ?? 0;
-      if (cur < obj.count && enemyMatchesGroup(kindId, obj.groupId)) {
+      if (
+        locationOk &&
+        cur < obj.count &&
+        enemyMatchesGroup(kindId, obj.groupId)
+      ) {
         entry.counters[key] = cur + 1;
         changed = true;
       }
@@ -429,14 +446,33 @@ export function trackedQuestViews(state: GameState): TrackerQuestView[] {
   return views;
 }
 
-/** Строки для блока "Квесты" на карте региона. */
-export function activeQuestNamesForZone(state: GameState, zoneId: ZoneId): string[] {
+/** Цель можно выполнить в этой локации (нет ограничения или совпадает). */
+function objectiveMatchesLocation(
+  obj: QuestObjective,
+  zoneId: ZoneId,
+  pointId: string,
+): boolean {
+  if (obj.type !== "kill_group") return true;
+  if (obj.zoneId && obj.zoneId !== zoneId) return false;
+  if (obj.pointId && obj.pointId !== pointId) return false;
+  return true;
+}
+
+/** Строки для блока "Квесты" в окне локации региона. */
+export function activeQuestNamesForZone(
+  state: GameState,
+  zoneId: ZoneId,
+  pointId: string,
+): string[] {
   const log = ensureQuestLog(state);
   const names: string[] = [];
   for (const entry of log.entries) {
     if (entry.status !== "active" && entry.status !== "ready") continue;
     const def = getQuestDef(entry.questId);
     if (def.zoneHint !== zoneId) continue;
+    if (!def.objectives.some((obj) => objectiveMatchesLocation(obj, zoneId, pointId))) {
+      continue;
+    }
     if (entry.status === "ready") names.push(`${def.name} (готово)`);
     else {
       const detail = getQuestDetailView(state, entry.questId);

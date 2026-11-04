@@ -330,7 +330,7 @@
 .wm-zone-threat:hover,
 .wm-zone-threat:focus-visible {
   outline: none;
-  background: rgba(196, 163, 90, 0.12);
+  background: transparent;
 }
 
 .wm-zone-threat-icon {

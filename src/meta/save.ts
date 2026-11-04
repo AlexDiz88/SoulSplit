@@ -4,7 +4,13 @@ import { normalizeWeaponItemSlot } from "../items/equipment";
 import type { ItemDef } from "../items/types";
 import type { StatId } from "../stats/statIds";
 import type { Aspect } from "../types";
-import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "./gameState";
+import {
+  ALL_ZONE_IDS,
+  cloneGameState,
+  createNewGameState,
+  type GameState,
+  type ZoneId,
+} from "./gameState";
 import {
   ensureHeroBeltPotions,
   ensureHeroGlobalEffects,
@@ -18,10 +24,16 @@ import { ensureQuestLog } from "../quests/questLog";
 /** Старые ZoneId → актуальные (разработка, свободный rename). */
 const ZONE_ID_REMAP: Record<string, ZoneId> = {
   outskirts: "north_road",
+  ruins: "ruined_temple",
+  mellnford: "willheim",
+  kara_foothills: "grey_fang_foothills",
 };
 
-function remapZoneId(id: string): ZoneId {
-  return ZONE_ID_REMAP[id] ?? (id as ZoneId);
+const ZONE_ID_SET = new Set<string>(ALL_ZONE_IDS);
+
+function remapZoneId(id: string): ZoneId | null {
+  const next = ZONE_ID_REMAP[id] ?? id;
+  return ZONE_ID_SET.has(next) ? (next as ZoneId) : null;
 }
 
 function remapAspect(id: string): Aspect {
@@ -131,8 +143,12 @@ function normalizeState(parsed: GameState): GameState {
       delete bonuses[key as StatId];
     }
   }
-  state.unlockedZones = [...new Set(state.unlockedZones.map(remapZoneId))];
-  if (state.lastZoneId) state.lastZoneId = remapZoneId(state.lastZoneId);
+  state.unlockedZones = [
+    ...new Set(state.unlockedZones.map(remapZoneId).filter((id): id is ZoneId => id != null)),
+  ];
+  if (state.lastZoneId) {
+    state.lastZoneId = remapZoneId(state.lastZoneId);
+  }
   ensureHeroStash(state.hero);
   ensureHeroBeltPotions(state.hero);
   ensureHeroGlobalEffects(state.hero);

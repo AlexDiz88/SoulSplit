@@ -8,7 +8,48 @@ import {
 } from "./heroProfile";
 import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
 
-export type ZoneId = "north_road" | "ruins";
+export type ZoneId =
+  | "north_road"
+  | "witch_house"
+  | "crossing"
+  | "grey_fang_foothills"
+  | "oak_grove"
+  | "black_forest"
+  | "miles_farm"
+  | "mire"
+  | "flooded_barn"
+  | "willheim"
+  | "stone_cliff"
+  | "cursed_mine"
+  | "south_meadow"
+  | "bog_fangs"
+  | "skull_stone"
+  | "ruined_temple"
+  | "abandoned_house"
+  | "aria_hut"
+  | "una_altar";
+
+export const ALL_ZONE_IDS: readonly ZoneId[] = [
+  "north_road",
+  "witch_house",
+  "crossing",
+  "grey_fang_foothills",
+  "oak_grove",
+  "black_forest",
+  "miles_farm",
+  "mire",
+  "flooded_barn",
+  "willheim",
+  "stone_cliff",
+  "cursed_mine",
+  "south_meadow",
+  "bog_fangs",
+  "skull_stone",
+  "ruined_temple",
+  "abandoned_house",
+  "aria_hut",
+  "una_altar",
+] as const;
 
 export interface GameState {
   hero: HeroProfile;
@@ -23,7 +64,7 @@ export interface GameState {
 export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
   const state: GameState = {
     hero: createNewHeroProfile(opts),
-    unlockedZones: ["north_road", "ruins"],
+    unlockedZones: [...ALL_ZONE_IDS],
     lastZoneId: null,
     market: cloneMarketState(null),
     quests: createEmptyQuestLog(),

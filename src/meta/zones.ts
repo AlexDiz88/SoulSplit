@@ -1,4 +1,4 @@
-import type { ZoneId } from "./gameState";
+import { ALL_ZONE_IDS, type ZoneId } from "./gameState";
 
 /** Обязательный слот пачки (всегда в бою, тратит бюджет угрозы). */
 export interface EncounterGuarantee {
@@ -47,6 +47,40 @@ const NORTH_BANDITS_CORE = [
   "bandit_magpie",
   "bandit_brigadier",
 ] as const;
+
+const STUB_POOL = ["bandit_vagabond", "bandit_slinger", "bandit_magpie"] as const;
+
+/** Заглушка региона: одна локация с лёгким пулом, пока нет своего контента. */
+function stubZone(
+  id: ZoneId,
+  name: string,
+  description: string,
+  minLevel = 1,
+): ZoneDef {
+  return {
+    id,
+    name,
+    description,
+    minLevel,
+    quests: [],
+    previewStem: id,
+    points: [
+      {
+        id: "main",
+        name,
+        encounter: {
+          threatBudget: [3, 6],
+          pool: [...STUB_POOL],
+          guarantee: [
+            { id: "bandit_vagabond", count: 1 },
+            { id: "bandit_slinger", count: 1 },
+          ],
+        },
+        itemLevel: Math.max(1, minLevel),
+      },
+    ],
+  };
+}
 
 export const ZONES: Record<ZoneId, ZoneDef> = {
   north_road: {
@@ -115,13 +149,83 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
       },
     ],
   },
-  ruins: {
-    id: "ruins",
-    name: "Руины",
-    description: "Старые катакомбы. Враги крепче, лут заметно лучше.",
+  witch_house: stubZone(
+    "witch_house",
+    "Ведьмин дом",
+    "Старый двор у пруда на северо-западе. В амбаре пахнет травами и дымом.",
+  ),
+  crossing: stubZone(
+    "crossing",
+    "Переправа",
+    "Узкий мост через реку. Здесь удобно ждать тех, кто спешит в город.",
+  ),
+  grey_fang_foothills: stubZone(
+    "grey_fang_foothills",
+    "Предгорье Седого клыка",
+    "Ельник в долине у Седого клыка. Холодный ветер с пиков и мало троп.",
+  ),
+  oak_grove: stubZone(
+    "oak_grove",
+    "Дубовая роща",
+    "Одинокий островок дубов в поле к востоку от города.",
+  ),
+  black_forest: stubZone(
+    "black_forest",
+    "Черный лес",
+    "Тёмный склон между рекой и горами. Под кронами почти нет света.",
+  ),
+  miles_farm: stubZone(
+    "miles_farm",
+    "Ферма Майлза",
+    "Усадьба и длинные огороды на западном берегу реки.",
+  ),
+  mire: stubZone(
+    "mire",
+    "Топь",
+    "Зелёная трясина на юге. Камни торчат из воды, как чужие зубы.",
+  ),
+  flooded_barn: stubZone(
+    "flooded_barn",
+    "Затопленный амбар",
+    "Полусгнившая постройка у южного берега. Пол ушёл под воду.",
+  ),
+  willheim: stubZone(
+    "willheim",
+    "Уиллхейм",
+    "Деревня у восточного озера: колесо, сарай и вечный костёр у воды.",
+  ),
+  stone_cliff: stubZone(
+    "stone_cliff",
+    "Каменный утёс",
+    "Скалистый выступ над озером. Отсюда тропа уходит к горам.",
+  ),
+  cursed_mine: stubZone(
+    "cursed_mine",
+    "Проклятая шахта",
+    "Тёмный зев в северо-восточной скале. Из лаза тянет сыростью и железом.",
+  ),
+  south_meadow: stubZone(
+    "south_meadow",
+    "Южная поляна",
+    "Травянистый край на юго-востоке, южнее озера.",
+  ),
+  bog_fangs: stubZone(
+    "bog_fangs",
+    "Болотные клыки",
+    "Острые камни и лазы в юго-западной топи.",
+  ),
+  skull_stone: stubZone(
+    "skull_stone",
+    "Череп-камень",
+    "Круглый холм-камень в южной трясине. Издали похож на череп.",
+  ),
+  ruined_temple: {
+    id: "ruined_temple",
+    name: "Разрушенный храм",
+    description: "Обломки старого храма на западе. Ниже - катакомбы и чужие кости.",
     minLevel: 1,
     quests: [],
-    previewStem: "ruins",
+    previewStem: "ruined_temple",
     points: [
       {
         id: "courtyard",
@@ -145,6 +249,21 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
       },
     ],
   },
+  abandoned_house: stubZone(
+    "abandoned_house",
+    "Брошенный дом",
+    "Полузатопленные хижины в маршах к северу от городских стен.",
+  ),
+  aria_hut: stubZone(
+    "aria_hut",
+    "Хижина Арии",
+    "Одинокий дом у кромки юго-западного болота, рядом со старыми камнями.",
+  ),
+  una_altar: stubZone(
+    "una_altar",
+    "Алтарь Уны",
+    "Круг стоячих камней в тумане топи. Место старых обрядов.",
+  ),
 };
 
 /** Id врагов локации: пул ∪ guarantee (для UI). */
@@ -173,7 +292,6 @@ export function isZoneUnlocked(id: ZoneId, heroLevel: number, unlocked: ZoneId[]
 
 export function syncUnlockedZones(_heroLevel: number, unlocked: ZoneId[]): ZoneId[] {
   const next = new Set<ZoneId>(unlocked);
-  next.add("north_road");
-  next.add("ruins");
+  for (const id of ALL_ZONE_IDS) next.add(id);
   return [...next];
 }

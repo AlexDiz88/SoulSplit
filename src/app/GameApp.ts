@@ -530,7 +530,7 @@ export class GameApp {
     const state = this.requireState();
     for (const id of state.unlockedZones) {
       if (this.prevUnlocked.has(id)) continue;
-      if (id === "ruins") this.hud.showToast("Открыты Руины");
+      if (id === "ruined_temple") this.hud.showToast("Открыт Разрушенный храм");
     }
     this.prevUnlocked = new Set(state.unlockedZones);
   }
@@ -691,7 +691,14 @@ export class GameApp {
       encounter,
       onEnemyKilled: (kindId) => {
         if (!this.state) return;
-        if (!applyKillProgress(this.state, kindId)) return;
+        if (
+          !applyKillProgress(this.state, kindId, {
+            zoneId,
+            pointId: point.id,
+          })
+        ) {
+          return;
+        }
         this.syncQuestTracker();
         if (this.questLog.isOpen()) this.questLog.show(this.state);
       },

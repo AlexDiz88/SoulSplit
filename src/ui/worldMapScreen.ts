@@ -49,7 +49,7 @@ function averageThreat(budget: [number, number]): number {
 }
 
 const THREAT_TOOLTIP =
-  "Уровень опасности локации. Чем выше число, тем тяжелее схватка: больше и/или сильнее враги. Показано усредненное значение.";
+  "Уровень опасности локации. Чем выше число, тем тяжелее сражение: врагов больше и/или они сильнее.";
 
 function createThreatIcon(): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -278,9 +278,22 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     });
   };
 
+  const fillPointQuests = (zoneId: ZoneId, pointId: string): void => {
+    questList.replaceChildren();
+    const questNames = stateRef ? activeQuestNamesForZone(stateRef, zoneId, pointId) : [];
+    if (questNames.length === 0) {
+      questList.append(el("li", "wm-zone-quest-empty", "Нет активных квестов"));
+      return;
+    }
+    for (const name of questNames) {
+      questList.append(el("li", undefined, name));
+    }
+  };
+
   const fillPointDetails = (point: ZonePointDef): void => {
     openPointId = point.id;
     hideEnemyTip();
+    if (openZoneId) fillPointQuests(openZoneId, point.id);
     const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
     const threat = averageThreat(point.encounter.threatBudget);
     enemyLevelEl.textContent = formatEnemyLevels(levelRange);
@@ -383,17 +396,6 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         fillPointDetails(point);
       });
       pointsRow.append(btn);
-    }
-
-    questList.replaceChildren();
-    const questNames = stateRef ? activeQuestNamesForZone(stateRef, zoneId) : [];
-    if (questNames.length === 0) {
-      const empty = el("li", "wm-zone-quest-empty", "Нет активных квестов");
-      questList.append(empty);
-    } else {
-      for (const name of questNames) {
-        questList.append(el("li", undefined, name));
-      }
     }
 
     fillPointDetails(getZonePoint(zone, pointId));

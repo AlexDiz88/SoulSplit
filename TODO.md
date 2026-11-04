@@ -9,7 +9,7 @@
 | Кап уровня | 20 |
 | XP до уровня N | таблица `XP_TO_NEXT` в `progression.ts` (800 / 1400 / … / 320000) |
 | XP за килл | `baseKillXp` × mult(Δ≤±3) × элита 1.5; иначе 0 |
-| XP квеста | ≤10% полосы `questLevel`, оверлевел Δh≥4 → 0 |
+| XP квеста | ≤10% полосы `questLevel`; при сдаче Δ=quest−hero (±1..3 бонус/штраф, иначе 0) |
 | Level-up | `+35 maxHp`, `+5 maxMana`; каждые 5 ур. `+0.5 manaRegen` |
 | База ур.1 | `maxHp 300`, `maxMana 100`, `manaRegen 4`, crit 5/150 |
 | Герой | Айра, `air`, loadout wind x4 |

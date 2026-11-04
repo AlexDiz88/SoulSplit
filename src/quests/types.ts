@@ -14,6 +14,10 @@ export interface QuestObjectiveKillGroup {
   count: number;
   /** Короткий текст цели для игрока. */
   label: string;
+  /** Регион вылазки; без поля - любой. */
+  zoneId?: ZoneId;
+  /** Локация (`zone.points` id); без поля - любая. */
+  pointId?: string;
 }
 
 export type QuestObjective = QuestObjectiveKillGroup;
@@ -34,7 +38,7 @@ export interface QuestDef {
   name: string;
   description: string;
   giver: "town_hall";
-  /** Дизайн-уровень задания (бэнд контента для XP и оверлевел-штрафа). */
+  /** Уровень задания: при сдаче сравнивается с уровнем героя (`questLevelXpMult`). */
   questLevel: number;
   /** После сдачи снова доступен (без вечного completed). */
   repeatable?: boolean;
