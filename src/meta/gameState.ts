@@ -21,13 +21,17 @@ export type ZoneId =
   | "willheim"
   | "stone_cliff"
   | "cursed_mine"
-  | "south_meadow"
+  | "south_hills"
   | "bog_fangs"
-  | "skull_stone"
-  | "ruined_temple"
-  | "abandoned_house"
+  | "quarry"
+  | "ruins"
   | "aria_hut"
-  | "una_altar";
+  | "karos_ruined_temple"
+  | "outpost"
+  | "hart_manor"
+  | "northville"
+  | "riverholt"
+  | "moon_lake";
 
 export const ALL_ZONE_IDS: readonly ZoneId[] = [
   "north_road",
@@ -42,13 +46,17 @@ export const ALL_ZONE_IDS: readonly ZoneId[] = [
   "willheim",
   "stone_cliff",
   "cursed_mine",
-  "south_meadow",
+  "south_hills",
   "bog_fangs",
-  "skull_stone",
-  "ruined_temple",
-  "abandoned_house",
+  "quarry",
+  "ruins",
   "aria_hut",
-  "una_altar",
+  "karos_ruined_temple",
+  "outpost",
+  "hart_manor",
+  "northville",
+  "riverholt",
+  "moon_lake",
 ] as const;
 
 export interface GameState {

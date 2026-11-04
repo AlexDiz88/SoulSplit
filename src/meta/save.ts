@@ -24,9 +24,11 @@ import { ensureQuestLog } from "../quests/questLog";
 /** Старые ZoneId → актуальные (разработка, свободный rename). */
 const ZONE_ID_REMAP: Record<string, ZoneId> = {
   outskirts: "north_road",
-  ruins: "ruined_temple",
   mellnford: "willheim",
   kara_foothills: "grey_fang_foothills",
+  skull_stone: "quarry",
+  ruined_temple: "ruins",
+  south_meadow: "south_hills",
 };
 
 const ZONE_ID_SET = new Set<string>(ALL_ZONE_IDS);

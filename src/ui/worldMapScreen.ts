@@ -13,6 +13,7 @@ import {
 } from "../meta/zones";
 import { activeQuestNamesForZone } from "../quests/questLog";
 import { coverLayout, projectLocation } from "./hubLocations";
+import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
 
@@ -536,7 +537,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
           btn.classList.remove("is-locked");
           btn.dataset.unlocked = "1";
           delete btn.dataset.lockHint;
-          btn.setAttribute("aria-label", "Вернуться в город");
+          btn.setAttribute("aria-label", `Вернуться в ${CURRENT_HUB_CITY_NAME}`);
           continue;
         }
         const zoneId = spot.zoneId!;

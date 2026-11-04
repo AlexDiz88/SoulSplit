@@ -1,3 +1,4 @@
+import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import type { ZoneId } from "../meta/gameState";
 
 /** Точки на карте мира. Координаты в долях исходного арта (0..1). */
@@ -31,46 +32,32 @@ function zoneSpot(
  * Якоря подогнаны под `assets/art/backgrounds/map_01.*` (2580x1440).
  * При смене арта / ручной правке подкрути x/y.
  *
- * Нумерация якорей = красные метки на референсе карты:
- * 1 ведьмин дом … 18 алтарь Уны. Плюс хаб "Город" и регион "Северная дорога".
+ * Якоря регионов на карте провинции. Плюс хаб (id `town`, имя CURRENT_HUB_CITY_NAME).
+ * Координаты можно править вручную.
  */
 export const WORLD_MAP_SPOTS: readonly WorldMapSpotDef[] = [
-  { id: "town", kind: "town", label: "Город", x: 0.5, y: 0.46 },
+  { id: "town", kind: "town", label: CURRENT_HUB_CITY_NAME, x: 0.5, y: 0.46 },
+  zoneSpot("witch_house", "Ведьмин дом", 0.29, 0.13),
+  zoneSpot("black_forest", "Черный лес", 0.33, 0.22),
+  zoneSpot("flooded_barn", "Затопленный амбар", 0.11, 0.23),
+  zoneSpot("hart_manor", "Поместье Харт", 0.06, 0.43),
+  zoneSpot("miles_farm", "Ферма Майлза", 0.21, 0.37),
+  zoneSpot("grey_fang_foothills", "Предгорье Седого клыка", 0.5, 0.19),
   zoneSpot("north_road", "Северная дорога", 0.69, 0.36),
-  // 1
-  zoneSpot("witch_house", "Ведьмин дом", 0.11, 0.16),
-  // 2
-  zoneSpot("crossing", "Переправа", 0.6, 0.44),
-  // 3
-  zoneSpot("grey_fang_foothills", "Предгорье Седого клыка", 0.48, 0.14),
-  // 4
-  zoneSpot("oak_grove", "Дубовая роща", 0.7, 0.5),
-  // 5
-  zoneSpot("black_forest", "Черный лес", 0.24, 0.24),
-  // 6
-  zoneSpot("miles_farm", "Ферма Майлза", 0.36, 0.46),
-  // 7
-  zoneSpot("mire", "Топь", 0.44, 0.84),
-  // 8
-  zoneSpot("flooded_barn", "Затопленный амбар", 0.54, 0.72),
-  // 9
-  zoneSpot("willheim", "Уиллхейм", 0.82, 0.64),
-  // 10
-  zoneSpot("stone_cliff", "Каменный утёс", 0.88, 0.48),
-  // 11
-  zoneSpot("cursed_mine", "Проклятая шахта", 0.92, 0.24),
-  // 12
-  zoneSpot("south_meadow", "Южная поляна", 0.88, 0.88),
-  // 13
-  zoneSpot("bog_fangs", "Болотные клыки", 0.14, 0.88),
-  // 14
-  zoneSpot("skull_stone", "Череп-камень", 0.32, 0.9),
-  // 15
-  zoneSpot("ruined_temple", "Разрушенный храм", 0.18, 0.62),
-  // 16
-  zoneSpot("abandoned_house", "Брошенный дом", 0.42, 0.32),
-  // 17
-  zoneSpot("aria_hut", "Хижина Арии", 0.2, 0.78),
-  // 18
-  zoneSpot("una_altar", "Алтарь Уны", 0.3, 0.76),
+  zoneSpot("northville", "Нортвилл", 0.74, 0.21),
+  zoneSpot("oak_grove", "Дубовая роща", 0.62, 0.53),
+  zoneSpot("crossing", "Переправа", 0.64, 0.65),
+  zoneSpot("riverholt", "Риверхолт", 0.54, 0.91),
+  zoneSpot("quarry", "Каменоломня", 0.56, 0.71),
+  zoneSpot("willheim", "Уиллхейм", 0.77, 0.56),
+  zoneSpot("moon_lake", "Лунное озеро", 0.84, 0.77),
+  zoneSpot("cursed_mine", "Проклятая шахта", 0.92, 0.27),
+  zoneSpot("stone_cliff", "Каменный утёс", 0.92, 0.59),
+  zoneSpot("outpost", "Аванпост", 0.69, 0.8),
+  zoneSpot("south_hills", "Южные холмы", 0.88, 0.88),
+  zoneSpot("aria_hut", "Хижина Арии", 0.4, 0.86),
+  zoneSpot("mire", "Топь", 0.34, 0.76),
+  zoneSpot("ruins", "Руины", 0.25, 0.65),
+  zoneSpot("karos_ruined_temple", "Разрушенный храм Кароса", 0.07, 0.67),
+  zoneSpot("bog_fangs", "Болотные клыки", 0.12, 0.8),
 ];

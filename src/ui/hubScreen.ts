@@ -7,6 +7,7 @@ import { computeHeroSheet } from "../items/equipment";
 import { sheetBaseFromProfile } from "../meta/heroProfile";
 import { MAX_HERO_LEVEL, xpToNextLevel } from "../meta/progression";
 import type { GameState } from "../meta/gameState";
+import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import { getStat } from "../stats/sheet";
 import { goldAmountNode } from "./goldIcon";
 import "./goldIcon.css";
@@ -93,7 +94,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   root.append(bgImg);
 
   const map = el("div", "hub-map");
-  map.setAttribute("aria-label", "Локации города");
+  map.setAttribute("aria-label", `Локации ${CURRENT_HUB_CITY_NAME}`);
   const locationAnchors = new Map<HubLocationId, HTMLElement>();
   for (const loc of HUB_LOCATIONS) {
     const anchor = el("div", "hub-loc");

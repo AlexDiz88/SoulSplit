@@ -157,7 +157,7 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
   crossing: stubZone(
     "crossing",
     "Переправа",
-    "Узкий мост через реку. Здесь удобно ждать тех, кто спешит в город.",
+    "Узкий мост через реку. Здесь удобно ждать тех, кто спешит в Грейстоун.",
   ),
   grey_fang_foothills: stubZone(
     "grey_fang_foothills",
@@ -167,7 +167,7 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
   oak_grove: stubZone(
     "oak_grove",
     "Дубовая роща",
-    "Одинокий островок дубов в поле к востоку от города.",
+    "Одинокий островок дубов в поле к востоку от Грейстоуна.",
   ),
   black_forest: stubZone(
     "black_forest",
@@ -204,28 +204,28 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
     "Проклятая шахта",
     "Тёмный зев в северо-восточной скале. Из лаза тянет сыростью и железом.",
   ),
-  south_meadow: stubZone(
-    "south_meadow",
-    "Южная поляна",
-    "Травянистый край на юго-востоке, южнее озера.",
+  south_hills: stubZone(
+    "south_hills",
+    "Южные холмы",
+    "Холмистый край на юго-востоке, южнее озера.",
   ),
   bog_fangs: stubZone(
     "bog_fangs",
     "Болотные клыки",
     "Острые камни и лазы в юго-западной топи.",
   ),
-  skull_stone: stubZone(
-    "skull_stone",
-    "Череп-камень",
-    "Круглый холм-камень в южной трясине. Издали похож на череп.",
+  quarry: stubZone(
+    "quarry",
+    "Каменоломня",
+    "Каменный карьер у южной трясины. Обрывы, осыпи и старые выработки.",
   ),
-  ruined_temple: {
-    id: "ruined_temple",
-    name: "Разрушенный храм",
-    description: "Обломки старого храма на западе. Ниже - катакомбы и чужие кости.",
+  ruins: {
+    id: "ruins",
+    name: "Руины",
+    description: "Старые катакомбы. Враги крепче, лут заметно лучше.",
     minLevel: 1,
     quests: [],
-    previewStem: "ruined_temple",
+    previewStem: "ruins",
     points: [
       {
         id: "courtyard",
@@ -249,20 +249,40 @@ export const ZONES: Record<ZoneId, ZoneDef> = {
       },
     ],
   },
-  abandoned_house: stubZone(
-    "abandoned_house",
-    "Брошенный дом",
-    "Полузатопленные хижины в маршах к северу от городских стен.",
-  ),
   aria_hut: stubZone(
     "aria_hut",
     "Хижина Арии",
     "Одинокий дом у кромки юго-западного болота, рядом со старыми камнями.",
   ),
-  una_altar: stubZone(
-    "una_altar",
-    "Алтарь Уны",
-    "Круг стоячих камней в тумане топи. Место старых обрядов.",
+  outpost: stubZone(
+    "outpost",
+    "Аванпост",
+    "Форпост у тракта к северу от стен. Здесь ещё держат дозор.",
+  ),
+  karos_ruined_temple: stubZone(
+    "karos_ruined_temple",
+    "Разрушенный храм Кароса",
+    "Обломки храма Кароса. Камни помнят службу, которую давно бросили.",
+  ),
+  hart_manor: stubZone(
+    "hart_manor",
+    "Поместье Харт",
+    "Старое владение семьи Харт. Двор ещё цел, но хозяева давно молчат.",
+  ),
+  northville: stubZone(
+    "northville",
+    "Нортвилл",
+    "Северная деревня у тракта. Здесь ещё ждут обозы из Грейстоуна.",
+  ),
+  riverholt: stubZone(
+    "riverholt",
+    "Риверхолт",
+    "Поселение у реки и брода. Мокрые причалы и запах тины.",
+  ),
+  moon_lake: stubZone(
+    "moon_lake",
+    "Лунное озеро",
+    "Тихая вода на востоке провинции. Ночью зеркало, днём - серая гладь.",
   ),
 };
 

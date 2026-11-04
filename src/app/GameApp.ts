@@ -530,7 +530,7 @@ export class GameApp {
     const state = this.requireState();
     for (const id of state.unlockedZones) {
       if (this.prevUnlocked.has(id)) continue;
-      if (id === "ruined_temple") this.hud.showToast("Открыт Разрушенный храм");
+      if (id === "ruins") this.hud.showToast("Открыты Руины");
     }
     this.prevUnlocked = new Set(state.unlockedZones);
   }

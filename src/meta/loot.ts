@@ -120,7 +120,7 @@ function lootTableFor(zone: ZoneDef, point: ZonePointDef): PointLootTable {
   if (zone.id === "north_road") {
     return NORTH_ROAD_LOOT[point.id] ?? DEFAULT_ZONE_LOOT;
   }
-  if (zone.id === "ruined_temple") return RUINS_LOOT;
+  if (zone.id === "ruins") return RUINS_LOOT;
   return DEFAULT_ZONE_LOOT;
 }
 
