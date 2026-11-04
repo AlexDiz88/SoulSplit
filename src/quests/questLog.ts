@@ -3,7 +3,7 @@ import { getEnemyCardById } from "../combat/enemyCatalog";
 import { generateItem, itemDisplayName } from "../items/generate";
 import { addItemToInventory, findEmptyInventorySlot } from "../items/inventory";
 import type { ItemDef } from "../items/types";
-import type { GameState, ZoneId } from "../meta/gameState";
+import type { GameState, RegionId } from "../meta/gameState";
 import { addXpToProfile } from "../meta/heroProfile";
 import { pickWeightedEquipSlot } from "../meta/loot";
 import { questXpAward } from "../meta/progression";
@@ -314,8 +314,8 @@ function enemyMatchesGroup(kindId: string, groupId: string): boolean {
 }
 
 export interface KillProgressContext {
-  zoneId: ZoneId;
-  pointId: string;
+  regionId: RegionId;
+  locationId: string;
 }
 
 /** +1 к kill-целям; возвращает true если что-то изменилось. */
@@ -337,8 +337,8 @@ export function applyKillProgress(
         return;
       }
       const locationOk =
-        (!obj.zoneId || obj.zoneId === ctx?.zoneId) &&
-        (!obj.pointId || obj.pointId === ctx?.pointId);
+        (!obj.regionId || obj.regionId === ctx?.regionId) &&
+        (!obj.locationId || obj.locationId === ctx?.locationId);
       const cur = entry.counters[key] ?? 0;
       if (
         locationOk &&
@@ -449,28 +449,28 @@ export function trackedQuestViews(state: GameState): TrackerQuestView[] {
 /** Цель можно выполнить в этой локации (нет ограничения или совпадает). */
 function objectiveMatchesLocation(
   obj: QuestObjective,
-  zoneId: ZoneId,
-  pointId: string,
+  regionId: RegionId,
+  locationId: string,
 ): boolean {
   if (obj.type !== "kill_group") return true;
-  if (obj.zoneId && obj.zoneId !== zoneId) return false;
-  if (obj.pointId && obj.pointId !== pointId) return false;
+  if (obj.regionId && obj.regionId !== regionId) return false;
+  if (obj.locationId && obj.locationId !== locationId) return false;
   return true;
 }
 
 /** Строки для блока "Квесты" в окне локации региона. */
-export function activeQuestNamesForZone(
+export function activeQuestNamesForRegion(
   state: GameState,
-  zoneId: ZoneId,
-  pointId: string,
+  regionId: RegionId,
+  locationId: string,
 ): string[] {
   const log = ensureQuestLog(state);
   const names: string[] = [];
   for (const entry of log.entries) {
     if (entry.status !== "active" && entry.status !== "ready") continue;
     const def = getQuestDef(entry.questId);
-    if (def.zoneHint !== zoneId) continue;
-    if (!def.objectives.some((obj) => objectiveMatchesLocation(obj, zoneId, pointId))) {
+    if (def.regionHint !== regionId) continue;
+    if (!def.objectives.some((obj) => objectiveMatchesLocation(obj, regionId, locationId))) {
       continue;
     }
     if (entry.status === "ready") names.push(`${def.name} (готово)`);

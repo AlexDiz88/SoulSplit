@@ -3,15 +3,15 @@ import { createWorldMapBackgroundImg } from "../art/menuBackground";
 import { tryResolveRegionArtUrl } from "../art/regionArt";
 import { getEnemyCardById } from "../combat/enemyCatalog";
 import { enemyLevelRangeForIds, getEnemyKind, type EnemyKind } from "../combat/enemies";
-import type { GameState, ZoneId } from "../meta/gameState";
+import type { GameState, RegionId } from "../meta/gameState";
 import {
   encounterEnemyIds,
-  getZone,
-  getZonePoint,
-  isZoneUnlocked,
-  type ZonePointDef,
-} from "../meta/zones";
-import { activeQuestNamesForZone } from "../quests/questLog";
+  getRegion,
+  getLocation,
+  isRegionUnlocked,
+  type LocationDef,
+} from "../meta/regions";
+import { activeQuestNamesForRegion } from "../quests/questLog";
 import { coverLayout, projectLocation } from "./hubLocations";
 import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
@@ -21,9 +21,9 @@ const HOVER_TOOLTIP_MQ = "(hover: hover) and (pointer: fine)";
 
 export interface WorldMapShowOptions {
   /** Сразу открыть окно региона (после боя и т.п.). */
-  openZoneId?: ZoneId;
+  openRegionId?: RegionId;
   /** Подсветить локацию внутри региона. */
-  openPointId?: string;
+  openLocationId?: string;
 }
 
 export interface WorldMapApi {
@@ -35,7 +35,7 @@ export interface WorldMapApi {
 
 export interface WorldMapHandlers {
   onBackToTown: () => void;
-  onStartZone: (zoneId: ZoneId, pointId: string) => void;
+  onStartLocation: (regionId: RegionId, locationId: string) => void;
   showToast: (text: string) => void;
 }
 
@@ -54,7 +54,7 @@ const THREAT_TOOLTIP =
 
 function createThreatIcon(): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "wm-zone-threat-icon");
+  svg.setAttribute("class", "wm-region-threat-icon");
   svg.setAttribute("viewBox", "0 0 16 16");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
@@ -71,7 +71,7 @@ function createThreatIcon(): SVGSVGElement {
 /** Корона / рогатая голова для бейджа босса. */
 function createBossIcon(): SVGSVGElement {
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-  svg.setAttribute("class", "wm-zone-enemy-boss-icon");
+  svg.setAttribute("class", "wm-region-enemy-boss-icon");
   svg.setAttribute("viewBox", "0 0 16 16");
   svg.setAttribute("aria-hidden", "true");
   svg.setAttribute("focusable", "false");
@@ -94,7 +94,7 @@ function fillEnemyUnitTooltip(host: HTMLElement, kind: EnemyKind): void {
   const description = card?.description?.trim() || kind.name;
 
   host.replaceChildren();
-  host.className = `skill-tooltip wm-zone-enemy-tip aspect-${kind.aspect}`;
+  host.className = `skill-tooltip wm-region-enemy-tip aspect-${kind.aspect}`;
   host.style.setProperty("--aspect-color", ASPECT_HEX[kind.aspect]);
   host.append(el("div", "tt-desc", description));
 }
@@ -110,9 +110,9 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 
-function lockHint(zoneId: ZoneId, _heroLevel: number): string {
-  const zone = getZone(zoneId);
-  return `Закрыто (ур. ${zone.minLevel}+)`;
+function lockHint(regionId: RegionId, _heroLevel: number): string {
+  const region = getRegion(regionId);
+  return `Закрыто (ур. ${region.minLevel}+)`;
 }
 
 export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
@@ -135,18 +135,18 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     btn.setAttribute("aria-label", spot.label);
     btn.addEventListener("click", () => {
       if (spot.kind === "town") {
-        closeZonePanel();
+        closeRegionPanel();
         handlers.onBackToTown();
         return;
       }
-      const zoneId = spot.zoneId;
-      if (!zoneId) return;
+      const regionId = spot.regionId;
+      if (!regionId) return;
       const unlocked = btn.dataset.unlocked === "1";
       if (!unlocked) {
         handlers.showToast(btn.dataset.lockHint || "Закрыто");
         return;
       }
-      openZonePanel(zoneId);
+      openRegionPanel(regionId);
     });
     anchor.append(btn);
     spotAnchors.set(spot.id, anchor);
@@ -155,87 +155,87 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   }
   root.append(map);
 
-  const overlay = el("div", "wm-zone-overlay");
+  const overlay = el("div", "wm-region-overlay");
   overlay.hidden = true;
   overlay.setAttribute("aria-hidden", "true");
 
-  const panel = el("div", "wm-zone-panel");
+  const panel = el("div", "wm-region-panel");
   panel.setAttribute("role", "dialog");
   panel.setAttribute("aria-modal", "true");
-  panel.setAttribute("aria-labelledby", "wm-zone-title");
+  panel.setAttribute("aria-labelledby", "wm-region-title");
 
-  const hero = el("section", "wm-zone-block wm-zone-hero");
-  const previewWrap = el("div", "wm-zone-preview");
-  const previewImg = el("img", "wm-zone-preview-img");
+  const hero = el("section", "wm-region-block wm-region-hero");
+  const previewWrap = el("div", "wm-region-preview");
+  const previewImg = el("img", "wm-region-preview-img");
   previewImg.alt = "";
   previewImg.draggable = false;
   previewImg.decoding = "async";
-  const previewFallback = el("div", "wm-zone-preview-fallback", "Нет арта");
+  const previewFallback = el("div", "wm-region-preview-fallback", "Нет арта");
   previewWrap.append(previewImg, previewFallback);
-  const heroCopy = el("div", "wm-zone-hero-copy");
-  const titleEl = el("h2", "wm-zone-title");
-  titleEl.id = "wm-zone-title";
-  const descEl = el("p", "wm-zone-desc");
+  const heroCopy = el("div", "wm-region-hero-copy");
+  const titleEl = el("h2", "wm-region-title");
+  titleEl.id = "wm-region-title";
+  const descEl = el("p", "wm-region-desc");
   heroCopy.append(titleEl, descEl);
   hero.append(previewWrap, heroCopy);
 
-  const pointsBlock = el("section", "wm-zone-block wm-zone-points-block");
-  pointsBlock.append(el("h3", "wm-zone-block-title", "Локации"));
-  const pointsRow = el("div", "wm-zone-points");
-  pointsRow.setAttribute("role", "tablist");
-  pointsRow.setAttribute("aria-label", "Локации");
-  pointsBlock.append(pointsRow);
+  const locationsBlock = el("section", "wm-region-block wm-region-locations-block");
+  locationsBlock.append(el("h3", "wm-region-block-title", "Локации"));
+  const locationsRow = el("div", "wm-region-locations");
+  locationsRow.setAttribute("role", "tablist");
+  locationsRow.setAttribute("aria-label", "Локации");
+  locationsBlock.append(locationsRow);
 
-  const questsBlock = el("section", "wm-zone-block");
-  questsBlock.append(el("h3", "wm-zone-block-title", "Квесты"));
-  const questList = el("ul", "wm-zone-quest-list");
+  const questsBlock = el("section", "wm-region-block");
+  questsBlock.append(el("h3", "wm-region-block-title", "Квесты"));
+  const questList = el("ul", "wm-region-quest-list");
   questsBlock.append(questList);
 
-  const enemiesBlock = el("section", "wm-zone-block wm-zone-enemies-block");
-  const enemiesHead = el("div", "wm-zone-enemies-head");
-  enemiesHead.append(el("h3", "wm-zone-block-title", "Возможные враги"));
-  const enemiesMeta = el("div", "wm-zone-enemies-meta");
-  const threatBtn = el("button", "wm-zone-threat");
+  const enemiesBlock = el("section", "wm-region-block wm-region-enemies-block");
+  const enemiesHead = el("div", "wm-region-enemies-head");
+  enemiesHead.append(el("h3", "wm-region-block-title", "Возможные враги"));
+  const enemiesMeta = el("div", "wm-region-enemies-meta");
+  const threatBtn = el("button", "wm-region-threat");
   threatBtn.type = "button";
   threatBtn.setAttribute("aria-label", "Угроза локации");
-  const threatValueEl = el("span", "wm-zone-threat-value");
-  const threatTip = el("span", "wm-zone-threat-tip");
-  threatTip.id = "wm-zone-threat-tip";
-  const tipBody = el("span", "wm-zone-threat-tip-body", THREAT_TOOLTIP);
-  threatTip.append(el("span", "wm-zone-threat-tip-title", "Угроза"), tipBody);
+  const threatValueEl = el("span", "wm-region-threat-value");
+  const threatTip = el("span", "wm-region-threat-tip");
+  threatTip.id = "wm-region-threat-tip";
+  const tipBody = el("span", "wm-region-threat-tip-body", THREAT_TOOLTIP);
+  threatTip.append(el("span", "wm-region-threat-tip-title", "Угроза"), tipBody);
   threatBtn.setAttribute("aria-describedby", threatTip.id);
   threatBtn.append(threatValueEl, createThreatIcon(), threatTip);
-  const enemyLevelEl = el("span", "wm-zone-enemy-levels");
+  const enemyLevelEl = el("span", "wm-region-enemy-levels");
   enemiesMeta.append(threatBtn, enemyLevelEl);
   enemiesHead.append(enemiesMeta);
-  const enemyRow = el("div", "wm-zone-enemy-row");
+  const enemyRow = el("div", "wm-region-enemy-row");
   enemiesBlock.append(enemiesHead, enemyRow);
 
-  const lootBlock = el("section", "wm-zone-block wm-zone-loot");
-  lootBlock.append(el("h3", "wm-zone-block-title", "Особый лут"));
-  const lootStub = el("p", "wm-zone-loot-stub", "Особые ресурсы зоны появятся позже.");
+  const lootBlock = el("section", "wm-region-block wm-region-loot");
+  lootBlock.append(el("h3", "wm-region-block-title", "Особый лут"));
+  const lootStub = el("p", "wm-region-loot-stub", "Особые ресурсы региона появятся позже.");
   lootBlock.append(lootStub);
 
-  const actions = el("div", "wm-zone-actions");
-  const btnBack = el("button", "meta-btn wm-zone-btn", "Назад");
+  const actions = el("div", "wm-region-actions");
+  const btnBack = el("button", "meta-btn wm-region-btn", "Назад");
   btnBack.type = "button";
-  const btnGo = el("button", "meta-btn meta-btn-primary wm-zone-btn", "В бой");
+  const btnGo = el("button", "meta-btn meta-btn-primary wm-region-btn", "В бой");
   btnGo.type = "button";
   actions.append(btnBack, btnGo);
 
-  panel.append(hero, pointsBlock, questsBlock, enemiesBlock, lootBlock, actions);
+  panel.append(hero, locationsBlock, questsBlock, enemiesBlock, lootBlock, actions);
   overlay.append(panel);
   root.append(overlay);
 
-  const enemyTip = el("div", "skill-tooltip wm-zone-enemy-tip");
+  const enemyTip = el("div", "skill-tooltip wm-region-enemy-tip");
   enemyTip.hidden = true;
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
   hud.append(root, enemyTip);
 
-  let openZoneId: ZoneId | null = null;
-  let openPointId: string | null = null;
+  let openRegionId: RegionId | null = null;
+  let openLocationId: string | null = null;
   let panelClosing = false;
   let stateRef: GameState | null = null;
 
@@ -279,11 +279,11 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     });
   };
 
-  const fillPointQuests = (zoneId: ZoneId, pointId: string): void => {
+  const fillLocationQuests = (regionId: RegionId, locationId: string): void => {
     questList.replaceChildren();
-    const questNames = stateRef ? activeQuestNamesForZone(stateRef, zoneId, pointId) : [];
+    const questNames = stateRef ? activeQuestNamesForRegion(stateRef, regionId, locationId) : [];
     if (questNames.length === 0) {
-      questList.append(el("li", "wm-zone-quest-empty", "Нет активных квестов"));
+      questList.append(el("li", "wm-region-quest-empty", "Нет активных квестов"));
       return;
     }
     for (const name of questNames) {
@@ -291,10 +291,10 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     }
   };
 
-  const clearPointDetails = (): void => {
-    openPointId = null;
+  const clearLocationDetails = (): void => {
+    openLocationId = null;
     hideEnemyTip();
-    if (openZoneId) fillPointQuests(openZoneId, "");
+    if (openRegionId) fillLocationQuests(openRegionId, "");
     enemyLevelEl.textContent = "";
     threatValueEl.textContent = "-";
     threatBtn.setAttribute("aria-label", "Угроза");
@@ -302,37 +302,37 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     btnGo.disabled = true;
   };
 
-  const fillPointDetails = (point: ZonePointDef): void => {
-    openPointId = point.id;
+  const fillLocationDetails = (location: LocationDef): void => {
+    openLocationId = location.id;
     hideEnemyTip();
-    if (openZoneId) fillPointQuests(openZoneId, point.id);
-    const levelRange = enemyLevelRangeForIds(encounterEnemyIds(point));
-    const threat = averageThreat(point.encounter.threatBudget);
+    if (openRegionId) fillLocationQuests(openRegionId, location.id);
+    const levelRange = enemyLevelRangeForIds(encounterEnemyIds(location));
+    const threat = averageThreat(location.encounter.threatBudget);
     enemyLevelEl.textContent = formatEnemyLevels(levelRange);
     threatValueEl.textContent = String(threat);
     threatBtn.setAttribute("aria-label", `Угроза ${threat}`);
     btnGo.disabled = false;
 
     enemyRow.replaceChildren();
-    for (const id of encounterEnemyIds(point)) {
+    for (const id of encounterEnemyIds(location)) {
       const kind = getEnemyKind(id);
       if (!kind) continue;
-      const chip = el("div", "wm-zone-enemy");
-      const portrait = el("div", "wm-zone-enemy-portrait");
+      const chip = el("div", "wm-region-enemy");
+      const portrait = el("div", "wm-region-enemy-portrait");
       portrait.tabIndex = 0;
       portrait.setAttribute("role", "img");
       portrait.setAttribute("aria-label", kind.name);
-      const img = el("img", "wm-zone-enemy-img");
+      const img = el("img", "wm-region-enemy-img");
       img.src = kind.portraitUrl;
       img.alt = "";
       img.draggable = false;
       portrait.append(img);
 
       if (kind.boss) {
-        const badge = el("button", "wm-zone-enemy-boss");
+        const badge = el("button", "wm-region-enemy-boss");
         badge.type = "button";
         badge.setAttribute("aria-label", "Босс");
-        const bossTip = el("span", "wm-zone-enemy-boss-tip", "Босс");
+        const bossTip = el("span", "wm-region-enemy-boss-tip", "Босс");
         badge.append(createBossIcon(), bossTip);
         badge.addEventListener("pointerenter", () => {
           hideEnemyTip();
@@ -354,7 +354,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
         portrait.append(badge);
       }
 
-      const nameEl = el("span", "wm-zone-enemy-name");
+      const nameEl = el("span", "wm-region-enemy-name");
       // Перенос только после "-" (например "Гоблин-копейщик").
       const parts = kind.name.split("-");
       parts.forEach((part, i) => {
@@ -369,21 +369,21 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       enemyRow.append(chip);
     }
 
-    for (const node of pointsRow.querySelectorAll<HTMLButtonElement>(".wm-zone-point-btn")) {
-      const active = node.dataset.pointId === point.id;
+    for (const node of locationsRow.querySelectorAll<HTMLButtonElement>(".wm-location-btn")) {
+      const active = node.dataset.locationId === location.id;
       node.classList.toggle("is-active", active);
       node.setAttribute("aria-selected", active ? "true" : "false");
       node.tabIndex = active ? 0 : -1;
     }
   };
 
-  const fillZonePanel = (zoneId: ZoneId, pointId?: string): void => {
-    const zone = getZone(zoneId);
-    openZoneId = zoneId;
-    titleEl.textContent = zone.name;
-    descEl.textContent = zone.description;
+  const fillRegionPanel = (regionId: RegionId, locationId?: string): void => {
+    const region = getRegion(regionId);
+    openRegionId = regionId;
+    titleEl.textContent = region.name;
+    descEl.textContent = region.description;
 
-    const previewUrl = tryResolveRegionArtUrl(zone.previewStem);
+    const previewUrl = tryResolveRegionArtUrl(region.previewStem);
     if (previewUrl) {
       previewImg.src = previewUrl;
       previewImg.hidden = false;
@@ -394,45 +394,45 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       previewFallback.hidden = false;
     }
 
-    pointsRow.replaceChildren();
-    pointsBlock.hidden = zone.points.length <= 1;
-    for (const point of zone.points) {
-      const btn = el("button", "wm-zone-point-btn");
+    locationsRow.replaceChildren();
+    locationsBlock.hidden = region.locations.length <= 1;
+    for (const location of region.locations) {
+      const btn = el("button", "wm-location-btn");
       btn.type = "button";
-      btn.dataset.pointId = point.id;
+      btn.dataset.locationId = location.id;
       btn.setAttribute("role", "tab");
-      const nameSpan = el("span", "wm-zone-point-name", point.name);
+      const nameSpan = el("span", "wm-location-name", location.name);
       btn.append(nameSpan);
-      btn.setAttribute("aria-label", point.name);
+      btn.setAttribute("aria-label", location.name);
       btn.addEventListener("click", () => {
-        if (openZoneId !== zoneId) return;
-        fillPointDetails(point);
+        if (openRegionId !== regionId) return;
+        fillLocationDetails(location);
       });
-      pointsRow.append(btn);
+      locationsRow.append(btn);
     }
 
-    const point = getZonePoint(zone, pointId);
-    if (point) fillPointDetails(point);
-    else clearPointDetails();
-    panel.setAttribute("aria-labelledby", "wm-zone-title");
+    const location = getLocation(region, locationId);
+    if (location) fillLocationDetails(location);
+    else clearLocationDetails();
+    panel.setAttribute("aria-labelledby", "wm-region-title");
   };
 
-  const openZonePanel = (zoneId: ZoneId, pointId?: string): void => {
+  const openRegionPanel = (regionId: RegionId, locationId?: string): void => {
     panelClosing = false;
-    fillZonePanel(zoneId, pointId);
+    fillRegionPanel(regionId, locationId);
     overlay.hidden = false;
     overlay.setAttribute("aria-hidden", "false");
     // Два кадра: сначала mount, потом класс анимации.
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        if (openZoneId !== zoneId) return;
+        if (openRegionId !== regionId) return;
         overlay.classList.add("is-open");
       });
     });
     btnGo.focus();
   };
 
-  const closeZonePanel = (after?: () => void): void => {
+  const closeRegionPanel = (after?: () => void): void => {
     if (overlay.hidden || panelClosing) {
       after?.();
       return;
@@ -443,8 +443,8 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     const finish = (): void => {
       overlay.hidden = true;
       overlay.setAttribute("aria-hidden", "true");
-      openZoneId = null;
-      openPointId = null;
+      openRegionId = null;
+      openLocationId = null;
       panelClosing = false;
       after?.();
     };
@@ -460,19 +460,19 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     }, 220);
   };
 
-  btnBack.addEventListener("click", () => closeZonePanel());
+  btnBack.addEventListener("click", () => closeRegionPanel());
   btnGo.addEventListener("click", () => {
-    const id = openZoneId;
-    const pointId = openPointId;
-    if (!id || !pointId) return;
-    handlers.onStartZone(id, pointId);
+    const id = openRegionId;
+    const locationId = openLocationId;
+    if (!id || !locationId) return;
+    handlers.onStartLocation(id, locationId);
   });
   overlay.addEventListener("click", (ev) => {
-    if (ev.target === overlay) closeZonePanel();
+    if (ev.target === overlay) closeRegionPanel();
   });
-  pointsRow.addEventListener("keydown", (ev) => {
+  locationsRow.addEventListener("keydown", (ev) => {
     if (ev.code !== "ArrowLeft" && ev.code !== "ArrowRight") return;
-    const buttons = [...pointsRow.querySelectorAll<HTMLButtonElement>(".wm-zone-point-btn")];
+    const buttons = [...locationsRow.querySelectorAll<HTMLButtonElement>(".wm-location-btn")];
     if (buttons.length < 2) return;
     const current = buttons.findIndex((b) => b.classList.contains("is-active"));
     if (current < 0) return;
@@ -494,7 +494,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     if (ev.code !== "Escape") return;
     ev.preventDefault();
     if (!overlay.hidden) {
-      closeZonePanel();
+      closeRegionPanel();
       return;
     }
     handlers.onBackToTown();
@@ -543,7 +543,7 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   return {
     show(state, opts) {
       stateRef = state;
-      closeZonePanel();
+      closeRegionPanel();
       for (const spot of WORLD_MAP_SPOTS) {
         const btn = spotButtons.get(spot.id);
         if (!btn) continue;
@@ -554,33 +554,33 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
           btn.setAttribute("aria-label", `Вернуться в ${CURRENT_HUB_CITY_NAME}`);
           continue;
         }
-        const zoneId = spot.zoneId!;
-        const zone = getZone(zoneId);
-        const unlocked = isZoneUnlocked(zoneId, state.hero.level, state.unlockedZones);
+        const regionId = spot.regionId!;
+        const region = getRegion(regionId);
+        const unlocked = isRegionUnlocked(regionId, state.hero.level, state.unlockedRegions);
         btn.classList.toggle("is-locked", !unlocked);
         btn.dataset.unlocked = unlocked ? "1" : "0";
-        const point = getZonePoint(zone);
+        const location = getLocation(region);
         const hint = unlocked
-          ? point
-            ? `${zone.description} (${zone.points.length} локации, ilvl ${point.itemLevel}+)`
-            : zone.description
-          : lockHint(zoneId, state.hero.level);
+          ? location
+            ? `${region.description} (${region.locations.length} локации, ilvl ${location.itemLevel}+)`
+            : region.description
+          : lockHint(regionId, state.hero.level);
         btn.dataset.lockHint = unlocked ? "" : hint;
-        btn.textContent = zone.name;
-        btn.setAttribute("aria-label", unlocked ? `${zone.name}. ${hint}` : hint);
+        btn.textContent = region.name;
+        btn.setAttribute("aria-label", unlocked ? `${region.name}. ${hint}` : hint);
       }
       root.hidden = false;
       scheduleLayout();
-      const openId = opts?.openZoneId;
+      const openId = opts?.openRegionId;
       if (
         openId &&
-        isZoneUnlocked(openId, state.hero.level, state.unlockedZones)
+        isRegionUnlocked(openId, state.hero.level, state.unlockedRegions)
       ) {
-        openZonePanel(openId, opts?.openPointId);
+        openRegionPanel(openId, opts?.openLocationId);
       }
     },
     hide() {
-      closeZonePanel();
+      closeRegionPanel();
       root.hidden = true;
       stateRef = null;
     },

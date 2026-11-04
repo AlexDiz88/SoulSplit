@@ -281,7 +281,7 @@
 }
 
 /* Окно локации */
-.wm-zone-overlay {
+.wm-region-overlay {
   position: absolute;
   inset: 0;
   z-index: 5;
@@ -294,16 +294,16 @@
   transition: opacity 0.16s ease;
 }
 
-.wm-zone-overlay.is-open {
+.wm-region-overlay.is-open {
   opacity: 1;
   pointer-events: auto;
 }
 
-.wm-zone-overlay[hidden] {
+.wm-region-overlay[hidden] {
   display: none;
 }
 
-.wm-zone-panel {
+.wm-region-panel {
   box-sizing: border-box;
   width: min(880px, 100%);
   max-height: min(1040px, calc(100vh - 20px));
@@ -332,12 +332,12 @@
   pointer-events: auto;
 }
 
-.wm-zone-overlay.is-open .wm-zone-panel {
+.wm-region-overlay.is-open .wm-region-panel {
   transform: scale(1);
   opacity: 1;
 }
 
-.wm-zone-block {
+.wm-region-block {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -347,7 +347,7 @@
   background: rgba(12, 14, 18, 0.55);
 }
 
-.wm-zone-block-title {
+.wm-region-block-title {
   margin: 0;
   font-size: 0.95rem;
   font-weight: 700;
@@ -356,13 +356,13 @@
   color: var(--theme-corona, #e8d9a8);
 }
 
-.wm-zone-hero {
+.wm-region-hero {
   flex-direction: row;
   align-items: stretch;
   gap: 16px;
 }
 
-.wm-zone-preview {
+.wm-region-preview {
   flex: 0 0 200px;
   width: 200px;
   height: 132px;
@@ -372,7 +372,7 @@
   background: #0a0b0c;
 }
 
-.wm-zone-preview-img {
+.wm-region-preview-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -380,7 +380,7 @@
   display: block;
 }
 
-.wm-zone-preview-fallback {
+.wm-region-preview-fallback {
   display: grid;
   place-items: center;
   width: 100%;
@@ -389,7 +389,7 @@
   color: var(--muted, #9a9488);
 }
 
-.wm-zone-hero-copy {
+.wm-region-hero-copy {
   flex: 1 1 auto;
   min-width: 0;
   display: flex;
@@ -398,7 +398,7 @@
   justify-content: center;
 }
 
-.wm-zone-title {
+.wm-region-title {
   margin: 0;
   font-size: 1.55rem;
   font-weight: 700;
@@ -406,14 +406,14 @@
   letter-spacing: 0.04em;
 }
 
-.wm-zone-desc {
+.wm-region-desc {
   margin: 0;
   font-size: 1.08rem;
   line-height: 1.45;
   color: var(--muted, #b8b2a4);
 }
 
-.wm-zone-quest-list {
+.wm-region-quest-list {
   margin: 0;
   padding: 0 0 0 1.15em;
   display: flex;
@@ -423,20 +423,20 @@
   color: var(--theme-mist, #e8e2d4);
 }
 
-.wm-zone-quest-empty {
+.wm-region-quest-empty {
   list-style: none;
   margin-left: -1.1em;
   color: var(--muted, #9a9488);
   font-style: italic;
 }
 
-.wm-zone-points {
+.wm-region-locations {
   display: flex;
   gap: 8px;
   width: 100%;
 }
 
-.wm-zone-point-btn {
+.wm-location-btn {
   flex: 1 1 0;
   min-width: 0;
   display: inline-flex;
@@ -460,14 +460,14 @@
     color 0.12s ease;
 }
 
-.wm-zone-point-btn:hover,
-.wm-zone-point-btn:focus-visible {
+.wm-location-btn:hover,
+.wm-location-btn:focus-visible {
   border-color: rgba(196, 163, 90, 0.75);
   background: rgba(28, 30, 42, 0.95);
   outline: none;
 }
 
-.wm-zone-point-btn.is-active {
+.wm-location-btn.is-active {
   border-color: rgba(196, 163, 90, 0.95);
   background:
     linear-gradient(180deg, rgba(72, 56, 96, 0.45), rgba(28, 22, 42, 0.92)),
@@ -476,20 +476,20 @@
   box-shadow: inset 0 0 0 1px rgba(196, 163, 90, 0.28);
 }
 
-.wm-zone-point-name {
+.wm-location-name {
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.wm-zone-enemies-block {
+.wm-region-enemies-block {
   gap: 8px;
   padding-top: 6px;
   padding-bottom: 12px;
 }
 
-.wm-zone-enemies-head {
+.wm-region-enemies-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -497,11 +497,11 @@
   min-height: 0;
 }
 
-.wm-zone-enemies-head .wm-zone-block-title {
+.wm-region-enemies-head .wm-region-block-title {
   padding-top: 10px;
 }
 
-.wm-zone-enemies-meta {
+.wm-region-enemies-meta {
   display: inline-flex;
   align-items: center;
   gap: 12px;
@@ -509,14 +509,14 @@
   margin-top: -4px;
 }
 
-.wm-zone-enemy-levels {
+.wm-region-enemy-levels {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--theme-corona, #e8d9a8);
   white-space: nowrap;
 }
 
-.wm-zone-threat {
+.wm-region-threat {
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -532,13 +532,13 @@
   cursor: var(--cur-default);
 }
 
-.wm-zone-threat:hover,
-.wm-zone-threat:focus-visible {
+.wm-region-threat:hover,
+.wm-region-threat:focus-visible {
   outline: none;
   background: transparent;
 }
 
-.wm-zone-threat-icon {
+.wm-region-threat-icon {
   width: 45px;
   height: 45px;
   margin-left: -5px;
@@ -548,13 +548,13 @@
   color: #c45a4a;
 }
 
-.wm-zone-threat-value {
+.wm-region-threat-value {
   min-width: 0;
   text-align: right;
   line-height: 1;
 }
 
-.wm-zone-threat-tip {
+.wm-region-threat-tip {
   position: absolute;
   right: 0;
   bottom: calc(100% + 8px);
@@ -581,30 +581,30 @@
     visibility 0.12s ease;
 }
 
-.wm-zone-threat:hover .wm-zone-threat-tip,
-.wm-zone-threat:focus-visible .wm-zone-threat-tip {
+.wm-region-threat:hover .wm-region-threat-tip,
+.wm-region-threat:focus-visible .wm-region-threat-tip {
   opacity: 1;
   visibility: visible;
 }
 
-.wm-zone-threat-tip-title {
+.wm-region-threat-tip-title {
   display: block;
   margin-bottom: 4px;
   font-weight: 700;
   color: var(--theme-corona, #e8d9a8);
 }
 
-.wm-zone-threat-tip-body {
+.wm-region-threat-tip-body {
   display: block;
 }
 
-.wm-zone-enemy-row {
+.wm-region-enemy-row {
   display: flex;
   flex-wrap: nowrap;
   gap: 20px;
 }
 
-.wm-zone-enemy {
+.wm-region-enemy {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -613,7 +613,7 @@
   flex: 0 0 112px;
 }
 
-.wm-zone-enemy-portrait {
+.wm-region-enemy-portrait {
   position: relative;
   width: 112px;
   height: 112px;
@@ -621,12 +621,12 @@
   cursor: var(--cur-default);
 }
 
-.wm-zone-enemy-portrait:focus-visible {
+.wm-region-enemy-portrait:focus-visible {
   box-shadow: 0 0 0 2px rgba(196, 163, 90, 0.85);
   border-radius: 3px;
 }
 
-.wm-zone-enemy-img {
+.wm-region-enemy-img {
   width: 112px;
   height: 112px;
   object-fit: cover;
@@ -637,7 +637,7 @@
   pointer-events: none;
 }
 
-.wm-zone-enemy-boss {
+.wm-region-enemy-boss {
   position: absolute;
   top: 4px;
   left: 4px;
@@ -659,20 +659,20 @@
   cursor: var(--cur-default);
 }
 
-.wm-zone-enemy-boss:hover,
-.wm-zone-enemy-boss:focus-visible {
+.wm-region-enemy-boss:hover,
+.wm-region-enemy-boss:focus-visible {
   outline: none;
   color: #f3df9a;
   border-color: #f0d78a;
 }
 
-.wm-zone-enemy-boss-icon {
+.wm-region-enemy-boss-icon {
   width: 14px;
   height: 14px;
   display: block;
 }
 
-.wm-zone-enemy-boss-tip {
+.wm-region-enemy-boss-tip {
   position: absolute;
   left: 0;
   bottom: calc(100% + 6px);
@@ -695,26 +695,26 @@
     visibility 0.12s ease;
 }
 
-.wm-zone-enemy-boss:hover .wm-zone-enemy-boss-tip,
-.wm-zone-enemy-boss:focus-visible .wm-zone-enemy-boss-tip {
+.wm-region-enemy-boss:hover .wm-region-enemy-boss-tip,
+.wm-region-enemy-boss:focus-visible .wm-region-enemy-boss-tip {
   opacity: 1;
   visibility: visible;
 }
 
-.wm-zone-enemy-tip {
+.wm-region-enemy-tip {
   z-index: 70;
   max-width: 340px;
   min-width: 200px;
 }
 
-.wm-zone-enemy-tip .tt-desc {
+.wm-region-enemy-tip .tt-desc {
   margin: 0;
   font-size: 1.05rem;
   line-height: 1.45;
   color: var(--theme-mist, #e8e2d4);
 }
 
-.wm-zone-enemy-name {
+.wm-region-enemy-name {
   box-sizing: border-box;
   height: 2.5em;
   font-size: 0.92rem;
@@ -728,21 +728,21 @@
   hyphens: manual;
 }
 
-.wm-zone-loot-stub {
+.wm-region-loot-stub {
   margin: 0;
   font-size: 1.02rem;
   color: var(--muted, #9a9488);
   font-style: italic;
 }
 
-.wm-zone-actions {
+.wm-region-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   margin-top: 4px;
 }
 
-.wm-zone-btn {
+.wm-region-btn {
   width: 100%;
   text-align: center;
   letter-spacing: 0.08em;

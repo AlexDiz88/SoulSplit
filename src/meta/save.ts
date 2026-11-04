@@ -5,11 +5,11 @@ import type { ItemDef } from "../items/types";
 import type { StatId } from "../stats/statIds";
 import type { Aspect } from "../types";
 import {
-  ALL_ZONE_IDS,
+  ALL_REGION_IDS,
   cloneGameState,
   createNewGameState,
   type GameState,
-  type ZoneId,
+  type RegionId,
 } from "./gameState";
 import {
   ensureHeroBeltPotions,
@@ -21,8 +21,8 @@ import { ensureMarket } from "./market";
 import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
 
-/** Старые ZoneId → актуальные (разработка, свободный rename). */
-const ZONE_ID_REMAP: Record<string, ZoneId> = {
+/** Старые RegionId → актуальные (разработка, свободный rename). */
+const REGION_ID_REMAP: Record<string, RegionId> = {
   outskirts: "north_road",
   mellnford: "willheim",
   kara_foothills: "grey_fang_foothills",
@@ -31,11 +31,11 @@ const ZONE_ID_REMAP: Record<string, ZoneId> = {
   south_meadow: "south_hills",
 };
 
-const ZONE_ID_SET = new Set<string>(ALL_ZONE_IDS);
+const REGION_ID_SET = new Set<string>(ALL_REGION_IDS);
 
-function remapZoneId(id: string): ZoneId | null {
-  const next = ZONE_ID_REMAP[id] ?? id;
-  return ZONE_ID_SET.has(next) ? (next as ZoneId) : null;
+function remapRegionId(id: string): RegionId | null {
+  const next = REGION_ID_REMAP[id] ?? id;
+  return REGION_ID_SET.has(next) ? (next as RegionId) : null;
 }
 
 function remapAspect(id: string): Aspect {
@@ -97,14 +97,37 @@ function emptySlots(): (SaveSlotRecord | null)[] {
 
 function isGameState(value: unknown): value is GameState {
   if (!value || typeof value !== "object") return false;
-  const v = value as GameState;
+  const v = value as GameState & {
+    unlockedZones?: unknown;
+    lastZoneId?: unknown;
+  };
   if (!v.hero || v.hero.version !== HERO_PROFILE_VERSION) return false;
-  if (!Array.isArray(v.unlockedZones)) return false;
+  const unlocked = v.unlockedRegions ?? v.unlockedZones;
+  if (!Array.isArray(unlocked)) return false;
   return typeof v.hero.name === "string" && typeof v.hero.level === "number";
 }
 
+/** Старые ключи сейва: unlockedZones / lastZoneId → unlockedRegions / lastRegionId. */
+function migrateRegionFields(raw: GameState): GameState {
+  const legacy = raw as GameState & {
+    unlockedZones?: RegionId[];
+    lastZoneId?: RegionId | null;
+  };
+  if (!Array.isArray(legacy.unlockedRegions) && Array.isArray(legacy.unlockedZones)) {
+    legacy.unlockedRegions = [...legacy.unlockedZones];
+  }
+  if (legacy.lastRegionId === undefined && "lastZoneId" in legacy) {
+    legacy.lastRegionId = legacy.lastZoneId ?? null;
+  }
+  delete legacy.unlockedZones;
+  delete legacy.lastZoneId;
+  if (!Array.isArray(legacy.unlockedRegions)) legacy.unlockedRegions = [];
+  if (legacy.lastRegionId === undefined) legacy.lastRegionId = null;
+  return legacy;
+}
+
 function normalizeState(parsed: GameState): GameState {
-  const state = cloneGameState(parsed);
+  const state = cloneGameState(migrateRegionFields(parsed));
   if (typeof state.hero.gold !== "number" || !Number.isFinite(state.hero.gold)) {
     state.hero.gold = 0;
   }
@@ -145,11 +168,11 @@ function normalizeState(parsed: GameState): GameState {
       delete bonuses[key as StatId];
     }
   }
-  state.unlockedZones = [
-    ...new Set(state.unlockedZones.map(remapZoneId).filter((id): id is ZoneId => id != null)),
+  state.unlockedRegions = [
+    ...new Set(state.unlockedRegions.map(remapRegionId).filter((id): id is RegionId => id != null)),
   ];
-  if (state.lastZoneId) {
-    state.lastZoneId = remapZoneId(state.lastZoneId);
+  if (state.lastRegionId) {
+    state.lastRegionId = remapRegionId(state.lastRegionId);
   }
   ensureHeroStash(state.hero);
   ensureHeroBeltPotions(state.hero);

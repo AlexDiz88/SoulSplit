@@ -30,9 +30,9 @@
 
 - [x] B1. `src/app/GameApp.ts` + правка `main.ts`
 - [x] B2. `BattleConfig` / `BattleResult` в `Battle`
-- [x] B3. `src/meta/zones.ts` + `rollEncounter(opts)`
+- [x] B3. `src/meta/regions.ts` + `rollEncounter(opts)`
 - [x] B4. Hub screen
-- [x] B5. Zone select
+- [x] B5. Region select
 - [x] B6. Loot + reward screen
 - [x] B7. Defeat screen
 - [x] B8. `src/meta/save.ts` localStorage

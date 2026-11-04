@@ -8,7 +8,7 @@ import {
 } from "./heroProfile";
 import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
 
-export type ZoneId =
+export type RegionId =
   | "north_road"
   | "witch_house"
   | "crossing"
@@ -33,7 +33,7 @@ export type ZoneId =
   | "riverholt"
   | "moon_lake";
 
-export const ALL_ZONE_IDS: readonly ZoneId[] = [
+export const ALL_REGION_IDS: readonly RegionId[] = [
   "north_road",
   "witch_house",
   "crossing",
@@ -61,8 +61,8 @@ export const ALL_ZONE_IDS: readonly ZoneId[] = [
 
 export interface GameState {
   hero: HeroProfile;
-  unlockedZones: ZoneId[];
-  lastZoneId: ZoneId | null;
+  unlockedRegions: RegionId[];
+  lastRegionId: RegionId | null;
   /** Ассортимент рынка (реролл после похода / кнопкой). */
   market: MarketState;
   /** Журнал квестов и пины трекера. */
@@ -72,8 +72,8 @@ export interface GameState {
 export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
   const state: GameState = {
     hero: createNewHeroProfile(opts),
-    unlockedZones: [...ALL_ZONE_IDS],
-    lastZoneId: null,
+    unlockedRegions: [...ALL_REGION_IDS],
+    lastRegionId: null,
     market: cloneMarketState(null),
     quests: createEmptyQuestLog(),
   };
@@ -84,8 +84,8 @@ export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
 export function cloneGameState(src: GameState): GameState {
   return {
     hero: cloneHeroProfile(src.hero),
-    unlockedZones: [...src.unlockedZones],
-    lastZoneId: src.lastZoneId,
+    unlockedRegions: [...src.unlockedRegions],
+    lastRegionId: src.lastRegionId,
     market: cloneMarketState(src.market),
     quests: cloneQuestLog(src.quests),
   };

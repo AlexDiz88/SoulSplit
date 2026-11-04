@@ -3,7 +3,7 @@ import { Battle, type BattleResult } from "../combat/Battle";
 import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
 import { defeatGoldLoss, victoryGold } from "../meta/economy";
-import { cloneGameState, createNewGameState, type GameState, type ZoneId } from "../meta/gameState";
+import { cloneGameState, createNewGameState, type GameState, type RegionId } from "../meta/gameState";
 import { pushBuyback } from "../meta/market";
 import {
   beltRefillShortageText,
@@ -29,7 +29,7 @@ import {
   loadSlot,
   saveSlot,
 } from "../meta/save";
-import { getZone, getZonePoint, isZoneUnlocked, syncUnlockedZones } from "../meta/zones";
+import { getRegion, getLocation, isRegionUnlocked, syncUnlockedRegions } from "../meta/regions";
 import { applyKillProgress } from "../quests/questLog";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
@@ -65,9 +65,9 @@ export class GameApp {
   private activeSlot = -1;
   private battle: Battle | null = null;
   private hubUnit: Unit | null = null;
-  private prevUnlocked = new Set<ZoneId>();
+  private prevUnlocked = new Set<RegionId>();
   /** Куда вернуть игрока с экрана награды (карта + окно региона). */
-  private rewardReturn: { zoneId: ZoneId; pointId: string } | null = null;
+  private rewardReturn: { regionId: RegionId; locationId: string } | null = null;
   /** Тик глобальных эффектов вне боя (1 с). */
   private globalEffectsTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -151,7 +151,7 @@ export class GameApp {
 
     this.worldMap = mountWorldMapScreen({
       onBackToTown: () => this.goHub(),
-      onStartZone: (zoneId, pointId) => this.startBattle(zoneId, pointId),
+      onStartLocation: (regionId, locationId) => this.startBattle(regionId, locationId),
       showToast: (t) => this.hud.showToast(t),
     });
 
@@ -459,8 +459,8 @@ export class GameApp {
   private enterGame(index: number, state: GameState): void {
     this.activeSlot = index;
     this.state = cloneGameState(state);
-    this.state.unlockedZones = syncUnlockedZones(this.state.hero.level, this.state.unlockedZones);
-    this.prevUnlocked = new Set(this.state.unlockedZones);
+    this.state.unlockedRegions = syncUnlockedRegions(this.state.hero.level, this.state.unlockedRegions);
+    this.prevUnlocked = new Set(this.state.unlockedRegions);
     this.goHub();
   }
 
@@ -483,13 +483,13 @@ export class GameApp {
   embarkQuick(): void {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
-    const last = state.lastZoneId;
-    if (last && isZoneUnlocked(last, state.hero.level, state.unlockedZones)) {
+    const last = state.lastRegionId;
+    if (last && isRegionUnlocked(last, state.hero.level, state.unlockedRegions)) {
       this.startBattle(last);
       return;
     }
-    const unlocked = state.unlockedZones.filter((id) =>
-      isZoneUnlocked(id, state.hero.level, state.unlockedZones),
+    const unlocked = state.unlockedRegions.filter((id) =>
+      isRegionUnlocked(id, state.hero.level, state.unlockedRegions),
     );
     if (unlocked.length === 1) {
       this.startBattle(unlocked[0]!);
@@ -515,8 +515,8 @@ export class GameApp {
     this.hud.setShellMode("hub");
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
-    state.unlockedZones = syncUnlockedZones(state.hero.level, state.unlockedZones);
-    this.noteNewZones();
+    state.unlockedRegions = syncUnlockedRegions(state.hero.level, state.unlockedRegions);
+    this.noteNewRegions();
     this.rebuildHubUnit();
     this.hub.show(state);
     ensureHeroGlobalEffects(state.hero, true);
@@ -526,16 +526,16 @@ export class GameApp {
     this.persist();
   }
 
-  private noteNewZones(): void {
+  private noteNewRegions(): void {
     const state = this.requireState();
-    for (const id of state.unlockedZones) {
+    for (const id of state.unlockedRegions) {
       if (this.prevUnlocked.has(id)) continue;
       if (id === "ruins") this.hud.showToast("Открыты Руины");
     }
-    this.prevUnlocked = new Set(state.unlockedZones);
+    this.prevUnlocked = new Set(state.unlockedRegions);
   }
 
-  goWorldMap(opts?: { openZoneId?: ZoneId; openPointId?: string }): void {
+  goWorldMap(opts?: { openRegionId?: RegionId; openLocationId?: string }): void {
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
@@ -561,8 +561,8 @@ export class GameApp {
     this.hud.closeOverlays();
     const ret = this.rewardReturn;
     this.rewardReturn = null;
-    if (ret) this.goWorldMap({ openZoneId: ret.zoneId, openPointId: ret.pointId });
-    else this.goWorldMap({ openZoneId: this.state?.lastZoneId ?? undefined });
+    if (ret) this.goWorldMap({ openRegionId: ret.regionId, openLocationId: ret.locationId });
+    else this.goWorldMap({ openRegionId: this.state?.lastRegionId ?? undefined });
   }
 
   private onTownLocation(id: HubLocationId): void {
@@ -657,7 +657,7 @@ export class GameApp {
     this.questLog.show(state);
   }
 
-  startBattle(zoneId: ZoneId, pointId?: string): void {
+  startBattle(regionId: RegionId, locationId?: string): void {
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
@@ -665,10 +665,10 @@ export class GameApp {
       this.persist();
     }
     this.stopGlobalEffectsTick();
-    const zone = getZone(zoneId);
-    const point = getZonePoint(zone, pointId);
-    if (!point) return;
-    state.lastZoneId = zoneId;
+    const region = getRegion(regionId);
+    const location = getLocation(region, locationId);
+    if (!location) return;
+    state.lastRegionId = regionId;
     this.destroyBattle();
     this.hideAll();
     this.hud.closeOverlays();
@@ -677,25 +677,25 @@ export class GameApp {
     this.syncGlobalEffectsHud();
 
     const encounter = rollEncounter({
-      threatBudget: point.encounter.threatBudget,
-      pool: point.encounter.pool,
-      guarantee: point.encounter.guarantee,
-      eliteChance: point.eliteChance ?? 0,
+      threatBudget: location.encounter.threatBudget,
+      pool: location.encounter.pool,
+      guarantee: location.encounter.guarantee,
+      eliteChance: location.eliteChance ?? 0,
     });
 
     const heroSnap = cloneGameState(state).hero;
     this.syncQuestTracker();
     this.battle = new Battle(this.app, this.hud, {
       hero: heroSnap,
-      zone,
-      pointId: point.id,
+      region,
+      locationId: location.id,
       encounter,
       onEnemyKilled: (kindId) => {
         if (!this.state) return;
         if (
           !applyKillProgress(this.state, kindId, {
-            zoneId,
-            pointId: point.id,
+            regionId,
+            locationId: location.id,
           })
         ) {
           return;
@@ -737,7 +737,7 @@ export class GameApp {
       this.destroyBattle();
       this.rebuildHubUnit();
       this.persist();
-      this.goWorldMap({ openZoneId: result.zoneId, openPointId: result.pointId });
+      this.goWorldMap({ openRegionId: result.regionId, openLocationId: result.locationId });
       if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
       return;
     }
@@ -763,19 +763,19 @@ export class GameApp {
     // Победа: раны и мана сохраняются до отдыха в городе.
     state.hero.currentHp = Math.max(1, result.heroHp);
     state.hero.currentMana = Math.max(0, result.heroMana);
-    const zone = getZone(result.zoneId);
-    const point = getZonePoint(zone, result.pointId);
-    if (!point) return;
+    const region = getRegion(result.regionId);
+    const location = getLocation(region, result.locationId);
+    if (!location) return;
     const kills = result.killed.length;
     const xp = victoryXp(state.hero.level, result.killed);
-    const gold = victoryGold(point.itemLevel, kills);
+    const gold = victoryGold(location.itemLevel, kills);
     const levelResult = addXpToProfile(state.hero, xp);
     state.hero.gold += gold;
-    state.unlockedZones = syncUnlockedZones(state.hero.level, state.unlockedZones);
+    state.unlockedRegions = syncUnlockedRegions(state.hero.level, state.unlockedRegions);
 
     const items = rollVictoryLoot({
-      zone,
-      point,
+      region,
+      location,
       kills,
       learnedAspects: state.hero.learnedAspects,
     });
@@ -792,9 +792,9 @@ export class GameApp {
     this.syncGlobalEffectsHud();
     this.syncQuestTracker();
 
-    this.noteNewZones();
+    this.noteNewRegions();
 
-    this.rewardReturn = { zoneId: result.zoneId, pointId: result.pointId };
+    this.rewardReturn = { regionId: result.regionId, locationId: result.locationId };
     this.reward.show(state.hero, {
       items,
       xpGained: xp,
@@ -802,8 +802,8 @@ export class GameApp {
       levelsGained: levelResult.levelsGained,
       newLevel: state.hero.level,
       kills,
-      zoneName: zone.name,
-      pointName: point.name,
+      regionName: region.name,
+      locationName: location.name,
       stats: result.stats,
     });
     this.hud.setOnLootReturn((item) => {

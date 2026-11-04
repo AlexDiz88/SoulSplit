@@ -1,8 +1,8 @@
 import type { EquipmentMap } from "../items/equipment";
 import type { InventoryBag } from "../items/inventory";
-import type { ZoneId } from "../meta/gameState";
+import type { RegionId } from "../meta/gameState";
 import type { HeroProfile } from "../meta/heroProfile";
-import type { ZoneDef } from "../meta/zones";
+import type { RegionDef } from "../meta/regions";
 import type { BattleStats } from "./battleStats";
 import type { SpawnedEnemy } from "./enemies";
 
@@ -17,8 +17,8 @@ export interface BattleKill {
 
 export interface BattleResult {
   outcome: "victory" | "defeat" | "flee";
-  zoneId: ZoneId;
-  pointId: string;
+  regionId: RegionId;
+  locationId: string;
   killed: BattleKill[];
   survivingEnemyCount: number;
   durationSec: number;
@@ -35,8 +35,8 @@ export interface BattleResult {
 
 export interface BattleConfig {
   hero: HeroProfile;
-  zone: ZoneDef;
-  pointId: string;
+  region: RegionDef;
+  locationId: string;
   encounter: SpawnedEnemy[];
   onComplete: (result: BattleResult) => void;
   /** Сразу при смерти врага (для квест-прогресса). */

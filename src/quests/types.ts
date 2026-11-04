@@ -1,5 +1,5 @@
 import type { ItemDef, ItemRarity } from "../items/types";
-import type { ZoneId } from "../meta/gameState";
+import type { RegionId } from "../meta/gameState";
 
 export type QuestId = "cull_bandits";
 
@@ -15,9 +15,9 @@ export interface QuestObjectiveKillGroup {
   /** Короткий текст цели для игрока. */
   label: string;
   /** Регион вылазки; без поля - любой. */
-  zoneId?: ZoneId;
-  /** Локация (`zone.points` id); без поля - любая. */
-  pointId?: string;
+  regionId?: RegionId;
+  /** Локация (`region.locations` id); без поля - любая. */
+  locationId?: string;
 }
 
 export type QuestObjective = QuestObjectiveKillGroup;
@@ -45,7 +45,7 @@ export interface QuestDef {
   objectives: QuestObjective[];
   rewards: QuestRewards;
   /** Регион, где квест виден в блоке карты. */
-  zoneHint?: ZoneId;
+  regionHint?: RegionId;
 }
 
 export interface QuestProgress {

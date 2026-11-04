@@ -14,4 +14,4 @@ alwaysApply: true
 В квестах и диалогах обычно прямые имена без слов "провинция" / "регион".
 В UI окна региона блок выбора вылазок называется **Локации**.
 
-В коде пока: регион ≈ `ZoneDef` / `ZoneId`, локация ≈ `zone.points` / `ZonePointDef`.
+В коде: регион = `RegionDef` / `RegionId` / `REGIONS`, локация = `LocationDef` / `region.locations`.

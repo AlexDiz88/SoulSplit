@@ -825,8 +825,8 @@ export class Battle {
     const gear = this.cloneGear();
     const result: BattleResult = {
       outcome,
-      zoneId: this.config.zone.id,
-      pointId: this.config.pointId,
+      regionId: this.config.region.id,
+      locationId: this.config.locationId,
       killed: [...this.killed],
       survivingEnemyCount: this.livingEnemies().length,
       durationSec: this.battleElapsed,

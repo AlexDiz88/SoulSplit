@@ -13,8 +13,8 @@ export const QUEST_DEFS: Record<QuestId, QuestDef> = {
         type: "kill_group",
         groupId: "bandits",
         count: 15,
-        zoneId: "north_road",
-        pointId: "wall",
+        regionId: "north_road",
+        locationId: "wall",
         label: "Убить бандитов у стены",
       },
     ],
@@ -24,7 +24,7 @@ export const QUEST_DEFS: Record<QuestId, QuestDef> = {
       gold: 50,
       item: { rarity: "uncommon", itemLevel: 1 },
     },
-    zoneHint: "north_road",
+    regionHint: "north_road",
   },
 };
 

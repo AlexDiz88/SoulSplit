@@ -22,8 +22,8 @@ export interface RewardScreenPayload {
   levelsGained: number;
   newLevel: number;
   kills: number;
-  zoneName: string;
-  pointName?: string;
+  regionName: string;
+  locationName?: string;
   stats?: BattleStats;
 }
 
@@ -457,8 +457,8 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       currentItems = [...payload.items];
       hadInitialLoot = currentItems.length > 0;
 
-      const placeBits = [payload.zoneName];
-      if (payload.pointName) placeBits.push(payload.pointName);
+      const placeBits = [payload.regionName];
+      if (payload.locationName) placeBits.push(payload.locationName);
       place.textContent = placeBits.join(" · ");
 
       chipXp.set(`+${formatNum(payload.xpGained)}`);

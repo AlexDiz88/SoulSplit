@@ -1,4 +1,4 @@
-/** Превью регионов: `assets/art/regions/{zoneId}.{png|jpg|jpeg|webp}`. */
+/** Превью регионов: `assets/art/regions/{regionId}.{png|jpg|jpeg|webp}`. */
 const regionModules = import.meta.glob<{ default: string }>(
   "../../assets/art/regions/*.{png,jpg,jpeg,webp}",
   { eager: true },
@@ -16,7 +16,7 @@ function fileExt(path: string): string {
   return m?.[1] ?? "";
 }
 
-/** URL арта региона по stem (= ZoneId). `null`, если файла нет. */
+/** URL арта региона по stem (= RegionId). `null`, если файла нет. */
 export function tryResolveRegionArtUrl(stem: string): string | null {
   const needle = stem.toLowerCase();
   const hits = Object.entries(regionModules)
