@@ -20,8 +20,8 @@
 .townhall-window {
   position: relative;
   box-sizing: border-box;
-  width: min(880px, calc(100vw - 32px));
-  height: min(560px, calc(100vh - 48px));
+  width: min(1180px, calc(100vw - 28px));
+  height: min(820px, calc(100vh - 36px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
