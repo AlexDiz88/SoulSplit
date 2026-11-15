@@ -568,7 +568,7 @@ function renderStats(hero: Unit | null, aspectTip: HTMLElement, tip: HTMLElement
       value: pct(sheet, "parryChance"),
       inactive: parryVal > 0 && !isParryActive(equip),
       tipText:
-        "Сейчас не сработает: нужно допустимое оружие ближнего боя в правой руке (мечи, топоры, булавы, кинжалы, в т.ч. двуручные).",
+        "Сейчас не сработает: нужно подходящее оружие ближнего боя в основной руке (кинжалы, мечи, топоры, булавы, в т.ч. двуручные).",
       tip,
     }),
   );
@@ -589,10 +589,8 @@ function gatedStatRow(opts: {
   tip: HTMLElement;
 }): HTMLElement {
   const row = el("div", "cs-stat");
-  row.append(el("span", "", opts.label));
-  const valueWrap = el("span", "cs-stat-value-wrap");
-  const valueEl = el("b", opts.inactive ? "cs-stat-inactive" : "", opts.value);
-  valueWrap.append(valueEl);
+  const labelWrap = el("span", "cs-stat-label-wrap");
+  labelWrap.append(el("span", "", opts.label));
   if (opts.inactive) {
     const warn = el("span", "cs-stat-warn");
     warn.textContent = "!";
@@ -600,6 +598,8 @@ function gatedStatRow(opts: {
     warn.addEventListener("pointerenter", () => {
       opts.tip.hidden = false;
       opts.tip.replaceChildren();
+      opts.tip.removeAttribute("data-rarity");
+      opts.tip.classList.add("cs-stat-tip");
       const body = el("div", "cs-stat-tip-body");
       body.textContent = opts.tipText;
       opts.tip.append(body);
@@ -607,11 +607,13 @@ function gatedStatRow(opts: {
     });
     warn.addEventListener("pointerleave", () => {
       opts.tip.hidden = true;
+      opts.tip.classList.remove("cs-stat-tip");
       opts.tip.replaceChildren();
     });
-    valueWrap.append(warn);
+    labelWrap.append(warn);
   }
-  row.append(valueWrap);
+  const valueEl = el("b", opts.inactive ? "cs-stat-inactive" : "", opts.value);
+  row.append(labelWrap, valueEl);
   return row;
 }
 

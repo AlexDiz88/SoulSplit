@@ -410,14 +410,23 @@
   gap: 10px;
 }
 
-.confirm-actions-single {
-  grid-template-columns: 1fr;
-}
-
 .confirm-actions .meta-btn {
   margin-top: 0;
   width: 100%;
   padding: 12px 10px;
+}
+
+.confirm-actions.confirm-actions-single {
+  display: flex;
+  justify-content: center;
+  grid-template-columns: unset;
+}
+
+.confirm-actions.confirm-actions-single .meta-btn {
+  width: auto;
+  min-width: 148px;
+  padding-left: 28px;
+  padding-right: 28px;
 }
 
 /* Панели темы */

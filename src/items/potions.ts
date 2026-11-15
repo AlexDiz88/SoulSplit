@@ -260,9 +260,14 @@ export function refillBeltFromInventory(
 
 /** Текст нехватки для попапа после автодозарядки. */
 export function beltRefillShortageText(missingHp: number, missingMana: number): string | null {
-  const parts: string[] = [];
-  if (missingHp > 0) parts.push(`${POTION_LABEL.healing_potion} ×${missingHp}`);
-  if (missingMana > 0) parts.push(`${POTION_LABEL.mana_potion} ×${missingMana}`);
-  if (parts.length === 0) return null;
-  return `В сумке не хватило зелий для пояса: ${parts.join(", ")}.`;
+  const needHp = missingHp > 0;
+  const needMana = missingMana > 0;
+  if (!needHp && !needMana) return null;
+  if (needHp && needMana) {
+    return "При попытке автопополнения зелий - не хватило зелий Здоровья и Маны";
+  }
+  if (needHp) {
+    return "При попытке автопополнения зелий - не хватило зелья Здоровья";
+  }
+  return "При попытке автопополнения зелий - не хватило зелья Маны";
 }

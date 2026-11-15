@@ -401,11 +401,11 @@
   font-variant-numeric: tabular-nums;
 }
 
-.cs-stat-value-wrap {
+.cs-stat-label-wrap {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  flex: none;
+  min-width: 0;
 }
 
 .cs-stat b.cs-stat-inactive {
@@ -416,6 +416,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex: none;
   width: 16px;
   height: 16px;
   border-radius: 50%;
@@ -428,11 +429,23 @@
   cursor: var(--cur-help);
 }
 
-.cs-stat-tip-body {
+/* Компактный тултип предупреждения стата (не карточка предмета). */
+.item-tip.cs-stat-tip {
+  box-sizing: border-box;
+  width: max-content;
+  max-width: min(320px, calc(100vw - 24px));
+  min-width: 0;
+  min-height: 0;
   padding: 8px 10px;
-  max-width: 280px;
+  text-align: left;
+}
+
+.cs-stat-tip-body {
+  margin: 0;
+  max-width: 34ch;
   color: #e8e2d4;
   font-size: 0.85rem;
+  font-weight: 600;
   line-height: 1.35;
 }
 

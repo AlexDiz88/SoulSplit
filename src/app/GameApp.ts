@@ -738,7 +738,7 @@ export class GameApp {
       this.rebuildHubUnit();
       this.persist();
       this.goWorldMap({ openRegionId: result.regionId, openLocationId: result.locationId });
-      if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
+      if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
       return;
     }
 
@@ -756,7 +756,7 @@ export class GameApp {
       this.syncQuestTracker();
       this.persist();
       this.defeat.show();
-      if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
+      if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
       return;
     }
 
@@ -809,6 +809,6 @@ export class GameApp {
     this.hud.setOnLootReturn((item) => {
       this.reward.returnItem(item);
     });
-    if (shortageText) this.hud.showAlert("Не хватило зелий", shortageText);
+    if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
   }
 }
