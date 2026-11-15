@@ -1,6 +1,7 @@
 import {
   formatGlobalEffectTimer,
   globalEffectDef,
+  isGlobalEffectId,
   type GlobalEffect,
 } from "../effects/globalEffects";
 
@@ -10,7 +11,7 @@ export interface GlobalEffectsHudApi {
   destroy(): void;
 }
 
-/** Полоска глобальных эффектов в левом верхнем углу (город / карта). */
+/** Полоска глобальных эффектов в левом верхнем углу (город / карта / бой). */
 export function mountGlobalEffectsHud(parent: HTMLElement): GlobalEffectsHudApi {
   const root = document.createElement("div");
   root.className = "global-effects-hud";
@@ -62,10 +63,11 @@ export function mountGlobalEffectsHud(parent: HTMLElement): GlobalEffectsHudApi 
   const sync = (effects: GlobalEffect[]): void => {
     root.replaceChildren();
     for (const effect of effects) {
+      if (!isGlobalEffectId(effect.id)) continue;
       const def = globalEffectDef(effect.id);
       const btn = document.createElement("button");
       btn.type = "button";
-      btn.className = "global-effect-icon";
+      btn.className = `global-effect-icon is-${def.polarity}`;
       btn.setAttribute("aria-label", def.name);
 
       const img = document.createElement("img");

@@ -2,11 +2,14 @@ import "./hubScreen.css";
 import "./defeatScreen.css";
 
 export interface DefeatScreenApi {
-  show(): void;
+  show(opts?: { penaltyText?: string }): void;
   hide(): void;
   isOpen(): boolean;
   destroy(): void;
 }
+
+const DEFAULT_PENALTY =
+  "(Получена травма. Урон снижен. Можно вылечить у лекаря в городе.)";
 
 export interface DefeatScreenHandlers {
   onWake: () => void;
@@ -46,11 +49,7 @@ export function mountDefeatScreen(handlers: DefeatScreenHandlers): DefeatScreenA
     "defeat-summary defeat-line",
     "Тьма отступает медленно. Каждое поражение не проходит бесследно. Но это ещё не конец.",
   );
-  const penalty = el(
-    "p",
-    "defeat-penalty defeat-line",
-    "(Пока вы были без сознания, вас ограбили. Потеряно 10% золота)",
-  );
+  const penalty = el("p", "defeat-penalty defeat-line", DEFAULT_PENALTY);
 
   const actions = el("div", "defeat-actions");
   const btnWake = el("button", "title-btn title-btn-primary defeat-wake-btn", "Очнуться");
@@ -88,7 +87,8 @@ export function mountDefeatScreen(handlers: DefeatScreenHandlers): DefeatScreenA
   btnWake.addEventListener("click", onWakeClick);
 
   return {
-    show() {
+    show(opts) {
+      penalty.textContent = opts?.penaltyText?.trim() || DEFAULT_PENALTY;
       root.hidden = false;
       window.addEventListener("keydown", onKeyDown, true);
       requestAnimationFrame(() => btnWake.focus());

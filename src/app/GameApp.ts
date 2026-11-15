@@ -2,13 +2,18 @@ import type { Application } from "pixi.js";
 import { Battle, type BattleResult } from "../combat/Battle";
 import { rollEncounter } from "../combat/enemies";
 import { Unit } from "../combat/Unit";
-import { defeatGoldLoss, victoryGold } from "../meta/economy";
+import { victoryGold } from "../meta/economy";
 import { cloneGameState, createNewGameState, type GameState, type RegionId } from "../meta/gameState";
+import {
+  applyDefeatTrauma,
+  formatTraumaPenaltyLine,
+} from "../meta/healer";
 import { pushBuyback } from "../meta/market";
 import {
   beltRefillShortageText,
   refillBeltFromInventory,
 } from "../items/potions";
+import { combatModsFromGlobalEffects } from "../effects/globalEffects";
 import { tickGlobalEffectsOutsideCombat } from "../effects/tickGlobalEffects";
 import {
   addXpToProfile,
@@ -30,6 +35,14 @@ import {
   saveSlot,
 } from "../meta/save";
 import { getRegion, getLocation, isRegionUnlocked, syncUnlockedRegions } from "../meta/regions";
+import {
+  advanceHours,
+  debugAdvanceHours,
+  DEBUG_HOURS_STEP,
+  formatWorldClock,
+  HOURS_PER_SORTIE,
+  sleepUntilMorning,
+} from "../meta/worldTime";
 import { applyKillProgress } from "../quests/questLog";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
@@ -37,6 +50,7 @@ import { mountCharacterCreateScreen } from "../ui/characterCreateScreen";
 import { mountDefeatScreen } from "../ui/defeatScreen";
 import { mountGlobalEffectsHud } from "../ui/globalEffectsHud";
 import type { HubLocationId } from "../ui/hubLocations";
+import { mountHealerScreen } from "../ui/healerScreen";
 import { mountHubScreen } from "../ui/hubScreen";
 import { mountMerchantScreen } from "../ui/merchantScreen";
 import { mountQuestLogScreen } from "../ui/questLogScreen";
@@ -82,6 +96,7 @@ export class GameApp {
   private readonly worldMap: ReturnType<typeof mountWorldMapScreen>;
   private readonly merchant: ReturnType<typeof mountMerchantScreen>;
   private readonly townHall: ReturnType<typeof mountTownHallScreen>;
+  private readonly healer: ReturnType<typeof mountHealerScreen>;
   private readonly questLog: ReturnType<typeof mountQuestLogScreen>;
   private readonly questTracker: ReturnType<typeof mountQuestTracker>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
@@ -121,6 +136,7 @@ export class GameApp {
       onCharacter: () => {
         this.merchant.hide();
         this.townHall.hide();
+        this.healer.hide();
         this.questLog.hide();
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
@@ -128,6 +144,7 @@ export class GameApp {
       onInventory: () => {
         this.merchant.hide();
         this.townHall.hide();
+        this.healer.hide();
         this.questLog.hide();
         // В городе сумка без листа персонажа бессмысленна - открываем оба окна.
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
@@ -137,6 +154,7 @@ export class GameApp {
       onItemGenerator: () => {
         this.merchant.hide();
         this.townHall.hide();
+        this.healer.hide();
         this.questLog.hide();
         this.hud.openItemGenerator();
       },
@@ -147,6 +165,7 @@ export class GameApp {
       onLocation: (id) => this.onTownLocation(id),
       onStash: () => this.toggleTownStash(),
       onAddTestGold: () => this.addTestGold(),
+      onDebugAdvanceTime: () => this.debugAdvanceWorldTime(),
     });
 
     this.worldMap = mountWorldMapScreen({
@@ -184,6 +203,20 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
+    this.healer = mountHealerScreen({
+      onClose: () => {
+        this.persist();
+        this.syncGlobalEffectsHud();
+      },
+      onChanged: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        this.syncGlobalEffectsHud();
+      },
+      showToast: (t) => this.hud.showToast(t),
+    });
+
     this.questLog = mountQuestLogScreen({
       onClose: () => {
         this.syncQuestTracker();
@@ -211,6 +244,7 @@ export class GameApp {
     this.hud.setOnPanelsClosed(() => {
       if (this.merchant.isOpen()) this.merchant.hide();
       if (this.townHall.isOpen()) this.townHall.hide();
+      if (this.healer.isOpen()) this.healer.hide();
       if (this.questLog.isOpen()) this.questLog.hide();
     });
 
@@ -303,34 +337,63 @@ export class GameApp {
       this.globalEffectsHud.setVisible(false);
       return;
     }
-    const meta = this.screen === "hub" || this.screen === "world_map";
-    this.globalEffectsHud.setVisible(meta);
-    if (!meta) return;
+    const show =
+      this.screen === "hub" ||
+      this.screen === "world_map" ||
+      this.screen === "battle" ||
+      this.screen === "reward" ||
+      this.screen === "defeat";
+    this.globalEffectsHud.setVisible(show);
+    if (!show) return;
     const inHub = this.screen === "hub";
     ensureHeroGlobalEffects(this.state.hero, inHub);
     this.globalEffectsHud.sync(this.state.hero.globalEffects);
   }
 
-  /** Тик глобальных эффектов: vitals только в городе, таймеры и на карте. */
+  /** Тик глобальных эффектов: vitals в городе, таймеры везде включая бой. */
   private startGlobalEffectsTick(): void {
     this.stopGlobalEffectsTick();
     this.globalEffectsTimer = setInterval(() => {
       if (!this.state) return;
-      if (this.screen !== "hub" && this.screen !== "world_map") return;
+      if (
+        this.screen !== "hub" &&
+        this.screen !== "world_map" &&
+        this.screen !== "battle" &&
+        this.screen !== "reward"
+      ) {
+        return;
+      }
       const inHub = this.screen === "hub";
       ensureHeroGlobalEffects(this.state.hero, inHub);
+      const vitalsUnit = this.screen === "battle" ? null : this.hubUnit;
+      const before = this.state.hero.globalEffects;
       const result = tickGlobalEffectsOutsideCombat(
-        this.state.hero.globalEffects,
-        this.hubUnit,
+        before,
+        vitalsUnit,
         { inHub, dt: 1 },
       );
       this.state.hero.globalEffects = result.effects;
-      if (result.changed && this.hubUnit) {
-        syncProfileVitals(this.state.hero, this.hubUnit);
-        this.hub.showHeroDock(this.state);
+      if (result.changed) {
+        if (vitalsUnit && inHub) {
+          syncProfileVitals(this.state.hero, vitalsUnit);
+          this.hub.showHeroDock(this.state);
+        }
+        if (this.screen === "hub" || this.screen === "world_map") {
+          this.applyMetaModsToHubUnit();
+        }
+        if (this.screen === "battle") {
+          this.battle?.syncHeroGlobalEffects(this.state.hero.globalEffects);
+        }
+        if (this.healer.isOpen()) this.healer.show(this.state);
       }
       this.globalEffectsHud.sync(this.state.hero.globalEffects);
     }, 1000);
+  }
+
+  private applyMetaModsToHubUnit(): void {
+    if (!this.state || !this.hubUnit) return;
+    this.hubUnit.setMetaCombatMods(combatModsFromGlobalEffects(this.state.hero.globalEffects));
+    this.hud.setHero(this.hubUnit);
   }
 
   private manualSave(): void {
@@ -384,6 +447,7 @@ export class GameApp {
     this.worldMap.hide();
     this.merchant.hide();
     this.townHall.hide();
+    this.healer.hide();
     this.questLog.hide();
     this.reward.hide();
     this.defeat.hide();
@@ -468,6 +532,7 @@ export class GameApp {
     const state = this.requireState();
     const init = hydrateCombatUnit(state.hero);
     this.hubUnit = new Unit(init);
+    this.hubUnit.metaCombatMods = combatModsFromGlobalEffects(state.hero.globalEffects);
     this.hubUnit.rebuildSheetFromEquipment(sheetBaseFromProfile(state.hero));
     applyProfileVitals(this.hubUnit, state.hero);
     this.hud.setHero(this.hubUnit);
@@ -576,11 +641,14 @@ export class GameApp {
       case "town_hall":
         this.goTownHall();
         return;
+      case "healer":
+        this.goHealer();
+        return;
       case "forge":
         this.hud.showToast("Кузница - скоро");
         return;
       case "tavern":
-        this.hud.showToast("Таверна - скоро");
+        this.sleepAtTavern();
         return;
       case "stash":
         this.openTownStash();
@@ -605,6 +673,7 @@ export class GameApp {
     ensureHeroStash(state.hero);
     this.merchant.hide();
     this.townHall.hide();
+    this.healer.hide();
     this.questLog.hide();
     this.hud.openStash(state.hero.stash);
   }
@@ -616,7 +685,48 @@ export class GameApp {
     this.persist();
     this.hub.show(this.state);
     if (this.merchant.isOpen()) this.merchant.show(this.state);
+    if (this.healer.isOpen()) this.healer.show(this.state);
     this.hud.showToast("+1000 золота");
+  }
+
+  /** Debug: +N часов к текущему времени. */
+  private debugAdvanceWorldTime(): void {
+    if (this.screen !== "hub" || !this.state) return;
+    const result = debugAdvanceHours(this.state, DEBUG_HOURS_STEP);
+    this.persist();
+    this.hub.show(this.state);
+    if (this.merchant.isOpen()) this.merchant.show(this.state);
+    const clock = formatWorldClock(result.hour);
+    const msg =
+      result.daysAdvanced > 0
+        ? `Debug: +${DEBUG_HOURS_STEP}ч → ${clock}, новый день (торговцы обновлены)`
+        : `Debug: +${DEBUG_HOURS_STEP}ч → ${clock}`;
+    this.hud.showToast(msg);
+  }
+
+  /** Сон в таверне → 7:00 следующего дня + реролл торговцев. */
+  private sleepAtTavern(): void {
+    if (this.screen !== "hub") return;
+    const state = this.requireState();
+    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    this.merchant.hide();
+    this.townHall.hide();
+    this.healer.hide();
+    this.questLog.hide();
+    this.hud.closeOverlays();
+    sleepUntilMorning(state);
+    this.persist();
+    this.hub.show(state);
+    this.hud.showToast("Утро. Торговцы обновили товар.");
+  }
+
+  private noteDayRoll(daysAdvanced: number): void {
+    if (daysAdvanced <= 0) return;
+    this.hud.showToast(
+      daysAdvanced === 1
+        ? "Новый день. Торговцы обновили товар."
+        : `Прошло дней: ${daysAdvanced}. Торговцы обновили товар.`,
+    );
   }
 
   /** Рынок поверх карты города + экип и сумка справа как у тайника. */
@@ -625,6 +735,7 @@ export class GameApp {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.townHall.hide();
+    this.healer.hide();
     this.questLog.hide();
     this.hud.openMarketSide();
     this.merchant.show(state);
@@ -636,9 +747,22 @@ export class GameApp {
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.merchant.hide();
+    this.healer.hide();
     this.questLog.hide();
     this.hud.closeOverlays();
     this.townHall.show(state);
+  }
+
+  /** Лекарь: травмы и временные усиления. */
+  goHealer(): void {
+    if (this.screen !== "hub") return;
+    const state = this.requireState();
+    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    this.merchant.hide();
+    this.townHall.hide();
+    this.questLog.hide();
+    this.hud.closeOverlays();
+    this.healer.show(state);
   }
 
   /** Журнал взятых квестов (хаб / карта / бой). */
@@ -653,6 +777,7 @@ export class GameApp {
       return;
     }
     this.townHall.hide();
+    this.healer.hide();
     this.merchant.hide();
     this.questLog.show(state);
   }
@@ -664,7 +789,6 @@ export class GameApp {
       syncProfileVitals(state.hero, this.hubUnit);
       this.persist();
     }
-    this.stopGlobalEffectsTick();
     const region = getRegion(regionId);
     const location = getLocation(region, locationId);
     if (!location) return;
@@ -674,6 +798,8 @@ export class GameApp {
     this.hud.closeOverlays();
     this.screen = "battle";
     this.hud.setShellMode("battle");
+    ensureHeroGlobalEffects(state.hero, false);
+    this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
 
     const encounter = rollEncounter({
@@ -729,6 +855,9 @@ export class GameApp {
     );
     const shortageText = beltRefillShortageText(shortage.missingHp, shortage.missingMana);
 
+    // Вылазка сдвигает часы один раз (бой сам время не крутит).
+    const timeResult = advanceHours(state, HOURS_PER_SORTIE);
+
     if (result.outcome === "flee") {
       // Раны и мана из боя сохраняются; в город не кидаем (там реген).
       state.hero.currentHp = Math.max(1, result.heroHp);
@@ -738,13 +867,14 @@ export class GameApp {
       this.rebuildHubUnit();
       this.persist();
       this.goWorldMap({ openRegionId: result.regionId, openLocationId: result.locationId });
+      this.noteDayRoll(timeResult.daysAdvanced);
       if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
       return;
     }
 
     if (result.outcome === "defeat") {
-      const stolen = defeatGoldLoss(state.hero.gold);
-      state.hero.gold = Math.max(0, state.hero.gold - stolen);
+      const traumaResult = applyDefeatTrauma(state.hero.globalEffects);
+      state.hero.globalEffects = traumaResult.effects;
       this.stopGlobalEffectsTick();
       this.destroyBattle();
       this.hideAll();
@@ -755,7 +885,8 @@ export class GameApp {
       this.syncGlobalEffectsHud();
       this.syncQuestTracker();
       this.persist();
-      this.defeat.show();
+      this.defeat.show({ penaltyText: formatTraumaPenaltyLine(traumaResult.trauma) });
+      this.noteDayRoll(timeResult.daysAdvanced);
       if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
       return;
     }
@@ -782,13 +913,14 @@ export class GameApp {
 
     this.persist();
     this.destroyBattle();
-    this.stopGlobalEffectsTick();
     this.hideAll();
     this.screen = "reward";
     this.hud.setShellMode("hub");
     this.hud.setCanChangeEquipment(() => true);
     this.bindHubEquipmentSync();
     this.rebuildHubUnit();
+    ensureHeroGlobalEffects(state.hero, false);
+    this.startGlobalEffectsTick();
     this.syncGlobalEffectsHud();
     this.syncQuestTracker();
 
@@ -809,6 +941,7 @@ export class GameApp {
     this.hud.setOnLootReturn((item) => {
       this.reward.returnItem(item);
     });
+    this.noteDayRoll(timeResult.daysAdvanced);
     if (shortageText) this.hud.showAlert("Закончились зелья", shortageText);
   }
 }

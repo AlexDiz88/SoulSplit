@@ -1,3 +1,5 @@
+import type { TownTimePhase } from "../meta/worldTime";
+
 /** Все UI-фоны из assets/art/backgrounds - png / jpg / jpeg / webp. */
 const menuBgModules = import.meta.glob<{ default: string }>(
   "../../assets/art/backgrounds/*.{png,jpg,jpeg,webp}",
@@ -36,11 +38,37 @@ function resolveAssetBgUrl(stem: string): string {
   return url;
 }
 
-export type TownTimeOfDay = "day" | "evening";
+/** @deprecated Используй TownTimePhase. */
+export type TownTimeOfDay = TownTimePhase;
 
-/** URL фона города по времени суток (`town-day` / `town-evening`). */
-export function getTownBackgroundUrl(time: TownTimeOfDay): string {
-  return resolveAssetBgUrl(time === "day" ? "town-day" : "town-evening");
+/** Стемы арта по фазе; запасные - пока нет morning/night файлов. */
+const TOWN_BG_STEMS: Record<TownTimePhase, readonly string[]> = {
+  morning: ["town-morning", "town-day"],
+  day: ["town-day"],
+  evening: ["town-evening"],
+  night: ["town-night", "town-evening"],
+};
+
+function tryResolveAssetBgUrl(stem: string): string | null {
+  try {
+    return resolveAssetBgUrl(stem);
+  } catch {
+    return null;
+  }
+}
+
+/** URL фона города по фазе суток (`town-morning` / `town-day` / …). */
+export function getTownBackgroundUrl(phase: TownTimePhase): string {
+  for (const stem of TOWN_BG_STEMS[phase]) {
+    const url = tryResolveAssetBgUrl(stem);
+    if (url) return url;
+  }
+  // Последний запас: day → evening.
+  return (
+    tryResolveAssetBgUrl("town-day") ??
+    tryResolveAssetBgUrl("town-evening") ??
+    resolveAssetBgUrl("town-day")
+  );
 }
 
 /** Узкий портрет / телефон: те же брейкпоинты, что у HUD и Кодекса. */
@@ -72,8 +100,8 @@ export function createMenuBackgroundImg(): HTMLImageElement | null {
   return createBackgroundImgFromStem("main_menu");
 }
 
-export function createTownBackgroundImg(): HTMLImageElement {
-  return createBackgroundImgFromUrl(getTownBackgroundUrl("evening"));
+export function createTownBackgroundImg(phase: TownTimePhase = "day"): HTMLImageElement {
+  return createBackgroundImgFromUrl(getTownBackgroundUrl(phase));
 }
 
 export function createChooseSlotBackgroundImg(): HTMLImageElement {
@@ -85,6 +113,13 @@ export function createWorldMapBackgroundImg(): HTMLImageElement {
 }
 
 /** URL портрета торговца (`weaponsmith`, `armorsmith`, `jeweler`, …). */
-export function resolveMerchantPortraitUrl(stem: string): string {
+export function resolveMerchantPortraitUrl(
+  stem: string,
+  fallbacks: readonly string[] = [],
+): string {
+  for (const candidate of [stem, ...fallbacks]) {
+    const url = tryResolveAssetBgUrl(candidate);
+    if (url) return url;
+  }
   return resolveAssetBgUrl(stem);
 }

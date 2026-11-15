@@ -12,7 +12,9 @@ import {
 import type { ItemDef } from "../items/types";
 import type { GameState } from "../meta/gameState";
 import {
+  defaultMerchantTab,
   ensureMarket,
+  isMarketTabOpen,
   mysticPinnedOffers,
   MERCHANT_BY_ID,
   MERCHANTS,
@@ -20,6 +22,7 @@ import {
   type MarketTabId,
   type MarketOffer,
 } from "../meta/market";
+import { phaseFromHour } from "../meta/worldTime";
 import { goldAmountNode } from "./goldIcon";
 import {
   buildItemCompareCards,
@@ -122,8 +125,11 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   title.id = "market-title";
   const headActions = el("div", "market-head-actions");
   const goldLine = el("div", "market-gold", "Золото: 0");
+  /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
   const btnRefresh = el("button", "market-btn", "Обновить ассортимент");
   btnRefresh.type = "button";
+  btnRefresh.hidden = !import.meta.env.DEV;
+  btnRefresh.setAttribute("aria-label", "Debug: обновить ассортимент");
   const closeBtn = el("button", "market-x");
   closeBtn.type = "button";
   closeBtn.setAttribute("aria-label", "Закрыть");
@@ -323,14 +329,31 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     handlers.onClose();
   }
 
-  function setActiveTab(id: MarketTabId): void {
-    if (activeTab !== id) clearDetail();
-    activeTab = id;
-    for (const [mid, btn] of tabBtns) {
-      btn.classList.toggle("active", mid === id);
+  function currentPhase() {
+    return phaseFromHour(stateRef?.hour ?? 8);
+  }
+
+  function syncTabVisibility(): void {
+    const phase = currentPhase();
+    for (const merchant of MERCHANTS) {
+      const btn = tabBtns.get(merchant.id);
+      if (!btn) continue;
+      const open = isMarketTabOpen(merchant.id, phase);
+      btn.hidden = !open;
+      btn.disabled = !open;
     }
-    btnRefresh.hidden = id === "buyback";
-    portrait.classList.toggle("market-portrait-buyback", id === "buyback");
+  }
+
+  function setActiveTab(id: MarketTabId): void {
+    const phase = currentPhase();
+    const next = isMarketTabOpen(id, phase) ? id : defaultMerchantTab(phase);
+    if (activeTab !== next) clearDetail();
+    activeTab = next;
+    for (const [mid, btn] of tabBtns) {
+      btn.classList.toggle("active", mid === next);
+    }
+    btnRefresh.hidden = !import.meta.env.DEV || next === "buyback";
+    portrait.classList.toggle("market-portrait-buyback", next === "buyback");
   }
 
   function renderPortrait(): void {
@@ -345,7 +368,10 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     const merchant = MERCHANT_BY_ID[activeTab];
     portraitImg.hidden = false;
     portrait.style.setProperty("--m-accent", merchant.accent);
-    portraitImg.src = resolveMerchantPortraitUrl(merchant.portraitStem);
+    portraitImg.src = resolveMerchantPortraitUrl(
+      merchant.portraitStem,
+      merchant.portraitFallbacks,
+    );
     portraitImg.alt = merchant.label;
     portraitName.textContent = merchant.label;
   }
@@ -470,6 +496,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   for (const [id, btn] of tabBtns) {
     btn.addEventListener("click", () => {
+      if (btn.hidden || btn.disabled) return;
       setActiveTab(id);
       render();
     });
@@ -498,15 +525,12 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       const wasOpen = !root.hidden;
       stateRef = state;
       ensureMarket(state);
+      syncTabVisibility();
       if (!wasOpen) {
         clearDetail();
-        setActiveTab(activeTab);
+        setActiveTab(defaultMerchantTab(currentPhase()));
       } else {
-        for (const [mid, btn] of tabBtns) {
-          btn.classList.toggle("active", mid === activeTab);
-        }
-        btnRefresh.hidden = activeTab === "buyback";
-        portrait.classList.toggle("market-portrait-buyback", activeTab === "buyback");
+        setActiveTab(activeTab);
       }
       root.hidden = false;
       render();

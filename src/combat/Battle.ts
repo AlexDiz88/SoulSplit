@@ -31,6 +31,10 @@ import {
 } from "../stats/formulas";
 import { getStat } from "../stats/sheet";
 import {
+  combatModsFromGlobalEffects,
+  type GlobalEffect,
+} from "../effects/globalEffects";
+import {
   applyProfileVitals,
   clampUnitBeltToEquipment,
   hydrateCombatUnit,
@@ -768,11 +772,19 @@ export class Battle {
     }
   }
 
+  /** Обновить моды героя от глобальных эффектов (тик таймеров вне юнита). */
+  syncHeroGlobalEffects(effects: GlobalEffect[]): void {
+    if (!this.hero) return;
+    this.hero.setMetaCombatMods(combatModsFromGlobalEffects(effects));
+    this.hud.setHero(this.hero);
+  }
+
   private spawnCrowd(): void {
     const heroProfile = this.config.hero;
     const init = hydrateCombatUnit(heroProfile);
     init.cardSize = HERO_SIZE;
     this.hero = new Unit(init);
+    this.hero.metaCombatMods = combatModsFromGlobalEffects(heroProfile.globalEffects);
     this.hero.rebuildSheetFromEquipment(sheetBaseFromProfile(heroProfile));
     applyProfileVitals(this.hero, heroProfile);
     const w = this.hero.equipment.mainhand?.weapon ?? this.hero.equipment.offhand?.weapon;

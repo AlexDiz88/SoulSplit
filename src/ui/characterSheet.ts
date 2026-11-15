@@ -489,11 +489,14 @@ function renderStats(hero: Unit | null, aspectTip: HTMLElement, tip: HTMLElement
   const equip = hero?.equipment ?? {};
   const asPct = sheet ? getStat(sheet, "attackSpeed") : 0;
   const baseCd = mainW?.baseCd ?? s?.autoAttackCd ?? 0;
-  const finalCd = sheet ? autoAttackInterval(baseCd, asPct) : baseCd;
+  const statusCdMult = hero?.autoCdMultiplier() ?? 1;
+  const finalCd = sheet
+    ? autoAttackInterval(baseCd, asPct, statusCdMult)
+    : baseCd * statusCdMult;
   const offCd = offW
     ? sheet
-      ? autoAttackInterval(offW.baseCd, asPct)
-      : offW.baseCd
+      ? autoAttackInterval(offW.baseCd, asPct, statusCdMult)
+      : offW.baseCd * statusCdMult
     : 0;
   const atkBonus = sheet ? getStat(sheet, "weaponAttackBonus") : 0;
   const fmtDmg = (w: { damageMin: number; damageMax: number }) =>
@@ -514,6 +517,12 @@ function renderStats(hero: Unit | null, aspectTip: HTMLElement, tip: HTMLElement
     ["Урон оружия", weaponLine],
   ];
   if (offWeaponLine) mainRows.push(["Урон левой руки", offWeaponLine]);
+  const dmgMult = hero?.metaCombatMods.damageDealtMult ?? 1;
+  if (Math.abs(dmgMult - 1) > 0.001) {
+    const signed = Math.round((dmgMult - 1) * 100);
+    const text = signed > 0 ? `+${signed}%` : `${signed}%`;
+    mainRows.push(["Модификатор урона", text]);
+  }
   mainRows.push(
     ["Интервал атаки", finalCd ? `${finalCd.toFixed(2)} с` : "-"],
   );

@@ -3,6 +3,7 @@
 export type HubLocationId =
   | "market"
   | "town_hall"
+  | "healer"
   | "forge"
   | "tavern"
   | "city_gate"
@@ -26,6 +27,7 @@ export const HUB_LOCATIONS: readonly HubLocationDef[] = [
   { id: "tavern", label: "Таверна", x: 0.46, y: 0.5 },
   { id: "city_gate", label: "Врата", x: 0.2, y: 0.38 },
   { id: "town_hall", label: "Ратуша", x: 0.83, y: 0.45 },
+  { id: "healer", label: "Лекарь", x: 0.94, y: 0.51 },
   { id: "forge", label: "Кузница", x: 0.62, y: 0.71 },
   { id: "market", label: "Рынок", x: 0.44, y: 0.78 },
 ];

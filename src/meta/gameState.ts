@@ -7,6 +7,7 @@ import {
   type NewHeroOptions,
 } from "./heroProfile";
 import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
+import { DEFAULT_DAY_INDEX, DEFAULT_WORLD_HOUR } from "./worldTime";
 
 export type RegionId =
   | "north_road"
@@ -63,7 +64,11 @@ export interface GameState {
   hero: HeroProfile;
   unlockedRegions: RegionId[];
   lastRegionId: RegionId | null;
-  /** Ассортимент рынка (реролл после похода / кнопкой). */
+  /** Игровой час 0..23 (без минут). */
+  hour: number;
+  /** Счётчик игровых суток (реролл торговцев при ++). */
+  dayIndex: number;
+  /** Ассортимент рынка (реролл на новый день / debug-кнопкой). */
   market: MarketState;
   /** Журнал квестов и пины трекера. */
   quests: QuestLogState;
@@ -74,6 +79,8 @@ export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
     hero: createNewHeroProfile(opts),
     unlockedRegions: [...ALL_REGION_IDS],
     lastRegionId: null,
+    hour: DEFAULT_WORLD_HOUR,
+    dayIndex: DEFAULT_DAY_INDEX,
     market: cloneMarketState(null),
     quests: createEmptyQuestLog(),
   };
@@ -86,6 +93,8 @@ export function cloneGameState(src: GameState): GameState {
     hero: cloneHeroProfile(src.hero),
     unlockedRegions: [...src.unlockedRegions],
     lastRegionId: src.lastRegionId,
+    hour: src.hour,
+    dayIndex: src.dayIndex,
     market: cloneMarketState(src.market),
     quests: cloneQuestLog(src.quests),
   };

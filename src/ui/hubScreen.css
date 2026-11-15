@@ -427,6 +427,23 @@
   pointer-events: auto;
 }
 
+.hub-clock {
+  min-width: 4.5rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(160, 150, 210, 0.35);
+  background: linear-gradient(180deg, rgba(28, 30, 48, 0.88), rgba(12, 14, 24, 0.92));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  color: var(--theme-mist);
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
 .hub-round-btn {
   appearance: none;
   margin: 0;

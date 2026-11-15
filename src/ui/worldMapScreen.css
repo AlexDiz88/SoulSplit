@@ -1,4 +1,4 @@
-/* Карта мира: арт без пелены, UI поверх */
+/* Карта мира: арт + лёгкая фазовая пелена (система времени), UI поверх */
 .world-map-screen {
   isolation: isolate;
   overflow: hidden;
@@ -15,10 +15,56 @@
   object-position: center center;
 }
 
-.world-map-layer {
+/* Освещение/затенение по фазе суток - не скрывает регионы. */
+.world-map-phase-veil {
   position: absolute;
   inset: 0;
   z-index: 1;
+  pointer-events: none;
+  transition: background 0.35s ease;
+}
+
+.world-map-phase-veil[data-phase="morning"] {
+  background: rgba(255, 210, 150, 0.1);
+}
+
+.world-map-phase-veil[data-phase="day"] {
+  background: transparent;
+}
+
+.world-map-phase-veil[data-phase="evening"] {
+  background: rgba(180, 90, 40, 0.18);
+}
+
+.world-map-phase-veil[data-phase="night"] {
+  background: rgba(8, 12, 28, 0.42);
+}
+
+.world-map-clock {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 4;
+  min-width: 4.5rem;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(160, 150, 210, 0.35);
+  background: linear-gradient(180deg, rgba(28, 30, 48, 0.88), rgba(12, 14, 24, 0.92));
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+  color: var(--theme-mist);
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.06em;
+  text-align: center;
+  pointer-events: none;
+  user-select: none;
+}
+
+.world-map-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
   pointer-events: none;
 }
 

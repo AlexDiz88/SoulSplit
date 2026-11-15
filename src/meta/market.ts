@@ -7,18 +7,23 @@ import {
   type PotionId,
 } from "../items/potions";
 import type { OffhandTypeId } from "../items/offhandTypes";
-import type { EquipSlotId } from "../items/slots";
+import { ALL_EQUIP_SLOTS, type EquipSlotId } from "../items/slots";
 import type { ItemDef, ItemRarity } from "../items/types";
 import { buyPrice, sellPrice } from "./economy";
 import type { Aspect } from "../types";
 import type { GameState } from "./gameState";
+import type { TownTimePhase } from "./worldTime";
 
 export type MerchantId =
   | "weaponsmith"
   | "armorer"
   | "jeweler"
   | "mystic"
-  | "baker";
+  | "baker"
+  | "night_fence";
+
+/** Часы работы: день (утро/день/вечер) или только ночь. */
+export type MerchantHours = "daytime" | "night";
 
 /** Вкладка рынка: торговцы + выкуп. */
 export type MarketTabId = MerchantId | "buyback";
@@ -41,6 +46,10 @@ export interface MerchantDef {
   accent: string;
   /** Имя файла в assets/art/backgrounds без расширения. */
   portraitStem: string;
+  /** Запасные стемы портрета, если основного файла ещё нет. */
+  portraitFallbacks?: readonly string[];
+  /** Когда торгует. */
+  hours: MerchantHours;
 }
 
 export interface MarketOffer {
@@ -67,6 +76,7 @@ export const MERCHANTS: readonly MerchantDef[] = [
     stockMax: 6,
     accent: "#c45a3a",
     portraitStem: "weaponsmith",
+    hours: "daytime",
   },
   {
     id: "armorer",
@@ -77,6 +87,7 @@ export const MERCHANTS: readonly MerchantDef[] = [
     stockMax: 10,
     accent: "#6a8a9a",
     portraitStem: "armorsmith",
+    hours: "daytime",
   },
   {
     id: "jeweler",
@@ -86,6 +97,7 @@ export const MERCHANTS: readonly MerchantDef[] = [
     stockMax: 4,
     accent: "#9a7acc",
     portraitStem: "jeweler",
+    hours: "daytime",
   },
   {
     id: "mystic",
@@ -96,6 +108,7 @@ export const MERCHANTS: readonly MerchantDef[] = [
     stockMax: 4,
     accent: "#5a9a5a",
     portraitStem: "mystic",
+    hours: "daytime",
   },
   {
     id: "baker",
@@ -105,12 +118,44 @@ export const MERCHANTS: readonly MerchantDef[] = [
     stockMax: 0,
     accent: "#c4a05a",
     portraitStem: "baker",
+    hours: "daytime",
+  },
+  {
+    id: "night_fence",
+    label: "Ночной скупщик",
+    slots: ALL_EQUIP_SLOTS,
+    stockMin: 3,
+    stockMax: 8,
+    accent: "#5a4a8a",
+    portraitStem: "night_fence",
+    portraitFallbacks: ["mystic"],
+    hours: "night",
   },
 ];
 
 export const MERCHANT_BY_ID: Record<MerchantId, MerchantDef> = Object.fromEntries(
   MERCHANTS.map((m) => [m.id, m]),
 ) as Record<MerchantId, MerchantDef>;
+
+export function isMerchantOpenAt(merchant: MerchantDef, phase: TownTimePhase): boolean {
+  if (merchant.hours === "night") return phase === "night";
+  return phase !== "night";
+}
+
+export function merchantsOpenAt(phase: TownTimePhase): readonly MerchantDef[] {
+  return MERCHANTS.filter((m) => isMerchantOpenAt(m, phase));
+}
+
+export function defaultMerchantTab(phase: TownTimePhase): MarketTabId {
+  const open = merchantsOpenAt(phase);
+  const first = open.find((m) => m.slots.length > 0) ?? open[0];
+  return first?.id ?? "buyback";
+}
+
+export function isMarketTabOpen(tab: MarketTabId, phase: TownTimePhase): boolean {
+  if (tab === "buyback") return true;
+  return isMerchantOpenAt(MERCHANT_BY_ID[tab], phase);
+}
 
 /** Чаще обычные, реже необычные, еще реже магические, крайне редко редкие. Эпик+ никогда. */
 const SHOP_RARITY: { rarity: ItemRarity; weight: number }[] = [
@@ -142,6 +187,7 @@ function emptyStock(): MarketStock {
     jeweler: [],
     mystic: [],
     baker: [],
+    night_fence: [],
   };
 }
 
@@ -264,6 +310,9 @@ export function ensureMarket(state: GameState): void {
       (Object.prototype.hasOwnProperty.call(srcStock, "mystic") ||
         Object.prototype.hasOwnProperty.call(srcStock, "herbalist")),
   );
+  const hadNightFence = Boolean(
+    srcStock && Object.prototype.hasOwnProperty.call(srcStock, "night_fence"),
+  );
   state.market = cloneMarketState(state.market);
   for (const merchant of MERCHANTS) {
     if (merchant.slots.length === 0) state.market.stock[merchant.id] = [];
@@ -281,6 +330,12 @@ export function ensureMarket(state: GameState): void {
     }
     if (!hadMystic) {
       state.market.stock.mystic = rollMerchantStock(MERCHANT_BY_ID.mystic, {
+        heroLevel: state.hero.level,
+        learnedAspects: state.hero.learnedAspects,
+      });
+    }
+    if (!hadNightFence) {
+      state.market.stock.night_fence = rollMerchantStock(MERCHANT_BY_ID.night_fence, {
         heroLevel: state.hero.level,
         learnedAspects: state.hero.learnedAspects,
       });

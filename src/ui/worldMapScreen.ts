@@ -4,6 +4,7 @@ import { tryResolveRegionArtUrl } from "../art/regionArt";
 import { getEnemyCardById } from "../combat/enemyCatalog";
 import { enemyLevelRangeForIds, getEnemyKind, type EnemyKind } from "../combat/enemies";
 import type { GameState, RegionId } from "../meta/gameState";
+import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import {
   encounterEnemyIds,
   getRegion,
@@ -11,9 +12,9 @@ import {
   isRegionUnlocked,
   type LocationDef,
 } from "../meta/regions";
+import { formatWorldClock, phaseFromHour, phaseLabelRu } from "../meta/worldTime";
 import { activeQuestNamesForRegion } from "../quests/questLog";
 import { coverLayout, projectLocation } from "./hubLocations";
-import { CURRENT_HUB_CITY_NAME } from "../meta/hubCity";
 import { SKULL_ICON_PATH } from "./enemyRankIcons";
 import { WORLD_MAP_SPOTS, type WorldMapSpotId } from "./worldMapLocations";
 import "./worldMapScreen.css";
@@ -119,6 +120,14 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   root.hidden = true;
   const bgImg = createWorldMapBackgroundImg();
   root.append(bgImg);
+
+  const phaseVeil = el("div", "world-map-phase-veil");
+  phaseVeil.setAttribute("aria-hidden", "true");
+  root.append(phaseVeil);
+
+  const clockLabel = el("div", "world-map-clock");
+  clockLabel.setAttribute("aria-live", "polite");
+  root.append(clockLabel);
 
   const map = el("div", "world-map-layer");
   map.setAttribute("aria-label", "Карта мира");
@@ -538,9 +547,20 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   const resizeObs = new ResizeObserver(() => scheduleLayout());
   resizeObs.observe(root);
 
+  const syncPhaseLighting = (state: GameState): void => {
+    const phase = phaseFromHour(state.hour);
+    const clock = formatWorldClock(state.hour);
+    root.dataset.phase = phase;
+    phaseVeil.dataset.phase = phase;
+    clockLabel.textContent = clock;
+    clockLabel.setAttribute("aria-label", `${phaseLabelRu(phase)}, ${clock}`);
+    clockLabel.dataset.phase = phase;
+  };
+
   return {
     show(state, opts) {
       stateRef = state;
+      syncPhaseLighting(state);
       closeRegionPanel();
       for (const spot of WORLD_MAP_SPOTS) {
         const btn = spotButtons.get(spot.id);

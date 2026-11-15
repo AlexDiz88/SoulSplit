@@ -558,7 +558,7 @@ textarea,
   pointer-events: none;
 }
 
-/* Глобальные эффекты: левый верх (город / карта) */
+/* Глобальные эффекты: левый верх (город / карта / бой) */
 .global-effects-hud {
   position: absolute;
   top: 16px;
@@ -567,7 +567,7 @@ textarea,
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  max-width: min(320px, 42vw);
+  max-width: min(420px, 48vw);
   pointer-events: none;
 }
 
@@ -589,6 +589,15 @@ textarea,
   pointer-events: auto;
   cursor: var(--cur-help);
   overflow: hidden;
+}
+
+.global-effect-icon.is-debuff {
+  border-color: #a05040;
+  background: rgba(28, 12, 10, 0.92);
+}
+
+.global-effect-icon.is-neutral {
+  border-color: #8a8060;
 }
 
 .global-effect-icon img {

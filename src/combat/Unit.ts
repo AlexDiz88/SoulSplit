@@ -1,7 +1,12 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
 import { ABILITIES } from "../abilities/definitions";
+import { attackSpeedIncreaseToHasteMult } from "../abilities/attackSpeed";
 import { GRID_SIZE } from "../abilities/shapes";
 import { sharpenPortraitTexture } from "../art/portraits";
+import {
+  emptyCombatMods,
+  type GlobalEffectCombatMods,
+} from "../effects/globalEffects";
 import type { EquipmentMap } from "../items/equipment";
 import {
   computeHeroSheet,
@@ -127,6 +132,8 @@ export class Unit {
   readonly boss: boolean;
   /** Слот суммона у портрета героя; null у героя и врагов. */
   summonSlot: SummonSlot | null;
+  /** Моды от глобальных эффектов (травма / баффы лекаря). */
+  metaCombatMods: GlobalEffectCombatMods = emptyCombatMods();
   autoTimer: number;
   /** Таймер автоатаки оружия в левой руке (dual wield). */
   offhandAutoTimer = 0;
@@ -794,10 +801,19 @@ export class Unit {
     return true;
   }
 
+  /** Наложить глобальные моды и пересчитать лист (травма / баффы лекаря). */
+  setMetaCombatMods(mods: GlobalEffectCombatMods): void {
+    this.metaCombatMods = { ...mods };
+    if (this.sheet || this.team === "player") {
+      this.rebuildSheetFromEquipment();
+    }
+  }
+
   /** Пересчёт листа из экипировки (после смены предмета). */
   rebuildSheetFromEquipment(base?: HeroStatSheet): void {
     if (base) this.sheetBase = base;
     this.sheet = computeHeroSheet(this.equipment, this.sheetBase);
+    this.applyMetaModsToSheet();
     this.blockActive = isBlockActive(this.equipment);
     this.parryActive = isParryActive(this.equipment);
     const maxHp = getStat(this.sheet, "maxHp");
@@ -807,6 +823,18 @@ export class Unit {
     const maxMana = getStat(this.sheet, "maxMana");
     this.mana = Math.min(maxMana, this.mana);
     this.redraw();
+  }
+
+  /** Макс. HP / мана от глобальных баффов. */
+  private applyMetaModsToSheet(): void {
+    if (!this.sheet) return;
+    const mods = this.metaCombatMods;
+    if (mods.maxHpMult !== 1) {
+      this.sheet.maxHp = Math.max(1, Math.round(this.sheet.maxHp * mods.maxHpMult));
+    }
+    if (mods.maxManaMult !== 1) {
+      this.sheet.maxMana = Math.max(0, Math.round(this.sheet.maxMana * mods.maxManaMult));
+    }
   }
 
   /** Синхронизация боевых stats оружия + пересчёт листа. */
@@ -900,9 +928,9 @@ export class Unit {
     return GRID_SIZE - this.pos.row;
   }
 
-  /** Множитель входящего урона от пассивок (например "За спинами"). */
+  /** Множитель входящего урона от пассивок и глобальных эффектов. */
   incomingDamageMult(): number {
-    let m = 1;
+    let m = this.metaCombatMods.damageTakenMult;
     for (const id of this.abilities) {
       const def = ABILITIES[id];
       const mult = def?.effects?.rearDamageTakenMult;
@@ -1037,7 +1065,7 @@ export class Unit {
   }
 
   atkMultiplier(): number {
-    let m = 1;
+    let m = this.metaCombatMods.damageDealtMult;
     const buff = this.statuses.find((s) => s.kind === "atk_buff");
     if (buff) m *= 1 + buff.potency;
     const debuff = this.statuses.find((s) => s.kind === "atk_debuff");
@@ -1048,6 +1076,8 @@ export class Unit {
 
   autoCdMultiplier(): number {
     let m = 1;
+    const asBonus = this.metaCombatMods.attackSpeedBonus;
+    if (asBonus > 0) m *= attackSpeedIncreaseToHasteMult(asBonus);
     const slow = this.statuses.find((s) => s.kind === "slow");
     if (slow) m *= 1 + slow.potency;
     const haste = this.statuses.find((s) => s.kind === "haste");

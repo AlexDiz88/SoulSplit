@@ -18,6 +18,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
+import { ensureWorldTime } from "./worldTime";
 import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
 
@@ -177,6 +178,7 @@ function normalizeState(parsed: GameState): GameState {
   ensureHeroStash(state.hero);
   ensureHeroBeltPotions(state.hero);
   ensureHeroGlobalEffects(state.hero);
+  ensureWorldTime(state);
   ensureMarket(state);
   ensureQuestLog(state);
   for (const entry of state.quests.entries) {
