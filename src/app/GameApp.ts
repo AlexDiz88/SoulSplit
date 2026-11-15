@@ -41,8 +41,12 @@ import {
   DEBUG_HOURS_STEP,
   formatWorldClock,
   HOURS_PER_SORTIE,
-  sleepUntilMorning,
 } from "../meta/worldTime";
+import {
+  ensureTavernDay,
+  isFireplaceResting,
+  stopFireplaceRest,
+} from "../meta/tavern";
 import { applyKillProgress } from "../quests/questLog";
 import type { AbilityId } from "../types";
 import type { BattleHudApi } from "../ui/BattleHud";
@@ -59,6 +63,7 @@ import { mountRewardScreen } from "../ui/rewardScreen";
 import { mountSaveSlotsScreen } from "../ui/saveSlotsScreen";
 import { mountSettingsScreen } from "../ui/settingsScreen";
 import { mountStartMenu } from "../ui/startMenu";
+import { mountTavernScreen } from "../ui/tavernScreen";
 import { mountTownHallScreen } from "../ui/townHallScreen";
 import { mountWorldMapScreen } from "../ui/worldMapScreen";
 
@@ -97,6 +102,7 @@ export class GameApp {
   private readonly merchant: ReturnType<typeof mountMerchantScreen>;
   private readonly townHall: ReturnType<typeof mountTownHallScreen>;
   private readonly healer: ReturnType<typeof mountHealerScreen>;
+  private readonly tavern: ReturnType<typeof mountTavernScreen>;
   private readonly questLog: ReturnType<typeof mountQuestLogScreen>;
   private readonly questTracker: ReturnType<typeof mountQuestTracker>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
@@ -134,9 +140,11 @@ export class GameApp {
 
     this.hub = mountHubScreen({
       onCharacter: () => {
+        // Инвентарь / лист не прерывают отдых у камина.
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
+        this.tavern.hide();
         this.questLog.hide();
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
@@ -145,6 +153,7 @@ export class GameApp {
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
+        this.tavern.hide();
         this.questLog.hide();
         // В городе сумка без листа персонажа бессмысленна - открываем оба окна.
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
@@ -152,16 +161,30 @@ export class GameApp {
       },
       onQuestLog: () => this.goQuestLog(),
       onItemGenerator: () => {
+        this.interruptFireplaceRest();
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
+        this.tavern.hide();
         this.questLog.hide();
         this.hud.openItemGenerator();
       },
-      onSave: () => this.manualSave(),
-      onSettings: () => this.goSettingsFromHub(),
-      onCharacterSelect: () => this.exitToSlots(),
-      onExitToMenu: () => this.exitToMenu(),
+      onSave: () => {
+        this.interruptFireplaceRest();
+        this.manualSave();
+      },
+      onSettings: () => {
+        this.interruptFireplaceRest();
+        this.goSettingsFromHub();
+      },
+      onCharacterSelect: () => {
+        this.interruptFireplaceRest();
+        this.exitToSlots();
+      },
+      onExitToMenu: () => {
+        this.interruptFireplaceRest();
+        this.exitToMenu();
+      },
       onLocation: (id) => this.onTownLocation(id),
       onStash: () => this.toggleTownStash(),
       onAddTestGold: () => this.addTestGold(),
@@ -217,6 +240,39 @@ export class GameApp {
       showToast: (t) => this.hud.showToast(t),
     });
 
+    this.tavern = mountTavernScreen({
+      onClose: () => {
+        this.persist();
+        this.syncGlobalEffectsHud();
+      },
+      onChanged: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        this.syncGlobalEffectsHud();
+        this.syncQuestTracker();
+      },
+      onSlept: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        this.syncGlobalEffectsHud();
+        if (this.tavern.isOpen() && this.state) {
+          this.tavern.show(this.state, this.hubUnit);
+        }
+      },
+      onLoadoutChanged: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+      },
+      onFireplaceChanged: () => {
+        this.syncGlobalEffectsHud();
+        this.persist();
+      },
+      showToast: (t) => this.hud.showToast(t),
+    });
+
     this.questLog = mountQuestLogScreen({
       onClose: () => {
         this.syncQuestTracker();
@@ -245,6 +301,7 @@ export class GameApp {
       if (this.merchant.isOpen()) this.merchant.hide();
       if (this.townHall.isOpen()) this.townHall.hide();
       if (this.healer.isOpen()) this.healer.hide();
+      if (this.tavern.isOpen()) this.tavern.hide();
       if (this.questLog.isOpen()) this.questLog.hide();
     });
 
@@ -385,9 +442,20 @@ export class GameApp {
           this.battle?.syncHeroGlobalEffects(this.state.hero.globalEffects);
         }
         if (this.healer.isOpen()) this.healer.show(this.state);
+        if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
       }
       this.globalEffectsHud.sync(this.state.hero.globalEffects);
     }, 1000);
+  }
+
+  /** Любое действие кроме инвентаря и журнала прерывает отдых у камина. */
+  private interruptFireplaceRest(): void {
+    if (!this.state || !isFireplaceResting(this.state)) return;
+    stopFireplaceRest(this.state);
+    this.syncGlobalEffectsHud();
+    this.persist();
+    this.hud.showToast("Отдых у камина прерван");
+    if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
   }
 
   private applyMetaModsToHubUnit(): void {
@@ -448,6 +516,7 @@ export class GameApp {
     this.merchant.hide();
     this.townHall.hide();
     this.healer.hide();
+    this.tavern.hide();
     this.questLog.hide();
     this.reward.hide();
     this.defeat.hide();
@@ -602,6 +671,7 @@ export class GameApp {
 
   goWorldMap(opts?: { openRegionId?: RegionId; openLocationId?: string }): void {
     const state = this.requireState();
+    this.interruptFireplaceRest();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
       syncProfileVitals(state.hero, this.hubUnit);
@@ -645,10 +715,11 @@ export class GameApp {
         this.goHealer();
         return;
       case "forge":
+        this.interruptFireplaceRest();
         this.hud.showToast("Кузница - скоро");
         return;
       case "tavern":
-        this.sleepAtTavern();
+        this.goTavern();
         return;
       case "stash":
         this.openTownStash();
@@ -668,12 +739,14 @@ export class GameApp {
 
   private openTownStash(): void {
     if (this.screen !== "hub") return;
+    this.interruptFireplaceRest();
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     ensureHeroStash(state.hero);
     this.merchant.hide();
     this.townHall.hide();
     this.healer.hide();
+    this.tavern.hide();
     this.questLog.hide();
     this.hud.openStash(state.hero.stash);
   }
@@ -686,38 +759,26 @@ export class GameApp {
     this.hub.show(this.state);
     if (this.merchant.isOpen()) this.merchant.show(this.state);
     if (this.healer.isOpen()) this.healer.show(this.state);
+    if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
     this.hud.showToast("+1000 золота");
   }
 
   /** Debug: +N часов к текущему времени. */
   private debugAdvanceWorldTime(): void {
     if (this.screen !== "hub" || !this.state) return;
+    this.interruptFireplaceRest();
     const result = debugAdvanceHours(this.state, DEBUG_HOURS_STEP);
+    ensureTavernDay(this.state);
     this.persist();
     this.hub.show(this.state);
     if (this.merchant.isOpen()) this.merchant.show(this.state);
+    if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
     const clock = formatWorldClock(result.hour);
     const msg =
       result.daysAdvanced > 0
         ? `Debug: +${DEBUG_HOURS_STEP}ч → ${clock}, новый день (торговцы обновлены)`
         : `Debug: +${DEBUG_HOURS_STEP}ч → ${clock}`;
     this.hud.showToast(msg);
-  }
-
-  /** Сон в таверне → 7:00 следующего дня + реролл торговцев. */
-  private sleepAtTavern(): void {
-    if (this.screen !== "hub") return;
-    const state = this.requireState();
-    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
-    this.merchant.hide();
-    this.townHall.hide();
-    this.healer.hide();
-    this.questLog.hide();
-    this.hud.closeOverlays();
-    sleepUntilMorning(state);
-    this.persist();
-    this.hub.show(state);
-    this.hud.showToast("Утро. Торговцы обновили товар.");
   }
 
   private noteDayRoll(daysAdvanced: number): void {
@@ -732,10 +793,12 @@ export class GameApp {
   /** Рынок поверх карты города + экип и сумка справа как у тайника. */
   goMerchant(): void {
     if (this.screen !== "hub") return;
+    this.interruptFireplaceRest();
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.townHall.hide();
     this.healer.hide();
+    this.tavern.hide();
     this.questLog.hide();
     this.hud.openMarketSide();
     this.merchant.show(state);
@@ -744,10 +807,12 @@ export class GameApp {
   /** Доска ратуши: взять / сдать. */
   goTownHall(): void {
     if (this.screen !== "hub") return;
+    this.interruptFireplaceRest();
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.merchant.hide();
     this.healer.hide();
+    this.tavern.hide();
     this.questLog.hide();
     this.hud.closeOverlays();
     this.townHall.show(state);
@@ -756,16 +821,32 @@ export class GameApp {
   /** Лекарь: травмы и временные усиления. */
   goHealer(): void {
     if (this.screen !== "hub") return;
+    this.interruptFireplaceRest();
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.merchant.hide();
     this.townHall.hide();
+    this.tavern.hide();
     this.questLog.hide();
     this.hud.closeOverlays();
     this.healer.show(state);
   }
 
-  /** Журнал взятых квестов (хаб / карта / бой). */
+  /** Таверна: слухи, номер, камин, комната подготовки. */
+  goTavern(): void {
+    if (this.screen !== "hub") return;
+    const state = this.requireState();
+    if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
+    ensureTavernDay(state);
+    this.merchant.hide();
+    this.townHall.hide();
+    this.healer.hide();
+    this.questLog.hide();
+    this.hud.closeOverlays();
+    this.tavern.show(state, this.hubUnit);
+  }
+
+  /** Журнал взятых квестов (хаб / карта / бой). Не прерывает отдых у камина. */
   goQuestLog(): void {
     if (this.screen !== "hub" && this.screen !== "world_map" && this.screen !== "battle") {
       return;
@@ -778,12 +859,14 @@ export class GameApp {
     }
     this.townHall.hide();
     this.healer.hide();
+    this.tavern.hide();
     this.merchant.hide();
     this.questLog.show(state);
   }
 
   startBattle(regionId: RegionId, locationId?: string): void {
     const state = this.requireState();
+    this.interruptFireplaceRest();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
       syncProfileVitals(state.hero, this.hubUnit);

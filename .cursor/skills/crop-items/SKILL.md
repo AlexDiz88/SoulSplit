@@ -21,6 +21,7 @@ assets/art/items/
   weapons/{dagger,sword,mace,axe,wand,bow,crossbow,2h_sword,2h_mace,2h_axe,staff,spear}/
   offhand/{shield,tome,orb,relic,quiver}/
   head/ chest/ neck/ shoulders/ hands/ ring/ waist/ legs/ feet/ trinket/
+  misc/        <- еда, расходники, прочий non-equip арт
   _inbox/      <- сырые кропы без типа (image-NN) и листы до разбора
   _starters/   <- starter_*.png вне пула дропа
 ```
@@ -86,6 +87,7 @@ python .cursor/skills/crop-items/scripts/crop_items.py --list-profiles
 | `dagger_common`, `sword_rare`, `2H_axe_magic`, … | `weapons/{type}/` (`2h_*` lowercase в пути) |
 | `shield_common`, `tome_rare`, … | `offhand/{type}/` |
 | `boots_uncommon`, `helmet_common`, `ring_magic`, … | слот (`feet/`, `head/`, `ring/`, …) |
+| `misc_common`, `misc_uncommon`, … | `misc/` |
 
 Алиасы слотов: `boots`→`feet`, `gloves`→`hands`, `belt`→`waist`, `amulet`→`neck`, и т.д. (как в `itemIcons.ts`).
 

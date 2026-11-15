@@ -18,6 +18,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
+import { ensureTavernDay } from "./tavern";
 import { ensureWorldTime } from "./worldTime";
 import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
@@ -181,6 +182,7 @@ function normalizeState(parsed: GameState): GameState {
   ensureWorldTime(state);
   ensureMarket(state);
   ensureQuestLog(state);
+  ensureTavernDay(state);
   for (const entry of state.quests.entries) {
     if (entry.rewardItem) remapItem(entry.rewardItem);
   }

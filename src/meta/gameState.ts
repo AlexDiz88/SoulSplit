@@ -7,6 +7,7 @@ import {
   type NewHeroOptions,
 } from "./heroProfile";
 import { cloneMarketState, refreshMarketStock, type MarketState } from "./market";
+import { cloneTavernState, createEmptyTavernState, type TavernState } from "./tavern";
 import { DEFAULT_DAY_INDEX, DEFAULT_WORLD_HOUR } from "./worldTime";
 
 export type RegionId =
@@ -72,6 +73,8 @@ export interface GameState {
   market: MarketState;
   /** Журнал квестов и пины трекера. */
   quests: QuestLogState;
+  /** Состояние таверны (слухи дня, отдых у камина). */
+  tavern: TavernState;
 }
 
 export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
@@ -83,6 +86,7 @@ export function createNewGameState(opts?: Partial<NewHeroOptions>): GameState {
     dayIndex: DEFAULT_DAY_INDEX,
     market: cloneMarketState(null),
     quests: createEmptyQuestLog(),
+    tavern: createEmptyTavernState(DEFAULT_DAY_INDEX),
   };
   refreshMarketStock(state);
   return state;
@@ -97,5 +101,6 @@ export function cloneGameState(src: GameState): GameState {
     dayIndex: src.dayIndex,
     market: cloneMarketState(src.market),
     quests: cloneQuestLog(src.quests),
+    tavern: cloneTavernState(src.tavern),
   };
 }

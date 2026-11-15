@@ -15,6 +15,7 @@ export interface GlobalEffect {
 
 export type GlobalEffectId =
   | "rest_recovery"
+  | "fireplace_rest"
   | "trauma_bruise"
   | "trauma_wound"
   | "trauma_fracture"
@@ -76,6 +77,19 @@ export const GLOBAL_EFFECT_DEFS: Record<GlobalEffectId, GlobalEffectDef> = {
     polarity: "buff",
     hpPerTick: 1,
     manaPerTick: 1,
+  },
+  fireplace_rest: {
+    id: "fireplace_rest",
+    name: "Отдых у камина",
+    description:
+      "У камина в таверне восстанавливает 3 здоровья и 3 маны каждую секунду. Любое действие, кроме инвентаря и журнала, прерывает отдых.",
+    iconUrl: vitalityElixirIconUrl,
+    defaultRemaining: null,
+    tickMode: "hub_vitals",
+    presence: "hub",
+    polarity: "buff",
+    hpPerTick: 3,
+    manaPerTick: 3,
   },
   trauma_bruise: {
     id: "trauma_bruise",
@@ -215,6 +229,7 @@ export function combatModsFromGlobalEffects(
 /**
  * Синхронизировать список с местом героя.
  * В городе - дописать hub-эффекты; на карте / в бою - снять их.
+ * `rest_recovery` и `fireplace_rest` взаимоисключающие: камин не авто-добавляется.
  */
 export function syncGlobalEffectsPresence(
   list: GlobalEffect[] | undefined | null,
@@ -224,8 +239,20 @@ export function syncGlobalEffectsPresence(
   if (!opts.inHub) {
     return out.filter((e) => GLOBAL_EFFECT_DEFS[e.id]?.presence !== "hub");
   }
+
+  const hasFireplace = out.some((e) => e.id === "fireplace_rest");
+  if (hasFireplace) {
+    out = out.filter((e) => e.id !== "rest_recovery");
+  } else {
+    out = out.filter((e) => e.id !== "fireplace_rest");
+    if (!out.some((e) => e.id === "rest_recovery")) {
+      out.push(makeGlobalEffect("rest_recovery"));
+    }
+  }
+
   for (const id of Object.keys(GLOBAL_EFFECT_DEFS) as GlobalEffectId[]) {
     if (GLOBAL_EFFECT_DEFS[id].presence !== "hub") continue;
+    if (id === "rest_recovery" || id === "fireplace_rest") continue;
     if (!out.some((e) => e.id === id)) out.push(makeGlobalEffect(id));
   }
   return out;

@@ -83,6 +83,7 @@ SLOT_FOLDERS: dict[str, str] = {
     "boots": "feet",
     "trinket": "trinket",
     "accessory": "trinket",
+    "misc": "misc",
 }
 
 
@@ -131,6 +132,7 @@ def resolve_out_dir(prefix: str) -> Path:
       shield_rare         -> offhand/shield/
       boots_uncommon      -> feet/
       ring_common         -> ring/
+      misc_common         -> misc/
     """
     if prefix == DEFAULT_PREFIX:
         return ITEMS_ROOT / "_inbox"
