@@ -18,6 +18,7 @@ const skeletonSpearman: EnemyDef = {
   cd: 2.0,
   aspect: "might",
   weapon: "spear",
+  defense: { evasion: 6 },
   description:
     "Костяной страж с ржавым копьём. Может атаковать со средней дистанции. Крепкий воин с хорошим уроном, не стоит его недооценивать.",
   hook: "reach 2, ряды 1-2, копейщик среднего ряда",

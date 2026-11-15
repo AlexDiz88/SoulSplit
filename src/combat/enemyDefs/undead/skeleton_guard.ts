@@ -18,6 +18,7 @@ const skeletonGuard: EnemyDef = {
   cd: 2.3,
   aspect: "might",
   weapon: "melee",
+  defense: { hasShield: true, blockChance: 20, evasion: 5 },
   description:
     "Костяной страж ближнего боя со щитом. Держит удар и бьёт тяжело, но медленно. Может блокировать удары.",
   hook: "reach 1, ряд 1, толстый мили-танк",

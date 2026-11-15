@@ -18,6 +18,7 @@ const huntress: EnemyDef = {
   cd: 2.8,
   aspect: "stealth",
   weapon: "bow",
+  defense: { evasion: 12 },
   description: "Меткий лучник среднего ряда. Мало здоровья, бьёт с дистанции.",
   hook: "reach 3, ряды 2-3, хрупкий лучник",
 };

@@ -18,6 +18,7 @@ const banditSlinger: EnemyDef = {
   cd: 2.0,
   aspect: "stealth",
   weapon: "bow",
+  defense: { evasion: 10 },
   description:
     "Мелкий жулик. Швыряется камнями со средней дистанции. Выглядит дохло, но может стать занозой в заднице, если долго его игнорировать.",
   hook: "reach 3, ряды 2-3, метатель булыжников",

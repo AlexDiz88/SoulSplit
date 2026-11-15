@@ -17,9 +17,15 @@ import {
   basesForOffhand,
   basesForSlot,
   rollItemBase,
+  rollWeaponParryBase,
   type ItemBaseDef,
 } from "./baseCatalog";
-import { familiesForSlot, isStatAllowedOnSlot } from "./slotRules";
+import {
+  familiesForSlot,
+  isStatAllowedOnSlot,
+  parryAffixIdForSlot,
+  type StatSlotContext,
+} from "./slotRules";
 import { isAspectItemSlot, type EquipSlotId } from "./slots";
 import {
   OFFHAND_TYPES,
@@ -27,6 +33,7 @@ import {
   type OffhandTypeId,
 } from "./offhandTypes";
 import {
+  isParryWeaponTypeId,
   rollWeaponStats,
   weaponTypesForSlot,
   WEAPON_TYPE_BY_ID,
@@ -58,20 +65,43 @@ function poolForFamilies(
   slot: EquipSlotId,
   families: ReadonlySet<string>,
   aspectTag: Aspect | undefined,
+  ctx?: StatSlotContext,
 ): AffixDef[] {
-  return AFFIX_CATALOG.filter((a) => {
+  const parryId = parryAffixIdForSlot(slot);
+  const fromFamilies = AFFIX_CATALOG.filter((a) => {
+    if (a.statId === "parryChance") {
+      if (!parryId || a.id !== parryId) return false;
+      return isStatAllowedOnSlot(slot, a.statId, ctx);
+    }
+    if (a.statId === "blockChance") {
+      return isStatAllowedOnSlot(slot, a.statId, ctx) && families.has(a.family);
+    }
     if (!families.has(a.family)) return false;
-    if (!isStatAllowedOnSlot(slot, a.statId)) return false;
+    if (!isStatAllowedOnSlot(slot, a.statId, ctx)) return false;
     if (a.family === "aspect") {
       if (!aspectTag) return false;
       return a.statId === `aspectDamage:${aspectTag}`;
     }
     return true;
   });
+
+  // Парирование на оружии / trinket вне defense-семьи.
+  if (parryId && isStatAllowedOnSlot(slot, "parryChance", ctx)) {
+    const has = fromFamilies.some((a) => a.id === parryId);
+    if (!has) {
+      const extra = AFFIX_CATALOG.find((a) => a.id === parryId);
+      if (extra) return [...fromFamilies, extra];
+    }
+  }
+  return fromFamilies;
 }
 
-function poolForSlot(slot: EquipSlotId, aspectTag: Aspect | undefined): AffixDef[] {
-  return poolForFamilies(slot, new Set(familiesForSlot(slot)), aspectTag);
+function poolForSlot(
+  slot: EquipSlotId,
+  aspectTag: Aspect | undefined,
+  ctx?: StatSlotContext,
+): AffixDef[] {
+  return poolForFamilies(slot, new Set(familiesForSlot(slot)), aspectTag, ctx);
 }
 
 function pickAffixSlot(def: AffixDef, rng: () => number): AffixSlot {
@@ -247,11 +277,12 @@ function rollAffixes(
   aspectTag: Aspect | undefined,
   rng: () => number,
   familyOverride?: ReadonlySet<string>,
+  ctx?: StatSlotContext,
 ): RolledAffix[] {
   const count = affixCountForRarity(rarity, rng);
   const pool = familyOverride
-    ? poolForFamilies(slot, familyOverride, aspectTag)
-    : poolForSlot(slot, aspectTag);
+    ? poolForFamilies(slot, familyOverride, aspectTag, ctx)
+    : poolForSlot(slot, aspectTag, ctx);
   // Уникальность только между аффиксами; база в usedStats не входит.
   const usedStats = new Set<string>();
   const affixes: RolledAffix[] = [];
@@ -314,7 +345,11 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
   if (slot === "mainhand") {
     const aspectTag = rollAspectTag(slot, rarity, opts.learnedAspects, opts.forceAspect, rng);
     const weapon = makeWeaponImplicit(itemLevel, rng, "mainhand", opts.forceWeaponType);
-    const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng);
+    const ctx: StatSlotContext = { weaponTypeId: weapon.typeId };
+    const affixes = rollAffixes(slot, rarity, itemLevel, aspectTag, rng, undefined, ctx);
+    const base = isParryWeaponTypeId(weapon.typeId)
+      ? rollWeaponParryBase(itemLevel, rng)
+      : undefined;
     return {
       id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,
       name: opts.name ?? defaultName(slot, rarity, aspectTag, weapon),
@@ -328,6 +363,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
       }),
       aspectTag,
       weapon,
+      base,
     };
   }
 
@@ -345,6 +381,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
       rng,
       allowsAspect,
     );
+    const ctx: StatSlotContext = { offhandTypeId: offhand.typeId };
     const affixes = rollAffixes(
       slot,
       rarity,
@@ -352,6 +389,7 @@ export function generateItem(opts: GenerateItemOptions): ItemDef {
       aspectTag,
       rng,
       new Set(typeDef.families),
+      ctx,
     );
     return {
       id: `item_${slot}_${rarity}_${Math.floor(rng() * 1e9)}`,

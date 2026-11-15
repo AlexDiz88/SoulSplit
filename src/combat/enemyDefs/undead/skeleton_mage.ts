@@ -19,6 +19,7 @@ const skeletonMage: EnemyDef = {
   aspect: "stealth",
   weapon: "staff",
   abilities: ["dark_arrow"],
+  defense: { evasion: 5 },
   description:
     'Костяной колдун дальнего боя. Между автоатаками применяет "Стрелу тьмы".',
   hook: 'reach 4, ряды 3-4, дальний маг со "Стрелой тьмы"',

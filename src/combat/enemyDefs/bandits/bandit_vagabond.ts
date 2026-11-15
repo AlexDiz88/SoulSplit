@@ -18,6 +18,7 @@ const banditVagabond: EnemyDef = {
   cd: 1.6,
   aspect: "stealth",
   weapon: "melee",
+  defense: { evasion: 10, parryChance: 6 },
   description:
     "Оборванец с тракта, лезет в упор с коротким кинжалом. Атакует часто, но не сильно и долго не держится.",
   hook: "reach 1, ряды 1-2, быстрый ближник с кинжалом",

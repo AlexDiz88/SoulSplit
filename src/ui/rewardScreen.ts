@@ -304,9 +304,25 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       renderStatCard("Лечение", formatNum(stats.healingDone), "is-heal"),
       renderStatCard("Криты", formatNum(stats.critsLanded), "is-crit"),
       renderStatCard("Уклонения", formatNum(stats.dodges), "is-dodge"),
-      renderStatCard("Блок", formatNum(stats.blockedDamage), "is-block", "скоро"),
+      renderStatCard("Блок", formatNum(stats.blockedDamage), "is-block"),
     );
     statsScroll.append(grid);
+
+    if (stats.parries > 0 || stats.blocks > 0) {
+      const avoid = el("div", "reward-section");
+      avoid.append(el("h3", "reward-section-title", "Избежание"));
+      const lines: string[] = [];
+      if (stats.blocks > 0) {
+        lines.push(`Блоков: ${formatNum(stats.blocks)}`);
+      }
+      if (stats.parries > 0) {
+        const dmgPart =
+          stats.parryDamage > 0 ? ` (ответка ${formatNum(stats.parryDamage)})` : "";
+        lines.push(`Парирований: ${formatNum(stats.parries)}${dmgPart}`);
+      }
+      avoid.append(el("p", "reward-empty", lines.join(" · ")));
+      statsScroll.append(avoid);
+    }
 
     if (stats.shieldAbsorbed > 0 || stats.enemyDodges > 0) {
       const extras = el("div", "reward-section");

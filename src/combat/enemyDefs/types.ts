@@ -2,6 +2,17 @@ import type { AbilityId, Aspect, WeaponKind } from "../../types";
 
 export type EnemyStatus = "черновик" | "одобрено" | "отказ" | "под вопросом";
 
+/** Защитные % врага (общий пайплайн с героем). */
+export interface EnemyDefense {
+  evasion?: number;
+  blockChance?: number;
+  parryChance?: number;
+  physDamageReduction?: number;
+  magicResist?: number;
+  /** Без щита блок в бою не активен, даже если есть %. */
+  hasShield?: boolean;
+}
+
 /**
  * Единый источник правды по врагу: бой + бестиарий.
  * Файл: `src/combat/enemyDefs/{groupId}/{id}.ts`, id = snake_case.
@@ -30,6 +41,8 @@ export interface EnemyDef {
   weapon: WeaponKind;
   /** Боевые id способностей (snake_case). Пусто = только автоатака. */
   abilities?: AbilityId[];
+  /** Уклонение / блок / парирование. */
+  defense?: EnemyDefense;
   description: string;
   /** Правило для игрока, если не влезло в description. */
   extra?: string;

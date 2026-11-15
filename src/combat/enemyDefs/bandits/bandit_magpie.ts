@@ -18,6 +18,7 @@ const banditMagpie: EnemyDef = {
   cd: 1.9,
   aspect: "stealth",
   weapon: "bow",
+  defense: { evasion: 12 },
   description:
     "Девушка с лёгким луком. Держит средний ряд и сыпет стрелами, пока соратники вяжут врага.",
   hook: "reach 3, ряды 2-3, лучница с частым луком",

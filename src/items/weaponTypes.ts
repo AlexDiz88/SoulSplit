@@ -30,6 +30,21 @@ export type WeaponTypeId =
   | "staff"
   | "spear";
 
+/** Типы оружия, на которых роллится / работает парирование. */
+export const PARRY_WEAPON_TYPE_IDS: ReadonlySet<WeaponTypeId> = new Set([
+  "dagger",
+  "sword",
+  "mace",
+  "axe",
+  "2H_sword",
+  "2H_mace",
+  "2H_axe",
+]);
+
+export function isParryWeaponTypeId(typeId: WeaponTypeId | undefined | null): boolean {
+  return Boolean(typeId && PARRY_WEAPON_TYPE_IDS.has(typeId));
+}
+
 export interface WeaponTypeDef {
   id: WeaponTypeId;
   name: string;

@@ -18,6 +18,7 @@ const scavenger: EnemyDef = {
   cd: 1.6,
   aspect: "stealth",
   weapon: "melee",
+  defense: { evasion: 10, parryChance: 5 },
   description:
     "Не до конца разложившийся труп. Возможно бывший житель города или заблудившийся торговец. Бросается в рукопашную и рвёт цель когтями.",
   hook: "reach 1, ряд 1, быстрый хрупкий ближник",

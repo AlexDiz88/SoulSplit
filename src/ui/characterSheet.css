@@ -401,6 +401,41 @@
   font-variant-numeric: tabular-nums;
 }
 
+.cs-stat-value-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: none;
+}
+
+.cs-stat b.cs-stat-inactive {
+  color: #e07070;
+}
+
+.cs-stat-warn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 1px solid #c45a4a;
+  background: rgba(80, 20, 16, 0.85);
+  color: #f0b0a8;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1;
+  cursor: var(--cur-help);
+}
+
+.cs-stat-tip-body {
+  padding: 8px 10px;
+  max-width: 280px;
+  color: #e8e2d4;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
 /* Ячейка: внешний слой - рамка, .cs-slot-face - заливка. */
 .cs-slot {
   --rar-c: var(--slot-glyph);

@@ -24,6 +24,9 @@ export function abilityCatalogKebabId(id: string): string {
 
 export function catalogDefToCombat(def: AbilityCatalogDef): AbilityDef | undefined {
   if (!def.combat) return undefined;
+  const damageChannel = def.combat.damageChannel ?? "magical";
+  const attackRange =
+    def.combat.attackRange ?? (def.combat.range === "melee" ? "melee" : "ranged");
   return {
     id: def.id as AbilityId,
     name: def.name,
@@ -36,6 +39,8 @@ export function catalogDefToCombat(def: AbilityCatalogDef): AbilityDef | undefin
     range: def.combat.range,
     reach: def.combat.reach,
     effects: def.combat.effects,
+    damageChannel,
+    attackRange,
   };
 }
 

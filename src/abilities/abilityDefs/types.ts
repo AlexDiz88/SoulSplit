@@ -1,4 +1,5 @@
 import type { AbilityEffects, Aspect, TargetMode } from "../../types";
+import type { AttackRange, DamageChannel } from "../../stats/formulas";
 
 export type AbilityStatus = "черновик" | "одобрено" | "отказ" | "под вопросом";
 
@@ -21,6 +22,10 @@ export interface AbilityCombatBlock {
   range: "melee" | "ranged" | "any";
   reach: number;
   effects?: AbilityEffects;
+  /** Канал прямого урона. По умолчанию magical. */
+  damageChannel?: DamageChannel;
+  /** Дальность удара для avoidance. По умолчанию из `range` (any → ranged). */
+  attackRange?: AttackRange;
 }
 
 /**

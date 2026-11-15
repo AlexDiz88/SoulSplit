@@ -83,30 +83,33 @@ export const ITEM_BASE_CATALOG: readonly ItemBaseDef[] = [
   base("head_phys_dr", slotPool("head"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
   base("head_magic_res", slotPool("head"), "magicResist", "сопротивления магии", tiersFromAffix("magic_res")),
   base("head_crit_dmg", slotPool("head"), "critDamage", "урона крита", tiersFromAffix("crit_dmg")),
+  base("head_block", slotPool("head"), "blockChance", "шанса блока", tiersFromAffix("block"), 6),
 
   // Chest
   base("chest_phys_dr", slotPool("chest"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
   base("chest_magic_res", slotPool("chest"), "magicResist", "сопротивления магии", tiersFromAffix("magic_res")),
-  base("chest_block", slotPool("chest"), "blockChance", "шанса блока", tiersFromAffix("block")),
-  base("chest_parry", slotPool("chest"), "parryChance", "шанса парирования", tiersFromAffix("parry")),
+  base("chest_block", slotPool("chest"), "blockChance", "шанса блока", tiersFromAffix("block"), 6),
   base("chest_evasion", slotPool("chest"), "evasion", "уклонения", tiersFromAffix("evasion")),
   base("chest_max_hp", slotPool("chest"), "maxHp", "здоровья", tiersFromAffix("max_hp")),
 
   // Shoulders
   base("shoulders_phys_dr", slotPool("shoulders"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
   base("shoulders_magic_res", slotPool("shoulders"), "magicResist", "сопротивления магии", tiersFromAffix("magic_res")),
+  base("shoulders_block", slotPool("shoulders"), "blockChance", "шанса блока", tiersFromAffix("block"), 6),
 
   // Hands
   base("hands_attack_speed", slotPool("hands"), "attackSpeed", "скорости атаки", tiersFromAffix("attack_speed")),
   base("hands_crit_chance", slotPool("hands"), "critChance", "шанса крита", tiersFromAffix("crit_chance")),
   base("hands_cast_speed", slotPool("hands"), "castSpeed", "скорости каста", tiersFromAffix("cast_speed")),
+  base("hands_parry", slotPool("hands"), "parryChance", "шанса парирования", tiersFromAffix("parry"), 5),
 
   // Waist
   base("waist_potion_count", slotPool("waist"), "potionCount", "доп. ячеек зелий", potionCapacityTiers(), 10),
+  base("waist_parry", slotPool("waist"), "parryChance", "шанса парирования", tiersFromAffix("parry"), 5),
 
   // Legs
   base("legs_phys_dr", slotPool("legs"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
-  base("legs_parry", slotPool("legs"), "parryChance", "шанса парирования", tiersFromAffix("parry")),
+  base("legs_block", slotPool("legs"), "blockChance", "шанса блока", tiersFromAffix("block"), 6),
 
   // Feet
   base("feet_phys_dr", slotPool("feet"), "physDamageReduction", "снижения физ. урона", tiersFromAffix("phys_dr")),
@@ -129,9 +132,21 @@ export const ITEM_BASE_CATALOG: readonly ItemBaseDef[] = [
   base("trinket_aspect", slotPool("trinket"), "aspectDamage", "урона аспекта", tiersFromAffix("aspect_dmg_fire"), 8),
   base("trinket_ability_dmg", slotPool("trinket"), "abilityDamage", "урона способностей", tiersFromAffix("ability_dmg")),
   base("trinket_cdr", slotPool("trinket"), "cooldownReduction", "скорости перезарядки", tiersFromAffix("cdr")),
+  base("trinket_parry", slotPool("trinket"), "parryChance", "шанса парирования", tiersFromAffix("parry_trinket"), 4),
 
-  // Offhands
-  base("shield_block", offhandPool("shield"), "blockChance", "шанса блока", tiersFromAffix("block")),
+  // Offhands - щит: крупный блок (~2.5x мелкого)
+  base("shield_block", offhandPool("shield"), "blockChance", "шанса блока", [
+    { id: "F", min: 5, max: 8 },
+    { id: "E", min: 6, max: 9 },
+    { id: "D", min: 8, max: 11 },
+    { id: "C", min: 10, max: 14 },
+    { id: "B", min: 12, max: 16 },
+    { id: "A1", min: 14, max: 19 },
+    { id: "A2", min: 16, max: 22 },
+    { id: "A3", min: 18, max: 25 },
+    { id: "A4", min: 20, max: 28 },
+    { id: "A5", min: 22, max: 30 },
+  ], 14),
   base("quiver_attack_speed", offhandPool("quiver"), "attackSpeed", "скорости атаки", tiersFromAffix("attack_speed")),
   base("tome_max_mana", offhandPool("tome"), "maxMana", "маны", tiersFromAffix("max_mana")),
   base("tome_mana_regen", offhandPool("tome"), "manaRegen", "маны/сек", tiersFromAffix("mana_regen")),
@@ -141,6 +156,20 @@ export const ITEM_BASE_CATALOG: readonly ItemBaseDef[] = [
   base("orb_ability_dmg", offhandPool("orb"), "abilityDamage", "урона способностей", tiersFromAffix("ability_dmg")),
   base("orb_cast_speed", offhandPool("orb"), "castSpeed", "скорости каста", tiersFromAffix("cast_speed")),
 ];
+
+/** База парирования на допустимом оружии (не через basesForSlot). */
+const WEAPON_PARRY_BASE_DEF = base(
+  "weapon_parry",
+  slotPool("mainhand"),
+  "parryChance",
+  "шанса парирования",
+  tiersFromAffix("parry"),
+  10,
+);
+
+export function rollWeaponParryBase(itemLevel: number, rng: () => number): RolledItemBase {
+  return rollItemBase({ def: WEAPON_PARRY_BASE_DEF, itemLevel, rng });
+}
 
 export const ITEM_BASE_BY_ID: Record<string, ItemBaseDef> = Object.fromEntries(
   ITEM_BASE_CATALOG.map((b) => [b.id, b]),

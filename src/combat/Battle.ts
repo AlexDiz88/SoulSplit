@@ -20,9 +20,14 @@ import {
   abilityCooldown,
   abilityPacketDamage,
   autoAttackDamage,
+  critMultiplier,
   manaCost,
+  PARRY_RIPOSTE_FRACTION,
   rollCrit,
   rollWeaponDamage,
+  type AttackPacket,
+  type AttackRange,
+  type DamageChannel,
 } from "../stats/formulas";
 import { getStat } from "../stats/sheet";
 import {
@@ -34,6 +39,8 @@ import {
 import { cloneInventory } from "../items/inventory";
 import type { EquipmentMap } from "../items/equipment";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
+import { getEnemyDef } from "./enemyDefs";
+import { buildEnemyDefenseSheet, enemyDefenseGates } from "./enemyDefense";
 import {
   POTION_HEAL_PCT,
   POTION_SHARED_CD,
@@ -778,6 +785,8 @@ export class Battle {
       const kind = spawn.kind;
       const elite = spawn.elite === true;
       const boss = kind.boss === true;
+      const defense = kind.defense ?? getEnemyDef(kind.id)?.defense;
+      const gates = enemyDefenseGates(kind.weapon, defense);
       const u = new Unit({
         id: `${kind.id}-${index}`,
         name: elite ? `Элита: ${kind.name}` : kind.name,
@@ -797,6 +806,9 @@ export class Battle {
         level: spawn.level,
         elite,
         boss,
+        sheet: buildEnemyDefenseSheet(defense),
+        blockActive: gates.blockActive,
+        parryActive: gates.parryActive,
       });
       this.unitsLayer.addChild(u.view);
       this.units.push(u);
@@ -1631,6 +1643,8 @@ export class Battle {
 
     const scaled = scaleEnemyStats(kind, level, false);
     const seq = this.enemySummonSeq++;
+    const defense = kind.defense ?? getEnemyDef(kind.id)?.defense;
+    const gates = enemyDefenseGates(kind.weapon, defense);
     const u = new Unit({
       // Суффикс только цифры: noteKill снимает `-\d+$` и получает kind.id.
       id: `${kind.id}-${9000 + seq}`,
@@ -1649,6 +1663,9 @@ export class Battle {
       abilities: kind.abilities ?? [],
       portraitUrl: kind.portraitUrl,
       level,
+      sheet: buildEnemyDefenseSheet(defense),
+      blockActive: gates.blockActive,
+      parryActive: gates.parryActive,
     });
     this.unitsLayer.addChild(u.view);
     this.units.push(u);
@@ -1782,32 +1799,195 @@ export class Battle {
     return { dmg, crit };
   }
 
+  private abilityAttackPacket(def?: AbilityDef): AttackPacket {
+    return {
+      channel: (def?.damageChannel ?? "magical") as DamageChannel,
+      range: (def?.attackRange ?? (def?.range === "melee" ? "melee" : "ranged")) as AttackRange,
+    };
+  }
+
+  /** Теги автоатаки: посох/жезл = magical; лук/арбалет = physical ranged. */
+  private autoAttackPacket(attacker: Unit, hand: AutoHand): AttackPacket {
+    if (attacker.team === "player") {
+      const w =
+        hand === "mainhand"
+          ? attacker.equipment.mainhand?.weapon
+          : attacker.equipment.offhand?.weapon;
+      return {
+        channel: w?.kind === "staff" ? "magical" : "physical",
+        range: w?.range === "ranged" ? "ranged" : "melee",
+      };
+    }
+    const kindId = attacker.id.replace(/-\d+$/, "");
+    const kind = getEnemyKind(kindId) ?? getEnemyDef(kindId);
+    const weapon = kind && "weapon" in kind ? kind.weapon : undefined;
+    return {
+      channel: weapon === "staff" ? "magical" : "physical",
+      range: attacker.stats.range === "ranged" ? "ranged" : "melee",
+    };
+  }
+
+  /**
+   * Floating text + battleStats для avoidance / попадания.
+   * Уклонение: "Промах" над атакующим. Блок / парир: на защитнике.
+   */
+  private resolveHitFeedback(
+    attacker: Unit,
+    target: Unit,
+    result: ReturnType<Unit["applyDamage"]>,
+    opts: {
+      crit: boolean;
+      source: "auto" | "ability";
+      abilityId?: AbilityId;
+      floatY: number;
+      hitColor: number;
+      playMelee?: boolean;
+    },
+  ): void {
+    if (result.outcome === "evaded") {
+      this.vfx.floatingText(attacker.center.x, attacker.center.y - opts.floatY, "Промах", 0x9aa3a0);
+      if (attacker.team === "player") {
+        if (opts.source === "auto") this.statsTracker.noteHeroAutoDodged();
+        else this.statsTracker.noteHeroAbilityDodged();
+      } else if (target.team === "player") {
+        this.statsTracker.noteHeroDodged();
+      }
+      return;
+    }
+
+    if (result.outcome === "parried") {
+      this.vfx.floatingText(target.center.x, target.center.y - opts.floatY, "Парир", 0xc8e0ff);
+      if (target.team === "player") this.statsTracker.noteHeroParried();
+      return;
+    }
+
+    if (result.outcome === "blocked") {
+      this.vfx.floatingText(target.center.x, target.center.y - opts.floatY - 14, "Блок", 0xa8c4e8);
+      if (target.team === "player") {
+        this.statsTracker.noteHeroBlocked(result.blockedAmount ?? 0);
+      }
+    }
+
+    if (opts.playMelee && (result.outcome === "none" || result.outcome === "blocked")) {
+      playMeleeHit(attacker.team === "player" ? "hero" : "enemy");
+    }
+
+    if (attacker.team === "player") {
+      if (opts.source === "auto") this.statsTracker.noteHeroAutoHit(result.dealt, opts.crit);
+      else if (opts.abilityId) {
+        this.statsTracker.noteHeroAbilityHit(opts.abilityId, result.dealt, opts.crit);
+      }
+    }
+    if (target.team === "player") {
+      this.statsTracker.noteHeroDamageTaken(result.dealt, result.absorbed);
+    }
+    if (result.dealt > 0) {
+      if (opts.playMelee) target.flash(0xffffff);
+      const label = opts.crit ? `${result.dealt}!` : `${result.dealt}`;
+      this.vfx.floatingText(
+        target.center.x,
+        target.center.y - opts.floatY,
+        label,
+        opts.hitColor,
+        { crit: opts.crit },
+      );
+    }
+  }
+
+  /** Ответка 25% среднего mainhand; крит ок; без повторного парирования. */
+  private applyParryRiposte(defender: Unit, originalAttacker: Unit): void {
+    if (!defender.alive || !originalAttacker.alive || this.destroyed) return;
+
+    let base = 0;
+    let crit = false;
+    if (defender.team === "player" && defender.sheet) {
+      const w = defender.equipment.mainhand?.weapon;
+      const avg = w ? (w.damageMin + w.damageMax) / 2 : defender.stats.atk;
+      crit = rollCrit(defender.sheet);
+      let dmg =
+        (avg + getStat(defender.sheet, "weaponAttackBonus")) *
+        PARRY_RIPOSTE_FRACTION *
+        defender.atkMultiplier();
+      if (crit) dmg *= critMultiplier(defender.sheet);
+      base = Math.max(0, Math.round(dmg));
+    } else {
+      crit = rollEnemyCrit();
+      let dmg = defender.stats.atk * PARRY_RIPOSTE_FRACTION * defender.atkMultiplier();
+      if (crit) dmg *= ENEMY_CRIT_DAMAGE / 100;
+      base = Math.max(0, Math.round(dmg));
+    }
+
+    if (base <= 0) return;
+
+    const result = originalAttacker.applyDamage(base, {
+      packet: { channel: "physical", range: "melee", isRiposte: true },
+    });
+
+    if (result.outcome === "evaded") {
+      this.vfx.floatingText(
+        defender.center.x,
+        defender.center.y - 18,
+        "Промах",
+        0x9aa3a0,
+      );
+      return;
+    }
+    if (result.outcome === "blocked") {
+      this.vfx.floatingText(
+        originalAttacker.center.x,
+        originalAttacker.center.y - 18,
+        "Блок",
+        0xa8c4e8,
+      );
+      if (originalAttacker.team === "player") {
+        this.statsTracker.noteHeroBlocked(result.blockedAmount ?? 0);
+      }
+    }
+
+    if (defender.team === "player") {
+      this.statsTracker.noteHeroParryDamage(result.dealt, crit);
+    }
+    if (originalAttacker.team === "player") {
+      this.statsTracker.noteHeroDamageTaken(result.dealt, result.absorbed);
+    }
+    if (result.dealt > 0) {
+      originalAttacker.flash(0xc8e0ff);
+      const label = crit ? `${result.dealt}!` : `${result.dealt}`;
+      this.vfx.floatingText(
+        originalAttacker.center.x,
+        originalAttacker.center.y - 22,
+        label,
+        crit ? 0xffb060 : 0xc8e0ff,
+        { crit },
+      );
+    }
+    if (!originalAttacker.alive) {
+      this.vfx.floatingText(originalAttacker.center.x, originalAttacker.center.y, "ПАЛ", 0xc45a4a);
+    }
+    if (result.castBroken) this.showCastInterrupted(originalAttacker);
+  }
+
   private dealAbilityDamage(attacker: Unit, target: Unit, base: number, def?: AbilityDef): void {
     const aspect = def?.aspect ?? attacker.aspect;
     const { dmg, crit } = this.scaleAbilityPacket(attacker, aspect, base);
-    const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "magical" });
+    const packet = this.abilityAttackPacket(def);
+    const result = target.applyDamage(dmg, { packet });
     target.flash(0xffffff);
-    if (evaded) {
-      this.vfx.floatingText(target.center.x, target.center.y - 10, "УКЛОН", 0x9aa3a0);
-      if (attacker.team === "player") this.statsTracker.noteHeroAbilityDodged();
-      else if (target.team === "player") this.statsTracker.noteHeroDodged();
-      return;
+    this.resolveHitFeedback(attacker, target, result, {
+      crit,
+      source: "ability",
+      abilityId: def?.id,
+      floatY: 10,
+      hitColor: crit ? 0xffb060 : 0xffe6a0,
+    });
+    if (result.outcome === "parried") {
+      this.applyParryRiposte(target, attacker);
     }
-    if (attacker.team === "player" && def) {
-      this.statsTracker.noteHeroAbilityHit(def.id, dealt, crit);
+    if (result.outcome === "none" || result.outcome === "blocked") {
+      if (!target.alive) this.vfx.floatingText(target.center.x, target.center.y, "ПАЛ", 0xc45a4a);
+      if (result.castBroken) this.showCastInterrupted(target);
+      else if (def?.effects?.interruptsCast) this.interruptUnitCast(target);
     }
-    if (target.team === "player") {
-      this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
-    }
-    if (dealt > 0) {
-      const label = crit ? `${dealt}!` : `${dealt}`;
-      this.vfx.floatingText(target.center.x, target.center.y - 10, label, crit ? 0xffb060 : 0xffe6a0, {
-        crit,
-      });
-    }
-    if (!target.alive) this.vfx.floatingText(target.center.x, target.center.y, "ПАЛ", 0xc45a4a);
-    if (castBroken) this.showCastInterrupted(target);
-    else if (def?.effects?.interruptsCast) this.interruptUnitCast(target);
   }
 
   /** DoT potency (урон/сек): плоский ability% + aspect%, без крита на наложении. */
@@ -1879,30 +2059,24 @@ export class Battle {
         dmg = enemyAutoAttackDamage(attacker.stats.atk, attacker.atkMultiplier(), crit);
       }
 
-      const { dealt, absorbed, castBroken, evaded } = target.applyDamage(dmg, { channel: "physical" });
-      if (evaded) {
-        this.vfx.floatingText(target.center.x, target.center.y - 8, "УКЛОН", 0x9aa3a0);
-        if (attacker.team === "player") this.statsTracker.noteHeroAutoDodged();
-        else if (target.team === "player") this.statsTracker.noteHeroDodged();
-        return;
+      const packet = this.autoAttackPacket(attacker, hand);
+      const result = target.applyDamage(dmg, { packet });
+      this.resolveHitFeedback(attacker, target, result, {
+        crit,
+        source: "auto",
+        floatY: 8,
+        hitColor: crit ? 0xffb060 : 0xe8e2d4,
+        playMelee: melee,
+      });
+      if (result.outcome === "parried") {
+        this.applyParryRiposte(target, attacker);
       }
-      if (melee) {
-        playMeleeHit(attacker.team === "player" ? "hero" : "enemy");
+      if (
+        (result.outcome === "none" || result.outcome === "blocked") &&
+        result.castBroken
+      ) {
+        this.showCastInterrupted(target);
       }
-      if (attacker.team === "player") {
-        this.statsTracker.noteHeroAutoHit(dealt, crit);
-      }
-      if (target.team === "player") {
-        this.statsTracker.noteHeroDamageTaken(dealt, absorbed);
-      }
-      if (dealt > 0) {
-        if (melee) target.flash(0xffffff);
-        const label = crit ? `${dealt}!` : `${dealt}`;
-        this.vfx.floatingText(target.center.x, target.center.y - 8, label, crit ? 0xffb060 : 0xe8e2d4, {
-          crit,
-        });
-      }
-      if (castBroken) this.showCastInterrupted(target);
     };
 
     const lunge = melee

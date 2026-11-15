@@ -6,9 +6,28 @@ import { OFFHAND_TYPE_BY_ID } from "./offhandTypes";
 import { isPotionItem } from "./potions";
 import type { ItemDef, WeaponImplicit } from "./types";
 import type { EquipSlotId } from "./slots";
-import { WEAPON_TYPE_BY_ID } from "./weaponTypes";
+import { isParryWeaponTypeId, WEAPON_TYPE_BY_ID } from "./weaponTypes";
 
 export type EquipmentMap = Partial<Record<EquipSlotId, ItemDef>>;
+
+export { isParryWeaponTypeId, PARRY_WEAPON_TYPE_IDS } from "./weaponTypes";
+
+/** Допустимое оружие парирования (по typeId; legacy melee без typeId - да). */
+export function isParryEligibleWeapon(weapon: WeaponImplicit | null | undefined): boolean {
+  if (!weapon) return false;
+  if (weapon.typeId) return isParryWeaponTypeId(weapon.typeId);
+  return weapon.kind === "melee";
+}
+
+/** Блок активен в бою только со щитом в левой руке. */
+export function isBlockActive(equipment: EquipmentMap): boolean {
+  return equipment.offhand?.offhand?.typeId === "shield";
+}
+
+/** Парирование активно в бою только с допустимым оружием в основной руке. */
+export function isParryActive(equipment: EquipmentMap): boolean {
+  return isParryEligibleWeapon(equipment.mainhand?.weapon);
+}
 
 export function affixesToDelta(items: ItemDef[]): Partial<Record<StatId, number>> {
   const delta: Partial<Record<StatId, number>> = {};

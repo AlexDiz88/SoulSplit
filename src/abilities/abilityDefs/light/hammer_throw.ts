@@ -25,6 +25,8 @@ const def: AbilityCatalogDef = {
     targetMode: "cell",
     range: "melee",
     reach: 1,
+    damageChannel: "physical",
+    attackRange: "melee",
     effects: { stunDuration: 2.2 },
   },
 };

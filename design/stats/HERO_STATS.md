@@ -50,14 +50,27 @@ packet = basePacket * (1 + amp / 100) * atkBuffMultiplier
 
 ### Входящий урон
 
+Каждый удар несёт теги: `channel` (physical | magical) и `range` (melee | ranged).
+DoT и magical не роллят avoidance.
+
+Порядок avoidance (только physical, не DoT):
+
 ```
-если evasion прокнул (шанс evasion%) - урон 0
-иначе:
-  physical -> dmg *= (1 - min(physDr%, 75) / 100)
-  magical  -> dmg *= (1 - min(magicResist%, 75) / 100)
+1) парирование (только melee; активен при допустимом оружии в mainhand)
+   -> урон 0 + ответка 25% среднего урона mainhand (крит ок; цель режет physDR)
+2) уклонение (melee + ranged)
+   -> урон 0 ("Промах" над атакующим)
+3) блок (melee + ranged; активен только со щитом в offhand)
+   -> срезает 50% урона, остаток идёт дальше
+4) physical -> dmg *= (1 - min(physDr%, 75) / 100)
+   magical  -> dmg *= (1 - min(magicResist%, 75) / 100)
 ```
 
-v1: автоатаки = physical; способности аспектов = magical.
+Парирующее оружие: dagger, sword, mace, axe, 2H_sword, 2H_mace, 2H_axe.
+Ответка не может снова парироваться (флаг isRiposte), но может быть уклонена / заблокирована.
+
+Автоатаки = physical + range оружия.
+Способности: явный `damageChannel` / `attackRange` в combat-дефе (по умолчанию magical).
 
 ### Каст / CD / мана
 
@@ -79,7 +92,8 @@ cost      = baseCost * (1 - min(manaCostReduction%, 75) / 100)
 - aspectDamage%[aspect]
 - critChance%, critDamage%
 - physDamageReduction%, magicResist%, evasion%
-- blockChance%, parryChance% (аффиксы есть, бой позже)
+- blockChance% (щит крупно; head/chest/shoulders/legs мелко; активен только со щитом)
+- parryChance% (оружие допустимых типов; hands/waist; trinket мелко; активно с допустимым MH)
 
 ## Оружие (свойства предмета, не лист)
 

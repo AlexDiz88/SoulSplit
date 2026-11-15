@@ -18,6 +18,7 @@ const wandering: EnemyDef = {
   cd: 2.4,
   aspect: "might",
   weapon: "melee",
+  defense: { evasion: 8, parryChance: 6 },
   description:
     "Тяжёлая туша, что бродит по двору руин. Атакует медленно, но довольно крепкий и может выдержать несколько ударов.",
   hook: "reach 1, ряд 1, медленный толстый ближник",

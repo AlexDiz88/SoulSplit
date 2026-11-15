@@ -163,4 +163,8 @@ export interface AbilityDef {
   /** 0 — на себя. Иначе ряды от героя: 1 ближний … 4 дальний. */
   reach: number;
   effects?: AbilityEffects;
+  /** Канал прямого урона способности. */
+  damageChannel?: "physical" | "magical";
+  /** Дальность удара для парирования / блока / уклонения. */
+  attackRange?: "melee" | "ranged";
 }

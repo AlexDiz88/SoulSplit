@@ -25,6 +25,8 @@ const def: AbilityCatalogDef = {
     targetMode: "enemy",
     range: "any",
     reach: 2,
+    damageChannel: "physical",
+    attackRange: "melee",
     effects: { invulnerableDuringCast: true },
   },
 };

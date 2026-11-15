@@ -18,6 +18,7 @@ const skeletonArcher: EnemyDef = {
   cd: 1.8,
   aspect: "stealth",
   weapon: "bow",
+  defense: { evasion: 10 },
   description:
     "Костяной стрелок, бродящий среди руин. Держит дистанцию и сыплет стрелами по врагам.",
   hook: "reach 3, ряды 2-3, хрупкий лучник с галереи",

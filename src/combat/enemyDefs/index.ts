@@ -2,7 +2,7 @@ import type { AbilityId } from "../../types";
 import { resolveEnemyPortraitUrl } from "../../art/enemyPortraits";
 import type { EnemyDef } from "./types";
 
-export type { EnemyDef, EnemyStatus } from "./types";
+export type { EnemyDef, EnemyDefense, EnemyStatus } from "./types";
 
 const modules = import.meta.glob<{ default: EnemyDef }>("./*/*.ts", {
   eager: true,
@@ -44,6 +44,7 @@ export function enemyDefToKind(def: EnemyDef): {
   cd: number;
   portraitUrl: string;
   abilities?: AbilityId[];
+  defense?: EnemyDef["defense"];
 } {
   return {
     id: def.id,
@@ -62,5 +63,6 @@ export function enemyDefToKind(def: EnemyDef): {
     cd: def.cd,
     portraitUrl: resolveEnemyPortraitUrl(def.portrait),
     ...(def.abilities?.length ? { abilities: def.abilities } : {}),
+    ...(def.defense ? { defense: def.defense } : {}),
   };
 }

@@ -18,6 +18,7 @@ const banditBrigadier: EnemyDef = {
   cd: 2.5,
   aspect: "might",
   weapon: "melee",
+  defense: { hasShield: true, blockChance: 18, evasion: 5 },
   description:
     "Толстяк со щитом и тяжёлой булавой. Закрывает ближний ряд и медленно крушит тех, кто полез вплотную. Имеет высокую живучесть.",
   hook: "reach 1, ряд 1, толстый танк со щитом и булавой",

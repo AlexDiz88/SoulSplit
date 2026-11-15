@@ -40,11 +40,14 @@ export interface BattleStats {
   dodges: number;
   /** Враг уклонился от удара героя. */
   enemyDodges: number;
-  /**
-   * Урон, заблокированный блоком.
-   * Пока механика блока в бою не работает - всегда 0.
-   */
+  /** Урон, срезанный блоком героя (до phys DR). */
   blockedDamage: number;
+  /** Сколько раз герой заблокировал удар. */
+  blocks: number;
+  /** Сколько раз герой парировал удар. */
+  parries: number;
+  /** Урон ответки от парирований героя. */
+  parryDamage: number;
   autoAttack: AutoAttackBattleStats;
   abilities: AbilityBattleStats[];
   killsByKind: EnemyKillStat[];
@@ -62,6 +65,9 @@ export function createEmptyBattleStats(): BattleStats {
     dodges: 0,
     enemyDodges: 0,
     blockedDamage: 0,
+    blocks: 0,
+    parries: 0,
+    parryDamage: 0,
     autoAttack: { hits: 0, damage: 0, crits: 0, dodged: 0 },
     abilities: [],
     killsByKind: [],
@@ -136,6 +142,22 @@ export class BattleStatsTracker {
 
   noteHeroDodged(): void {
     this.stats.dodges += 1;
+  }
+
+  noteHeroBlocked(blockedAmount: number): void {
+    this.stats.blocks += 1;
+    if (blockedAmount > 0) this.stats.blockedDamage += blockedAmount;
+  }
+
+  noteHeroParried(): void {
+    this.stats.parries += 1;
+  }
+
+  noteHeroParryDamage(dealt: number, crit: boolean): void {
+    if (dealt <= 0) return;
+    this.stats.parryDamage += dealt;
+    this.stats.damageDealt += dealt;
+    if (crit) this.stats.critsLanded += 1;
   }
 
   noteHeroDamageTaken(dealt: number, absorbed: number): void {

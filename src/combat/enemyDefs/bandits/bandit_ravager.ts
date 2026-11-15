@@ -18,6 +18,7 @@ const banditRavager: EnemyDef = {
   cd: 1.9,
   aspect: "might",
   weapon: "melee",
+  defense: { evasion: 12, parryChance: 5 },
   description:
     "Отчаянная воительница без щита: лезет в первый ряд с булавой и бьёт жёстко. Держится хуже Бригадира, но бьет чаще и больнее.",
   hook: "reach 1, ряд 1, агрессивный мили с булавой без щита",

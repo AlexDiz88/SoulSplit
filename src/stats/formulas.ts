@@ -3,6 +3,24 @@ import { abilityAmpPercent, getStat, type HeroStatSheet } from "./sheet";
 import { CHANCE_CAP, CRIT_DAMAGE_BASE } from "./statIds";
 
 export type DamageChannel = "physical" | "magical";
+export type AttackRange = "melee" | "ranged";
+
+/** Теги входящего удара для avoidance / mitigation. */
+export interface AttackPacket {
+  channel: DamageChannel;
+  range: AttackRange;
+  /** DoT не роллит парирование / уклонение / блок. */
+  isDot?: boolean;
+  /** Ответка парирования: сама не порождает новое парирование. */
+  isRiposte?: boolean;
+}
+
+export type AvoidanceOutcome = "parried" | "evaded" | "blocked" | "none";
+
+/** Доля урона, срезаемая успешным блоком (до phys DR). */
+export const BLOCK_DAMAGE_MITIGATION = 0.5;
+/** Доля среднего урона mainhand в ответке парирования. */
+export const PARRY_RIPOSTE_FRACTION = 0.25;
 
 export function clampChance(pct: number): number {
   return Math.max(0, Math.min(CHANCE_CAP, pct));
@@ -68,7 +86,40 @@ export function rollEvasion(sheet: HeroStatSheet, rng: () => number = Math.rando
   return rng() * 100 < clampChance(getStat(sheet, "evasion"));
 }
 
-/** Снижение входящего урона после уклонения. */
+export function rollChanceStat(
+  sheet: HeroStatSheet,
+  statId: "evasion" | "blockChance" | "parryChance",
+  rng: () => number = Math.random,
+): boolean {
+  return rng() * 100 < clampChance(getStat(sheet, statId));
+}
+
+export interface AvoidanceContext {
+  sheet: HeroStatSheet | null;
+  blockActive: boolean;
+  parryActive: boolean;
+  packet: AttackPacket;
+  rng?: () => number;
+}
+
+/**
+ * Порядок: парирование → уклонение → блок.
+ * Магия и DoT - без avoidance. Ответка не может быть парирована снова.
+ */
+export function resolveAvoidance(ctx: AvoidanceContext): AvoidanceOutcome {
+  const { sheet, packet } = ctx;
+  if (!sheet || packet.isDot || packet.channel !== "physical") return "none";
+  const rng = ctx.rng ?? Math.random;
+
+  if (!packet.isRiposte && ctx.parryActive && packet.range === "melee") {
+    if (rollChanceStat(sheet, "parryChance", rng)) return "parried";
+  }
+  if (rollChanceStat(sheet, "evasion", rng)) return "evaded";
+  if (ctx.blockActive && rollChanceStat(sheet, "blockChance", rng)) return "blocked";
+  return "none";
+}
+
+/** Снижение входящего урона после avoidance. */
 export function mitigateIncoming(raw: number, sheet: HeroStatSheet | null, channel: DamageChannel): number {
   if (!sheet || raw <= 0) return raw;
   if (channel === "physical") {

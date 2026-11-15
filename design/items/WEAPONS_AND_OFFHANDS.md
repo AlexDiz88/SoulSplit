@@ -36,13 +36,22 @@
 
 | id | Имя | grip | Роль |
 |---|---|---|---|
-| shield | Щит | offhand | защита (block / phys DR) |
+| shield | Щит | offhand | защита (крупный block; без щита блок неактивен) |
 | tome | Том | offhand | магия (каст / abilityDamage / aspect) |
 | orb | Сфера | offhand | магия (мана / aspect / лёгкий offense) |
 | relic | Реликвия | offhand | магия (широкий пул бонусов) |
 | quiver | Колчан | offhand | лучник (attackSpeed / crit / weaponAttackBonus) |
 
 Колчан не требует лук/арбалет жёстко - смысловой парный слот.
+
+## Парирование и блок
+
+- Парирование на оружии: `dagger`, `sword`, `mace`, `axe`, `2H_sword`, `2H_mace`, `2H_axe`.
+  Не на копье / посохе / жезле / луке / арбалете.
+- Также мелкий `parryChance` на перчатках, поясе и аксессуаре (`trinket`).
+- В бою парирование активно только если в mainhand допустимый тип.
+- Блок: крупный на щите; мелкий на head / chest / shoulders / legs.
+- В бою блок активен только со щитом в offhand.
 
 ## Dual wield
 

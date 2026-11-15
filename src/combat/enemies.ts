@@ -1,5 +1,6 @@
 import { GRID_SIZE } from "../abilities/shapes";
 import { ALL_ENEMY_DEFS, enemyDefToKind } from "./enemyDefs";
+import type { EnemyDefense } from "./enemyDefs/types";
 import { rollWeaponDamage } from "../stats/formulas";
 import type { AbilityId, Aspect, WeaponKind } from "../types";
 
@@ -50,6 +51,8 @@ export interface EnemyKind {
   portraitUrl: string;
   /** Способности монстра в бою. */
   abilities?: AbilityId[];
+  /** Защита: уклонение / блок / парирование. */
+  defense?: EnemyDefense;
 }
 
 /** Одобренные юниты из `src/combat/enemyDefs/{group}/{id}.ts`. */

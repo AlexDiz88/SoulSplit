@@ -21,6 +21,7 @@ const banditLeader: EnemyDef = {
   aspect: "might",
   weapon: "melee",
   abilities: ["behind_backs"],
+  defense: { evasion: 12, parryChance: 8 },
   description:
     "Главарь банды бандитов. Не лезет на рожон пока его приспешники бьются за него. Вступает в бой только в отчаянный момент, круша всех, кто до него добрался.",
   extra:

@@ -10,6 +10,7 @@ import {
 } from "../items/potions";
 import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
+import { isBlockActive, isParryActive } from "../items/equipment";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
@@ -192,7 +193,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
     applyMode();
     if (mode === "full") {
       identityHost.replaceChildren(renderIdentity(hero, aspectTip));
-      stats.replaceChildren(...renderStats(hero, aspectTip));
+      stats.replaceChildren(...renderStats(hero, aspectTip, tip));
     } else {
       identityHost.replaceChildren();
       stats.replaceChildren();
@@ -479,12 +480,13 @@ function slotButton(id: EquipSlotId, item?: ItemDef): HTMLButtonElement {
   return btn;
 }
 
-function renderStats(hero: Unit | null, aspectTip: HTMLElement): HTMLElement[] {
+function renderStats(hero: Unit | null, aspectTip: HTMLElement, tip: HTMLElement): HTMLElement[] {
   const sheet = hero?.sheet;
   const s = hero?.stats;
   const reach = s?.reach ?? 1;
   const mainW = hero?.equipment.mainhand?.weapon;
   const offW = hero?.equipment.offhand?.weapon;
+  const equip = hero?.equipment ?? {};
   const asPct = sheet ? getStat(sheet, "attackSpeed") : 0;
   const baseCd = mainW?.baseCd ?? s?.autoAttackCd ?? 0;
   const finalCd = sheet ? autoAttackInterval(baseCd, asPct) : baseCd;
@@ -545,22 +547,72 @@ function renderStats(hero: Unit | null, aspectTip: HTMLElement): HTMLElement[] {
     }
   }
 
-  return [
-    statGroup("Основные", mainRows),
-    statGroup("Защита", [
-      ["Снижение физ. урона", pct(sheet, "physDamageReduction")],
-      ["Сопротивление магии", pct(sheet, "magicResist")],
-      ["Уклонение", pct(sheet, "evasion")],
-      ["Блок", pct(sheet, "blockChance")],
-      ["Парирование", pct(sheet, "parryChance")],
-    ]),
-    offense,
-  ];
+  const defense = statGroup("Защита", [
+    ["Снижение физ. урона", pct(sheet, "physDamageReduction")],
+    ["Сопротивление магии", pct(sheet, "magicResist")],
+    ["Уклонение", pct(sheet, "evasion")],
+  ]);
+  const blockVal = sheet ? getStat(sheet, "blockChance") : 0;
+  const parryVal = sheet ? getStat(sheet, "parryChance") : 0;
+  defense.append(
+    gatedStatRow({
+      label: "Блок",
+      value: pct(sheet, "blockChance"),
+      inactive: blockVal > 0 && !isBlockActive(equip),
+      tipText:
+        "Сейчас не сработает: нужен щит в левой руке.",
+      tip,
+    }),
+    gatedStatRow({
+      label: "Парирование",
+      value: pct(sheet, "parryChance"),
+      inactive: parryVal > 0 && !isParryActive(equip),
+      tipText:
+        "Сейчас не сработает: нужно допустимое оружие ближнего боя в правой руке (мечи, топоры, булавы, кинжалы, в т.ч. двуручные).",
+      tip,
+    }),
+  );
+
+  return [statGroup("Основные", mainRows), defense, offense];
 }
 
 function pct(sheet: NonNullable<Unit["sheet"]> | null | undefined, id: StatId): string {
   if (!sheet) return "-";
   return formatStatValue(id, getStat(sheet, id));
+}
+
+function gatedStatRow(opts: {
+  label: string;
+  value: string;
+  inactive: boolean;
+  tipText: string;
+  tip: HTMLElement;
+}): HTMLElement {
+  const row = el("div", "cs-stat");
+  row.append(el("span", "", opts.label));
+  const valueWrap = el("span", "cs-stat-value-wrap");
+  const valueEl = el("b", opts.inactive ? "cs-stat-inactive" : "", opts.value);
+  valueWrap.append(valueEl);
+  if (opts.inactive) {
+    const warn = el("span", "cs-stat-warn");
+    warn.textContent = "!";
+    warn.setAttribute("aria-label", opts.tipText);
+    warn.addEventListener("pointerenter", () => {
+      opts.tip.hidden = false;
+      opts.tip.replaceChildren();
+      const body = el("div", "cs-stat-tip-body");
+      body.textContent = opts.tipText;
+      opts.tip.append(body);
+      placeItemTip(opts.tip, warn);
+    });
+    warn.addEventListener("pointerleave", () => {
+      opts.tip.hidden = true;
+      opts.tip.replaceChildren();
+    });
+    valueWrap.append(warn);
+  }
+  row.append(valueWrap);
+  return row;
 }
 
 function statGroup(title: string, rows: [string, string][]): HTMLElement {

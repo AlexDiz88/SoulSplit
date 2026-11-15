@@ -21,6 +21,7 @@ const skeletonKing: EnemyDef = {
   aspect: "necromancy",
   weapon: "staff",
   abilities: ["living_bones"],
+  defense: { evasion: 10 },
   description:
     "Владыка склепа с костяным жезлом. Держится в дальнем ряду и поднимает стражу из костей своих подданных.",
   extra: "Появляется только в ряду 4. Бьёт жезлом на всю глубину поля.",

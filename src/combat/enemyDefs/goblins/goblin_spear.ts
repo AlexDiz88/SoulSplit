@@ -18,6 +18,7 @@ const goblinSpear: EnemyDef = {
   cd: 1.7,
   aspect: "might",
   weapon: "spear",
+  defense: { evasion: 8 },
   description:
     "Низкорослый копейщик с северной дороги. Держит героя на полшага дальше обычного клинка.",
   hook: "reach 2, ряды 1-2, лёгкий ближник с копьём",

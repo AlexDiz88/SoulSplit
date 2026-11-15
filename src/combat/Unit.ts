@@ -3,7 +3,12 @@ import { ABILITIES } from "../abilities/definitions";
 import { GRID_SIZE } from "../abilities/shapes";
 import { sharpenPortraitTexture } from "../art/portraits";
 import type { EquipmentMap } from "../items/equipment";
-import { computeHeroSheet, equippedWeapon } from "../items/equipment";
+import {
+  computeHeroSheet,
+  equippedWeapon,
+  isBlockActive,
+  isParryActive,
+} from "../items/equipment";
 import {
   cloneInventory,
   equipFromInventory,
@@ -20,8 +25,11 @@ import type { HeroStatSheet } from "../stats/sheet";
 import { createBaseHeroSheet, getStat } from "../stats/sheet";
 import {
   autoAttackInterval,
+  BLOCK_DAMAGE_MITIGATION,
   mitigateIncoming,
-  rollEvasion,
+  resolveAvoidance,
+  type AttackPacket,
+  type AvoidanceOutcome,
   type DamageChannel,
 } from "../stats/formulas";
 import type { AbilityId, GridPos, Aspect, StatusEffect, Team, UnitStats } from "../types";
@@ -63,8 +71,12 @@ export interface UnitInit {
   cardSize?: number;
   /** Подпись на карточке без портрета, например тип оружия. */
   subtitle?: string;
-  /** Лист статов героя. У врагов обычно null. */
+  /** Лист статов героя. У врагов - защита из EnemyDef. */
   sheet?: HeroStatSheet | null;
+  /** Гейт блока (щит). Если не задан - выводится из экипа / false. */
+  blockActive?: boolean;
+  /** Гейт парирования (допустимое оружие). Если не задан - выводится из экипа / false. */
+  parryActive?: boolean;
   equipment?: EquipmentMap;
   /** Рюкзак 5×5. Только у героя. */
   inventory?: InventoryBag;
@@ -94,10 +106,14 @@ export class Unit {
   pos: GridPos;
   hp: number;
   mana: number;
-  /** Глобальный лист; null у простых врагов. */
+  /** Глобальный лист; null у простых врагов без защиты. */
   sheet: HeroStatSheet | null;
   /** База листа без экипа (уровень + levelBonuses). Экип накладывается сверху. */
   private sheetBase: HeroStatSheet;
+  /** Блок активен (щит у героя / hasShield у врага). */
+  blockActive: boolean;
+  /** Парирование активно (допустимое MH у героя / melee у врага). */
+  parryActive: boolean;
   equipment: EquipmentMap;
   /** Рюкзак 5×5 (один предмет = одна ячейка). */
   inventory: InventoryBag;
@@ -185,6 +201,10 @@ export class Unit {
     if (this.sheet) {
       this.stats.maxHp = getStat(this.sheet, "maxHp") || this.stats.maxHp;
     }
+    this.blockActive =
+      init.blockActive ?? (init.team === "player" ? isBlockActive(this.equipment) : false);
+    this.parryActive =
+      init.parryActive ?? (init.team === "player" ? isParryActive(this.equipment) : false);
     this.hp = this.stats.maxHp;
     this.mana = this.sheet ? getStat(this.sheet, "maxMana") : 0;
     this.autoTimer = Math.random() * init.stats.autoAttackCd * 0.5;
@@ -778,6 +798,8 @@ export class Unit {
   rebuildSheetFromEquipment(base?: HeroStatSheet): void {
     if (base) this.sheetBase = base;
     this.sheet = computeHeroSheet(this.equipment, this.sheetBase);
+    this.blockActive = isBlockActive(this.equipment);
+    this.parryActive = isParryActive(this.equipment);
     const maxHp = getStat(this.sheet, "maxHp");
     const ratio = this.stats.maxHp > 0 ? this.hp / this.stats.maxHp : 1;
     this.stats.maxHp = maxHp;
@@ -892,17 +914,67 @@ export class Unit {
 
   applyDamage(
     raw: number,
-    opts?: { channel?: DamageChannel },
-  ): { dealt: number; absorbed: number; castBroken: boolean; evaded?: boolean } {
-    if (!this.alive) return { dealt: 0, absorbed: 0, castBroken: false };
-    if (this.hasStatus("invuln")) return { dealt: 0, absorbed: raw, castBroken: false };
-    if (this.sheet && rollEvasion(this.sheet)) {
-      this.redraw();
-      return { dealt: 0, absorbed: 0, castBroken: false, evaded: true };
+    opts?: {
+      channel?: DamageChannel;
+      range?: AttackPacket["range"];
+      isDot?: boolean;
+      isRiposte?: boolean;
+      packet?: AttackPacket;
+    },
+  ): {
+    dealt: number;
+    absorbed: number;
+    castBroken: boolean;
+    outcome: AvoidanceOutcome;
+    evaded?: boolean;
+    parried?: boolean;
+    blocked?: boolean;
+    blockedAmount?: number;
+  } {
+    if (!this.alive) {
+      return { dealt: 0, absorbed: 0, castBroken: false, outcome: "none" };
     }
-    const channel = opts?.channel ?? "physical";
+    if (this.hasStatus("invuln")) {
+      return { dealt: 0, absorbed: raw, castBroken: false, outcome: "none" };
+    }
+
+    const packet: AttackPacket = opts?.packet ?? {
+      channel: opts?.channel ?? "physical",
+      range: opts?.range ?? "melee",
+      isDot: opts?.isDot,
+      isRiposte: opts?.isRiposte,
+    };
+
+    const outcome = resolveAvoidance({
+      sheet: this.sheet,
+      blockActive: this.blockActive,
+      parryActive: this.parryActive,
+      packet,
+    });
+
+    if (outcome === "parried" || outcome === "evaded") {
+      this.redraw();
+      return {
+        dealt: 0,
+        absorbed: 0,
+        castBroken: false,
+        outcome,
+        evaded: outcome === "evaded",
+        parried: outcome === "parried",
+      };
+    }
+
+    let incoming = raw;
+    let blockedAmount = 0;
+    if (outcome === "blocked") {
+      blockedAmount = Math.round(raw * BLOCK_DAMAGE_MITIGATION);
+      incoming = Math.max(0, raw - blockedAmount);
+    }
+
     const wasCasting = this.cast !== null;
-    let dmg = Math.round(mitigateIncoming(raw, this.sheet, channel) * this.incomingDamageMult());
+    let dmg = Math.round(
+      mitigateIncoming(incoming, this.sheet, packet.channel) * this.incomingDamageMult(),
+    );
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
     if (shield) {
@@ -920,7 +992,14 @@ export class Unit {
       this.cast = null;
     }
     this.redraw();
-    return { dealt: dmg, absorbed, castBroken: wasCasting && !this.alive };
+    return {
+      dealt: dmg,
+      absorbed,
+      castBroken: wasCasting && !this.alive,
+      outcome,
+      blocked: outcome === "blocked",
+      blockedAmount: blockedAmount > 0 ? blockedAmount : undefined,
+    };
   }
 
   /** Фактически восстановленное HP (с учётом потолка). */
@@ -1025,15 +1104,13 @@ export class Unit {
       if (channel === "physical") this.dotCarryPhysical = nextCarry;
       else this.dotCarryMagical = nextCarry;
       if (whole <= 0) return;
-      const result = this.applyDamage(whole, { channel });
+      const result = this.applyDamage(whole, { channel, isDot: true, range: "melee" });
       castBroken = castBroken || result.castBroken;
-      if (!result.evaded) {
-        dots.push({
-          dealt: result.dealt,
-          absorbed: result.absorbed,
-          sourceAbilityId: bucket.sourceAbilityId,
-        });
-      }
+      dots.push({
+        dealt: result.dealt,
+        absorbed: result.absorbed,
+        sourceAbilityId: bucket.sourceAbilityId,
+      });
     };
 
     applyDot(bleed, "physical");

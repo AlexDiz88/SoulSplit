@@ -1,6 +1,8 @@
 import type { AffixFamily } from "../stats/statIds";
+import type { OffhandTypeId } from "./offhandTypes";
 import type { EquipSlotId } from "./slots";
 import { isWeaponSlot } from "./slots";
+import { isParryWeaponTypeId, type WeaponTypeId } from "./weaponTypes";
 
 /**
  * Допустимые семьи аффиксов по слоту.
@@ -38,6 +40,20 @@ export const SLOT_STAT_DENY: Partial<Record<EquipSlotId, ReadonlySet<string>>> =
   offhand: new Set(["evasion"]),
 };
 
+export interface StatSlotContext {
+  weaponTypeId?: WeaponTypeId | null;
+  offhandTypeId?: OffhandTypeId | null;
+}
+
+const BLOCK_ARMOR_SLOTS: ReadonlySet<EquipSlotId> = new Set([
+  "head",
+  "chest",
+  "shoulders",
+  "legs",
+]);
+
+const PARRY_GEAR_SLOTS: ReadonlySet<EquipSlotId> = new Set(["hands", "waist", "trinket"]);
+
 export function familiesForSlot(slot: EquipSlotId): AffixFamily[] {
   return SLOT_FAMILIES[slot];
 }
@@ -46,9 +62,38 @@ export function deniedStatsForSlot(slot: EquipSlotId): string[] {
   return [...(SLOT_STAT_DENY[slot] ?? [])];
 }
 
-export function isStatAllowedOnSlot(slot: EquipSlotId, statId: string): boolean {
+/**
+ * Разрешён ли стат на слоте.
+ * blockChance / parryChance - жёсткий allowlist (не через широкую defense-семью).
+ */
+export function isStatAllowedOnSlot(
+  slot: EquipSlotId,
+  statId: string,
+  ctx?: StatSlotContext,
+): boolean {
   const deny = SLOT_STAT_DENY[slot];
   if (deny?.has(statId)) return false;
-  if (statId.startsWith("aspectDamage:") && !isWeaponSlot(slot) && slot !== "trinket") return false;
+
+  if (statId === "blockChance") {
+    if (slot === "offhand") return ctx?.offhandTypeId === "shield";
+    return BLOCK_ARMOR_SLOTS.has(slot);
+  }
+
+  if (statId === "parryChance") {
+    if (slot === "mainhand") return isParryWeaponTypeId(ctx?.weaponTypeId ?? undefined);
+    if (slot === "offhand") return false;
+    return PARRY_GEAR_SLOTS.has(slot);
+  }
+
+  if (statId.startsWith("aspectDamage:") && !isWeaponSlot(slot) && slot !== "trinket") {
+    return false;
+  }
   return true;
+}
+
+/** Какой affix id парирования пускать в пул слота. */
+export function parryAffixIdForSlot(slot: EquipSlotId): "parry" | "parry_trinket" | null {
+  if (slot === "trinket") return "parry_trinket";
+  if (slot === "hands" || slot === "waist" || slot === "mainhand") return "parry";
+  return null;
 }

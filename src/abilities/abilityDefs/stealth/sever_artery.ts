@@ -25,6 +25,8 @@ const def: AbilityCatalogDef = {
     targetMode: "enemy",
     range: "melee",
     reach: 1,
+    damageChannel: "physical",
+    attackRange: "melee",
     effects: { bleedPerSec: 12, bleedDuration: 5 },
   },
 };
