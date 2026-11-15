@@ -50,6 +50,8 @@ export interface HubScreenHandlers {
   onAddTestGold: () => void;
   /** Debug: сдвиг времени (+6ч). */
   onDebugAdvanceTime?: () => void;
+  /** Отдых у камина: хоткеи и клики города недоступны. */
+  isInteractionLocked?: () => boolean;
 }
 
 function el<K extends keyof HTMLElementTagNameMap>(
@@ -353,6 +355,11 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       target instanceof HTMLSelectElement;
 
     if (!typing && !ev.repeat && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      const locked = handlers.isInteractionLocked?.() === true;
+      if (locked && (ev.code === "KeyX" || ev.code === "KeyS" || ev.code === "KeyI")) {
+        ev.preventDefault();
+        return;
+      }
       if (ev.code === "KeyX") {
         ev.preventDefault();
         toggleFullscreen();

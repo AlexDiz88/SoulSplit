@@ -82,7 +82,7 @@ export const GLOBAL_EFFECT_DEFS: Record<GlobalEffectId, GlobalEffectDef> = {
     id: "fireplace_rest",
     name: "Отдых у камина",
     description:
-      "У камина в таверне восстанавливает 3 здоровья и 3 маны каждую секунду. Любое действие, кроме инвентаря и журнала, прерывает отдых.",
+      "Отдых у камина в таверне помогает быстрее восстановить здоровье и ману. +3 здоровья и маны/сек.",
     iconUrl: vitalityElixirIconUrl,
     defaultRemaining: null,
     tickMode: "hub_vitals",

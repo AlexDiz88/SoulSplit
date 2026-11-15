@@ -43,9 +43,9 @@ import {
   HOURS_PER_SORTIE,
 } from "../meta/worldTime";
 import {
+  endFireplaceRestSession,
   ensureTavernDay,
   isFireplaceResting,
-  stopFireplaceRest,
 } from "../meta/tavern";
 import { applyKillProgress } from "../quests/questLog";
 import type { AbilityId } from "../types";
@@ -139,8 +139,9 @@ export class GameApp {
     });
 
     this.hub = mountHubScreen({
+      isInteractionLocked: () => this.isFireplaceRestLocked(),
       onCharacter: () => {
-        // Инвентарь / лист не прерывают отдых у камина.
+        if (this.blockIfFireplaceResting()) return;
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
@@ -150,6 +151,7 @@ export class GameApp {
         else this.hud.openCharacter();
       },
       onInventory: () => {
+        if (this.blockIfFireplaceResting()) return;
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
@@ -159,9 +161,9 @@ export class GameApp {
         if (this.hud.isInventoryOpen()) this.hud.closeInventory();
         else this.hud.openCharacter();
       },
-      onQuestLog: () => this.goQuestLog(),
+      onQuestLog: () => this.goQuestLog({ fromFireplaceRest: false }),
       onItemGenerator: () => {
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.merchant.hide();
         this.townHall.hide();
         this.healer.hide();
@@ -170,19 +172,19 @@ export class GameApp {
         this.hud.openItemGenerator();
       },
       onSave: () => {
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.manualSave();
       },
       onSettings: () => {
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.goSettingsFromHub();
       },
       onCharacterSelect: () => {
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.exitToSlots();
       },
       onExitToMenu: () => {
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.exitToMenu();
       },
       onLocation: (id) => this.onTownLocation(id),
@@ -267,10 +269,13 @@ export class GameApp {
         if (this.state && this.screen === "hub") this.hub.show(this.state);
       },
       onFireplaceChanged: () => {
+        this.syncFireplaceLock();
         this.syncGlobalEffectsHud();
+        this.syncQuestTracker();
         this.persist();
       },
-      showToast: (t) => this.hud.showToast(t),
+      onOpenQuestLog: () => this.goQuestLog({ fromFireplaceRest: true }),
+      isQuestLogOpen: () => this.questLog.isOpen(),
     });
 
     this.questLog = mountQuestLogScreen({
@@ -285,7 +290,7 @@ export class GameApp {
     });
 
     this.questTracker = mountQuestTracker({
-      onToggle: () => this.goQuestLog(),
+      onToggle: () => this.goQuestLog({ fromFireplaceRest: false }),
     });
 
     this.hud.setOnMarketSell((item, price) => {
@@ -301,7 +306,8 @@ export class GameApp {
       if (this.merchant.isOpen()) this.merchant.hide();
       if (this.townHall.isOpen()) this.townHall.hide();
       if (this.healer.isOpen()) this.healer.hide();
-      if (this.tavern.isOpen()) this.tavern.hide();
+      // Во время отдыха таверна остаётся открытой.
+      if (this.tavern.isOpen() && !this.isFireplaceRestLocked()) this.tavern.hide();
       if (this.questLog.isOpen()) this.questLog.hide();
     });
 
@@ -317,8 +323,9 @@ export class GameApp {
       if (this.screen !== "hub" && this.screen !== "world_map" && this.screen !== "battle") {
         return;
       }
+      // Во время отдыха J открывает журнал (единственный разрешённый хоткей).
       ev.preventDefault();
-      this.goQuestLog();
+      this.goQuestLog({ fromFireplaceRest: true });
     });
 
     this.reward = mountRewardScreen({
@@ -448,14 +455,24 @@ export class GameApp {
     }, 1000);
   }
 
-  /** Любое действие кроме инвентаря и журнала прерывает отдых у камина. */
-  private interruptFireplaceRest(): void {
-    if (!this.state || !isFireplaceResting(this.state)) return;
-    stopFireplaceRest(this.state);
-    this.syncGlobalEffectsHud();
-    this.persist();
-    this.hud.showToast("Отдых у камина прерван");
-    if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
+  private isFireplaceRestLocked(): boolean {
+    return Boolean(this.state && isFireplaceResting(this.state));
+  }
+
+  private syncFireplaceLock(): void {
+    this.hud.setHubActionLock(this.isFireplaceRestLocked());
+  }
+
+  /** Блокирует действие во время отдыха у камина (не прерывает отдых). */
+  private blockIfFireplaceResting(): boolean {
+    return this.isFireplaceRestLocked();
+  }
+
+  /** Тихий сброс при выходе / входе / загрузке. */
+  private clearFireplaceRestSilent(): void {
+    if (!this.state) return;
+    endFireplaceRestSession(this.state);
+    this.syncFireplaceLock();
   }
 
   private applyMetaModsToHubUnit(): void {
@@ -480,6 +497,7 @@ export class GameApp {
   }
 
   private leaveActiveGame(): void {
+    this.clearFireplaceRestSilent();
     this.stopGlobalEffectsTick();
     this.persist();
     this.destroyBattle();
@@ -488,6 +506,7 @@ export class GameApp {
     this.activeSlot = -1;
     this.prevUnlocked = new Set();
     this.hud.closeOverlays();
+    this.syncFireplaceLock();
     this.syncGlobalEffectsHud();
   }
 
@@ -516,16 +535,17 @@ export class GameApp {
     this.merchant.hide();
     this.townHall.hide();
     this.healer.hide();
-    this.tavern.hide();
+    this.tavern.hide(true);
     this.questLog.hide();
     this.reward.hide();
     this.defeat.hide();
   }
 
-  /** Трекер: hub / карта / бой. */
+  /** Трекер: hub / карта / бой. Во время отдыха у камина скрыт. */
   private syncQuestTracker(): void {
     const visible =
-      this.screen === "hub" || this.screen === "world_map" || this.screen === "battle";
+      (this.screen === "hub" || this.screen === "world_map" || this.screen === "battle") &&
+      !this.isFireplaceRestLocked();
     this.questTracker.setVisible(visible);
     this.questTracker.refresh(this.state);
   }
@@ -594,6 +614,9 @@ export class GameApp {
     this.state = cloneGameState(state);
     this.state.unlockedRegions = syncUnlockedRegions(this.state.hero.level, this.state.unlockedRegions);
     this.prevUnlocked = new Set(this.state.unlockedRegions);
+    // F5 / загрузка слота: отдых у камина всегда сбрасывается.
+    this.clearFireplaceRestSilent();
+    this.persist();
     this.goHub();
   }
 
@@ -615,6 +638,7 @@ export class GameApp {
 
   /** Быстрый поход: последняя зона, иначе карта мира. */
   embarkQuick(): void {
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     const last = state.lastRegionId;
@@ -655,6 +679,7 @@ export class GameApp {
     this.hub.show(state);
     ensureHeroGlobalEffects(state.hero, true);
     this.startGlobalEffectsTick();
+    this.syncFireplaceLock();
     this.syncGlobalEffectsHud();
     this.syncQuestTracker();
     this.persist();
@@ -670,8 +695,8 @@ export class GameApp {
   }
 
   goWorldMap(opts?: { openRegionId?: RegionId; openLocationId?: string }): void {
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
-    this.interruptFireplaceRest();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
       syncProfileVitals(state.hero, this.hubUnit);
@@ -715,7 +740,7 @@ export class GameApp {
         this.goHealer();
         return;
       case "forge":
-        this.interruptFireplaceRest();
+        if (this.blockIfFireplaceResting()) return;
         this.hud.showToast("Кузница - скоро");
         return;
       case "tavern":
@@ -730,6 +755,7 @@ export class GameApp {
   /** Открыть / закрыть тайник (кнопка города и клавиша S). */
   private toggleTownStash(): void {
     if (this.screen !== "hub") return;
+    if (this.blockIfFireplaceResting()) return;
     if (this.hud.isStashOpen()) {
       this.hud.closeOverlays();
       return;
@@ -739,7 +765,7 @@ export class GameApp {
 
   private openTownStash(): void {
     if (this.screen !== "hub") return;
-    this.interruptFireplaceRest();
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     ensureHeroStash(state.hero);
@@ -754,6 +780,7 @@ export class GameApp {
   /** Тест: +1000 золота на топбаре. */
   private addTestGold(): void {
     if (this.screen !== "hub" || !this.state) return;
+    if (this.blockIfFireplaceResting()) return;
     this.state.hero.gold += 1000;
     this.persist();
     this.hub.show(this.state);
@@ -766,7 +793,7 @@ export class GameApp {
   /** Debug: +N часов к текущему времени. */
   private debugAdvanceWorldTime(): void {
     if (this.screen !== "hub" || !this.state) return;
-    this.interruptFireplaceRest();
+    if (this.blockIfFireplaceResting()) return;
     const result = debugAdvanceHours(this.state, DEBUG_HOURS_STEP);
     ensureTavernDay(this.state);
     this.persist();
@@ -793,7 +820,7 @@ export class GameApp {
   /** Рынок поверх карты города + экип и сумка справа как у тайника. */
   goMerchant(): void {
     if (this.screen !== "hub") return;
-    this.interruptFireplaceRest();
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.townHall.hide();
@@ -807,7 +834,7 @@ export class GameApp {
   /** Доска ратуши: взять / сдать. */
   goTownHall(): void {
     if (this.screen !== "hub") return;
-    this.interruptFireplaceRest();
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.merchant.hide();
@@ -821,7 +848,7 @@ export class GameApp {
   /** Лекарь: травмы и временные усиления. */
   goHealer(): void {
     if (this.screen !== "hub") return;
-    this.interruptFireplaceRest();
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
     if (this.hubUnit) syncProfileFromUnit(state.hero, this.hubUnit);
     this.merchant.hide();
@@ -846,12 +873,17 @@ export class GameApp {
     this.tavern.show(state, this.hubUnit);
   }
 
-  /** Журнал взятых квестов (хаб / карта / бой). Не прерывает отдых у камина. */
-  goQuestLog(): void {
+  /**
+   * Журнал заданий.
+   * Во время отдыха у камина открывается только с кнопки камина или по J (`fromFireplaceRest`).
+   */
+  goQuestLog(opts?: { fromFireplaceRest?: boolean }): void {
     if (this.screen !== "hub" && this.screen !== "world_map" && this.screen !== "battle") {
       return;
     }
     const state = this.requireState();
+    const resting = isFireplaceResting(state);
+    if (resting && !opts?.fromFireplaceRest) return;
     if (this.questLog.isOpen()) {
       this.questLog.hide();
       this.syncQuestTracker();
@@ -859,14 +891,15 @@ export class GameApp {
     }
     this.townHall.hide();
     this.healer.hide();
-    this.tavern.hide();
     this.merchant.hide();
+    // Таверна остаётся под журналом во время отдыха.
+    if (!resting) this.tavern.hide();
     this.questLog.show(state);
   }
 
   startBattle(regionId: RegionId, locationId?: string): void {
+    if (this.blockIfFireplaceResting()) return;
     const state = this.requireState();
-    this.interruptFireplaceRest();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
       syncProfileVitals(state.hero, this.hubUnit);

@@ -85,7 +85,8 @@ export function cloneTavernState(src: TavernState | null | undefined): TavernSta
   return {
     rumorsDayIndex: Math.max(1, Math.floor(src.rumorsDayIndex || 1)),
     rumorsBoughtToday: Math.max(0, Math.floor(src.rumorsBoughtToday || 0)),
-    fireplaceResting: Boolean(src.fireplaceResting),
+    // Отдых у камина не переживает загрузку / новую сессию.
+    fireplaceResting: false,
     rumorLog,
   };
 }
@@ -191,7 +192,7 @@ export function canSleepInTavern(
 ): { ok: true } | { ok: false; reason: string } {
   const phase = phaseFromHour(state.hour);
   if (phase === "morning") {
-    return { ok: false, reason: "Сейчас утро - отдельный номер не нужен" };
+    return { ok: false, reason: "Вы полны сил и сейчас начало дня - вы не хотите спать." };
   }
   if (!unit) {
     return { ok: false, reason: "Герой недоступен" };
@@ -261,6 +262,14 @@ export function stopFireplaceRest(state: GameState): boolean {
   return true;
 }
 
+/**
+ * Сброс отдыха у камина на границе сессии:
+ * выход из игры, F5 / закрытие вкладки, загрузка слота, вход в игру.
+ */
+export function endFireplaceRestSession(state: GameState): void {
+  stopFireplaceRest(state);
+}
+
 /** Вторичный аспект: первый выученный, отличный от основного. */
 export function secondaryAspectOf(hero: {
   aspect: Aspect;
@@ -274,12 +283,9 @@ export function loadoutSlotCaps(hero: {
   learnedAspects: Aspect[];
 }): { primaryMax: number; secondaryMax: number; totalMax: number } {
   const secondary = secondaryAspectOf(hero);
-  if (!secondary) {
-    return { primaryMax: LOADOUT_MAX, secondaryMax: 0, totalMax: LOADOUT_MAX };
-  }
   return {
     primaryMax: LOADOUT_PRIMARY_MAX,
-    secondaryMax: LOADOUT_SECONDARY_MAX,
+    secondaryMax: secondary ? LOADOUT_SECONDARY_MAX : 0,
     totalMax: LOADOUT_MAX,
   };
 }

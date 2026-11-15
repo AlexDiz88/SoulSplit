@@ -18,7 +18,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
-import { ensureTavernDay } from "./tavern";
+import { endFireplaceRestSession, ensureTavernDay } from "./tavern";
 import { ensureWorldTime } from "./worldTime";
 import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
@@ -183,6 +183,8 @@ function normalizeState(parsed: GameState): GameState {
   ensureMarket(state);
   ensureQuestLog(state);
   ensureTavernDay(state);
+  // Отдых у камина не сохраняется между сессиями / F5.
+  endFireplaceRestSession(state);
   for (const entry of state.quests.entries) {
     if (entry.rewardItem) remapItem(entry.rewardItem);
   }
@@ -286,9 +288,12 @@ export function loadSlot(index: number): GameState | null {
 export function saveSlot(index: number, state: GameState): void {
   assertSlot(index);
   const blob = readBlob();
+  // В сейв не пишем активный отдых у камина - он только для текущей сессии.
+  const toSave = cloneGameState(state);
+  endFireplaceRestSession(toSave);
   blob.slots[index] = {
     updatedAt: Date.now(),
-    state: cloneGameState(state),
+    state: toSave,
   };
   writeBlob(blob);
 }

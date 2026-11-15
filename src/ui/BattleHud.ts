@@ -123,6 +123,8 @@ export interface BattleHudApi {
   closeOverlays(): void;
   /** Когда закрыли персонажа/экип (чтобы спрятать рынок). */
   setOnPanelsClosed(fn: (() => void) | null): void;
+  /** Блок хоткеев/оверлеев хаба (отдых у камина). */
+  setHubActionLock(locked: boolean): void;
 }
 
 export function createBattleHud(onSelectAbility: (id: AbilityId) => void): BattleHudApi {
@@ -132,6 +134,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   const potionHpBtn = document.getElementById("potion-hp") as HTMLButtonElement;
   const potionManaBtn = document.getElementById("potion-mana") as HTMLButtonElement;
   const toast = document.getElementById("toast")!;
+  let hubActionLocked = false;
   const btnPause = document.getElementById("btn-pause")!;
   const btnSpeed = document.getElementById("btn-speed")!;
   const btnStart = document.getElementById("btn-start")!;
@@ -647,6 +650,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       target instanceof HTMLSelectElement;
 
     if (!typing && !ev.repeat && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      if (hubActionLocked && (ev.code === "KeyH" || ev.code === "KeyV")) {
+        ev.preventDefault();
+        return;
+      }
       if (ev.code === "KeyH") {
         ev.preventDefault();
         toggleDevPanelTab("bestiary");
@@ -822,6 +829,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openCharacter() {
+      if (hubActionLocked) return;
       prepareOpen("character");
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
@@ -831,6 +839,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openInventory() {
+      if (hubActionLocked) return;
       // Только сумка, без оверлея персонажа.
       if (character.isOpen()) character.close();
       prepareOpen("character");
@@ -852,6 +861,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     toggleInventory() {
+      if (hubActionLocked) return;
       if (character.isOpen()) {
         character.close();
         return;
@@ -870,6 +880,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     openStash(bag) {
+      if (hubActionLocked) return;
       prepareOpen("character");
       inventory.setMarketMode(false);
       inventory.setStashBag(bag);
@@ -909,15 +920,22 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       onPanelsClosed = fn;
     },
 
+    setHubActionLock(locked) {
+      hubActionLocked = locked;
+    },
+
     openBestiary() {
+      if (hubActionLocked) return;
       itemGenerator.openTab("bestiary");
     },
 
     openGrimoire() {
+      if (hubActionLocked) return;
       itemGenerator.openTab("grimoire");
     },
 
     openItemGenerator() {
+      if (hubActionLocked) return;
       itemGenerator.open();
     },
 
