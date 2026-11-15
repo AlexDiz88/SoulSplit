@@ -1,6 +1,6 @@
 import { rolledAffixParts } from "../items/affixCatalog";
 import { rolledItemBaseParts } from "../items/baseCatalog";
-import { gripLabel } from "../items/equipment";
+import { gripLabel, type EquipmentMap } from "../items/equipment";
 import { itemDisplayName } from "../items/generate";
 import { OFFHAND_WEAPON_DAMAGE_MULT } from "../items/grip";
 import {
@@ -252,4 +252,116 @@ export function fillEmptyItemTooltip(host: HTMLElement, slot: EquipSlotId, capti
     el("div", "item-tip-empty-name", SLOT_LABEL[slot]),
     el("div", "item-tip-empty-meta", "Пусто"),
   );
+}
+
+/** Слоты экипа для сравнения при наведении на предмет. */
+export function compareEquipSlotsFor(item: ItemDef): EquipSlotId[] {
+  if (isPotionItem(item)) return [];
+  if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
+  if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
+  return [item.slot];
+}
+
+export interface PositionItemCompareOpts {
+  gap?: number;
+  margin?: number;
+  /**
+   * se - справа-вниз от курсора (рынок / добыча).
+   * nw - влево-вверх от якоря или курсора (сумка справа внизу).
+   */
+  prefer?: "se" | "nw";
+  /** Ячейка/слот: панель не должна его перекрывать. */
+  anchor?: HTMLElement;
+}
+
+/** Ставит панель сравнения; по умолчанию справа-вниз от курсора. */
+export function positionItemCompare(
+  compare: HTMLElement,
+  clientX: number,
+  clientY: number,
+  opts?: PositionItemCompareOpts,
+): void {
+  compare.hidden = false;
+  const tipRect = compare.getBoundingClientRect();
+  const gap = opts?.gap ?? 16;
+  const margin = opts?.margin ?? 8;
+  const prefer = opts?.prefer ?? "se";
+  const w = tipRect.width;
+  const h = tipRect.height;
+  const maxLeft = window.innerWidth - w - margin;
+  const maxTop = window.innerHeight - h - margin;
+
+  let left: number;
+  let top: number;
+
+  if (prefer === "nw") {
+    const anchor = opts?.anchor?.getBoundingClientRect();
+    const refBottom = anchor ? anchor.top : clientY;
+    // Панель над ячейкой; правый край подсказки = правый край иконки.
+    top = refBottom - h - gap;
+    left = (anchor ? anchor.right : clientX) - w;
+
+    left = Math.max(margin, Math.min(left, maxLeft));
+    top = Math.max(margin, Math.min(top, maxTop));
+  } else {
+    left = clientX + gap;
+    top = clientY + gap;
+    if (left > maxLeft) left = Math.max(margin, maxLeft);
+    if (top > maxTop) top = Math.max(margin, maxTop);
+    left = Math.max(margin, left);
+    top = Math.max(margin, top);
+  }
+
+  compare.style.left = `${left}px`;
+  compare.style.top = `${top}px`;
+}
+
+export interface ItemCompareCardOptions {
+  tipClass: string;
+  itemCaption: string;
+  equippedCaption?: string;
+  showItemSellPrice?: boolean;
+  showEquippedSellPrice?: boolean;
+  /**
+   * Где карточка наведённого предмета: left (рынок/добыча) или right (сумка справа внизу).
+   * Экипированные слоты занимают оставшуюся сторону.
+   */
+  itemSide?: "left" | "right";
+}
+
+/** Карточки предмета и экипированных слотов для панели сравнения. */
+export function buildItemCompareCards(
+  item: ItemDef,
+  equipment: EquipmentMap,
+  options: ItemCompareCardOptions,
+): HTMLElement[] {
+  const equippedCaption = options.equippedCaption ?? "Экипировано";
+  const tipClass = `item-tip ${options.tipClass}`.trim();
+  const itemSide = options.itemSide ?? "left";
+
+  const itemCard = el("div", tipClass);
+  fillItemTooltip(itemCard, item, {
+    showIcon: true,
+    caption: options.itemCaption,
+    showSellPrice: options.showItemSellPrice ?? false,
+  });
+
+  const equippedCards: HTMLElement[] = [];
+  for (const slot of compareEquipSlotsFor(item)) {
+    const card = el("div", tipClass);
+    const equipped = equipment[slot] ?? null;
+    if (equipped) {
+      fillItemTooltip(card, equipped, {
+        showIcon: true,
+        caption: equippedCaption,
+        showSellPrice: options.showEquippedSellPrice ?? false,
+        equippedSlot: slot,
+      });
+    } else {
+      fillEmptyItemTooltip(card, slot, equippedCaption);
+    }
+    equippedCards.push(card);
+  }
+
+  return itemSide === "right" ? [...equippedCards, itemCard] : [itemCard, ...equippedCards];
 }

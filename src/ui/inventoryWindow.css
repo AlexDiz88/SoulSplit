@@ -192,6 +192,24 @@
   z-index: 5;
 }
 
+.inv-compare {
+  position: fixed;
+  z-index: 60;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  pointer-events: none;
+}
+
+.inv-compare[hidden] {
+  display: none;
+}
+
+.inv-compare-tip {
+  min-width: 220px;
+  max-width: 280px;
+}
+
 @media (max-width: 760px) {
   #hud {
     --inv-slot: 56px;

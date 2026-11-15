@@ -3,12 +3,10 @@ import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
 import type { BattleStats } from "../combat/battleStats";
 import { createEmptyBattleStats } from "../combat/battleStats";
 import { getEnemyKind } from "../combat/enemies";
-import type { EquipmentMap } from "../items/equipment";
 import { addItemToInventory } from "../items/inventory";
-import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import type { HeroProfile } from "../meta/heroProfile";
-import { fillEmptyItemTooltip, fillItemTooltip } from "./itemTooltip";
+import { buildItemCompareCards, positionItemCompare } from "./itemTooltip";
 import "./hubScreen.css";
 import "./itemRarity.css";
 import "./itemTooltip.css";
@@ -74,13 +72,6 @@ function pluralRu(n: number, one: string, few: string, many: string): string {
   if (last === 1) return one;
   if (last >= 2 && last <= 4) return few;
   return many;
-}
-
-function compareSlotsFor(item: ItemDef): EquipSlotId[] {
-  if (item.potionId) return [];
-  if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
-  if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
-  return [item.slot];
 }
 
 export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenApi {
@@ -184,49 +175,15 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     compare.replaceChildren();
   }
 
-  function positionCompare(clientX: number, clientY: number): void {
-    compare.hidden = false;
-    const tipRect = compare.getBoundingClientRect();
-    const gap = 16;
-    const margin = 8;
-    let left = clientX + gap;
-    let top = clientY + gap;
-    const maxLeft = window.innerWidth - tipRect.width - margin;
-    const maxTop = window.innerHeight - tipRect.height - margin;
-    if (left > maxLeft) left = Math.max(margin, maxLeft);
-    if (top > maxTop) top = Math.max(margin, maxTop);
-    compare.style.left = `${Math.max(margin, left)}px`;
-    compare.style.top = `${Math.max(margin, top)}px`;
-  }
-
-  function showCompare(item: ItemDef, equipment: EquipmentMap, clientX: number, clientY: number): void {
-    const slots = compareSlotsFor(item);
-    compare.replaceChildren();
-
-    const lootCard = el("div", "item-tip reward-tip");
-    fillItemTooltip(lootCard, item, {
-      showIcon: true,
-      caption: "Добыча",
-      showSellPrice: false,
-    });
-    compare.append(lootCard);
-
-    for (const slot of slots) {
-      const card = el("div", "item-tip reward-tip");
-      const equipped = equipment[slot] ?? null;
-      if (equipped) {
-        fillItemTooltip(card, equipped, {
-          showIcon: true,
-          caption: "Экипировано",
-          showSellPrice: false,
-          equippedSlot: slot,
-        });
-      } else {
-        fillEmptyItemTooltip(card, slot, "Экипировано");
-      }
-      compare.append(card);
-    }
-    positionCompare(clientX, clientY);
+  function showCompare(item: ItemDef, clientX: number, clientY: number): void {
+    if (!heroRef) return;
+    compare.replaceChildren(
+      ...buildItemCompareCards(item, heroRef.equipment, {
+        tipClass: "reward-tip",
+        itemCaption: "Добыча",
+      }),
+    );
+    positionItemCompare(compare, clientX, clientY);
   }
 
   function takeItem(item: ItemDef): boolean {
@@ -289,11 +246,11 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     });
     cell.addEventListener("pointerenter", (ev) => {
       if (!heroRef) return;
-      showCompare(item, heroRef.equipment, ev.clientX, ev.clientY);
+      showCompare(item, ev.clientX, ev.clientY);
     });
     cell.addEventListener("pointermove", (ev) => {
       if (compare.hidden || !heroRef) return;
-      positionCompare(ev.clientX, ev.clientY);
+      positionItemCompare(compare, ev.clientX, ev.clientY);
     });
     cell.addEventListener("pointerleave", (ev) => {
       const next = ev.relatedTarget;

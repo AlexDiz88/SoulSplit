@@ -1,7 +1,6 @@
 import { resolveMerchantPortraitUrl } from "../art/menuBackground";
 import { rolledAffixParts } from "../items/affixCatalog";
 import { rolledItemBaseParts } from "../items/baseCatalog";
-import type { EquipmentMap } from "../items/equipment";
 import { itemDisplayName } from "../items/generate";
 import { addItemToInventory } from "../items/inventory";
 import {
@@ -10,7 +9,6 @@ import {
   POTION_LABEL,
   potionEffectText,
 } from "../items/potions";
-import type { EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import type { GameState } from "../meta/gameState";
 import {
@@ -24,10 +22,11 @@ import {
 } from "../meta/market";
 import { goldAmountNode } from "./goldIcon";
 import {
-  fillEmptyItemTooltip,
+  buildItemCompareCards,
   fillItemTooltip,
   formatWeaponDps,
   itemSlotLabel,
+  positionItemCompare,
 } from "./itemTooltip";
 import "./itemRarity.css";
 import "./merchantScreen.css";
@@ -55,14 +54,6 @@ function el<K extends keyof HTMLElementTagNameMap>(
   if (className) node.className = className;
   if (text !== undefined) node.textContent = text;
   return node;
-}
-
-/** Слоты экипа для сравнения при наведении на товар. */
-function compareSlotsFor(item: ItemDef): EquipSlotId[] {
-  if (isPotionItem(item)) return [];
-  if (item.slot === "ring1" || item.slot === "ring2") return ["ring1", "ring2"];
-  if (item.slot === "mainhand" || item.slot === "offhand") return ["mainhand", "offhand"];
-  return [item.slot];
 }
 
 /** Бонус + серый `[Tier]` без min-max (карточки рынка). */
@@ -250,60 +241,15 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     showDetail(offer);
   }
 
-  /** Справа и чуть ниже курсора; влево от курсора не уводим. */
-  function positionCompare(clientX: number, clientY: number): void {
-    compare.hidden = false;
-    const tipRect = compare.getBoundingClientRect();
-    const gap = 16;
-    const margin = 8;
-
-    let left = clientX + gap;
-    let top = clientY + gap;
-
-    const maxLeft = window.innerWidth - tipRect.width - margin;
-    const maxTop = window.innerHeight - tipRect.height - margin;
-    if (left > maxLeft) left = Math.max(margin, maxLeft);
-    if (top > maxTop) top = Math.max(margin, maxTop);
-    left = Math.max(margin, left);
-    top = Math.max(margin, top);
-
-    compare.style.left = `${left}px`;
-    compare.style.top = `${top}px`;
-  }
-
-  function showCompare(
-    item: ItemDef,
-    equipment: EquipmentMap,
-    clientX: number,
-    clientY: number,
-  ): void {
-    const slots = compareSlotsFor(item);
-    compare.replaceChildren();
-
-    const saleCard = el("div", "item-tip market-tip");
-    fillItemTooltip(saleCard, item, {
-      showIcon: true,
-      caption: "В продаже",
-      showSellPrice: false,
-    });
-    compare.append(saleCard);
-
-    for (const slot of slots) {
-      const card = el("div", "item-tip market-tip");
-      const equipped = equipment[slot] ?? null;
-      if (equipped) {
-        fillItemTooltip(card, equipped, {
-          showIcon: true,
-          caption: "Экипировано",
-          showSellPrice: false,
-          equippedSlot: slot,
-        });
-      } else {
-        fillEmptyItemTooltip(card, slot, "Экипировано");
-      }
-      compare.append(card);
-    }
-    positionCompare(clientX, clientY);
+  function showCompare(item: ItemDef, clientX: number, clientY: number): void {
+    if (!stateRef) return;
+    compare.replaceChildren(
+      ...buildItemCompareCards(item, stateRef.hero.equipment, {
+        tipClass: "market-tip",
+        itemCaption: "В продаже",
+      }),
+    );
+    positionItemCompare(compare, clientX, clientY);
   }
 
   function currentOffers(): MarketOffer[] {
@@ -478,11 +424,11 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
       btn.addEventListener("pointerenter", (ev) => {
         if (!stateRef) return;
-        showCompare(item, stateRef.hero.equipment, ev.clientX, ev.clientY);
+        showCompare(item, ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointermove", (ev) => {
         if (compare.hidden) return;
-        positionCompare(ev.clientX, ev.clientY);
+        positionItemCompare(compare, ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointerleave", (ev) => {
         const next = ev.relatedTarget;

@@ -22,7 +22,13 @@ import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
 import { sellPrice } from "../meta/economy";
 import { getItemDrag, type ItemDragSource } from "./itemDrag";
-import { fillItemTooltip, placeItemTip } from "./itemTooltip";
+import {
+  buildItemCompareCards,
+  compareEquipSlotsFor,
+  fillItemTooltip,
+  placeItemTip,
+  positionItemCompare,
+} from "./itemTooltip";
 import "./itemRarity.css";
 import "./inventoryWindow.css";
 
@@ -71,6 +77,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   root.append(head, gridHost, tip);
 
+  const compare = el("div", "inv-compare");
+  compare.hidden = true;
+
   const confirm = el("div", "confirm-overlay");
   confirm.hidden = true;
   confirm.setAttribute("role", "dialog");
@@ -87,7 +96,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   confirmPanel.append(confirmTitle, confirmText, confirmActions);
   confirm.append(confirmPanel);
 
-  hud.append(root, confirm);
+  hud.append(root, confirm, compare);
 
   const itemDrag = getItemDrag();
 
@@ -197,8 +206,18 @@ export function mountInventoryWindow(): InventoryWindowApi {
     return null;
   };
 
-  const render = (): void => {
+  const hideCompare = (): void => {
+    compare.hidden = true;
+    compare.replaceChildren();
+  };
+
+  const hideTips = (): void => {
     tip.hidden = true;
+    hideCompare();
+  };
+
+  const render = (): void => {
+    hideTips();
     const filled = hero ? hero.inventory.filter(Boolean).length : 0;
     count.textContent = `${filled} / ${INVENTORY_SIZE}`;
     gridHost.replaceChildren(renderGrid(hero));
@@ -214,22 +233,41 @@ export function mountInventoryWindow(): InventoryWindowApi {
     cancelDrag();
     closeDestroyConfirm();
     root.hidden = true;
-    tip.hidden = true;
+    hideTips();
   };
 
   const placeTip = (anchor: HTMLElement): void => {
     placeItemTip(tip, anchor, root);
   };
 
-  const showBagTip = (cell: HTMLElement): void => {
+  const placeBagCompare = (cell: HTMLElement, clientX: number, clientY: number): void => {
+    positionItemCompare(compare, clientX, clientY, { prefer: "nw", anchor: cell });
+  };
+
+  const showBagTip = (cell: HTMLElement, clientX: number, clientY: number): void => {
     if (itemDrag.isActive() || !hero) return;
     const index = Number(cell.dataset.inv);
     if (!Number.isFinite(index)) return;
     const item = hero.inventory[index];
     if (!item) {
-      tip.hidden = true;
+      hideTips();
       return;
     }
+    // Экип: сравнение с надетым (как на рынке / в добыче). Зелья - обычный тултип.
+    if (compareEquipSlotsFor(item).length > 0) {
+      tip.hidden = true;
+      compare.replaceChildren(
+        ...buildItemCompareCards(item, hero.equipment, {
+          tipClass: "inv-compare-tip",
+          itemCaption: "В сумке",
+          showItemSellPrice: true,
+          itemSide: "right",
+        }),
+      );
+      placeBagCompare(cell, clientX, clientY);
+      return;
+    }
+    hideCompare();
     fillItemTooltip(tip, item);
     placeTip(cell);
   };
@@ -570,12 +608,17 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   gridHost.addEventListener("pointerover", (ev) => {
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-inv]");
-    if (cell) showBagTip(cell);
+    if (cell) showBagTip(cell, ev.clientX, ev.clientY);
+  });
+  gridHost.addEventListener("pointermove", (ev) => {
+    if (compare.hidden) return;
+    const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-inv]");
+    if (cell) placeBagCompare(cell, ev.clientX, ev.clientY);
   });
   gridHost.addEventListener("pointerout", (ev) => {
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-inv]");
     const next = ev.relatedTarget as Element | null;
-    if (cell && (!next || !cell.contains(next))) tip.hidden = true;
+    if (cell && (!next || !cell.contains(next))) hideTips();
   });
 
   /** Без тайника/рынка: ПКМ надевает; в режиме добычи - возвращает в лут. */
@@ -773,7 +816,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       const dx = ev.clientX - pending.x;
       const dy = ev.clientY - pending.y;
       if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
-      tip.hidden = true;
+      hideTips();
       closeDestroyConfirm();
       itemDrag.begin(pending.item, pending.source, ev.clientX, ev.clientY, pending.el);
       pending = null;
