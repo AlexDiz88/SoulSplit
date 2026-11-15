@@ -16,7 +16,6 @@ import {
   phaseFromHour,
   sleepUntilMorning,
   type AdvanceHoursResult,
-  type TownTimePhase,
 } from "./worldTime";
 
 /** Цена слуха. */
@@ -190,15 +189,17 @@ export function canSleepInTavern(
   state: GameState,
   unit: Unit | null,
 ): { ok: true } | { ok: false; reason: string } {
-  const phase = phaseFromHour(state.hour);
-  if (phase === "morning") {
-    return { ok: false, reason: "Вы полны сил и сейчас начало дня - вы не хотите спать." };
-  }
   if (!unit) {
     return { ok: false, reason: "Герой недоступен" };
   }
-  if (unit.hp >= unit.stats.maxHp) {
-    return { ok: false, reason: "Здоровье полное - отдых в номере не требуется" };
+  const phase = phaseFromHour(state.hour);
+  const fullHp = unit.hp >= unit.stats.maxHp;
+  // Блок только утром при полном здоровье - иначе можно крутить дни нонстопом.
+  if (phase === "morning" && fullHp) {
+    return {
+      ok: false,
+      reason: "Вы полны сил и сейчас утро - отдельный номер не нужен",
+    };
   }
   if (state.hero.gold < TAVERN_SLEEP_COST) {
     return { ok: false, reason: "Не хватает золота" };
@@ -365,8 +366,4 @@ export function applyAbilityLoadout(
   if (!checked.ok) return checked;
   hero.abilityLoadout = checked.loadout;
   return { ok: true };
-}
-
-export function phaseAllowsTavernSleep(phase: TownTimePhase): boolean {
-  return phase !== "morning";
 }

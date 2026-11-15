@@ -93,7 +93,9 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     "Слухи, отдых и подготовка перед вылазкой",
   );
   const goldLine = el("div", "tavern-gold");
-  const clockLine = el("div", "tavern-clock");
+  goldLine.append(document.createTextNode("Золото: "));
+  goldLine.append(goldAmountNode(0));
+  const clockLine = el("div", "tavern-clock", "\u00A0");
   head.append(title, subtitle, goldLine, clockLine);
 
   const tabsRow = el("div", "tavern-tabs");
@@ -281,7 +283,7 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       panelIntro(
         "Отдельный номер",
         `За ${TAVERN_SLEEP_COST} монет вас проведут в тихую комнату. В уютной комнате вы полностью восстановите здоровье и ману. Отдых длится до утра.`,
-        "Недоступно утром при полном здоровье.",
+        "Недоступно только утром при полном здоровье. В другое время суток можно лечь спать даже здоровым.",
       ),
     );
 
@@ -350,7 +352,11 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
 
     const actions = el("div", "tavern-fireplace-actions");
     if (resting) {
-      const stopBtn = el("button", "tavern-action-btn tavern-action-muted", "Прервать отдых");
+      const stopBtn = el(
+        "button",
+        "tavern-action-btn tavern-rest-progress-btn",
+        "Прервать отдых",
+      );
       stopBtn.type = "button";
       stopBtn.addEventListener("click", () => interruptFireplaceRest());
       const journalBtn = el("button", "tavern-action-btn", "Журнал заданий (J)");
@@ -651,9 +657,10 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       ensureTavernDay(state);
       draftLoadout = [...state.hero.abilityLoadout];
       poolAspectFilter = "all";
-      root.hidden = false;
       if (isFireplaceResting(state)) activeTab = "fireplace";
+      // Сначала заполняем шапку и панель, потом показываем - без скачка золота/времени.
       setTab(activeTab);
+      root.hidden = false;
       window.addEventListener("keydown", onKeyDown);
     },
     hide(force = false) {
@@ -671,7 +678,9 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     refresh(unit?: Unit | null) {
       if (root.hidden || !stateRef) return;
       if (unit !== undefined) unitRef = unit;
-      render();
+      // Тик HP не пересобирает панели - только шапка, иначе дергается верх.
+      renderGold();
+      renderClock();
     },
     destroy() {
       window.removeEventListener("keydown", onKeyDown);

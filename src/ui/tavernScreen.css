@@ -112,15 +112,19 @@
 
 .tavern-gold {
   margin-top: 10px;
+  min-height: 1.45em;
   font-size: 1.2rem;
   font-weight: 700;
+  line-height: 1.45;
   color: #e8c76a;
 }
 
 .tavern-clock {
   margin-top: 4px;
+  min-height: 1.3em;
   font-size: 1rem;
   font-weight: 600;
+  line-height: 1.3;
   color: rgba(200, 190, 160, 0.8);
 }
 
@@ -407,6 +411,39 @@
   gap: 10px;
   min-height: 52px;
   align-items: center;
+}
+
+/* Активный отдых: мягкая пульсация рамки (не тревожный неон). */
+.tavern-rest-progress-btn {
+  border-color: #c45a5a;
+  color: #f0d8d8;
+  background: linear-gradient(180deg, #3a1818, #160c0c);
+  box-shadow:
+    0 0 3px rgba(200, 80, 80, 0.45),
+    0 0 8px rgba(180, 50, 50, 0.28),
+    inset 0 0 0 1px rgba(220, 140, 140, 0.28);
+  animation: tavern-rest-neon 3.6s ease-in-out infinite;
+}
+
+.tavern-rest-progress-btn:hover:not(:disabled) {
+  border-color: #d07070;
+  filter: brightness(1.08);
+}
+
+@keyframes tavern-rest-neon {
+  0%,
+  100% {
+    box-shadow:
+      0 0 3px rgba(200, 80, 80, 0.4),
+      0 0 8px rgba(180, 50, 50, 0.22),
+      inset 0 0 0 1px rgba(220, 140, 140, 0.25);
+  }
+  50% {
+    box-shadow:
+      0 0 5px rgba(210, 100, 100, 0.55),
+      0 0 12px rgba(190, 70, 70, 0.32),
+      inset 0 0 0 1px rgba(230, 160, 160, 0.35);
+  }
 }
 
 .tavern-loadout-layout {
