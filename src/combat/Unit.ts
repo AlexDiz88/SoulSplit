@@ -69,7 +69,8 @@ export interface UnitInit {
   pos: GridPos;
   aspect: Aspect;
   stats: UnitStats;
-  abilities: AbilityId[];
+  /** Слоты навыков; `null` / дырки = пустой хоткей. */
+  abilities: (AbilityId | null)[];
   /** URL портрета (после Assets.load) */
   portraitUrl?: string;
   /** Сторона карточки в пикселях. По умолчанию обычная клетка. */
@@ -104,7 +105,7 @@ export class Unit {
   readonly short: string;
   readonly team: Team;
   readonly aspect: Aspect;
-  readonly abilities: AbilityId[];
+  readonly abilities: (AbilityId | null)[];
   readonly stats: UnitStats;
   readonly portraitUrl: string | null;
   readonly cardSize: number;
@@ -219,6 +220,7 @@ export class Unit {
     this.attackCharge = init.stats.autoAttackCd > 0 ? this.autoTimer / init.stats.autoAttackCd : 0;
 
     for (const a of init.abilities) {
+      if (!a) continue;
       if (init.team === "player") {
         this.abilityCd[a] = 0;
         continue;
@@ -932,6 +934,7 @@ export class Unit {
   incomingDamageMult(): number {
     let m = this.metaCombatMods.damageTakenMult;
     for (const id of this.abilities) {
+      if (!id) continue;
       const def = ABILITIES[id];
       const mult = def?.effects?.rearDamageTakenMult;
       if (mult == null || def.targetMode !== "passive") continue;

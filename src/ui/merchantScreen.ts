@@ -124,7 +124,8 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   const title = el("h2", "market-title", "Рынок");
   title.id = "market-title";
   const headActions = el("div", "market-head-actions");
-  const goldLine = el("div", "market-gold", "Золото: 0");
+  const goldLine = el("div", "market-gold");
+  goldLine.append(document.createTextNode("Золото: "), goldAmountNode(0));
   /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
   const btnRefresh = el("button", "market-btn", "Обновить ассортимент");
   btnRefresh.type = "button";
@@ -489,7 +490,10 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   function render(): void {
     if (!stateRef) return;
-    goldLine.textContent = `Золото: ${stateRef.hero.gold}`;
+    goldLine.replaceChildren(
+      document.createTextNode("Золото: "),
+      goldAmountNode(stateRef.hero.gold),
+    );
     renderPortrait();
     renderGoods();
   }

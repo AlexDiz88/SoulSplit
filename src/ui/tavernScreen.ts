@@ -1,5 +1,6 @@
 import { ABILITIES, ASPECT_HEX, ASPECT_LABEL, describeAbility } from "../abilities/definitions";
-import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
+import { ABILITY_ICON_URLS } from "../art/abilityIcons";
+import { resolveTavernRoomUrl } from "../art/menuBackground";
 import type { Unit } from "../combat/Unit";
 import { globalEffectDef } from "../effects/globalEffects";
 import type { GameState } from "../meta/gameState";
@@ -11,6 +12,7 @@ import {
   ensureTavernDay,
   isFireplaceResting,
   loadoutSlotCaps,
+  normalizeAbilityLoadout,
   RUMOR_COST,
   RUMOR_MAX_PER_DAY,
   rumorsLeftToday,
@@ -20,10 +22,12 @@ import {
   stopFireplaceRest,
   TAVERN_SLEEP_COST,
   validateAbilityLoadout,
+  type AbilityLoadout,
   type TavernTabId,
 } from "../meta/tavern";
 import { formatWorldClock, phaseFromHour, phaseLabelRu } from "../meta/worldTime";
 import type { AbilityId, Aspect } from "../types";
+import { createAspectIconImg } from "./aspectIcon";
 import { goldAmountNode } from "./goldIcon";
 import "./tavernScreen.css";
 
@@ -65,6 +69,10 @@ const TABS: { id: TavernTabId; label: string }[] = [
   { id: "fireplace", label: "Камин" },
   { id: "loadout", label: "Комната подготовки" },
 ];
+
+const TAB_LABEL: Record<TavernTabId, string> = Object.fromEntries(
+  TABS.map((t) => [t.id, t.label]),
+) as Record<TavernTabId, string>;
 
 function hotkeyLabel(index: number): string {
   return index === 9 ? "0" : String(index + 1);
@@ -129,15 +137,21 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
   let stateRef: GameState | null = null;
   let unitRef: Unit | null = null;
   let activeTab: TavernTabId = "rumors";
-  let draftLoadout: AbilityId[] = [];
-  let poolAspectFilter: Aspect | "all" = "all";
+  let draftLoadout: AbilityLoadout = [];
+  let poolAspectFilter: Aspect | null = null;
 
-  function close(): void {
-    if (stateRef && isFireplaceResting(stateRef)) return;
+  function close(opts?: { interruptRest?: boolean }): void {
+    if (stateRef && isFireplaceResting(stateRef)) {
+      if (!opts?.interruptRest) return;
+      stopFireplaceRest(stateRef);
+      handlers.onFireplaceChanged();
+      handlers.onChanged();
+    }
     hideSkillTip();
     root.hidden = true;
     stateRef = null;
     unitRef = null;
+    root.classList.remove("is-rest-locked");
     handlers.onClose();
   }
 
@@ -221,30 +235,66 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     clockLine.textContent = `${formatWorldClock(stateRef.hour)} · ${phaseLabelRu(phase)} · день ${stateRef.dayIndex}`;
   }
 
-  function panelIntro(title: string, lead: string, note?: string): HTMLElement {
+  function panelIntro(
+    title: string,
+    lead: string | HTMLElement,
+    note?: string,
+  ): HTMLElement {
     const intro = el("div", "tavern-panel-intro");
     intro.append(el("h3", "tavern-section-title", title));
-    intro.append(el("p", "tavern-lead", lead));
+    if (typeof lead === "string") {
+      intro.append(el("p", "tavern-lead", lead));
+    } else {
+      intro.append(lead);
+    }
     if (note) intro.append(el("p", "tavern-note", note));
     return intro;
+  }
+
+  /** Слева арт комнаты (как портрет торговца), справа контент вкладки. */
+  function beginRoomPanel(panel: HTMLElement, tabId: TavernTabId): HTMLElement {
+    panel.replaceChildren();
+    const layout = el("div", "tavern-panel-layout");
+    const art = el("aside", "tavern-room-art");
+    const img = document.createElement("img");
+    img.className = "tavern-room-art-img";
+    img.src = resolveTavernRoomUrl(tabId);
+    img.alt = "";
+    img.draggable = false;
+    img.decoding = "async";
+    const meta = el("div", "tavern-room-art-meta");
+    meta.append(el("h3", "tavern-room-art-name", TAB_LABEL[tabId]));
+    art.append(img, meta);
+    const content = el("div", "tavern-panel-content");
+    layout.append(art, content);
+    panel.append(layout);
+    return content;
   }
 
   function renderRumors(): void {
     if (!stateRef) return;
     ensureTavernDay(stateRef);
-    panelRumors.replaceChildren();
+    const content = beginRoomPanel(panelRumors, "rumors");
 
     const left = rumorsLeftToday(stateRef);
-    panelRumors.append(
-      panelIntro(
-        "Слухи",
-        `За кружкой можно услышать многое. Слух стоит ${RUMOR_COST}. Сегодня осталось: ${left} из ${RUMOR_MAX_PER_DAY}.`,
+    const rumorLead = el("p", "tavern-lead");
+    rumorLead.append(
+      document.createTextNode("За кружкой можно услышать многое. Слух стоит "),
+      goldAmountNode(RUMOR_COST),
+      document.createTextNode(
+        `. Сегодня осталось: ${left} из ${RUMOR_MAX_PER_DAY}.`,
       ),
     );
+    content.append(panelIntro("Слухи", rumorLead));
 
     const main = el("div", "tavern-panel-main");
-    const buyBtn = el("button", "tavern-action-btn", `Купить слух (${RUMOR_COST})`);
+    const buyBtn = el("button", "tavern-action-btn");
     buyBtn.type = "button";
+    buyBtn.append(
+      document.createTextNode("Купить слух ("),
+      goldAmountNode(RUMOR_COST),
+      document.createTextNode(")"),
+    );
     buyBtn.disabled = left <= 0 || stateRef.hero.gold < RUMOR_COST;
     buyBtn.addEventListener("click", () => {
       if (!stateRef) return;
@@ -272,17 +322,25 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       }
     }
     main.append(log);
-    panelRumors.append(main);
+    content.append(main);
   }
 
   function renderSleep(): void {
     if (!stateRef) return;
-    panelSleep.replaceChildren();
+    const content = beginRoomPanel(panelSleep, "sleep");
 
-    panelSleep.append(
+    const sleepLead = el("p", "tavern-lead");
+    sleepLead.append(
+      document.createTextNode("За "),
+      goldAmountNode(TAVERN_SLEEP_COST),
+      document.createTextNode(
+        " вас проведут в тихую комнату. В уютной комнате вы полностью восстановите здоровье и ману. Отдых длится до утра.",
+      ),
+    );
+    content.append(
       panelIntro(
         "Отдельный номер",
-        `За ${TAVERN_SLEEP_COST} монет вас проведут в тихую комнату. В уютной комнате вы полностью восстановите здоровье и ману. Отдых длится до утра.`,
+        sleepLead,
         "Недоступно только утром при полном здоровье. В другое время суток можно лечь спать даже здоровым.",
       ),
     );
@@ -299,8 +357,13 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     }
     card.append(status);
 
-    const sleepBtn = el("button", "tavern-action-btn", `Снять номер (${TAVERN_SLEEP_COST})`);
+    const sleepBtn = el("button", "tavern-action-btn");
     sleepBtn.type = "button";
+    sleepBtn.append(
+      document.createTextNode("Снять номер ("),
+      goldAmountNode(TAVERN_SLEEP_COST),
+      document.createTextNode(")"),
+    );
     sleepBtn.disabled = !check.ok;
     sleepBtn.addEventListener("click", () => {
       if (!stateRef) return;
@@ -314,12 +377,12 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     });
     card.append(sleepBtn);
     main.append(card);
-    panelSleep.append(main);
+    content.append(main);
   }
 
   function renderFireplace(): void {
     if (!stateRef) return;
-    panelFireplace.replaceChildren();
+    const content = beginRoomPanel(panelFireplace, "fireplace");
 
     const resting = isFireplaceResting(stateRef);
     const def = globalEffectDef("fireplace_rest");
@@ -343,9 +406,13 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     );
     intro.append(top);
     intro.append(
-      el("p", "tavern-note", "Во время отдыха доступен только журнал заданий."),
+      el(
+        "p",
+        "tavern-note",
+        "Во время отдыха доступен только журнал заданий. Клик за окном прерывает отдых и закрывает таверну.",
+      ),
     );
-    panelFireplace.append(intro);
+    content.append(intro);
 
     const main = el("div", "tavern-panel-main");
     const block = el("div", `tavern-fireplace-block${resting ? " is-resting" : ""}`);
@@ -389,10 +456,10 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     }
     block.append(badge);
     main.append(block);
-    panelFireplace.append(main);
+    content.append(main);
   }
 
-  function commitDraft(next: AbilityId[]): boolean {
+  function commitDraft(next: AbilityLoadout): boolean {
     if (!stateRef) return false;
     const checked = validateAbilityLoadout(stateRef.hero, next);
     if (!checked.ok) return false;
@@ -401,40 +468,58 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     return true;
   }
 
-  function addAbilityToDraft(id: AbilityId, atIndex?: number): void {
+  function firstFreeSlot(slots: AbilityLoadout): number {
+    return slots.findIndex((id) => !id);
+  }
+
+  function placeAbilityInDraft(id: AbilityId, atIndex?: number): void {
     if (!stateRef) return;
-    if (draftLoadout.includes(id)) return;
-    const next = [...draftLoadout];
-    if (atIndex == null || atIndex >= next.length) next.push(id);
-    else next.splice(atIndex, 0, id);
+    const caps = loadoutSlotCaps(stateRef.hero);
+    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    const existing = next.indexOf(id);
+    if (existing >= 0) next[existing] = null;
+    const slot =
+      atIndex != null && atIndex >= 0 && atIndex < caps.totalMax
+        ? atIndex
+        : firstFreeSlot(next);
+    if (slot < 0) return;
+    next[slot] = id;
     commitDraft(next);
   }
 
   function moveAbilityInDraft(fromIndex: number, toIndex: number): void {
-    if (fromIndex < 0 || fromIndex >= draftLoadout.length) return;
-    const next = [...draftLoadout];
-    const [moved] = next.splice(fromIndex, 1);
+    if (!stateRef) return;
+    if (fromIndex === toIndex) return;
+    const caps = loadoutSlotCaps(stateRef.hero);
+    if (fromIndex < 0 || fromIndex >= caps.totalMax) return;
+    if (toIndex < 0 || toIndex >= caps.totalMax) return;
+    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    const moved = next[fromIndex];
     if (!moved) return;
-    const target = Math.min(Math.max(0, toIndex), next.length);
-    next.splice(target, 0, moved);
+    next[fromIndex] = next[toIndex];
+    next[toIndex] = moved;
     commitDraft(next);
   }
 
   function removeAbilityFromDraft(index: number): void {
-    const next = draftLoadout.filter((_, i) => i !== index);
+    if (!stateRef) return;
+    const caps = loadoutSlotCaps(stateRef.hero);
+    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    if (index < 0 || index >= next.length || !next[index]) return;
+    next[index] = null;
     draftLoadout = next;
     renderLoadout();
   }
 
   function renderLoadout(): void {
     if (!stateRef) return;
-    panelLoadout.replaceChildren();
+    const content = beginRoomPanel(panelLoadout, "loadout");
 
     const hero = stateRef.hero;
     const caps = loadoutSlotCaps(hero);
     const secondary = secondaryAspectOf(hero);
 
-    panelLoadout.append(
+    content.append(
       panelIntro(
         "Комната подготовки",
         secondary
@@ -443,24 +528,27 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       ),
     );
 
+    if (!poolAspectFilter || !hero.learnedAspects.includes(poolAspectFilter)) {
+      poolAspectFilter = hero.aspect;
+    }
+    draftLoadout = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+
     const main = el("div", "tavern-panel-main");
     const layout = el("div", "tavern-loadout-layout");
     const poolCol = el("div", "tavern-loadout-pool");
     poolCol.append(el("h4", "tavern-subhead", "Доступные способности"));
 
     const filters = el("div", "tavern-aspect-filters");
-    const allBtn = el("button", "tavern-filter-btn", "Все");
-    allBtn.type = "button";
-    allBtn.classList.toggle("active", poolAspectFilter === "all");
-    allBtn.addEventListener("click", () => {
-      poolAspectFilter = "all";
-      renderLoadout();
-    });
-    filters.append(allBtn);
     for (const aspect of hero.learnedAspects) {
-      const btn = el("button", "tavern-filter-btn", ASPECT_LABEL[aspect]);
+      const btn = el("button", "tavern-filter-btn");
       btn.type = "button";
       btn.classList.toggle("active", poolAspectFilter === aspect);
+      btn.style.setProperty("--aspect-color", ASPECT_HEX[aspect]);
+      btn.setAttribute("aria-label", ASPECT_LABEL[aspect]);
+      btn.append(
+        createAspectIconImg(aspect, "tavern-filter-aspect-icon"),
+        el("span", "tavern-filter-label", ASPECT_LABEL[aspect]),
+      );
       btn.addEventListener("click", () => {
         poolAspectFilter = aspect;
         renderLoadout();
@@ -470,11 +558,10 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     poolCol.append(filters);
 
     const pool = el("div", "tavern-ability-pool");
-    const equipped = new Set(draftLoadout);
-    const available = availableLoadoutAbilities(hero).filter((id) => {
-      if (poolAspectFilter === "all") return true;
-      return ABILITIES[id]?.aspect === poolAspectFilter;
-    });
+    const equipped = new Set(draftLoadout.filter((id): id is AbilityId => !!id));
+    const available = availableLoadoutAbilities(hero).filter(
+      (id) => ABILITIES[id]?.aspect === poolAspectFilter,
+    );
 
     if (!available.length) {
       pool.append(el("p", "tavern-empty", "Нет одобренных способностей для смены."));
@@ -487,6 +574,7 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
         chip.draggable = !equipped.has(id);
         chip.classList.toggle("is-equipped", equipped.has(id));
         chip.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
+        chip.setAttribute("aria-label", def.name);
         const iconUrl = ABILITY_ICON_URLS[id];
         if (iconUrl) {
           const img = el("img");
@@ -495,7 +583,6 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
           img.draggable = false;
           chip.append(img);
         }
-        chip.append(el("span", "tavern-ability-name", def.name));
         chip.addEventListener("pointerenter", () => showSkillTip(chip, id));
         chip.addEventListener("pointerleave", hideSkillTip);
         chip.addEventListener("dragstart", (ev) => {
@@ -507,15 +594,23 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
           if (ev.dataTransfer) ev.dataTransfer.effectAllowed = "copy";
         });
         chip.addEventListener("dblclick", () => {
-          if (!equipped.has(id)) addAbilityToDraft(id);
+          if (!equipped.has(id)) placeAbilityInDraft(id);
         });
         pool.append(chip);
       }
     }
     poolCol.append(pool);
 
+    const footer = el("div", "tavern-loadout-footer");
     const barCol = el("div", "tavern-loadout-bar");
     barCol.append(el("h4", "tavern-subhead", "Панель навыков"));
+    barCol.append(
+      el(
+        "p",
+        "tavern-note tavern-loadout-hint",
+        "Двойной клик по слоту снимает навык. Двойной клик по списку - добавляет.",
+      ),
+    );
     const slots = el("div", "tavern-skill-slots");
 
     for (let i = 0; i < caps.totalMax; i++) {
@@ -526,11 +621,15 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
         slot.classList.add("filled");
         slot.style.setProperty("--aspect-color", ASPECT_HEX[def.aspect]);
         slot.draggable = true;
-        const img = el("img");
-        img.src = ABILITY_ICON_URLS[id] ?? EMPTY_SKILL_ICON_URL;
-        img.alt = "";
-        img.draggable = false;
-        slot.append(img);
+        const iconUrl = ABILITY_ICON_URLS[id];
+        if (iconUrl) {
+          const img = el("img");
+          img.src = iconUrl;
+          img.alt = "";
+          img.draggable = false;
+          slot.append(img);
+        }
+
         slot.append(el("span", "tavern-slot-hotkey", hotkeyLabel(i)));
         slot.addEventListener("pointerenter", () => showSkillTip(slot, id));
         slot.addEventListener("pointerleave", hideSkillTip);
@@ -542,11 +641,6 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
         slot.addEventListener("dblclick", () => removeAbilityFromDraft(i));
       } else {
         slot.classList.add("empty");
-        const img = el("img");
-        img.src = EMPTY_SKILL_ICON_URL;
-        img.alt = "";
-        img.draggable = false;
-        slot.append(img);
         slot.append(el("span", "tavern-slot-hotkey", hotkeyLabel(i)));
       }
 
@@ -565,7 +659,7 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
         if (Number.isFinite(fromSlot) && fromSlot >= 0) {
           moveAbilityInDraft(fromSlot, i);
         } else {
-          addAbilityToDraft(abilityId, i);
+          placeAbilityInDraft(abilityId, i);
         }
       });
       slots.append(slot);
@@ -581,25 +675,22 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       if (!result.ok) return;
       handlers.onLoadoutChanged();
       handlers.onChanged();
-      draftLoadout = [...stateRef.hero.abilityLoadout];
+      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, caps.totalMax);
       renderLoadout();
     });
-    const resetBtn = el("button", "tavern-action-btn tavern-action-muted", "Сбросить черновик");
+    const resetBtn = el("button", "tavern-action-btn tavern-action-muted", "Сбросить");
     resetBtn.type = "button";
     resetBtn.addEventListener("click", () => {
       if (!stateRef) return;
-      draftLoadout = [...stateRef.hero.abilityLoadout];
+      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, caps.totalMax);
       renderLoadout();
     });
     actions.append(applyBtn, resetBtn);
-    barCol.append(
-      el("p", "tavern-note", "Двойной клик по слоту снимает навык. Двойной клик по списку - добавляет."),
-    );
-    barCol.append(actions);
 
-    layout.append(poolCol, barCol);
+    footer.append(barCol, actions);
+    layout.append(poolCol, footer);
     main.append(layout);
-    panelLoadout.append(main);
+    content.append(main);
   }
 
   function renderActivePanel(): void {
@@ -628,12 +719,11 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     renderActivePanel();
   }
 
-  closeBtn.addEventListener("click", close);
+  closeBtn.addEventListener("click", () => close());
   root.addEventListener("click", (ev) => {
     if (ev.target !== root) return;
-    // Во время отдыха клик снаружи не закрывает и не прерывает.
-    if (stateRef && isFireplaceResting(stateRef)) return;
-    close();
+    // Клик за окном: во время отдыха прерывает отдых и закрывает таверну.
+    close({ interruptRest: true });
   });
 
   const onKeyDown = (ev: KeyboardEvent): void => {
@@ -655,8 +745,8 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       stateRef = state;
       unitRef = unit;
       ensureTavernDay(state);
-      draftLoadout = [...state.hero.abilityLoadout];
-      poolAspectFilter = "all";
+      draftLoadout = normalizeAbilityLoadout(state.hero.abilityLoadout);
+      poolAspectFilter = state.hero.aspect;
       if (isFireplaceResting(state)) activeTab = "fireplace";
       // Сначала заполняем шапку и панель, потом показываем - без скачка золота/времени.
       setTab(activeTab);

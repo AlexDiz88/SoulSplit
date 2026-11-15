@@ -123,7 +123,8 @@ export interface HeroProfile {
   gold: number;
   aspect: Aspect;
   learnedAspects: Aspect[];
-  abilityLoadout: AbilityId[];
+  /** Панель навыков: фиксированные слоты, `null` = пусто (позиция = хоткей). */
+  abilityLoadout: (AbilityId | null)[];
   equipment: EquipmentMap;
   inventory: InventoryBag;
   /** Городской тайник 10×10 (не берётся в бой). */
@@ -256,7 +257,7 @@ export function hydrateCombatUnit(profile: HeroProfile): UnitInit {
       range: weapon?.range ?? "melee",
       reach: weapon?.reach ?? 1,
     },
-    abilities: [...profile.abilityLoadout],
+    abilities: profile.abilityLoadout.map((id) => id ?? null),
     portraitUrl: profile.portraitUrl,
     equipment,
     inventory,

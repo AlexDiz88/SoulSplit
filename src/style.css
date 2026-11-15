@@ -42,6 +42,37 @@
   scrollbar-color: var(--scroll-thumb) var(--scroll-track);
 }
 
+/* Без системной белой обводки фокуса после клика / хоткеев. */
+button,
+[type="button"],
+[type="submit"],
+[type="reset"],
+[role="button"] {
+  outline: none;
+}
+
+button:focus,
+button:focus-visible,
+button:focus-within,
+[type="button"]:focus,
+[type="button"]:focus-visible,
+[type="submit"]:focus,
+[type="submit"]:focus-visible,
+[type="reset"]:focus,
+[type="reset"]:focus-visible,
+[role="button"]:focus,
+[role="button"]:focus-visible {
+  outline: none;
+}
+
+button::-moz-focus-inner,
+[type="button"]::-moz-focus-inner,
+[type="submit"]::-moz-focus-inner,
+[type="reset"]::-moz-focus-inner {
+  border: 0;
+  padding: 0;
+}
+
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;

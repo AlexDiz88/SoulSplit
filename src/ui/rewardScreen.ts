@@ -6,6 +6,7 @@ import { getEnemyKind } from "../combat/enemies";
 import { addItemToInventory } from "../items/inventory";
 import type { ItemDef } from "../items/types";
 import type { HeroProfile } from "../meta/heroProfile";
+import { goldAmountNode } from "./goldIcon";
 import { buildItemCompareCards, positionItemCompare } from "./itemTooltip";
 import "./hubScreen.css";
 import "./itemRarity.css";
@@ -162,6 +163,11 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       root: rootChip,
       set(v: string) {
         valueEl.textContent = v;
+      },
+      setGold(amount: number, prefix = "") {
+        valueEl.replaceChildren();
+        if (prefix) valueEl.append(document.createTextNode(prefix));
+        valueEl.append(goldAmountNode(amount));
       },
     };
   }
@@ -435,7 +441,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       place.textContent = placeBits.join(" · ");
 
       chipXp.set(`+${formatNum(payload.xpGained)}`);
-      chipGold.set(`+${formatNum(payload.goldGained)}`);
+      chipGold.setGold(payload.goldGained, "+");
       chipKills.set(formatNum(payload.kills));
 
       const stats = payload.stats ?? createEmptyBattleStats();

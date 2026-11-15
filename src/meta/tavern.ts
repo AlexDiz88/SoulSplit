@@ -33,7 +33,27 @@ export const LOADOUT_MAX = 10;
 export const LOADOUT_PRIMARY_MAX = 7;
 export const LOADOUT_SECONDARY_MAX = 3;
 
+/** Слот панели: способность или пусто (позиция = хоткей). */
+export type AbilityLoadoutSlot = AbilityId | null;
+export type AbilityLoadout = AbilityLoadoutSlot[];
+
 export type TavernTabId = "rumors" | "sleep" | "fireplace" | "loadout";
+
+/** Нормализовать панель до фиксированной длины со слотами `null`. */
+export function normalizeAbilityLoadout(
+  loadout: readonly (AbilityId | null | undefined)[],
+  totalMax = LOADOUT_MAX,
+): AbilityLoadout {
+  const out: AbilityLoadout = Array.from({ length: totalMax }, () => null);
+  const seen = new Set<AbilityId>();
+  for (let i = 0; i < Math.min(loadout.length, totalMax); i++) {
+    const id = loadout[i];
+    if (!id || seen.has(id)) continue;
+    seen.add(id);
+    out[i] = id;
+  }
+  return out;
+}
 
 export type RumorOutcomeKind =
   | "gossip"
@@ -310,18 +330,21 @@ export function availableLoadoutAbilities(hero: {
 
 export function validateAbilityLoadout(
   hero: { aspect: Aspect; learnedAspects: Aspect[] },
-  loadout: AbilityId[],
-): { ok: true; loadout: AbilityId[] } | { ok: false; reason: string } {
+  loadout: readonly (AbilityId | null | undefined)[],
+): { ok: true; loadout: AbilityLoadout } | { ok: false; reason: string } {
   const caps = loadoutSlotCaps(hero);
   const available = new Set(availableLoadoutAbilities(hero));
   const secondary = secondaryAspectOf(hero);
-  const cleaned: AbilityId[] = [];
+  const cleaned = normalizeAbilityLoadout(loadout, caps.totalMax);
   const seen = new Set<AbilityId>();
   let primaryCount = 0;
   let secondaryCount = 0;
+  let filled = 0;
 
-  for (const id of loadout) {
-    if (!id || !available.has(id)) {
+  for (let i = 0; i < cleaned.length; i++) {
+    const id = cleaned[i];
+    if (!id) continue;
+    if (!available.has(id)) {
       return { ok: false, reason: "Способность недоступна" };
     }
     if (seen.has(id)) {
@@ -349,8 +372,8 @@ export function validateAbilityLoadout(
       return { ok: false, reason: "Аспект способности не выучен" };
     }
     seen.add(id);
-    cleaned.push(id);
-    if (cleaned.length > caps.totalMax) {
+    filled += 1;
+    if (filled > caps.totalMax) {
       return { ok: false, reason: `На панели не больше ${caps.totalMax} навыков` };
     }
   }
@@ -359,8 +382,8 @@ export function validateAbilityLoadout(
 }
 
 export function applyAbilityLoadout(
-  hero: { aspect: Aspect; learnedAspects: Aspect[]; abilityLoadout: AbilityId[] },
-  next: AbilityId[],
+  hero: { aspect: Aspect; learnedAspects: Aspect[]; abilityLoadout: AbilityLoadout },
+  next: readonly (AbilityId | null | undefined)[],
 ): { ok: true } | { ok: false; reason: string } {
   const checked = validateAbilityLoadout(hero, next);
   if (!checked.ok) return checked;

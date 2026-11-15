@@ -1580,6 +1580,7 @@ export class Battle {
     if (!u.alive || u.cast || u.hasStatus("stun") || !u.abilities.length) return;
     if (!this.findAutoTarget(u)) return;
     for (const id of u.abilities) {
+      if (!id) continue;
       if ((u.abilityCd[id] ?? 0) > 0) continue;
       const def = ABILITIES[id];
       if (!def || def.targetMode === "passive") continue;

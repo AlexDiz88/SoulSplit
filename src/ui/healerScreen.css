@@ -198,6 +198,9 @@
 }
 
 .healer-heal-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex: 0 0 auto;
   min-width: 200px;
   padding: 16px 22px;
@@ -314,6 +317,8 @@
 }
 
 .healer-buff-price {
+  display: inline-flex;
+  align-items: center;
   margin-left: auto;
   color: #e8c76a;
 }

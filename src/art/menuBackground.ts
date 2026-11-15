@@ -123,3 +123,18 @@ export function resolveMerchantPortraitUrl(
   }
   return resolveAssetBgUrl(stem);
 }
+
+/** Стемы арта комнат таверны (`tavern_rumors`, `tavern_sleep`, …). */
+export const TAVERN_ROOM_BG_STEMS = {
+  rumors: "tavern_rumors",
+  sleep: "tavern_sleep",
+  fireplace: "tavern_fireplace",
+  loadout: "tavern_loadout",
+} as const;
+
+export type TavernRoomBgId = keyof typeof TAVERN_ROOM_BG_STEMS;
+
+/** URL фона комнаты таверны. */
+export function resolveTavernRoomUrl(room: TavernRoomBgId): string {
+  return resolveAssetBgUrl(TAVERN_ROOM_BG_STEMS[room]);
+}

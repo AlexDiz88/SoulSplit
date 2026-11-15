@@ -111,9 +111,9 @@
 }
 
 .tavern-gold {
-  margin-top: 10px;
+  margin-top: 12px;
   min-height: 1.45em;
-  font-size: 1.2rem;
+  font-size: 1.25rem;
   font-weight: 700;
   line-height: 1.45;
   color: #e8c76a;
@@ -185,11 +185,69 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 14px;
 }
 
 .tavern-panel[hidden] {
   display: none !important;
+}
+
+.tavern-panel-layout {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(210px, 250px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: stretch;
+}
+
+.tavern-room-art {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  align-self: stretch;
+  border: 1px solid #5a4a2e;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #0a0b0c;
+}
+
+.tavern-room-art-img {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  object-fit: cover;
+  object-position: center top;
+  pointer-events: none;
+}
+
+.tavern-room-art-meta {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(1.05rem + 40px);
+  padding: 20px 12px;
+  text-align: center;
+  border-top: 1px solid rgba(106, 90, 58, 0.65);
+  background: #121314;
+}
+
+.tavern-room-art-name {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #f4dfa2;
+}
+
+.tavern-panel-content {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow: hidden;
 }
 
 /* Единый верх панелей: заголовки на одной линии между вкладками. */
@@ -274,6 +332,9 @@
 }
 
 .tavern-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-width: 220px;
   padding: 14px 20px;
   border: 1px solid #8a7040;
@@ -446,43 +507,100 @@
   }
 }
 
+.tavern-panel-main:has(.tavern-loadout-layout) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 .tavern-loadout-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+  display: flex;
+  flex-direction: column;
   gap: 20px;
-  align-items: start;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.tavern-loadout-pool {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.tavern-loadout-footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex: 0 0 auto;
+  margin-top: auto;
+  flex-wrap: wrap;
+}
+
+.tavern-loadout-bar {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.tavern-loadout-hint {
+  min-height: 0;
+  margin: 0 0 12px;
 }
 
 .tavern-aspect-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 12px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .tavern-filter-btn {
-  padding: 8px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 10px 16px 10px 10px;
   border: 1px solid #4a4538;
   border-radius: 4px;
   background: #141516;
   color: #a8a090;
   font: inherit;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
   font-weight: 700;
   cursor: var(--cur-default);
 }
 
 .tavern-filter-btn.active {
   color: #f0e2b0;
-  border-color: #8a7044;
+  border-color: color-mix(in srgb, var(--aspect-color, #8a7044) 70%, #4a4538);
   background: linear-gradient(180deg, #3a3220, #241e14);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--aspect-color, #8a7044) 35%, transparent);
+}
+
+.tavern-filter-aspect-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  object-fit: cover;
+  flex: 0 0 auto;
+  pointer-events: none;
+  user-select: none;
+}
+
+.tavern-filter-label {
+  line-height: 1.1;
 }
 
 .tavern-ability-pool {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-  max-height: min(480px, calc(100vh - 420px));
+  align-content: flex-start;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 4px 2px 8px;
 }
@@ -490,31 +608,26 @@
 .tavern-ability-chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  max-width: 100%;
-  padding: 6px 10px 6px 6px;
-  border: 1px solid color-mix(in srgb, var(--aspect-color, #8a7044) 55%, #2a2418);
-  border-radius: 4px;
-  background: rgba(16, 14, 12, 0.85);
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
   color: #e8e2d4;
   font: inherit;
-  font-size: 0.95rem;
-  font-weight: 700;
+  overflow: visible;
   cursor: var(--cur-grab);
 }
 
 .tavern-ability-chip img {
-  width: 36px;
-  height: 36px;
-  border-radius: 3px;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
   object-fit: cover;
-  flex: 0 0 auto;
-}
-
-.tavern-ability-name {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
 }
 
 .tavern-ability-chip.is-equipped {
@@ -524,56 +637,78 @@
 
 .tavern-skill-slots {
   display: grid;
-  grid-template-columns: repeat(5, 64px);
+  grid-template-columns: repeat(5, 83px);
   gap: 10px;
-  margin-bottom: 14px;
+  margin-bottom: 0;
 }
 
 .tavern-skill-slot {
   position: relative;
   box-sizing: border-box;
-  width: 64px;
-  height: 64px;
-  border: 2px solid #5a5040;
-  border-radius: 4px;
-  background: #0c0e0c;
-  overflow: hidden;
+  width: 83px;
+  height: 83px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  overflow: visible;
   cursor: var(--cur-default);
 }
 
+.tavern-skill-slot.empty {
+  background: rgba(12, 14, 12, 0.72);
+  box-shadow: inset 0 0 0 1px rgba(90, 80, 64, 0.55);
+}
+
 .tavern-skill-slot.filled {
-  border-color: color-mix(in srgb, var(--aspect-color, #8a7044) 70%, #2a2418);
   cursor: var(--cur-grab);
 }
 
 .tavern-skill-slot.drag-over {
-  border-color: #e8c76a;
-  box-shadow: 0 0 0 2px rgba(232, 199, 106, 0.35);
+  box-shadow:
+    0 0 0 2px rgba(232, 199, 106, 0.85),
+    0 0 10px rgba(232, 199, 106, 0.35);
+}
+
+.tavern-skill-slot.empty.drag-over {
+  background: rgba(40, 34, 18, 0.9);
 }
 
 .tavern-skill-slot img {
   display: block;
   width: 100%;
   height: 100%;
+  border-radius: 50%;
   object-fit: cover;
+  pointer-events: none;
+  user-select: none;
 }
 
 .tavern-slot-hotkey {
   position: absolute;
-  right: 3px;
-  bottom: 2px;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: #f0e0b0;
-  text-shadow: 0 1px 2px #000;
+  top: -2px;
+  left: -1px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(245, 238, 220, 0.78);
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.95),
+    0 1px 2px rgba(0, 0, 0, 0.9);
   pointer-events: none;
+  user-select: none;
 }
 
 .tavern-loadout-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  margin-top: 8px;
+  margin: 0;
+  flex: 0 0 auto;
+}
+
+.tavern-loadout-actions .tavern-action-btn {
+  min-width: 240px;
+  width: 100%;
 }
 
 .tavern-skill-tip {
@@ -589,8 +724,25 @@
     max-height: min(920px, calc(100vh - 16px));
   }
 
-  .tavern-loadout-layout {
+  .tavern-panel-layout {
     grid-template-columns: 1fr;
+  }
+
+  .tavern-room-art {
+    max-height: 240px;
+  }
+
+  .tavern-loadout-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tavern-loadout-actions {
+    width: 100%;
+  }
+
+  .tavern-loadout-actions .tavern-action-btn {
+    min-width: 0;
   }
 
   .tavern-tabs {

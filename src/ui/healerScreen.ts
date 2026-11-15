@@ -150,8 +150,13 @@ export function mountHealerScreen(handlers: HealerScreenHandlers): HealerScreenA
       info.append(el("div", "healer-trauma-timer", `Осталось: ${timer}`));
     }
 
-    const healBtn = el("button", "healer-heal-btn", `Вылечить (${trauma.healCost})`);
+    const healBtn = el("button", "healer-heal-btn");
     healBtn.type = "button";
+    healBtn.append(
+      document.createTextNode("Вылечить ("),
+      goldAmountNode(trauma.healCost),
+      document.createTextNode(")"),
+    );
     const canAfford = stateRef.hero.gold >= trauma.healCost;
     healBtn.disabled = !canAfford;
     healBtn.addEventListener("click", () => {
@@ -203,7 +208,9 @@ export function mountHealerScreen(handlers: HealerScreenHandlers): HealerScreenA
       meta.append(el("span", "healer-buff-active", left ? `Активно: ${left}` : "Активно"));
     }
 
-    meta.append(el("span", "healer-buff-price", `Цена: ${offer.price}`));
+    const priceEl = el("span", "healer-buff-price");
+    priceEl.append(document.createTextNode("Цена: "), goldAmountNode(offer.price));
+    meta.append(priceEl);
 
     const buyBtn = el("button", "healer-buy-btn");
     buyBtn.type = "button";

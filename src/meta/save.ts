@@ -18,7 +18,7 @@ import {
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
 import { ensureMarket } from "./market";
-import { endFireplaceRestSession, ensureTavernDay } from "./tavern";
+import { endFireplaceRestSession, ensureTavernDay, normalizeAbilityLoadout } from "./tavern";
 import { ensureWorldTime } from "./worldTime";
 import { levelBonusesAsStatDelta, MAX_HERO_LEVEL, xpToNextLevel } from "./progression";
 import { ensureQuestLog } from "../quests/questLog";
@@ -179,6 +179,7 @@ function normalizeState(parsed: GameState): GameState {
   ensureHeroStash(state.hero);
   ensureHeroBeltPotions(state.hero);
   ensureHeroGlobalEffects(state.hero);
+  state.hero.abilityLoadout = normalizeAbilityLoadout(state.hero.abilityLoadout ?? []);
   ensureWorldTime(state);
   ensureMarket(state);
   ensureQuestLog(state);
