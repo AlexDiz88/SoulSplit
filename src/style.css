@@ -654,16 +654,44 @@ textarea,
   line-height: 1;
 }
 
+@property --skill-tip-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@keyframes skill-tip-neon-spin {
+  to {
+    --skill-tip-angle: 360deg;
+  }
+}
+
 .skill-tooltip {
+  --skill-tip-neon: var(--aspect-color, var(--accent));
   position: absolute;
   z-index: 80;
-  min-width: 200px;
-  max-width: 260px;
-  padding: 10px 12px 11px;
-  background: linear-gradient(180deg, rgb(22, 28, 20), rgb(12, 16, 12));
-  border: 1px solid var(--accent-dim);
-  border-radius: 2px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  min-width: 280px;
+  max-width: 380px;
+  padding: 14px 16px 15px;
+  border: 1.5px solid transparent;
+  border-radius: 4px;
+  background:
+    linear-gradient(180deg, rgb(16, 20, 18), rgb(8, 10, 10)) padding-box,
+    conic-gradient(
+      from var(--skill-tip-angle),
+      color-mix(in srgb, var(--skill-tip-neon) 25%, #ffffff),
+      var(--skill-tip-neon),
+      color-mix(in srgb, var(--skill-tip-neon) 55%, #7cf0ff),
+      color-mix(in srgb, var(--skill-tip-neon) 45%, #c78cff),
+      color-mix(in srgb, var(--skill-tip-neon) 60%, #ffe08a),
+      var(--skill-tip-neon),
+      color-mix(in srgb, var(--skill-tip-neon) 25%, #ffffff)
+    ) border-box;
+  box-shadow:
+    0 0 8px color-mix(in srgb, var(--skill-tip-neon) 45%, transparent),
+    0 0 20px color-mix(in srgb, var(--skill-tip-neon) 22%, transparent),
+    0 12px 28px rgba(0, 0, 0, 0.55);
+  animation: skill-tip-neon-spin 3.6s linear infinite;
   pointer-events: none;
   color: var(--text);
 }
@@ -702,33 +730,36 @@ textarea,
 }
 
 .skill-tooltip .tt-head {
-  margin-bottom: 4px;
+  margin-bottom: 8px;
 }
 
 .skill-tooltip .tt-head.has-icon {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 /* Круг как на панели способностей, рядом с названием. */
 .skill-tooltip .tt-icon {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   flex-shrink: 0;
   object-fit: cover;
   border-radius: 50%;
-  border: 1px solid color-mix(in srgb, var(--aspect-color, var(--accent-dim)) 55%, transparent);
+  border: 1px solid color-mix(in srgb, var(--aspect-color, var(--accent-dim)) 65%, transparent);
+  box-shadow: 0 0 10px color-mix(in srgb, var(--aspect-color, var(--accent)) 28%, transparent);
   background: rgb(14, 18, 14);
   pointer-events: none;
 }
 
 .skill-tooltip .tt-name {
   font-family: var(--font);
-  font-size: 1.15rem;
-  font-weight: 700;
-  color: var(--accent);
-  margin-bottom: 4px;
+  font-size: 1.42rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: color-mix(in srgb, var(--aspect-color, var(--accent)) 72%, #ffffff);
+  text-shadow: 0 0 12px color-mix(in srgb, var(--aspect-color, var(--accent)) 35%, transparent);
+  margin-bottom: 6px;
 }
 
 .skill-tooltip .tt-head .tt-name {
@@ -737,11 +768,11 @@ textarea,
 }
 
 .skill-tooltip .tt-passive {
-  font-size: 0.82rem;
+  font-size: 0.98rem;
   font-weight: 700;
-  line-height: 1.2;
+  line-height: 1.25;
   color: #e8c84a;
-  margin: -2px 0 6px;
+  margin: -2px 0 8px;
 }
 
 .skill-tooltip .tt-name:has(+ .tt-passive) {
@@ -749,35 +780,31 @@ textarea,
 }
 
 .skill-tooltip .tt-desc {
-  color: var(--muted);
-  font-size: 0.88rem;
-  line-height: 1.4;
-  margin-bottom: 8px;
+  color: #d5d0c4;
+  font-size: 1.08rem;
+  line-height: 1.5;
+  margin-bottom: 10px;
 }
 
 .skill-tooltip .tt-stats {
   display: grid;
-  gap: 3px;
-  font-size: 0.88rem;
+  gap: 5px;
+  font-size: 1.02rem;
 }
 
 .skill-tooltip .tt-stat {
   display: flex;
   justify-content: space-between;
-  gap: 16px;
+  gap: 18px;
 }
 
 .skill-tooltip .tt-stat span {
-  color: var(--muted);
+  color: #a8a294;
 }
 
 .skill-tooltip .tt-stat b {
   font-weight: 800;
   color: var(--text);
-}
-
-.skill-tooltip[class*="aspect-"] {
-  border-color: color-mix(in srgb, var(--aspect-color) 50%, transparent);
 }
 
 .battle-banner {

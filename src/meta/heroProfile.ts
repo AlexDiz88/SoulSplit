@@ -1,3 +1,4 @@
+import { ABILITIES } from "../abilities/definitions";
 import { pickRandomHeroPortraitUrl } from "../art/portraits";
 import type { UnitInit } from "../combat/Unit";
 import type { EquipmentMap } from "../items/equipment";
@@ -28,7 +29,19 @@ import {
   type GlobalEffect,
 } from "../effects/globalEffects";
 import type { AbilityId, Aspect } from "../types";
+import {
+  arrangeAbilityLoadout,
+  clonePendingLoadoutPicks,
+  emptyAbilityLoadout,
+  enqueueLoadoutPicksForLevelGain,
+  enqueueSecondaryAbilityPicksAfterAspectUnlock,
+  loadoutSlotCapsForLevel,
+  reconcilePendingLoadoutPicks,
+  secondaryAspectFromLearned,
+  type PendingLoadoutPick,
+} from "./abilityProgression";
 import { applyXpGain, levelBonusesAsStatDelta, type AddXpResult } from "./progression";
+import { placeAbilityOnLoadout } from "./tavern";
 
 export const HERO_PROFILE_VERSION = 1 as const;
 
@@ -123,8 +136,10 @@ export interface HeroProfile {
   gold: number;
   aspect: Aspect;
   learnedAspects: Aspect[];
-  /** Панель навыков: фиксированные слоты, `null` = пусто (позиция = хоткей). */
+  /** Панель навыков: 0..6 основной, 7..9 вторичный; `null` = пусто (позиция = хоткей). */
   abilityLoadout: (AbilityId | null)[];
+  /** Очередь обязательных выборов после level-up (аспект / способность). */
+  pendingLoadoutPicks: PendingLoadoutPick[];
   equipment: EquipmentMap;
   inventory: InventoryBag;
   /** Городской тайник 10×10 (не берётся в бой). */
@@ -168,6 +183,7 @@ export function cloneHeroProfile(src: HeroProfile): HeroProfile {
     ...src,
     learnedAspects: [...src.learnedAspects],
     abilityLoadout: [...src.abilityLoadout],
+    pendingLoadoutPicks: clonePendingLoadoutPicks(src.pendingLoadoutPicks),
     equipment: cloneEquipment(src.equipment),
     inventory: cloneInventory(src.inventory).map((cell) => (cell ? structuredClone(cell) : null)),
     stash: cloneStash(src.stash).map((cell) => (cell ? structuredClone(cell) : null)),
@@ -190,9 +206,15 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
   const weapon = createStarterWeapon(starterId, "mainhand");
   const name = (opts?.name?.trim() || "Айра").slice(0, HERO_NAME_MAX_LENGTH);
   const aspect = opts?.aspect ?? "air";
-  const loadout = opts?.starterAbility
+  const starterIds = opts?.starterAbility
     ? [opts.starterAbility]
-    : STARTER_LOADOUT_BY_ASPECT[aspect];
+    : STARTER_LOADOUT_BY_ASPECT[aspect].slice(0, 1);
+  const caps = loadoutSlotCapsForLevel(1, false);
+  const loadout = arrangeAbilityLoadout(
+    starterIds,
+    (id) => (id ? "primary" : "invalid"),
+    caps,
+  );
   return {
     version: HERO_PROFILE_VERSION,
     id: opts ? makeHeroId() : "aira",
@@ -203,7 +225,8 @@ export function createNewHeroProfile(opts?: Partial<NewHeroOptions>): HeroProfil
     gold: 0,
     aspect,
     learnedAspects: [aspect],
-    abilityLoadout: [...loadout],
+    abilityLoadout: loadout.length ? loadout : emptyAbilityLoadout(),
+    pendingLoadoutPicks: [],
     equipment: { mainhand: weapon },
     inventory: createEmptyInventory(),
     stash: createEmptyStash(),
@@ -404,17 +427,84 @@ export function applyProfileVitals(
   applyProfileMana(unit, profile);
 }
 
-/** Добавить XP и обновить levelBonuses. Мутирует profile. */
+/** Добавить XP и обновить levelBonuses / очередь выбора навыков. Мутирует profile. */
 export function addXpToProfile(profile: HeroProfile, amount: number): AddXpResult {
+  const fromLevel = profile.level;
+  const secondary = secondaryAspectFromLearned(profile.aspect, profile.learnedAspects);
   const result = applyXpGain(profile.level, profile.xp, amount);
   profile.level = result.level;
   profile.xp = result.xp;
   if (result.levelsGained > 0) {
     profile.levelBonuses = levelBonusesAsStatDelta(profile.level);
+    profile.pendingLoadoutPicks = enqueueLoadoutPicksForLevelGain(
+      clonePendingLoadoutPicks(profile.pendingLoadoutPicks),
+      fromLevel,
+      result.levelsGained,
+      profile.aspect,
+      secondary,
+    );
+    profile.pendingLoadoutPicks = reconcilePendingLoadoutPicks(profile);
   }
   return {
     leveled: result.leveled,
     levelsGained: result.levelsGained,
     overflowXp: result.overflowXp,
   };
+}
+
+/** Гарантировать поле очереди и починить миграцию ур.≥5 без вторичного. */
+export function ensureHeroPendingLoadoutPicks(profile: HeroProfile): void {
+  profile.pendingLoadoutPicks = reconcilePendingLoadoutPicks({
+    ...profile,
+    pendingLoadoutPicks: profile.pendingLoadoutPicks ?? [],
+  });
+}
+
+export type ResolveLoadoutPickResult =
+  | { ok: true; remaining: number }
+  | { ok: false; reason: string };
+
+/** Выбрать вторичный аспект (голова очереди `choose_secondary_aspect`). */
+export function resolveSecondaryAspectPick(
+  profile: HeroProfile,
+  aspect: Aspect,
+): ResolveLoadoutPickResult {
+  ensureHeroPendingLoadoutPicks(profile);
+  const head = profile.pendingLoadoutPicks[0];
+  if (!head || head.kind !== "choose_secondary_aspect") {
+    return { ok: false, reason: "Сейчас нельзя выбрать вторичный аспект" };
+  }
+  if (aspect === profile.aspect) {
+    return { ok: false, reason: "Вторичный аспект должен отличаться от основного" };
+  }
+  if (secondaryAspectFromLearned(profile.aspect, profile.learnedAspects)) {
+    return { ok: false, reason: "Вторичный аспект уже выбран" };
+  }
+  if (!profile.learnedAspects.includes(aspect)) {
+    profile.learnedAspects = [...profile.learnedAspects, aspect];
+  }
+  profile.pendingLoadoutPicks = profile.pendingLoadoutPicks.slice(1);
+  profile.pendingLoadoutPicks = enqueueSecondaryAbilityPicksAfterAspectUnlock(profile);
+  profile.pendingLoadoutPicks = reconcilePendingLoadoutPicks(profile);
+  return { ok: true, remaining: profile.pendingLoadoutPicks.length };
+}
+
+/** Выбрать способность (голова очереди `choose_ability`). */
+export function resolveAbilityPick(
+  profile: HeroProfile,
+  abilityId: AbilityId,
+): ResolveLoadoutPickResult {
+  ensureHeroPendingLoadoutPicks(profile);
+  const head = profile.pendingLoadoutPicks[0];
+  if (!head || head.kind !== "choose_ability") {
+    return { ok: false, reason: "Сейчас нельзя выбрать способность" };
+  }
+  const def = ABILITIES[abilityId];
+  if (!def || def.aspect !== head.aspect) {
+    return { ok: false, reason: "Нужна способность выбранного аспекта" };
+  }
+  const placed = placeAbilityOnLoadout(profile, abilityId);
+  if (!placed.ok) return placed;
+  profile.pendingLoadoutPicks = profile.pendingLoadoutPicks.slice(1);
+  return { ok: true, remaining: profile.pendingLoadoutPicks.length };
 }

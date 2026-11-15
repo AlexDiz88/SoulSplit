@@ -5,6 +5,15 @@ import type { Unit } from "../combat/Unit";
 import { globalEffectDef } from "../effects/globalEffects";
 import type { GameState } from "../meta/gameState";
 import {
+  countLoadoutFilledByBand,
+  firstFreeBandSlot,
+  isLoadoutSlotUnlocked,
+  LOADOUT_MAX,
+  LOADOUT_PRIMARY_MAX,
+  loadoutBandForIndex,
+  unlockLevelForLoadoutSlot,
+} from "../meta/abilityProgression";
+import {
   applyAbilityLoadout,
   availableLoadoutAbilities,
   buyRumor,
@@ -203,6 +212,7 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       Math.max(8, aRect.top - winRect.top),
       Math.max(8, winRect.height - tipRect.height - 8),
     );
+    skillTip.style.transform = "";
     skillTip.style.left = `${Math.max(8, left)}px`;
     skillTip.style.top = `${top}px`;
   }
@@ -468,22 +478,39 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     return true;
   }
 
-  function firstFreeSlot(slots: AbilityLoadout): number {
-    return slots.findIndex((id) => !id);
+  function bandForAbility(id: AbilityId): "primary" | "secondary" | null {
+    if (!stateRef) return null;
+    const def = ABILITIES[id];
+    if (!def) return null;
+    if (def.aspect === stateRef.hero.aspect) return "primary";
+    const secondary = secondaryAspectOf(stateRef.hero);
+    if (secondary && def.aspect === secondary) return "secondary";
+    return null;
   }
 
   function placeAbilityInDraft(id: AbilityId, atIndex?: number): void {
     if (!stateRef) return;
     const caps = loadoutSlotCaps(stateRef.hero);
-    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    const band = bandForAbility(id);
+    if (!band) return;
+    const next = normalizeAbilityLoadout(draftLoadout, stateRef.hero);
     const existing = next.indexOf(id);
     if (existing >= 0) next[existing] = null;
-    const slot =
-      atIndex != null && atIndex >= 0 && atIndex < caps.totalMax
-        ? atIndex
-        : firstFreeSlot(next);
+
+    let slot = -1;
+    if (atIndex != null && atIndex >= 0 && atIndex < LOADOUT_MAX) {
+      if (isLoadoutSlotUnlocked(atIndex, caps) && loadoutBandForIndex(atIndex) === band) {
+        slot = atIndex;
+      }
+    }
+    if (slot < 0) slot = firstFreeBandSlot(next, band, caps);
     if (slot < 0) return;
+    // Если целевой слот занят другой способностью той же полосы - обмен.
+    const displaced = next[slot];
     next[slot] = id;
+    if (displaced && displaced !== id && existing >= 0 && !next[existing]) {
+      next[existing] = displaced;
+    }
     commitDraft(next);
   }
 
@@ -491,9 +518,11 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     if (!stateRef) return;
     if (fromIndex === toIndex) return;
     const caps = loadoutSlotCaps(stateRef.hero);
-    if (fromIndex < 0 || fromIndex >= caps.totalMax) return;
-    if (toIndex < 0 || toIndex >= caps.totalMax) return;
-    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    if (!isLoadoutSlotUnlocked(fromIndex, caps) || !isLoadoutSlotUnlocked(toIndex, caps)) {
+      return;
+    }
+    if (loadoutBandForIndex(fromIndex) !== loadoutBandForIndex(toIndex)) return;
+    const next = normalizeAbilityLoadout(draftLoadout, stateRef.hero);
     const moved = next[fromIndex];
     if (!moved) return;
     next[fromIndex] = next[toIndex];
@@ -503,12 +532,26 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
 
   function removeAbilityFromDraft(index: number): void {
     if (!stateRef) return;
-    const caps = loadoutSlotCaps(stateRef.hero);
-    const next = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    const next = normalizeAbilityLoadout(draftLoadout, stateRef.hero);
     if (index < 0 || index >= next.length || !next[index]) return;
     next[index] = null;
     draftLoadout = next;
     renderLoadout();
+  }
+
+  function showLockTip(anchor: HTMLElement, unlockLevel: number): void {
+    skillTip.className = "skill-tooltip tavern-skill-tip";
+    skillTip.style.removeProperty("--aspect-color");
+    skillTip.innerHTML = `
+      <div class="tt-name">Слот закрыт</div>
+      <div class="tt-desc">Откроется на уровне ${unlockLevel}</div>
+    `;
+    skillTip.hidden = false;
+    const winRect = win.getBoundingClientRect();
+    const aRect = anchor.getBoundingClientRect();
+    skillTip.style.transform = "translate(-50%, -100%)";
+    skillTip.style.left = `${aRect.left - winRect.left + aRect.width / 2}px`;
+    skillTip.style.top = `${aRect.top - winRect.top - 8}px`;
   }
 
   function renderLoadout(): void {
@@ -519,19 +562,28 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
     const caps = loadoutSlotCaps(hero);
     const secondary = secondaryAspectOf(hero);
 
+    const filled = countLoadoutFilledByBand(draftLoadout);
     content.append(
       panelIntro(
         "Комната подготовки",
-        secondary
-          ? `Перетащите способности на панель. Основной (${ASPECT_LABEL[hero.aspect]}): до ${caps.primaryMax}. Вторичный (${ASPECT_LABEL[secondary]}): до ${caps.secondaryMax}. Всего активных: ${caps.totalMax}.`
-          : `Перетащите способности на панель. Основной аспект (${ASPECT_LABEL[hero.aspect]}): до ${caps.primaryMax} из ${caps.totalMax} слотов. Вторичный аспект пока не выучен.`,
+        "Здесь можно управлять и настраивать ваши способности. Новые доступные ячейки открываются каждый уровень, вплоть до 10-го.",
       ),
     );
+
+    const capsLine = el("p", "tavern-loadout-caps");
+    const primaryLabel = `Основной (${ASPECT_LABEL[hero.aspect]}): ${filled.primary}/${caps.primaryMax}`;
+    const secondaryLabel = secondary
+      ? `Вторичный (${ASPECT_LABEL[secondary]}): ${filled.secondary}/${caps.secondaryMax}`
+      : hero.level >= 5
+        ? "Вторичный: выберите школу"
+        : "Вторичный: с 5 уровня";
+    capsLine.textContent = `${primaryLabel} · ${secondaryLabel} · Всего ${filled.primary + filled.secondary}/${caps.totalMax}`;
+    content.append(capsLine);
 
     if (!poolAspectFilter || !hero.learnedAspects.includes(poolAspectFilter)) {
       poolAspectFilter = hero.aspect;
     }
-    draftLoadout = normalizeAbilityLoadout(draftLoadout, caps.totalMax);
+    draftLoadout = normalizeAbilityLoadout(draftLoadout, hero);
 
     const main = el("div", "tavern-panel-main");
     const layout = el("div", "tavern-loadout-layout");
@@ -608,14 +660,30 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       el(
         "p",
         "tavern-note tavern-loadout-hint",
-        "Двойной клик по слоту снимает навык. Двойной клик по списку - добавляет.",
+        "Слева слоты основного аспекта, справа - вторичного. Двойной клик снимает / добавляет.",
       ),
     );
-    const slots = el("div", "tavern-skill-slots");
 
-    for (let i = 0; i < caps.totalMax; i++) {
+    const bands = el("div", "tavern-skill-bands");
+    const primaryRow = el("div", "tavern-skill-slots tavern-skill-slots-primary");
+    const secondaryRow = el("div", "tavern-skill-slots tavern-skill-slots-secondary");
+
+    function mountSlot(i: number, host: HTMLElement): void {
+      const unlocked = isLoadoutSlotUnlocked(i, caps);
       const slot = el("div", "tavern-skill-slot");
       const id = draftLoadout[i];
+      slot.append(el("span", "tavern-slot-hotkey", hotkeyLabel(i)));
+
+      if (!unlocked) {
+        slot.classList.add("locked");
+        const unlockAt = unlockLevelForLoadoutSlot(i) ?? 10;
+        slot.setAttribute("aria-label", `Слот откроется на уровне ${unlockAt}`);
+        slot.addEventListener("pointerenter", () => showLockTip(slot, unlockAt));
+        slot.addEventListener("pointerleave", hideSkillTip);
+        host.append(slot);
+        return;
+      }
+
       if (id && ABILITIES[id]) {
         const def = ABILITIES[id];
         slot.classList.add("filled");
@@ -629,8 +697,6 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
           img.draggable = false;
           slot.append(img);
         }
-
-        slot.append(el("span", "tavern-slot-hotkey", hotkeyLabel(i)));
         slot.addEventListener("pointerenter", () => showSkillTip(slot, id));
         slot.addEventListener("pointerleave", hideSkillTip);
         slot.addEventListener("dragstart", (ev) => {
@@ -641,7 +707,11 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
         slot.addEventListener("dblclick", () => removeAbilityFromDraft(i));
       } else {
         slot.classList.add("empty");
-        slot.append(el("span", "tavern-slot-hotkey", hotkeyLabel(i)));
+        if (i < LOADOUT_PRIMARY_MAX) {
+          slot.style.setProperty("--aspect-color", ASPECT_HEX[hero.aspect]);
+        } else if (secondary) {
+          slot.style.setProperty("--aspect-color", ASPECT_HEX[secondary]);
+        }
       }
 
       slot.addEventListener("dragover", (ev) => {
@@ -662,9 +732,13 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
           placeAbilityInDraft(abilityId, i);
         }
       });
-      slots.append(slot);
+      host.append(slot);
     }
-    barCol.append(slots);
+
+    for (let i = 0; i < LOADOUT_PRIMARY_MAX; i++) mountSlot(i, primaryRow);
+    for (let i = LOADOUT_PRIMARY_MAX; i < LOADOUT_MAX; i++) mountSlot(i, secondaryRow);
+    bands.append(primaryRow, secondaryRow);
+    barCol.append(bands);
 
     const actions = el("div", "tavern-loadout-actions");
     const applyBtn = el("button", "tavern-action-btn", "Применить");
@@ -675,14 +749,14 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       if (!result.ok) return;
       handlers.onLoadoutChanged();
       handlers.onChanged();
-      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, caps.totalMax);
+      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, stateRef.hero);
       renderLoadout();
     });
     const resetBtn = el("button", "tavern-action-btn tavern-action-muted", "Сбросить");
     resetBtn.type = "button";
     resetBtn.addEventListener("click", () => {
       if (!stateRef) return;
-      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, caps.totalMax);
+      draftLoadout = normalizeAbilityLoadout(stateRef.hero.abilityLoadout, stateRef.hero);
       renderLoadout();
     });
     actions.append(applyBtn, resetBtn);
@@ -745,7 +819,7 @@ export function mountTavernScreen(handlers: TavernScreenHandlers): TavernScreenA
       stateRef = state;
       unitRef = unit;
       ensureTavernDay(state);
-      draftLoadout = normalizeAbilityLoadout(state.hero.abilityLoadout);
+      draftLoadout = normalizeAbilityLoadout(state.hero.abilityLoadout, state.hero);
       poolAspectFilter = state.hero.aspect;
       if (isFireplaceResting(state)) activeTab = "fireplace";
       // Сначала заполняем шапку и панель, потом показываем - без скачка золота/времени.

@@ -14,6 +14,7 @@ import {
 import {
   ensureHeroBeltPotions,
   ensureHeroGlobalEffects,
+  ensureHeroPendingLoadoutPicks,
   ensureHeroStash,
   HERO_PROFILE_VERSION,
 } from "./heroProfile";
@@ -179,7 +180,14 @@ function normalizeState(parsed: GameState): GameState {
   ensureHeroStash(state.hero);
   ensureHeroBeltPotions(state.hero);
   ensureHeroGlobalEffects(state.hero);
-  state.hero.abilityLoadout = normalizeAbilityLoadout(state.hero.abilityLoadout ?? []);
+  if (!state.hero.learnedAspects.includes(state.hero.aspect)) {
+    state.hero.learnedAspects = [state.hero.aspect, ...state.hero.learnedAspects];
+  }
+  state.hero.abilityLoadout = normalizeAbilityLoadout(
+    state.hero.abilityLoadout ?? [],
+    state.hero,
+  );
+  ensureHeroPendingLoadoutPicks(state.hero);
   ensureWorldTime(state);
   ensureMarket(state);
   ensureQuestLog(state);

@@ -11,12 +11,31 @@ import { ALL_QUEST_IDS } from "../quests/definitions";
 import type { QuestId } from "../quests/types";
 import { getStat } from "../stats/sheet";
 import type { AbilityId, Aspect } from "../types";
+import {
+  arrangeAbilityLoadout,
+  firstFreeBandSlot,
+  isLoadoutSlotUnlocked,
+  LOADOUT_MAX,
+  loadoutBandForIndex,
+  loadoutSlotCapsForLevel,
+  type AbilityLoadout,
+  type LoadoutSlotCaps,
+} from "./abilityProgression";
 import type { GameState } from "./gameState";
 import {
   phaseFromHour,
   sleepUntilMorning,
   type AdvanceHoursResult,
 } from "./worldTime";
+
+export {
+  LOADOUT_MAX,
+  LOADOUT_PRIMARY_MAX,
+  LOADOUT_SECONDARY_MAX,
+  type AbilityLoadout,
+  type AbilityLoadoutSlot,
+  type LoadoutSlotCaps,
+} from "./abilityProgression";
 
 /** Цена слуха. */
 export const RUMOR_COST = 25;
@@ -28,23 +47,39 @@ export const RUMOR_QUEST_CHANCE = 0.2;
 /** Номер в таверне. */
 export const TAVERN_SLEEP_COST = 50;
 
-/** Лимиты панели навыков (7 основной + 3 вторичный). */
-export const LOADOUT_MAX = 10;
-export const LOADOUT_PRIMARY_MAX = 7;
-export const LOADOUT_SECONDARY_MAX = 3;
-
-/** Слот панели: способность или пусто (позиция = хоткей). */
-export type AbilityLoadoutSlot = AbilityId | null;
-export type AbilityLoadout = AbilityLoadoutSlot[];
-
 export type TavernTabId = "rumors" | "sleep" | "fireplace" | "loadout";
 
-/** Нормализовать панель до фиксированной длины со слотами `null`. */
+function classifyLoadoutAbility(
+  hero: { aspect: Aspect; learnedAspects: Aspect[] },
+  id: AbilityId,
+): "primary" | "secondary" | "invalid" {
+  const def = ABILITIES[id];
+  if (!def || def.targetMode === "passive") return "invalid";
+  if (def.aspect === hero.aspect) return "primary";
+  const secondary = secondaryAspectOf(hero);
+  if (secondary && def.aspect === secondary) return "secondary";
+  return "invalid";
+}
+
+/**
+ * Нормализовать панель: полосы 0..6 основной / 7..9 вторичный.
+ * Без героя - только длина и уникальность (черновик).
+ */
 export function normalizeAbilityLoadout(
   loadout: readonly (AbilityId | null | undefined)[],
-  totalMax = LOADOUT_MAX,
+  heroOrTotalMax?: { level: number; aspect: Aspect; learnedAspects: Aspect[] } | number,
 ): AbilityLoadout {
-  const out: AbilityLoadout = Array.from({ length: totalMax }, () => null);
+  if (heroOrTotalMax && typeof heroOrTotalMax === "object") {
+    const caps = loadoutSlotCaps(heroOrTotalMax);
+    return arrangeAbilityLoadout(
+      loadout,
+      (id) => classifyLoadoutAbility(heroOrTotalMax, id),
+      caps,
+    );
+  }
+  const totalMax =
+    typeof heroOrTotalMax === "number" ? Math.min(LOADOUT_MAX, heroOrTotalMax) : LOADOUT_MAX;
+  const out: AbilityLoadout = Array.from({ length: LOADOUT_MAX }, () => null);
   const seen = new Set<AbilityId>();
   for (let i = 0; i < Math.min(loadout.length, totalMax); i++) {
     const id = loadout[i];
@@ -300,15 +335,11 @@ export function secondaryAspectOf(hero: {
 }
 
 export function loadoutSlotCaps(hero: {
+  level: number;
   aspect: Aspect;
   learnedAspects: Aspect[];
-}): { primaryMax: number; secondaryMax: number; totalMax: number } {
-  const secondary = secondaryAspectOf(hero);
-  return {
-    primaryMax: LOADOUT_PRIMARY_MAX,
-    secondaryMax: secondary ? LOADOUT_SECONDARY_MAX : 0,
-    totalMax: LOADOUT_MAX,
-  };
+}): LoadoutSlotCaps {
+  return loadoutSlotCapsForLevel(hero.level, !!secondaryAspectOf(hero));
 }
 
 export function availableLoadoutAbilities(hero: {
@@ -329,21 +360,21 @@ export function availableLoadoutAbilities(hero: {
 }
 
 export function validateAbilityLoadout(
-  hero: { aspect: Aspect; learnedAspects: Aspect[] },
+  hero: { level: number; aspect: Aspect; learnedAspects: Aspect[] },
   loadout: readonly (AbilityId | null | undefined)[],
 ): { ok: true; loadout: AbilityLoadout } | { ok: false; reason: string } {
   const caps = loadoutSlotCaps(hero);
   const available = new Set(availableLoadoutAbilities(hero));
   const secondary = secondaryAspectOf(hero);
-  const cleaned = normalizeAbilityLoadout(loadout, caps.totalMax);
+  const cleaned = normalizeAbilityLoadout(loadout, hero);
   const seen = new Set<AbilityId>();
-  let primaryCount = 0;
-  let secondaryCount = 0;
-  let filled = 0;
 
   for (let i = 0; i < cleaned.length; i++) {
     const id = cleaned[i];
     if (!id) continue;
+    if (!isLoadoutSlotUnlocked(i, caps)) {
+      return { ok: false, reason: "Слот ещё закрыт" };
+    }
     if (!available.has(id)) {
       return { ok: false, reason: "Способность недоступна" };
     }
@@ -352,41 +383,69 @@ export function validateAbilityLoadout(
     }
     const def = ABILITIES[id];
     if (!def) return { ok: false, reason: "Неизвестная способность" };
-    if (def.aspect === hero.aspect) {
-      primaryCount += 1;
-      if (primaryCount > caps.primaryMax) {
-        return {
-          ok: false,
-          reason: `С основного аспекта можно взять не больше ${caps.primaryMax}`,
-        };
+    const band = loadoutBandForIndex(i);
+    if (band === "primary") {
+      if (def.aspect !== hero.aspect) {
+        return { ok: false, reason: "В слотах основного аспекта только его способности" };
       }
-    } else if (secondary && def.aspect === secondary) {
-      secondaryCount += 1;
-      if (secondaryCount > caps.secondaryMax) {
-        return {
-          ok: false,
-          reason: `Со вторичного аспекта можно взять не больше ${caps.secondaryMax}`,
-        };
+    } else if (band === "secondary") {
+      if (!secondary || def.aspect !== secondary) {
+        return { ok: false, reason: "В слотах вторичного аспекта только его способности" };
       }
     } else {
-      return { ok: false, reason: "Аспект способности не выучен" };
+      return { ok: false, reason: "Неверный слот панели" };
     }
     seen.add(id);
-    filled += 1;
-    if (filled > caps.totalMax) {
-      return { ok: false, reason: `На панели не больше ${caps.totalMax} навыков` };
-    }
   }
 
   return { ok: true, loadout: cleaned };
 }
 
 export function applyAbilityLoadout(
-  hero: { aspect: Aspect; learnedAspects: Aspect[]; abilityLoadout: AbilityLoadout },
+  hero: {
+    level: number;
+    aspect: Aspect;
+    learnedAspects: Aspect[];
+    abilityLoadout: AbilityLoadout;
+  },
   next: readonly (AbilityId | null | undefined)[],
 ): { ok: true } | { ok: false; reason: string } {
   const checked = validateAbilityLoadout(hero, next);
   if (!checked.ok) return checked;
   hero.abilityLoadout = checked.loadout;
   return { ok: true };
+}
+
+/** Поставить способность в первый свободный слот своей полосы (для level-up pick). */
+export function placeAbilityOnLoadout(
+  hero: {
+    level: number;
+    aspect: Aspect;
+    learnedAspects: Aspect[];
+    abilityLoadout: AbilityLoadout;
+  },
+  abilityId: AbilityId,
+): { ok: true; index: number } | { ok: false; reason: string } {
+  const kind = classifyLoadoutAbility(hero, abilityId);
+  if (kind === "invalid") return { ok: false, reason: "Способность недоступна" };
+  const caps = loadoutSlotCaps(hero);
+  const next = normalizeAbilityLoadout(hero.abilityLoadout, hero);
+  if (next.includes(abilityId)) {
+    return { ok: false, reason: "Способность уже на панели" };
+  }
+  const index = firstFreeBandSlot(next, kind, caps);
+  if (index < 0) {
+    return {
+      ok: false,
+      reason:
+        kind === "primary"
+          ? "Нет свободного слота основного аспекта"
+          : "Нет свободного слота вторичного аспекта",
+    };
+  }
+  next[index] = abilityId;
+  const checked = validateAbilityLoadout(hero, next);
+  if (!checked.ok) return checked;
+  hero.abilityLoadout = checked.loadout;
+  return { ok: true, index };
 }

@@ -15,6 +15,7 @@ import {
 } from "../items/potions";
 import { combatModsFromGlobalEffects } from "../effects/globalEffects";
 import { tickGlobalEffectsOutsideCombat } from "../effects/tickGlobalEffects";
+import { hasPendingLoadoutPicks } from "../meta/abilityProgression";
 import {
   addXpToProfile,
   applyProfileVitals,
@@ -56,6 +57,7 @@ import { mountGlobalEffectsHud } from "../ui/globalEffectsHud";
 import type { HubLocationId } from "../ui/hubLocations";
 import { mountHealerScreen } from "../ui/healerScreen";
 import { mountHubScreen } from "../ui/hubScreen";
+import { mountLoadoutPickScreen } from "../ui/loadoutPickScreen";
 import { mountMerchantScreen } from "../ui/merchantScreen";
 import { mountQuestLogScreen } from "../ui/questLogScreen";
 import { mountQuestTracker } from "../ui/questTracker";
@@ -107,6 +109,7 @@ export class GameApp {
   private readonly questTracker: ReturnType<typeof mountQuestTracker>;
   private readonly reward: ReturnType<typeof mountRewardScreen>;
   private readonly defeat: ReturnType<typeof mountDefeatScreen>;
+  private readonly loadoutPick: ReturnType<typeof mountLoadoutPickScreen>;
 
   constructor(app: Application, hud: BattleHudApi) {
     this.app = app;
@@ -224,6 +227,7 @@ export class GameApp {
         this.persist();
         if (this.state && this.screen === "hub") this.hub.show(this.state);
         this.syncQuestTracker();
+        this.openLoadoutPicksIfNeeded();
       },
       showToast: (t) => this.hud.showToast(t),
     });
@@ -341,6 +345,16 @@ export class GameApp {
 
     this.defeat = mountDefeatScreen({
       onWake: () => this.wakeFromDefeat(),
+    });
+
+    this.loadoutPick = mountLoadoutPickScreen({
+      onResolved: () => {
+        this.rebuildHubUnit();
+        this.persist();
+        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
+      },
+      showToast: (t) => this.hud.showToast(t),
     });
 
     document.addEventListener("visibilitychange", () => {
@@ -539,6 +553,21 @@ export class GameApp {
     this.questLog.hide();
     this.reward.hide();
     this.defeat.hide();
+    this.loadoutPick.hide();
+  }
+
+  /** Открыть очередь выбора аспекта / способности, если есть. */
+  private openLoadoutPicksIfNeeded(): boolean {
+    if (!this.state) return false;
+    if (!hasPendingLoadoutPicks(this.state.hero)) return false;
+    return this.loadoutPick.show(this.state.hero);
+  }
+
+  private blockIfPendingLoadoutPicks(): boolean {
+    if (!this.state || !hasPendingLoadoutPicks(this.state.hero)) return false;
+    this.hud.showToast("Сначала выберите новый навык");
+    this.openLoadoutPicksIfNeeded();
+    return true;
   }
 
   /** Трекер: hub / карта / бой. Во время отдыха у камина скрыт. */
@@ -683,6 +712,7 @@ export class GameApp {
     this.syncGlobalEffectsHud();
     this.syncQuestTracker();
     this.persist();
+    this.openLoadoutPicksIfNeeded();
   }
 
   private noteNewRegions(): void {
@@ -723,6 +753,7 @@ export class GameApp {
     this.rewardReturn = null;
     if (ret) this.goWorldMap({ openRegionId: ret.regionId, openLocationId: ret.locationId });
     else this.goWorldMap({ openRegionId: this.state?.lastRegionId ?? undefined });
+    this.openLoadoutPicksIfNeeded();
   }
 
   private onTownLocation(id: HubLocationId): void {
@@ -899,6 +930,7 @@ export class GameApp {
 
   startBattle(regionId: RegionId, locationId?: string): void {
     if (this.blockIfFireplaceResting()) return;
+    if (this.blockIfPendingLoadoutPicks()) return;
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
