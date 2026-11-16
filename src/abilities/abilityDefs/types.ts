@@ -46,6 +46,11 @@ export interface AbilityCatalogDef {
   cooldown: number | null;
   /** `null` = нет (пассив / враги без маны). */
   manaCost: number | null;
+  /**
+   * Время каста героя, сек. `null` / нет поля = мгновенно.
+   * На время каста автоатака останавливается. В бою дублируется в `combat.effects.castTime`.
+   */
+  castTime?: number | null;
   damage: number;
   /** Тип применения для игрока: цель, зона, пассив, герой… */
   application: string;

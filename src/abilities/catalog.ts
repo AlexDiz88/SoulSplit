@@ -26,6 +26,8 @@ export interface AbilityCard {
   description: string;
   cooldown: string;
   mana: string;
+  /** Пустая строка = мгновенно. */
+  castTime: string;
   application: string;
   zoneLabel: string;
   effect: string;
@@ -82,6 +84,13 @@ function formatMana(def: AbilityCatalogDef): string {
   return String(def.manaCost);
 }
 
+function formatCastTime(def: AbilityCatalogDef): string {
+  const n = def.castTime;
+  if (n == null || n <= 0) return "";
+  const s = Number.isInteger(n) ? String(n) : String(n);
+  return `${s} с`;
+}
+
 export function catalogDefToCard(def: AbilityCatalogDef): AbilityCard {
   return {
     id: abilityCatalogKebabId(def.id),
@@ -93,6 +102,7 @@ export function catalogDefToCard(def: AbilityCatalogDef): AbilityCard {
     description: def.description,
     cooldown: formatCooldown(def),
     mana: formatMana(def),
+    castTime: formatCastTime(def),
     application: def.application,
     zoneLabel: def.zoneLabel,
     effect: def.effect,

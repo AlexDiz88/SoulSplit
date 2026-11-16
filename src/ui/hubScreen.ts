@@ -11,6 +11,7 @@ import {
   type TownTimePhase,
 } from "../meta/worldTime";
 import { getStat } from "../stats/sheet";
+import { hasPendingLoadoutPicks } from "../meta/abilityProgression";
 import { goldAmountNode } from "./goldIcon";
 import "./goldIcon.css";
 import {
@@ -50,6 +51,8 @@ export interface HubScreenHandlers {
   onAddTestGold: () => void;
   /** Debug: сдвиг времени (+6ч). */
   onDebugAdvanceTime?: () => void;
+  /** Открыть окно выбора навыка / вторичного аспекта после level-up. */
+  onOpenLoadoutPick?: () => void;
   /** Отдых у камина: хоткеи и клики города недоступны. */
   isInteractionLocked?: () => boolean;
 }
@@ -160,10 +163,23 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const goldLine = el("div", "hub-hero-gold");
   goldLine.setAttribute("aria-live", "polite");
 
+  const levelUpBtn = el("button", "hub-level-up-btn", "Новый уровень");
+  levelUpBtn.type = "button";
+  levelUpBtn.hidden = true;
+  levelUpBtn.setAttribute("aria-label", "Новый уровень - выбрать навык");
+  levelUpBtn.addEventListener("click", (ev) => {
+    ev.stopPropagation();
+    if (handlers.isInteractionLocked?.()) return;
+    handlers.onOpenLoadoutPick?.();
+  });
+
+  const heroMeta = el("div", "hub-hero-meta");
+  heroMeta.append(goldLine, levelUpBtn);
+
   /* Вне .hub-screen: иначе stacking context хаба держит блок под затемнением/блюром оверлеев. */
   const heroStack = el("div", "hub-hero-stack");
   heroStack.hidden = true;
-  heroStack.append(goldLine, heroDock);
+  heroStack.append(heroMeta, heroDock);
 
   const syncPortraitSize = (): void => {
     // Квадрат по высоте колонки статов (aspect-ratio во flex с overflow схлопывался в 0).
@@ -501,6 +517,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     goldLine.replaceChildren(
       goldAmountNode(state.hero.gold, "gold-amount hub-hero-gold-amount"),
     );
+    levelUpBtn.hidden = !hasPendingLoadoutPicks(state.hero);
     heroStack.hidden = false;
     requestAnimationFrame(syncPortraitSize);
   };

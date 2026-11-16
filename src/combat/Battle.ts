@@ -1237,11 +1237,7 @@ export class Battle {
         break;
       }
       case "ice_shield": {
-        await this.vfx.iceShieldAura(
-          caster.center.x,
-          caster.center.y,
-          caster.cardSize * 0.58,
-        );
+        // Щит сразу: VFX только визуал (как sever_artery), иначе ~2 с без поглощения.
         const shieldAmt = def.effects?.shieldAmount ?? 55;
         const shieldDur = def.effects?.shieldDuration ?? 6;
         caster.addStatus({
@@ -1252,6 +1248,11 @@ export class Battle {
           sourceAbilityId: def.id,
         });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ЩИТ", 0x7ec8e8);
+        await this.vfx.iceShieldAura(
+          caster.center.x,
+          caster.center.y,
+          caster.cardSize * 0.58,
+        );
         break;
       }
       case "fireball": {
@@ -1894,6 +1895,15 @@ export class Battle {
     if (target.team === "player") {
       this.statsTracker.noteHeroDamageTaken(result.dealt, result.absorbed);
     }
+    if (result.absorbed > 0) {
+      target.flash(0x7ec8e8);
+      this.vfx.floatingText(
+        target.center.x,
+        target.center.y - opts.floatY - (result.dealt > 0 ? 16 : 0),
+        `${Math.round(result.absorbed)}`,
+        0x7ec8e8,
+      );
+    }
     if (result.dealt > 0) {
       if (opts.playMelee) target.flash(0xffffff);
       const label = opts.crit ? `${result.dealt}!` : `${result.dealt}`;
@@ -1962,6 +1972,15 @@ export class Battle {
     }
     if (originalAttacker.team === "player") {
       this.statsTracker.noteHeroDamageTaken(result.dealt, result.absorbed);
+    }
+    if (result.absorbed > 0) {
+      originalAttacker.flash(0x7ec8e8);
+      this.vfx.floatingText(
+        originalAttacker.center.x,
+        originalAttacker.center.y - (result.dealt > 0 ? 38 : 22),
+        `${Math.round(result.absorbed)}`,
+        0x7ec8e8,
+      );
     }
     if (result.dealt > 0) {
       originalAttacker.flash(0xc8e0ff);
@@ -2296,17 +2315,14 @@ export class Battle {
         if (u.cast) continue;
       }
 
-      if (u.team === "player" && this.casting) {
-        // Во время каста таймеры копятся, удары ждут конца каста.
-      }
-
       const mainWeapon = u.team === "player" ? u.equipment.mainhand?.weapon : true;
       if (mainWeapon) {
         u.autoTimer += combatDt;
         const need = u.autoAttackNeed();
         if (u.autoTimer >= need) {
           if (u.team === "player" && this.casting) {
-            // hold
+            // Готовность сохраняем, но не копим несколько ударов за длинный VFX.
+            u.autoTimer = need;
           } else if (!this.findAutoTarget(u, "mainhand")) {
             u.autoTimer = need;
           } else {
@@ -2321,7 +2337,7 @@ export class Battle {
         const offNeed = u.offhandAutoAttackNeed();
         if (offNeed > 0 && u.offhandAutoTimer >= offNeed) {
           if (this.casting) {
-            // hold
+            u.offhandAutoTimer = offNeed;
           } else if (!this.findAutoTarget(u, "offhand")) {
             u.offhandAutoTimer = offNeed;
           } else {

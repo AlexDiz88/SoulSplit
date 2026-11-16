@@ -27,6 +27,8 @@ export interface LoadoutPickScreenApi {
 
 export interface LoadoutPickScreenHandlers {
   onResolved: (profile: HeroProfile) => void;
+  /** Закрыли окно, выбор можно отложить. */
+  onDismiss?: () => void;
   showToast: (text: string) => void;
 }
 
@@ -54,14 +56,23 @@ export function mountLoadoutPickScreen(
   root.setAttribute("aria-modal", "true");
 
   const win = el("div", "loadout-pick-window");
+  const closeBtn = el("button", "loadout-pick-x");
+  closeBtn.type = "button";
+  closeBtn.setAttribute("aria-label", "Закрыть");
+  closeBtn.append(el("span"));
   const title = el("h2", "loadout-pick-title", "Новый навык");
   const subtitle = el("p", "loadout-pick-sub");
   const body = el("div", "loadout-pick-body");
   const error = el("p", "loadout-pick-error");
   const tip = el("div", "skill-tooltip loadout-pick-tip");
   tip.hidden = true;
+  const note = el(
+    "p",
+    "loadout-pick-defer",
+    "Можно закрыть и выбрать позже - кнопка \"Новый уровень\" останется у портрета.",
+  );
 
-  win.append(title, subtitle, body, error, tip);
+  win.append(closeBtn, title, subtitle, body, error, note, tip);
   root.append(win);
 
   const hud = document.getElementById("hud");
@@ -250,13 +261,33 @@ export function mountLoadoutPickScreen(
     else renderAbilityPick(pick.aspect);
   }
 
-  function hide(): void {
+  function hide(opts?: { dismiss?: boolean }): void {
+    const wasOpen = !root.hidden;
     hideTip();
     root.hidden = true;
     profileRef = null;
     selectedAspect = null;
     selectedAbility = null;
+    window.removeEventListener("keydown", onKeyDown);
+    if (wasOpen && opts?.dismiss) handlers.onDismiss?.();
   }
+
+  function dismiss(): void {
+    hide({ dismiss: true });
+  }
+
+  const onKeyDown = (ev: KeyboardEvent): void => {
+    if (root.hidden) return;
+    if (ev.code === "Escape") {
+      ev.preventDefault();
+      dismiss();
+    }
+  };
+
+  closeBtn.addEventListener("click", () => dismiss());
+  root.addEventListener("click", (ev) => {
+    if (ev.target === root) dismiss();
+  });
 
   return {
     show(profile) {
@@ -266,10 +297,11 @@ export function mountLoadoutPickScreen(
       }
       profileRef = profile;
       root.hidden = false;
+      window.addEventListener("keydown", onKeyDown);
       render();
       return true;
     },
-    hide,
+    hide: () => hide(),
     isOpen() {
       return !root.hidden;
     },

@@ -194,6 +194,7 @@ export class GameApp {
       onStash: () => this.toggleTownStash(),
       onAddTestGold: () => this.addTestGold(),
       onDebugAdvanceTime: () => this.debugAdvanceWorldTime(),
+      onOpenLoadoutPick: () => this.openLoadoutPickManual(),
     });
 
     this.worldMap = mountWorldMapScreen({
@@ -225,9 +226,8 @@ export class GameApp {
       onChanged: () => {
         this.rebuildHubUnit();
         this.persist();
-        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        if (this.state) this.refreshHeroDockUi();
         this.syncQuestTracker();
-        this.openLoadoutPicksIfNeeded();
       },
       showToast: (t) => this.hud.showToast(t),
     });
@@ -351,8 +351,11 @@ export class GameApp {
       onResolved: () => {
         this.rebuildHubUnit();
         this.persist();
-        if (this.state && this.screen === "hub") this.hub.show(this.state);
+        this.refreshHeroDockUi();
         if (this.tavern.isOpen()) this.tavern.refresh(this.hubUnit);
+      },
+      onDismiss: () => {
+        this.refreshHeroDockUi();
       },
       showToast: (t) => this.hud.showToast(t),
     });
@@ -556,18 +559,22 @@ export class GameApp {
     this.loadoutPick.hide();
   }
 
-  /** Открыть очередь выбора аспекта / способности, если есть. */
-  private openLoadoutPicksIfNeeded(): boolean {
-    if (!this.state) return false;
-    if (!hasPendingLoadoutPicks(this.state.hero)) return false;
-    return this.loadoutPick.show(this.state.hero);
+  /** Обновить док героя (золото / мигающая кнопка level-up) на хабе и карте. */
+  private refreshHeroDockUi(): void {
+    if (!this.state) return;
+    if (this.screen === "hub") this.hub.show(this.state);
+    else if (this.screen === "world_map") this.hub.showHeroDock(this.state);
   }
 
-  private blockIfPendingLoadoutPicks(): boolean {
-    if (!this.state || !hasPendingLoadoutPicks(this.state.hero)) return false;
-    this.hud.showToast("Сначала выберите новый навык");
-    this.openLoadoutPicksIfNeeded();
-    return true;
+  /** Ручное открытие выбора навыка с кнопки "Новый уровень". */
+  private openLoadoutPickManual(): void {
+    if (!this.state) return;
+    if (this.blockIfFireplaceResting()) return;
+    if (!hasPendingLoadoutPicks(this.state.hero)) {
+      this.refreshHeroDockUi();
+      return;
+    }
+    this.loadoutPick.show(this.state.hero);
   }
 
   /** Трекер: hub / карта / бой. Во время отдыха у камина скрыт. */
@@ -712,7 +719,6 @@ export class GameApp {
     this.syncGlobalEffectsHud();
     this.syncQuestTracker();
     this.persist();
-    this.openLoadoutPicksIfNeeded();
   }
 
   private noteNewRegions(): void {
@@ -753,7 +759,6 @@ export class GameApp {
     this.rewardReturn = null;
     if (ret) this.goWorldMap({ openRegionId: ret.regionId, openLocationId: ret.locationId });
     else this.goWorldMap({ openRegionId: this.state?.lastRegionId ?? undefined });
-    this.openLoadoutPicksIfNeeded();
   }
 
   private onTownLocation(id: HubLocationId): void {
@@ -930,7 +935,6 @@ export class GameApp {
 
   startBattle(regionId: RegionId, locationId?: string): void {
     if (this.blockIfFireplaceResting()) return;
-    if (this.blockIfPendingLoadoutPicks()) return;
     const state = this.requireState();
     if (this.hubUnit) {
       syncProfileFromUnit(state.hero, this.hubUnit);
