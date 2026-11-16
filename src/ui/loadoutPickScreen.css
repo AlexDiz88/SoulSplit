@@ -146,8 +146,8 @@
 }
 
 .loadout-pick-tip {
-  position: absolute;
-  z-index: 5;
+  position: fixed;
+  z-index: 90;
   pointer-events: none;
 }
 

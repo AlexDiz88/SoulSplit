@@ -314,6 +314,10 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     );
     statsScroll.append(grid);
 
+    const board = el("div", "reward-stats-board");
+    const combatCol = el("div", "reward-combat-col");
+    const sideCol = el("div", "reward-side-col");
+
     if (stats.parries > 0 || stats.blocks > 0) {
       const avoid = el("div", "reward-section");
       avoid.append(el("h3", "reward-section-title", "Избежание"));
@@ -327,7 +331,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
         lines.push(`Парирований: ${formatNum(stats.parries)}${dmgPart}`);
       }
       avoid.append(el("p", "reward-empty", lines.join(" · ")));
-      statsScroll.append(avoid);
+      combatCol.append(avoid);
     }
 
     if (stats.shieldAbsorbed > 0 || stats.enemyDodges > 0) {
@@ -337,7 +341,7 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       if (stats.shieldAbsorbed > 0) lines.push(`Щит поглотил ${formatNum(stats.shieldAbsorbed)}`);
       if (stats.enemyDodges > 0) lines.push(`Враги уклонились ${formatNum(stats.enemyDodges)} раз`);
       extras.append(el("p", "reward-empty", lines.join(" · ")));
-      statsScroll.append(extras);
+      combatCol.append(extras);
     }
 
     const autoSec = el("div", "reward-section");
@@ -363,13 +367,14 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
     const autoDmg = el("div", "reward-row-nums", formatNum(auto.damage));
     autoRow.append(autoInfo, autoDmg);
     autoSec.append(autoRow);
-    statsScroll.append(autoSec);
+    combatCol.append(autoSec);
 
     const abilitySec = el("div", "reward-section");
     abilitySec.append(el("h3", "reward-section-title", "Способности"));
     if (!stats.abilities.length) {
       abilitySec.append(el("p", "reward-empty", "Способности не применялись."));
     } else {
+      const list = el("div", "reward-ability-list");
       for (const a of stats.abilities) {
         const def = ABILITIES[a.abilityId];
         const row = el("div", "reward-ability-row");
@@ -401,10 +406,11 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
           nums.style.color = "#9a9078";
         }
         row.append(icon, info, nums);
-        abilitySec.append(row);
+        list.append(row);
       }
+      abilitySec.append(list);
     }
-    statsScroll.append(abilitySec);
+    combatCol.append(abilitySec);
 
     const killSec = el("div", "reward-section");
     killSec.append(el("h3", "reward-section-title", "Убитые противники"));
@@ -427,7 +433,10 @@ export function mountRewardScreen(handlers: RewardScreenHandlers): RewardScreenA
       }
       killSec.append(row);
     }
-    statsScroll.append(killSec);
+    sideCol.append(killSec);
+
+    board.append(combatCol, sideCol);
+    statsScroll.append(board);
   }
 
   return {

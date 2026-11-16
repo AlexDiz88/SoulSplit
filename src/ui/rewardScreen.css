@@ -1,4 +1,4 @@
-/* Экран завершения боя: ~70% экрана, стиль кованых окон (рынок / зона). */
+/* Экран завершения боя: окно под контент, плотная читаемая статистика. */
 
 .reward-screen {
   position: absolute;
@@ -18,24 +18,23 @@
 }
 
 .reward-window {
-  /* Размер ячейки добычи = иконка товара на рынке. */
-  --slot: 76px;
-  --hand: calc(var(--slot) * 1.35);
+  --slot: 64px;
+  --hand: calc(var(--slot) * 1.2);
   --loot-gap: 8px;
-  --loot-pad: 14px;
-  --loot-cols: 5;
+  --loot-pad: 12px;
+  --loot-cols: 3;
   --loot-grid-w: calc(var(--loot-cols) * var(--hand) + (var(--loot-cols) - 1) * var(--loot-gap));
   --loot-col-w: calc(var(--loot-grid-w) + 2 * var(--loot-pad) + 2px);
-  --skill-size: 83px;
+  --skill-size: 52px;
+  --ability-row-w: 300px;
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   box-sizing: border-box;
-  width: 70vw;
-  height: 70vh;
+  width: fit-content;
+  height: auto;
   max-width: calc(100vw - 32px);
   max-height: calc(100vh - 40px);
-  min-width: min(880px, calc(100vw - 32px));
-  min-height: min(560px, calc(100vh - 40px));
+  min-width: min(760px, calc(100vw - 32px));
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -57,7 +56,7 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  padding: 18px 22px 14px;
+  padding: 16px 20px 12px;
   border-bottom: 1px solid rgba(106, 90, 58, 0.55);
   background: linear-gradient(180deg, rgba(40, 36, 28, 0.55), transparent);
 }
@@ -159,12 +158,12 @@
 }
 
 .reward-body {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   display: grid;
-  grid-template-columns: var(--loot-col-w) minmax(0, 1fr);
-  gap: 16px;
-  padding: 16px 20px;
+  grid-template-columns: var(--loot-col-w) minmax(0, auto);
+  gap: 12px;
+  padding: 12px 16px;
   align-items: stretch;
 }
 
@@ -174,7 +173,7 @@
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: var(--loot-pad) var(--loot-pad) 12px;
+  padding: var(--loot-pad);
   border: 1px solid rgba(106, 90, 58, 0.45);
   border-radius: 4px;
   background: rgba(12, 14, 18, 0.55);
@@ -187,10 +186,14 @@
   flex: 0 0 var(--loot-col-w);
 }
 
+.reward-col-stats {
+  min-width: min(560px, 100%);
+}
+
 .reward-col-title {
   margin: 0;
   flex-shrink: 0;
-  font-size: 0.82rem;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -198,22 +201,22 @@
 }
 
 .reward-scroll {
-  flex: 1;
+  flex: 0 1 auto;
   min-height: 0;
   overflow: auto;
   padding-right: 4px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
 }
 
 .reward-empty {
-  margin: 8px 0 0;
+  margin: 4px 0 0;
   color: var(--muted, #9a9488);
-  font-size: 0.92rem;
+  font-size: 0.95rem;
 }
 
-/* Лут: сетка как инвентарь 5×N */
+/* Лут */
 .reward-loot-grid {
   display: grid;
   grid-template-columns: repeat(var(--loot-cols), var(--hand));
@@ -266,16 +269,17 @@
   max-width: 280px;
 }
 
-/* Статистика */
+/* Сводка: заполняет колонку, крупные цифры */
 .reward-stat-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(110px, 1fr));
   gap: 8px;
   flex-shrink: 0;
+  width: 100%;
 }
 
 .reward-stat-card {
-  padding: 10px 10px 8px;
+  padding: 10px 12px 8px;
   border: 1px solid rgba(106, 90, 58, 0.4);
   border-radius: 4px;
   background: rgba(8, 10, 14, 0.65);
@@ -283,7 +287,7 @@
 
 .reward-stat-card-label {
   display: block;
-  font-size: 0.65rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -293,9 +297,10 @@
 .reward-stat-card-value {
   display: block;
   margin-top: 4px;
-  font-size: 1.15rem;
+  font-size: 1.7rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
+  line-height: 1.05;
   color: #f0e6c8;
 }
 
@@ -309,35 +314,66 @@
 .reward-stat-card-note {
   display: block;
   margin-top: 2px;
-  font-size: 0.65rem;
+  font-size: 0.7rem;
   color: #7a7468;
+}
+
+/* Две колонки: бой слева, убитые справа */
+.reward-stats-board {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(180px, 0.75fr);
+  gap: 14px 18px;
+  align-items: start;
+  width: 100%;
+}
+
+.reward-combat-col,
+.reward-side-col {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
 }
 
 .reward-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  min-width: 0;
 }
 
 .reward-section-title {
   margin: 0;
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #c4b48a;
 }
 
+.reward-ability-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(var(--ability-row-w), 1fr));
+  gap: 8px;
+  width: 100%;
+}
+
 .reward-ability-row,
 .reward-auto-row {
   display: grid;
-  grid-template-columns: var(--skill-size) 1fr auto;
-  gap: 12px;
+  grid-template-columns: var(--skill-size) minmax(0, 1fr) auto;
+  gap: 10px;
   align-items: center;
-  padding: 7px 8px;
+  width: 100%;
+  max-width: 100%;
+  padding: 6px 10px 6px 6px;
   border: 1px solid rgba(74, 69, 56, 0.85);
   border-radius: 4px;
   background: rgba(16, 18, 22, 0.7);
+}
+
+.reward-auto-row {
+  max-width: calc(var(--ability-row-w) + 40px);
 }
 
 .reward-ability-icon {
@@ -361,7 +397,7 @@
   background: linear-gradient(180deg, #2a2c2e, #161718);
   display: grid;
   place-items: center;
-  font-size: 0.95rem;
+  font-size: 0.85rem;
   font-weight: 800;
   letter-spacing: 0.04em;
   color: #e8d7a2;
@@ -380,7 +416,7 @@
 .reward-kills-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 8px;
   align-items: center;
 }
 
@@ -388,7 +424,7 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 8px 4px 4px;
+  padding: 4px 10px 4px 4px;
   border: 1px solid rgba(74, 69, 56, 0.85);
   border-radius: 4px;
   background: rgba(16, 18, 22, 0.7);
@@ -397,9 +433,9 @@
 }
 
 .reward-kill-icon {
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
   overflow: hidden;
   border: 1px solid rgba(106, 90, 58, 0.55);
   background: #121314;
@@ -416,7 +452,7 @@
 }
 
 .reward-kill-count {
-  font-size: 1.05rem;
+  font-size: 1.2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   color: #e8d7a2;
@@ -424,7 +460,7 @@
 }
 
 .reward-row-name {
-  font-size: 0.88rem;
+  font-size: 0.98rem;
   font-weight: 700;
   color: #ece6d8;
   white-space: nowrap;
@@ -434,15 +470,17 @@
 
 .reward-row-sub {
   margin-top: 2px;
-  font-size: 0.74rem;
+  font-size: 0.78rem;
   color: var(--muted, #9a9488);
   font-variant-numeric: tabular-nums;
 }
 
 .reward-row-nums {
   text-align: right;
-  font-size: 0.82rem;
-  font-weight: 700;
+  min-width: 3.6rem;
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1.05;
   font-variant-numeric: tabular-nums;
   color: #f0a878;
   white-space: nowrap;
@@ -455,8 +493,8 @@
 .reward-row-nums small {
   display: block;
   margin-top: 2px;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.78rem;
+  font-weight: 700;
   color: #9a9078;
 }
 
@@ -491,26 +529,24 @@
   white-space: nowrap;
 }
 
-@media (max-width: 1100px) {
+@media (max-width: 980px) {
   .reward-window {
-    width: min(96vw, 1100px);
-    height: min(88vh, 860px);
     min-width: 0;
+    width: min(96vw, 980px);
   }
 
-  .reward-body {
-    grid-template-columns: var(--loot-col-w) minmax(0, 1fr);
+  .reward-stats-board {
+    grid-template-columns: 1fr;
   }
 
-  .reward-stat-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+  .reward-auto-row {
+    max-width: none;
   }
 }
 
 @media (max-width: 860px) {
   .reward-body {
     grid-template-columns: 1fr;
-    grid-template-rows: auto minmax(0, 1fr);
   }
 
   .reward-col-loot {
@@ -535,6 +571,10 @@
 
   .reward-stat-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .reward-ability-list {
+    grid-template-columns: 1fr;
   }
 
   .reward-foot {

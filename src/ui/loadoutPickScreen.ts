@@ -72,12 +72,13 @@ export function mountLoadoutPickScreen(
     "Можно закрыть и выбрать позже - кнопка \"Новый уровень\" останется у портрета.",
   );
 
-  win.append(closeBtn, title, subtitle, body, error, note, tip);
+  win.append(closeBtn, title, subtitle, body, error, note);
   root.append(win);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
-  hud.append(root);
+  // Тултип в #hud, не в окне с overflow:hidden - иначе обрезается по краю модалки.
+  hud.append(root, tip);
 
   let profileRef: HeroProfile | null = null;
   let selectedAspect: Aspect | null = null;
@@ -111,15 +112,23 @@ export function mountLoadoutPickScreen(
     `;
     tip.dataset.tipId = id;
     tip.hidden = false;
-    const winRect = win.getBoundingClientRect();
+    tip.style.position = "fixed";
+    tip.style.zIndex = "90";
     const btnRect = btn.getBoundingClientRect();
     const tipRect = tip.getBoundingClientRect();
-    let left = btnRect.right - winRect.left + 10;
-    if (left + tipRect.width > winRect.width - 8) {
-      left = btnRect.left - winRect.left - tipRect.width - 10;
+    const margin = 8;
+    let left = btnRect.right + 10;
+    if (left + tipRect.width > window.innerWidth - margin) {
+      left = btnRect.left - tipRect.width - 10;
     }
-    tip.style.left = `${Math.max(8, left)}px`;
-    tip.style.top = `${Math.max(8, btnRect.top - winRect.top)}px`;
+    left = Math.max(margin, Math.min(left, window.innerWidth - tipRect.width - margin));
+    let top = btnRect.top;
+    if (top + tipRect.height > window.innerHeight - margin) {
+      top = window.innerHeight - tipRect.height - margin;
+    }
+    top = Math.max(margin, top);
+    tip.style.left = `${left}px`;
+    tip.style.top = `${top}px`;
   };
 
   function headPick(): PendingLoadoutPick | null {
@@ -307,6 +316,7 @@ export function mountLoadoutPickScreen(
     },
     destroy() {
       hide();
+      tip.remove();
       root.remove();
     },
   };
