@@ -3,6 +3,10 @@ import dragonBreathIconUrl from "../../assets/art/skills/dragon_breath.png";
 import fireballIconUrl from "../../assets/art/skills/fireball.png";
 import frostShieldIconUrl from "../../assets/art/skills/frost_shield.png";
 import frostboltIconUrl from "../../assets/art/skills/frostbolt.png";
+import avalancheIconUrl from "../../assets/art/skills/avalanche.png";
+import frostArmorIconUrl from "../../assets/art/skills/frost_armor.png";
+import crystalCageIconUrl from "../../assets/art/skills/crystal_cage.png";
+import frostBreathIconUrl from "../../assets/art/skills/frost_breath.png";
 import hammerThrowIconUrl from "../../assets/art/skills/hammer_throw.png";
 import emptySkillIconUrl from "../../assets/art/skills/no_image.png";
 import severArteryIconUrl from "../../assets/art/skills/sever_artery.png";
@@ -29,6 +33,10 @@ export const EMPTY_SKILL_ICON_URL = emptySkillIconUrl;
 export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   ice_arrow: frostboltIconUrl,
   ice_shield: frostShieldIconUrl,
+  avalanche: avalancheIconUrl,
+  frost_armor: frostArmorIconUrl,
+  crystal_cage: crystalCageIconUrl,
+  frost_breath: frostBreathIconUrl,
   fireball: fireballIconUrl,
   flame_cone: dragonBreathIconUrl,
   hammer_throw: hammerThrowIconUrl,

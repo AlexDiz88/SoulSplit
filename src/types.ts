@@ -26,6 +26,10 @@ export type Aspect =
 export type AbilityId =
   | "ice_arrow"
   | "ice_shield"
+  | "avalanche"
+  | "frost_armor"
+  | "crystal_cage"
+  | "frost_breath"
   | "fireball"
   | "flame_cone"
   | "hammer_throw"
@@ -74,6 +78,10 @@ export interface StatusEffect {
     | "poison"
     | "regen"
     | "root"
+    | "freeze"
+    | "chill"
+    | "fragile"
+    | "frost_armor"
     | "atk_buff"
     | "atk_debuff"
     | "slow"
@@ -136,6 +144,24 @@ export interface AbilityEffects {
   interruptsCast?: boolean;
   /** Удержание на клетке (блок перемещения, каст не блокирует). */
   rootDuration?: number;
+  /** Полная заморозка: блок атак, кастов и перемещения. */
+  freezeDuration?: number;
+  /** Урон/с пока цель заморожена (0 = без DoT). */
+  freezeDps?: number;
+  /** Охлаждение после заморозки (длительность). */
+  chillDuration?: number;
+  /**
+   * Замедление атаки/каста для chill: из % через `attackSpeedReduceToSlowPotency`.
+   * Скорость каста врага тикает как `dt / (1 + potency)`.
+   */
+  chillSlowPotency?: number;
+  /** Хрупкость: следующий удар сильнее на potency (0.35 = +35%), затем снимается. */
+  fragileDuration?: number;
+  fragilePotency?: number;
+  /** Морозная броня на герое. */
+  frostArmorDuration?: number;
+  frostArmorSlowDuration?: number;
+  frostArmorSlowPotency?: number;
   poisonPerSec?: number;
   poisonDuration?: number;
   regenPerSec?: number;

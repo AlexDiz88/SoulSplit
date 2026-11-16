@@ -1,4 +1,5 @@
 import type { AbilityCatalogDef } from "../types";
+import { attackSpeedReduceToSlowPotency } from "../../attackSpeed";
 
 const def: AbilityCatalogDef = {
   id: "frost_armor",
@@ -20,6 +21,18 @@ const def: AbilityCatalogDef = {
     "каждый полученный удар ближнего боя: скорость атаки бьющего врага снижена на 60% на 3 с",
   ],
   extra: "Срабатывает только от атак ближнего боя. Дальние атаки и способности броню не провоцируют.",
+  combat: {
+    aspect: "ice",
+    glyph: "🛡",
+    targetMode: "ally",
+    range: "any",
+    reach: 0,
+    effects: {
+      frostArmorDuration: 6,
+      frostArmorSlowDuration: 3,
+      frostArmorSlowPotency: attackSpeedReduceToSlowPotency(0.6),
+    },
+  },
 };
 
 export default def;

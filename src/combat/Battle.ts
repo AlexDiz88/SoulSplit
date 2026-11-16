@@ -8,6 +8,7 @@ import {
 import {
   airPocketCells,
   dragonBreathCells,
+  frostBreathCells,
   GRID_SIZE,
   inBounds,
   orthoNeighbors,
@@ -959,7 +960,7 @@ export class Battle {
       this.hud.showToast("Недостаточно маны");
       return;
     }
-    if (def.reach <= 0) {
+    if (def.reach <= 0 || def.targetMode === "all_enemies") {
       void this.performCast(def, this.hero, null);
       return;
     }
@@ -1003,6 +1004,10 @@ export class Battle {
       return;
     }
     if (this.isGroundTarget(def.targetMode)) {
+      if (def.id === "frost_breath" && this.distanceOf(cell.row) !== 1) {
+        this.hud.showToast("Только 1-й ряд");
+        return;
+      }
       void this.performCast(def, this.unitAtCell(cell), cell);
       return;
     }
@@ -1126,7 +1131,9 @@ export class Battle {
             ? airPocketCells(cell)
             : def.id === "poison_bush"
               ? poisonBushCells(cell)
-              : [cell];
+              : def.id === "frost_breath"
+                ? frostBreathCells(cell)
+                : [cell];
     const centers = hits.map((pos) => {
       const c = this.cellCenter(pos);
       return { x: c.x, y: c.y, size: CELL - 6 };
@@ -1551,6 +1558,85 @@ export class Battle {
         }
         break;
       }
+      case "avalanche": {
+        const castTime = def.effects?.castTime ?? 2.5;
+        const fragileDur = def.effects?.fragileDuration ?? 4;
+        const fragilePot = def.effects?.fragilePotency ?? 0.35;
+        const enemies = this.livingEnemies();
+        const centers = enemies.map((u) => ({ ...u.center }));
+        await this.vfx.avalanche(from, centers, castTime, () => {
+          for (const u of this.livingEnemies()) {
+            this.dealAbilityDamage(caster, u, def.damage, def);
+            u.addStatus({
+              id: "fragile",
+              kind: "fragile",
+              remaining: fragileDur,
+              potency: fragilePot,
+              sourceAbilityId: def.id,
+            });
+            this.vfx.floatingText(u.center.x, u.center.y - 22, "ХРУПКОСТЬ", 0xa8e6ff);
+          }
+        });
+        break;
+      }
+      case "frost_armor": {
+        const armorDur = def.effects?.frostArmorDuration ?? 6;
+        caster.addStatus({
+          id: "frost_armor",
+          kind: "frost_armor",
+          remaining: armorDur,
+          potency: 1,
+          sourceAbilityId: def.id,
+        });
+        this.vfx.floatingText(caster.center.x, caster.center.y - 20, "БРОНЯ", 0xa8e6ff);
+        await this.vfx.frostArmorAura(caster.center.x, caster.center.y, caster.cardSize * 0.58);
+        break;
+      }
+      case "crystal_cage": {
+        if (!clicked || !clicked.alive) return;
+        const freezeDur = def.effects?.freezeDuration ?? 3;
+        const freezeDps = this.scaleDotPotency(caster, def.aspect, def.effects?.freezeDps ?? 8);
+        await this.vfx.crystalCage(clicked.center.x, clicked.center.y, () => {
+          if (!clicked.alive) return;
+          this.interruptUnitCast(clicked);
+          clicked.addStatus({
+            id: "freeze",
+            kind: "freeze",
+            remaining: freezeDur,
+            potency: freezeDps,
+            sourceAbilityId: def.id,
+          });
+          this.vfx.floatingText(clicked.center.x, clicked.center.y - 22, "КЛЕТКА", 0xa8e6ff);
+        });
+        break;
+      }
+      case "frost_breath": {
+        const aim = this.aimCell(cell, clicked);
+        if (!aim) return;
+        if (this.distanceOf(aim.row) !== 1) {
+          this.hud.showToast("Только 1-й ряд");
+          return;
+        }
+        const hits = frostBreathCells(aim);
+        const centers = hits.map((pos) => this.cellCenter(pos));
+        const freezeDur = def.effects?.freezeDuration ?? 1.5;
+        await this.vfx.frostBreath(from, centers, CELL);
+        for (const pos of hits) {
+          const u = this.unitAtCell(pos);
+          if (!u) continue;
+          this.dealAbilityDamage(caster, u, def.damage, def);
+          this.interruptUnitCast(u);
+          u.addStatus({
+            id: "freeze",
+            kind: "freeze",
+            remaining: freezeDur,
+            potency: 0,
+            sourceAbilityId: def.id,
+          });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "МОРОЗ", 0xa8e6ff);
+        }
+        break;
+      }
       default:
         break;
     }
@@ -1558,7 +1644,7 @@ export class Battle {
 
   /** Отброс на 1 клетку дальше от героя. Если занято или за краем - без сдвига. */
   private tryKnockbackAway(u: Unit): void {
-    if (!u.alive || u.hasStatus("root")) return;
+    if (!u.alive || u.isImmobile()) return;
     const next = { col: u.pos.col, row: u.pos.row - 1 };
     if (!inBounds(next) || this.unitAtCell(next)) return;
     u.pos = next;
@@ -1578,7 +1664,7 @@ export class Battle {
   }
 
   private tryStartEnemyCast(u: Unit): void {
-    if (!u.alive || u.cast || u.hasStatus("stun") || !u.abilities.length) return;
+    if (!u.alive || u.cast || u.isHardCc() || !u.abilities.length) return;
     if (!this.findAutoTarget(u)) return;
     for (const id of u.abilities) {
       if (!id) continue;
@@ -2058,7 +2144,7 @@ export class Battle {
   }
 
   private async doAutoAttack(attacker: Unit, hand: AutoHand = "mainhand"): Promise<void> {
-    if (!attacker.alive || attacker.hasStatus("stun") || this.destroyed) return;
+    if (!attacker.alive || attacker.isHardCc() || this.destroyed) return;
     const target = this.findAutoTarget(attacker, hand);
     if (!target) return;
     const reach = this.weaponReachForHand(attacker, hand);
@@ -2100,6 +2186,27 @@ export class Battle {
         hitColor: crit ? 0xffb060 : 0xe8e2d4,
         playMelee: melee,
       });
+      if (
+        melee &&
+        target.team === "player" &&
+        target.hasStatus("frost_armor") &&
+        attacker.team === "enemy" &&
+        attacker.alive &&
+        (result.outcome === "none" || result.outcome === "blocked")
+      ) {
+        const armor = ABILITIES.frost_armor;
+        const slowDur = armor.effects?.frostArmorSlowDuration ?? 3;
+        const slowPot = armor.effects?.frostArmorSlowPotency ?? attackSpeedReduceToSlowPotency(0.6);
+        attacker.addStatus({
+          id: "slow",
+          kind: "slow",
+          remaining: slowDur,
+          potency: slowPot,
+          sourceAbilityId: "frost_armor",
+        });
+        this.vfx.floatingText(attacker.center.x, attacker.center.y - 24, "ИНЕЙ", 0xa8e6ff);
+        void this.vfx.frostArmorProc(attacker.center.x, attacker.center.y);
+      }
       if (result.outcome === "parried") {
         this.applyParryRiposte(target, attacker);
       }
@@ -2144,13 +2251,13 @@ export class Battle {
     const living = this.livingEnemies();
     const reserved = new Set<string>();
     for (const u of living) {
-      if (u.hasStatus("root") || u.pos.row === GRID_SIZE - 1) {
+      if (u.isImmobile() || u.pos.row === GRID_SIZE - 1) {
         reserved.add(`${u.pos.col},${u.pos.row}`);
       }
     }
     const movers: Unit[] = [];
     const candidates = living
-      .filter((u) => u.pos.row < GRID_SIZE - 1 && !u.hasStatus("root"))
+      .filter((u) => u.pos.row < GRID_SIZE - 1 && !u.isImmobile())
       .sort((a, b) => b.pos.row - a.pos.row);
     for (const u of candidates) {
       const destKey = `${u.pos.col},${u.pos.row + 1}`;
@@ -2273,6 +2380,21 @@ export class Battle {
       }
       const statusTick = u.tickStatuses(combatDt);
       if (statusTick.castBroken) this.showCastInterrupted(u);
+      for (const ended of statusTick.ended) {
+        if (ended.kind === "freeze" && ended.sourceAbilityId === "crystal_cage" && u.alive) {
+          const cage = ABILITIES.crystal_cage;
+          const chillDur = cage.effects?.chillDuration ?? 5;
+          const chillPot = cage.effects?.chillSlowPotency ?? attackSpeedReduceToSlowPotency(0.75);
+          u.addStatus({
+            id: "chill",
+            kind: "chill",
+            remaining: chillDur,
+            potency: chillPot,
+            sourceAbilityId: "crystal_cage",
+          });
+          this.vfx.floatingText(u.center.x, u.center.y - 20, "ОХЛАЖДЕНИЕ", 0xa8e6ff);
+        }
+      }
       if (u.team === "player") {
         for (const heal of statusTick.healed) {
           if (heal.sourceAbilityId) this.statsTracker.noteHeroAbilityHeal(heal.sourceAbilityId, heal.amount);
@@ -2293,10 +2415,10 @@ export class Battle {
       for (const key of Object.keys(u.abilityCd)) {
         u.abilityCd[key] = Math.max(0, (u.abilityCd[key] ?? 0) - combatDt);
       }
-      if (u.hasStatus("stun")) continue;
+      if (u.isHardCc()) continue;
 
       if (u.team === "enemy" && u.cast) {
-        u.cast.elapsed += combatDt;
+        u.cast.elapsed += combatDt * u.castSpeedMult();
         u.attackCharge = u.cast.duration > 0 ? Math.min(1, u.cast.elapsed / u.cast.duration) : 1;
         u.redraw();
         if (u.cast.elapsed >= u.cast.duration) {

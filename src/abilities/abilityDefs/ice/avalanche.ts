@@ -21,6 +21,18 @@ const def: AbilityCatalogDef = {
     "14 урона льда каждому врагу",
     "хрупкость на 4 с: следующий удар по цели наносит на 35% больше урона, затем хрупкость снимается",
   ],
+  combat: {
+    aspect: "ice",
+    glyph: "❄",
+    targetMode: "all_enemies",
+    range: "any",
+    reach: 0,
+    effects: {
+      castTime: 2.5,
+      fragileDuration: 4,
+      fragilePotency: 0.35,
+    },
+  },
 };
 
 export default def;

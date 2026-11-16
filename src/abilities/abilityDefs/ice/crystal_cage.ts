@@ -1,4 +1,5 @@
 import type { AbilityCatalogDef } from "../types";
+import { attackSpeedReduceToSlowPotency } from "../../attackSpeed";
 
 const def: AbilityCatalogDef = {
   id: "crystal_cage",
@@ -20,6 +21,19 @@ const def: AbilityCatalogDef = {
     "8 урона льда каждую секунду, пока цель заморожена",
     "после разморозки: Охлаждение на 5 с - скорость атаки и каста снижены на 75%",
   ],
+  combat: {
+    aspect: "ice",
+    glyph: "❄",
+    targetMode: "enemy",
+    range: "ranged",
+    reach: 4,
+    effects: {
+      freezeDuration: 3,
+      freezeDps: 8,
+      chillDuration: 5,
+      chillSlowPotency: attackSpeedReduceToSlowPotency(0.75),
+    },
+  },
 };
 
 export default def;

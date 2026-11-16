@@ -1,5 +1,8 @@
 import frostboltIconUrl from "../../assets/art/skills/frostbolt.png";
 import frostShieldIconUrl from "../../assets/art/skills/frost_shield.png";
+import avalancheIconUrl from "../../assets/art/skills/avalanche.png";
+import frostArmorIconUrl from "../../assets/art/skills/frost_armor.png";
+import crystalCageIconUrl from "../../assets/art/skills/crystal_cage.png";
 import fireballIconUrl from "../../assets/art/skills/fireball.png";
 import hammerThrowIconUrl from "../../assets/art/skills/hammer_throw.png";
 import severArteryIconUrl from "../../assets/art/skills/sever_artery.png";
@@ -86,6 +89,34 @@ const META: Record<StatusEffect["kind"], CombatStatusMeta> = {
     name: "Удержание",
     description: "Цель не может сменить клетку.",
     fallbackIconUrl: rootGraspIconUrl,
+  },
+  freeze: {
+    kind: "freeze",
+    polarity: "debuff",
+    name: "Заморозка",
+    description: "Цель не может атаковать, кастовать и перемещаться.",
+    fallbackIconUrl: crystalCageIconUrl,
+  },
+  chill: {
+    kind: "chill",
+    polarity: "debuff",
+    name: "Охлаждение",
+    description: "Снижает скорость атаки и каста.",
+    fallbackIconUrl: frostboltIconUrl,
+  },
+  fragile: {
+    kind: "fragile",
+    polarity: "debuff",
+    name: "Хрупкость",
+    description: "Следующий удар по цели наносит больше урона.",
+    fallbackIconUrl: avalancheIconUrl,
+  },
+  frost_armor: {
+    kind: "frost_armor",
+    polarity: "buff",
+    name: "Морозная броня",
+    description: "Атаки ближнего боя по герою замедляют атакующего.",
+    fallbackIconUrl: frostArmorIconUrl,
   },
   atk_buff: {
     kind: "atk_buff",
@@ -184,7 +215,8 @@ export function groupStatusesForDisplay(statuses: StatusEffect[]): StatusDisplay
     // Предпочитаем запись с DoT / контролем, иначе первую.
     const representative =
       members.find((m) => m.kind === "poison" || m.kind === "bleed" || m.kind === "burn") ??
-      members.find((m) => m.kind === "root" || m.kind === "stun") ??
+      members.find((m) => m.kind === "freeze" || m.kind === "root" || m.kind === "stun") ??
+      members.find((m) => m.kind === "chill" || m.kind === "fragile") ??
       members.find((m) => statusPolarity(m.kind) === "buff") ??
       members[0]!;
     packages.push({ key, polarity, remaining, representative, members });

@@ -1006,6 +1006,13 @@ export class Unit {
     let dmg = Math.round(
       mitigateIncoming(incoming, this.sheet, packet.channel) * this.incomingDamageMult(),
     );
+    if (!packet.isDot) {
+      const fragile = this.statuses.find((s) => s.kind === "fragile");
+      if (fragile) {
+        dmg = Math.round(dmg * (1 + fragile.potency));
+        this.clearStatus("fragile");
+      }
+    }
     let absorbed = 0;
     const shield = this.statuses.find((s) => s.kind === "shield");
     if (shield) {
@@ -1083,9 +1090,26 @@ export class Unit {
     if (asBonus > 0) m *= attackSpeedIncreaseToHasteMult(asBonus);
     const slow = this.statuses.find((s) => s.kind === "slow");
     if (slow) m *= 1 + slow.potency;
+    const chill = this.statuses.find((s) => s.kind === "chill");
+    if (chill) m *= 1 + chill.potency;
     const haste = this.statuses.find((s) => s.kind === "haste");
     if (haste) m *= haste.potency;
     return m;
+  }
+
+  /** Множитель скорости каста врага (1 = норма, 0.25 при -75% скорости каста). */
+  castSpeedMult(): number {
+    const chill = this.statuses.find((s) => s.kind === "chill");
+    if (!chill) return 1;
+    return 1 / (1 + chill.potency);
+  }
+
+  isHardCc(): boolean {
+    return this.hasStatus("stun") || this.hasStatus("freeze");
+  }
+
+  isImmobile(): boolean {
+    return this.hasStatus("root") || this.hasStatus("freeze");
   }
 
   /**
@@ -1097,13 +1121,16 @@ export class Unit {
     castBroken: boolean;
     dots: { dealt: number; absorbed: number; sourceAbilityId?: AbilityId }[];
     healed: { amount: number; sourceAbilityId?: AbilityId }[];
+    ended: StatusEffect[];
     dotPopup?: number;
   } {
     type DotBucket = { amount: number; sourceAbilityId?: AbilityId };
     const bleed: DotBucket = { amount: 0 };
     const burn: DotBucket = { amount: 0 };
     const poison: DotBucket = { amount: 0 };
+    const freezeDot: DotBucket = { amount: 0 };
     const regenBuckets = new Map<string, DotBucket>();
+    const ended: StatusEffect[] = [];
 
     for (const s of this.statuses) {
       s.remaining -= dt;
@@ -1116,11 +1143,19 @@ export class Unit {
       } else if (s.kind === "poison") {
         poison.amount += s.potency * dt;
         poison.sourceAbilityId = s.sourceAbilityId ?? poison.sourceAbilityId;
+      } else if (s.kind === "freeze" && s.potency > 0) {
+        freezeDot.amount += s.potency * dt;
+        freezeDot.sourceAbilityId = s.sourceAbilityId ?? freezeDot.sourceAbilityId;
       } else if (s.kind === "regen") {
         const key = s.sourceAbilityId ?? "";
         const bucket = regenBuckets.get(key) ?? { amount: 0, sourceAbilityId: s.sourceAbilityId };
         bucket.amount += s.potency * dt;
         regenBuckets.set(key, bucket);
+      }
+    }
+    for (const s of this.statuses) {
+      if (s.remaining <= 0 || (s.kind === "shield" && s.potency <= 0)) {
+        ended.push({ ...s });
       }
     }
     this.statuses = this.statuses.filter((s) => s.remaining > 0 && (s.kind !== "shield" || s.potency > 0));
@@ -1149,10 +1184,17 @@ export class Unit {
     applyDot(bleed, "physical");
     applyDot(burn, "magical");
     applyDot(poison, "magical");
+    applyDot(freezeDot, "magical");
 
     for (const dot of dots) this.dotFloatAcc += dot.dealt;
 
-    const hasDot = this.statuses.some((s) => s.kind === "bleed" || s.kind === "burn" || s.kind === "poison");
+    const hasDot = this.statuses.some(
+      (s) =>
+        s.kind === "bleed" ||
+        s.kind === "burn" ||
+        s.kind === "poison" ||
+        (s.kind === "freeze" && s.potency > 0),
+    );
     let dotPopup: number | undefined;
     if (hasDot || this.dotFloatAcc > 0) {
       this.dotFloatTimer += dt;
@@ -1178,7 +1220,7 @@ export class Unit {
     }
 
     this.redraw();
-    return { castBroken, dots, healed, dotPopup };
+    return { castBroken, dots, healed, ended, dotPopup };
   }
 
   flash(color: number): void {

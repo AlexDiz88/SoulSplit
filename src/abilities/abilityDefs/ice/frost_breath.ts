@@ -38,6 +38,17 @@ const def: AbilityCatalogDef = {
       "4-й ряд от героя узором не задевается",
     ],
   },
+  combat: {
+    aspect: "ice",
+    glyph: "❄",
+    targetMode: "zone",
+    range: "melee",
+    reach: 1,
+    effects: {
+      freezeDuration: 1.5,
+      freezeDps: 0,
+    },
+  },
 };
 
 export default def;

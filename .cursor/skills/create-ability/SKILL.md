@@ -15,7 +15,9 @@ disable-model-invocation: true
 
 # Create Ability - Soul Split
 
-Генератор карточек способностей в `src/abilities/abilityDefs/`. В код боя (`Battle.ts`, `AbilityId`) ничего не пишет: игрок потом сам отбирает черновики и добавляет блок `combat`.
+Генератор карточек способностей в `src/abilities/abilityDefs/`. В код боя (`Battle.ts`, `AbilityId`) **сам при генерации черновика** ничего не пишет.
+
+Когда пользователь **одобряет** способности героя - это уже не задача генератора-карточек: полный перенос в бой + premium VFX по правилу `.cursor/rules/ability-approve.mdc` (статус, `AbilityId`, `combat`, `Battle.ts`, статусы, иконки, VFX).
 
 ## Когда какой режим
 

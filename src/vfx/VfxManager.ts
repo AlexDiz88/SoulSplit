@@ -6,6 +6,10 @@ import { playFireballVfx } from "./premium/FireballVfx";
 import { playFlameConeVfx } from "./premium/FlameConeVfx";
 import { playIceArrowVfx } from "./premium/IceArrowVfx";
 import { playIceShieldVfx } from "./premium/IceShieldVfx";
+import { playAvalancheVfx } from "./premium/AvalancheVfx";
+import { playFrostArmorVfx, playFrostArmorProcVfx } from "./premium/FrostArmorVfx";
+import { playCrystalCageVfx } from "./premium/CrystalCageVfx";
+import { playFrostBreathVfx } from "./premium/FrostBreathVfx";
 import { playShadowStrikeVfx } from "./premium/ShadowStrikeVfx";
 import { playSeverArteryVfx } from "./premium/SeverArteryVfx";
 import { playHammerThrowVfx } from "./premium/HammerThrowVfx";
@@ -234,6 +238,57 @@ export class VfxManager {
 
   async iceShieldAura(x: number, y: number, radius?: number): Promise<void> {
     await playIceShieldVfx(this.layer, this.tweens, x, y, radius);
+  }
+
+  async avalanche(
+    from: { x: number; y: number },
+    targets: { x: number; y: number }[],
+    castTime: number,
+    onImpact?: () => void,
+  ): Promise<void> {
+    await playAvalancheVfx(
+      this.layer,
+      this.tweens,
+      from,
+      targets,
+      castTime,
+      onImpact,
+      (amp, dur) => this.screenShake(amp, dur),
+    );
+  }
+
+  async frostArmorAura(x: number, y: number, radius?: number): Promise<void> {
+    await playFrostArmorVfx(this.layer, this.tweens, x, y, radius);
+  }
+
+  async frostArmorProc(x: number, y: number): Promise<void> {
+    await playFrostArmorProcVfx(this.layer, this.tweens, x, y);
+  }
+
+  async crystalCage(x: number, y: number, onSeal?: () => void): Promise<void> {
+    await playCrystalCageVfx(
+      this.layer,
+      this.tweens,
+      x,
+      y,
+      onSeal,
+      (amp, dur) => this.screenShake(amp, dur),
+    );
+  }
+
+  async frostBreath(
+    from: { x: number; y: number },
+    cells: { x: number; y: number }[],
+    cellSize = 124,
+  ): Promise<void> {
+    await playFrostBreathVfx(
+      this.layer,
+      this.tweens,
+      from,
+      cells,
+      cellSize,
+      (amp, dur) => this.screenShake(amp, dur),
+    );
   }
 
   /**

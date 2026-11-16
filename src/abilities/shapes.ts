@@ -89,3 +89,23 @@ export function poisonBushCells(origin: GridPos): GridPos[] {
   }
   return out;
 }
+
+/**
+ * Морозное дыхание: буква Т от клика на 1-м (ближнем) ряду.
+ * Ствол на 3 клетки вдаль + бока на дальней клетке ствола. 4-й ряд не задевает.
+ */
+export function frostBreathCells(origin: GridPos): GridPos[] {
+  const deltas = [
+    { col: 0, row: 0 },
+    { col: 0, row: -1 },
+    { col: 0, row: -2 },
+    { col: -1, row: -2 },
+    { col: 1, row: -2 },
+  ];
+  const out: GridPos[] = [];
+  for (const d of deltas) {
+    const p = { col: origin.col + d.col, row: origin.row + d.row };
+    if (inBounds(p)) out.push(p);
+  }
+  return out;
+}
