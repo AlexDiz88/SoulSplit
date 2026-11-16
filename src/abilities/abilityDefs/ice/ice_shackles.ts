@@ -4,7 +4,7 @@ const def: AbilityCatalogDef = {
   id: "ice_shackles",
   name: "Ледяные оковы",
   aspectId: "ice",
-  status: "черновик",
+  status: "отказ",
   icon: "ice_shackles.png",
   hook: "без урона, цель заморожена на месте на 2.2 с",
   description:

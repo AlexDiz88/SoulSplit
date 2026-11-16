@@ -16,11 +16,13 @@
 |---|---|---|---|---|---|---|---|
 | ice_arrow | ice | Ледяная стрела | Лёд | цель | 38 урона + скорость атаки цели -35% на 3 с | одобрено | `src/abilities/abilityDefs/ice/ice_arrow.ts` |
 | ice_shield | ice | Ледяной щит | Лёд | на себя | щит 55 на 6 с, без урона | одобрено | `src/abilities/abilityDefs/ice/ice_shield.ts` |
-| crystal_rift | ice | Кристальный разлом | Лёд | зона | клик пустой, 36 льда на кресте + хрупкость: следующий удар по цели +35%, 4 с | черновик | `src/abilities/abilityDefs/ice/crystal_rift.ts` |
-| frost_front | ice | Морозный фронт | Лёд | все враги | каст 2.5 с, кд 14 с: 14 урона льда всем + хрупкость: следующий удар +35%, 4 с | черновик | `src/abilities/abilityDefs/ice/frost_front.ts` |
-| ice_shackles | ice | Ледяные оковы | Лёд | цель | без урона, цель заморожена на месте на 2.2 с | черновик | `src/abilities/abilityDefs/ice/ice_shackles.ts` |
-| rime_cage | ice | Инеевая клеть | Лёд | зона | без урона, клик и крест: заморозка на месте на 1.8 с | черновик | `src/abilities/abilityDefs/ice/rime_cage.ts` |
-| reactive_rime | ice | Ответный иней | Лёд | на себя | на себя 6 с: каждый удар по герою - скорость атаки бьющего -35% на 3 с | черновик | `src/abilities/abilityDefs/ice/reactive_rime.ts` |
+| crystal_rift | ice | Кристальный разлом | Лёд | зона | клик пустой, 36 льда на кресте + хрупкость: следующий удар по цели +35%, 4 с | отказ | `src/abilities/abilityDefs/ice/crystal_rift.ts` |
+| avalanche | ice | Лавина | Лёд | все враги | каст 2.5 с, кд 14 с: 14 урона льда всем + хрупкость: следующий удар +35%, 4 с | одобрено | `src/abilities/abilityDefs/ice/avalanche.ts` |
+| ice_shackles | ice | Ледяные оковы | Лёд | цель | без урона, цель заморожена на месте на 2.2 с | отказ | `src/abilities/abilityDefs/ice/ice_shackles.ts` |
+| rime_cage | ice | Инеевая клеть | Лёд | зона | без урона, клик и крест: заморозка на месте на 1.8 с | отказ | `src/abilities/abilityDefs/ice/rime_cage.ts` |
+| frost_armor | ice | Морозная броня | Лёд | на себя | на себя 6 с: каждый мили-удар по герою - скорость атаки бьющего -60% на 3 с | одобрено | `src/abilities/abilityDefs/ice/frost_armor.ts` |
+| crystal_cage | ice | Кристальная клетка | Лёд | цель | цель: заморозка 3 с (блок атак/кастов/хода) + 8 льда/с; после - Охлаждение 5 с, скорость атаки и каста -75%; кд 12 с | одобрено | `src/abilities/abilityDefs/ice/crystal_cage.ts` |
+| frost_breath | ice | Морозное дыхание | Лёд | зона | зона Т только с 1 ряда: 3 клетки вперёд + бока на 3-м; 12 льда + заморозка 1.5 с (блок всех действий); кд 6 с | одобрено | `src/abilities/abilityDefs/ice/frost_breath.ts` |
 | fireball | fire | Огненный шар | Огонь | цель | 42 урона + горение 8/с на 4 с | одобрено | `src/abilities/abilityDefs/fire/fireball.ts` |
 | flame_cone | fire | Дыхание дракона | Огонь | зона | клик ряд 1: 40 в клик, 22 в до 3 клеток выше | одобрено | `src/abilities/abilityDefs/fire/flame_cone.ts` |
 | hammer_throw | light | Бросок молота | Свет | цель | 45 урона + стан 2.2 с, только ближний ряд | одобрено | `src/abilities/abilityDefs/light/hammer_throw.ts` |

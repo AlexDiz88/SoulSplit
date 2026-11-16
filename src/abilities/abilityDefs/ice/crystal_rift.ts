@@ -4,7 +4,7 @@ const def: AbilityCatalogDef = {
   id: "crystal_rift",
   name: "Кристальный разлом",
   aspectId: "ice",
-  status: "черновик",
+  status: "отказ",
   icon: "crystal_rift.png",
   hook: "клик пустой, 36 льда на кресте + хрупкость: следующий удар по цели +35%, 4 с",
   description:

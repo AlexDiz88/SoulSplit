@@ -4,7 +4,7 @@ const def: AbilityCatalogDef = {
   id: "rime_cage",
   name: "Инеевая клеть",
   aspectId: "ice",
-  status: "черновик",
+  status: "отказ",
   icon: "rime_cage.png",
   hook: "без урона, клик и крест: заморозка на месте на 1.8 с",
   description:
