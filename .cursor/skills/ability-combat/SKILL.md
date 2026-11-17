@@ -71,11 +71,10 @@ description: >-
   → колбэки VFX применяют урон
 ```
 
-Сейчас в коде:
+В коде:
 
-- Весь `resolveAbility` обёрнут в `this.casting = true` - автоатака стоит и на мгновенных. **Новые** мгновенные способности проектируй по канону; при касании старых - не усугубляй (не добавляй лишний `await` до урона без нужды).
-
-- **Антипаттерн:** весь `castTime` только внутри premium-VFX (`AvalancheVfx` windup) без `hero.beginCast` и без полосы каста. Для новых кастов - подготовка в бое, VFX - фаза **выпуска**.
+- `this.casting` - очередь/телеграф; автоатака паузится только на `hero.cast`.
+- **Антипаттерн:** весь `castTime` только внутри premium-VFX без `runHeroCastPrep` / полосы каста.
 
 ## Шаг 4. VFX
 
@@ -113,7 +112,7 @@ description: >-
 | shadow_strike | мгновенная | projectile_impact / рывок | sameEnemyOnCell |
 | flame_cone | мгновенная | zone_after_vfx | |
 | frost_breath | мгновенная | zone_after_vfx | ближний ряд |
-| avalanche | каст 2.5 | multi_callback после волны | подтянуть к hero.beginCast |
+| avalanche | каст 2.5 | multi_callback после волны | подготовка в бое, VFX без windup |
 | titan_might, wind_speed, demoralizing_shout | мгновенная | instant_frame / self_buff_sync | |
 
 При добавлении строки - обнови таблицу в этом файле.

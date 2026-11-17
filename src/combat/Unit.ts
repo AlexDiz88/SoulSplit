@@ -783,6 +783,33 @@ export class Unit {
           .fill({ color: bar.color, alpha: 0.95 });
       }
     }
+
+    if (this.cast) {
+      const castFill =
+        this.cast.duration > 0 ? Math.min(1, this.cast.elapsed / this.cast.duration) : 1;
+      const castH = 10;
+      const castY = bars.length > 0 ? bars[bars.length - 1]!.y + h + 4 : topY;
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.012);
+      const neon = 0x7ec8e8;
+      const neonHot = 0xc8f0ff;
+      this.cdBarGlow
+        .roundRect(x - 2, castY - 2, w + 4, castH + 4, 3)
+        .fill({ color: neon, alpha: 0.14 + 0.1 * pulse });
+      this.cdBarBg.roundRect(x, castY, w, castH, 2).fill({ color: 0x041820, alpha: 0.92 });
+      if (castFill > 0) {
+        const fw = Math.max(3, w * castFill);
+        this.cdBarFg.roundRect(x, castY, fw, castH, 2).fill({ color: neon, alpha: 0.9 });
+        this.cdBarFg.roundRect(x, castY, fw, Math.max(2, castH * 0.38), 2).fill({
+          color: neonHot,
+          alpha: 0.35 + 0.2 * pulse,
+        });
+      }
+      const name = ABILITIES[this.cast.id]?.name ?? this.cast.id;
+      this.castLabel.text = name;
+      this.castLabel.position.set(x + w / 2, castY + castH / 2);
+      this.castLabel.alpha = 0.88 + 0.12 * pulse;
+      this.castLabel.visible = true;
+    }
   }
 
   isCasting(): boolean {
@@ -791,7 +818,14 @@ export class Unit {
 
   beginCast(id: AbilityId, duration: number): void {
     this.cast = { id, elapsed: 0, duration };
-    this.attackCharge = 0;
+    if (this.team === "enemy") this.attackCharge = 0;
+    this.redraw();
+  }
+
+  /** Завершение подготовки без срыва. */
+  clearCast(): void {
+    if (!this.cast) return;
+    this.cast = null;
     this.redraw();
   }
 

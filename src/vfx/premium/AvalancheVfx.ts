@@ -57,8 +57,8 @@ export async function playAvalancheVfx(
   const chargeG = new Graphics();
   crisp.addChild(chargeG);
 
-  const windup = Math.max(0.4, castTime);
-  await tweens.to(windup, (t) => {
+  const windup = castTime > 0 ? Math.max(0.4, castTime) : 0;
+  if (windup > 0) await tweens.to(windup, (t) => {
     charge.alpha = 0.25 + t * 0.7;
     charge.scale.set(0.25 + t * 0.85);
     charge.rotation = t * 1.2;

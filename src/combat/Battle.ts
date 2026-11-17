@@ -21,6 +21,7 @@ import {
   abilityCooldown,
   abilityPacketDamage,
   autoAttackDamage,
+  castDuration,
   critMultiplier,
   manaCost,
   PARRY_RIPOSTE_FRACTION,
@@ -132,10 +133,12 @@ export class Battle {
   selectedAbility: AbilityId | null = null;
   paused = false;
   timeScale = 1;
+  /** Способность в канале: очередь кликов, телеграф. Не замораживает автоатаку на мгновенных. */
   casting = false;
   weapon: WeaponKind = "melee";
 
   private destroyed = false;
+  private heroCastWaiter: (() => void) | null = null;
   private started = false;
   private ended = false;
   private hero!: Unit;
@@ -1195,11 +1198,16 @@ export class Battle {
     const cdr = this.hero.sheet ? getStat(this.hero.sheet, "cooldownReduction") : 0;
     this.hero.abilityCd[def.id] = abilityCooldown(def.cooldown, cdr);
     this.refreshSkillBar();
-    this.hud.setHint(`Каст: ${def.name}…`);
+    this.hud.setHint(`${def.name}…`);
     try {
+      await this.runHeroCastPrep(def);
+      if (this.destroyed || !this.hero.alive) return;
+      this.hud.setHint(`${def.name}…`);
       await this.resolveAbility(def, clicked, cell);
     } finally {
       if (!this.destroyed) {
+        this.heroCastWaiter = null;
+        this.hero.interruptCast();
         this.hero.setHidden(false);
         this.hero.view.position.set(this.heroAnchor.x, this.heroAnchor.y);
         this.casting = false;
@@ -1209,6 +1217,24 @@ export class Battle {
         this.tryFlushPendingCast();
       }
     }
+  }
+
+  private abilityPrepCastTime(def: AbilityDef): number {
+    return def.effects?.castTime ?? 0;
+  }
+
+  /** Подготовка героя: полоса каста, пауза автоатаки. После - resolve как у мгновенной. */
+  private async runHeroCastPrep(def: AbilityDef): Promise<void> {
+    const base = this.abilityPrepCastTime(def);
+    if (base <= 0) return;
+    const cs = this.hero.sheet ? getStat(this.hero.sheet, "castSpeed") : 0;
+    const duration = castDuration(base, cs);
+    this.hero.beginCast(def.id, duration);
+    this.hud.setHint(`Подготовка: ${def.name}…`);
+    await new Promise<void>((resolve) => {
+      this.heroCastWaiter = () => resolve();
+    });
+    this.hero.clearCast();
   }
 
   private tryFlushPendingCast(): void {
@@ -1322,7 +1348,6 @@ export class Battle {
         break;
       }
       case "titan_might": {
-        await this.vfx.titanMight(from, [caster.center]);
         const buffDur = def.effects?.atkBuffDuration ?? 5;
         const buffPot = def.effects?.atkBuffPotency ?? 0.35;
         caster.addStatus({
@@ -1333,10 +1358,10 @@ export class Battle {
           sourceAbilityId: def.id,
         });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "СИЛА", 0xc9b896);
+        await this.vfx.titanMight(from, [caster.center]);
         break;
       }
       case "demoralizing_shout": {
-        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.might, caster.cardSize * 1.1, 0.45);
         const debuffDur = def.effects?.atkDebuffDuration ?? 5;
         const debuffMult = def.effects?.atkDebuffMult ?? 0.7;
         for (const u of this.livingEnemies()) {
@@ -1349,6 +1374,7 @@ export class Battle {
           });
           this.vfx.floatingText(u.center.x, u.center.y - 20, "СТРАХ", 0xc9b896);
         }
+        void this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.might, caster.cardSize * 1.1, 0.45);
         break;
       }
       case "sever_artery": {
@@ -1413,7 +1439,6 @@ export class Battle {
         break;
       }
       case "wind_speed": {
-        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 0.7, 0.4);
         const hasteMult = def.effects?.hasteIntervalMult ?? attackSpeedIncreaseToHasteMult(0.25);
         const hasteDur = def.effects?.hasteDuration ?? 5;
         caster.addStatus({
@@ -1424,6 +1449,7 @@ export class Battle {
           sourceAbilityId: def.id,
         });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ВЕТЕР", 0xa8c8dc);
+        void this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.air, caster.cardSize * 0.7, 0.4);
         break;
       }
       case "squall": {
@@ -1477,7 +1503,6 @@ export class Battle {
         break;
       }
       case "rejuvenation": {
-        await this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.nature, caster.cardSize * 0.7, 0.4);
         const regenPerSec = def.effects?.regenPerSec ?? 10;
         const regenDur = def.effects?.regenDuration ?? 5;
         caster.addStatus({
@@ -1488,6 +1513,7 @@ export class Battle {
           sourceAbilityId: def.id,
         });
         this.vfx.floatingText(caster.center.x, caster.center.y - 20, "ОМОЛОЖЕНИЕ", ASPECT_COLOR.nature);
+        void this.vfx.ring(caster.center.x, caster.center.y, ASPECT_COLOR.nature, caster.cardSize * 0.7, 0.4);
         break;
       }
       case "root_grasp": {
@@ -1559,12 +1585,11 @@ export class Battle {
         break;
       }
       case "avalanche": {
-        const castTime = def.effects?.castTime ?? 2.5;
         const fragileDur = def.effects?.fragileDuration ?? 4;
         const fragilePot = def.effects?.fragilePotency ?? 0.35;
         const enemies = this.livingEnemies();
         const centers = enemies.map((u) => ({ ...u.center }));
-        await this.vfx.avalanche(from, centers, castTime, () => {
+        await this.vfx.avalanche(from, centers, 0, () => {
           for (const u of this.livingEnemies()) {
             this.dealAbilityDamage(caster, u, def.damage, def);
             u.addStatus({
@@ -2417,6 +2442,25 @@ export class Battle {
       }
       if (u.isHardCc()) continue;
 
+      if (u.team === "player" && u.cast) {
+        if (!u.alive) {
+          u.interruptCast();
+          const abort = this.heroCastWaiter;
+          this.heroCastWaiter = null;
+          abort?.();
+        } else {
+          u.cast.elapsed += combatDt * u.castSpeedMult();
+          u.redraw();
+          if (u.cast.elapsed >= u.cast.duration) {
+            u.cast = null;
+            u.redraw();
+            const waiter = this.heroCastWaiter;
+            this.heroCastWaiter = null;
+            waiter?.();
+          }
+        }
+      }
+
       if (u.team === "enemy" && u.cast) {
         u.cast.elapsed += combatDt * u.castSpeedMult();
         u.attackCharge = u.cast.duration > 0 ? Math.min(1, u.cast.elapsed / u.cast.duration) : 1;
@@ -2437,15 +2481,15 @@ export class Battle {
         if (u.cast) continue;
       }
 
+      const heroPreparingCast = u.team === "player" && u.cast;
+      if (heroPreparingCast) continue;
+
       const mainWeapon = u.team === "player" ? u.equipment.mainhand?.weapon : true;
       if (mainWeapon) {
         u.autoTimer += combatDt;
         const need = u.autoAttackNeed();
         if (u.autoTimer >= need) {
-          if (u.team === "player" && this.casting) {
-            // Готовность сохраняем, но не копим несколько ударов за длинный VFX.
-            u.autoTimer = need;
-          } else if (!this.findAutoTarget(u, "mainhand")) {
+          if (!this.findAutoTarget(u, "mainhand")) {
             u.autoTimer = need;
           } else {
             u.autoTimer -= need;
@@ -2458,9 +2502,7 @@ export class Battle {
         u.offhandAutoTimer += combatDt;
         const offNeed = u.offhandAutoAttackNeed();
         if (offNeed > 0 && u.offhandAutoTimer >= offNeed) {
-          if (this.casting) {
-            u.offhandAutoTimer = offNeed;
-          } else if (!this.findAutoTarget(u, "offhand")) {
+          if (!this.findAutoTarget(u, "offhand")) {
             u.offhandAutoTimer = offNeed;
           } else {
             u.offhandAutoTimer -= offNeed;
