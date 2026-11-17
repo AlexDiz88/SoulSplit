@@ -133,34 +133,35 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
   map.setAttribute("aria-label", "Карта мира");
   const spotAnchors = new Map<WorldMapSpotId, HTMLElement>();
   const spotButtons = new Map<WorldMapSpotId, HTMLButtonElement>();
+  const phoneSpotButtons = new Map<WorldMapSpotId, HTMLButtonElement>();
 
   for (const spot of WORLD_MAP_SPOTS) {
-    const anchor = el("div", "world-map-spot");
+    const anchor = el("div", "world-map-spot meta-map-only");
     anchor.dataset.spot = spot.id;
     const btn = el("button", "title-btn world-map-spot-btn", spot.label);
     btn.type = "button";
     btn.setAttribute("aria-label", spot.label);
-    btn.addEventListener("click", () => {
-      if (spot.kind === "town") {
-        closeRegionPanel();
-        handlers.onBackToTown();
-        return;
-      }
-      const regionId = spot.regionId;
-      if (!regionId) return;
-      const unlocked = btn.dataset.unlocked === "1";
-      if (!unlocked) {
-        handlers.showToast(btn.dataset.lockHint || "Закрыто");
-        return;
-      }
-      openRegionPanel(regionId);
-    });
     anchor.append(btn);
     spotAnchors.set(spot.id, anchor);
     spotButtons.set(spot.id, btn);
     map.append(anchor);
   }
   root.append(map);
+
+  const phoneDock = el("nav", "wm-phone-dock meta-phone-only");
+  phoneDock.setAttribute("aria-label", "Регионы провинции");
+  phoneDock.append(el("div", "wm-phone-dock-head", "Регионы"));
+  const phoneSpotList = el("div", "wm-phone-spot-list");
+  for (const spot of WORLD_MAP_SPOTS) {
+    const btn = el("button", "wm-phone-spot-btn title-btn", spot.label);
+    btn.type = "button";
+    if (spot.kind === "town") btn.classList.add("is-town");
+    btn.setAttribute("aria-label", spot.label);
+    phoneSpotButtons.set(spot.id, btn);
+    phoneSpotList.append(btn);
+  }
+  phoneDock.append(phoneSpotList);
+  root.append(phoneDock);
 
   const overlay = el("div", "wm-region-overlay");
   overlay.hidden = true;
@@ -439,6 +440,58 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
     btnGo.focus();
   };
 
+  const activateSpot = (spot: (typeof WORLD_MAP_SPOTS)[number], btn: HTMLButtonElement): void => {
+    if (spot.kind === "town") {
+      closeRegionPanel();
+      handlers.onBackToTown();
+      return;
+    }
+    const regionId = spot.regionId;
+    if (!regionId) return;
+    const unlocked = btn.dataset.unlocked === "1";
+    if (!unlocked) {
+      handlers.showToast(btn.dataset.lockHint || "Закрыто");
+      return;
+    }
+    openRegionPanel(regionId);
+  };
+
+  for (const spot of WORLD_MAP_SPOTS) {
+    const mapBtn = spotButtons.get(spot.id);
+    if (mapBtn) mapBtn.addEventListener("click", () => activateSpot(spot, mapBtn));
+    const phoneBtn = phoneSpotButtons.get(spot.id);
+    if (phoneBtn) phoneBtn.addEventListener("click", () => activateSpot(spot, phoneBtn));
+  }
+
+  const syncSpotButton = (
+    spot: (typeof WORLD_MAP_SPOTS)[number],
+    btn: HTMLButtonElement,
+    state: GameState,
+  ): void => {
+    if (spot.kind === "town") {
+      btn.classList.remove("is-locked");
+      btn.dataset.unlocked = "1";
+      delete btn.dataset.lockHint;
+      btn.setAttribute("aria-label", `Вернуться в ${CURRENT_HUB_CITY_NAME}`);
+      btn.textContent = spot.label;
+      return;
+    }
+    const regionId = spot.regionId!;
+    const region = getRegion(regionId);
+    const unlocked = isRegionUnlocked(regionId, state.hero.level, state.unlockedRegions);
+    btn.classList.toggle("is-locked", !unlocked);
+    btn.dataset.unlocked = unlocked ? "1" : "0";
+    const location = getLocation(region);
+    const hint = unlocked
+      ? location
+        ? `${region.description} (${region.locations.length} локации, ilvl ${location.itemLevel}+)`
+        : region.description
+      : lockHint(regionId, state.hero.level);
+    btn.dataset.lockHint = unlocked ? "" : hint;
+    btn.textContent = region.name;
+    btn.setAttribute("aria-label", unlocked ? `${region.name}. ${hint}` : hint);
+  };
+
   const closeRegionPanel = (after?: () => void): void => {
     if (overlay.hidden || panelClosing) {
       after?.();
@@ -563,29 +616,10 @@ export function mountWorldMapScreen(handlers: WorldMapHandlers): WorldMapApi {
       syncPhaseLighting(state);
       closeRegionPanel();
       for (const spot of WORLD_MAP_SPOTS) {
-        const btn = spotButtons.get(spot.id);
-        if (!btn) continue;
-        if (spot.kind === "town") {
-          btn.classList.remove("is-locked");
-          btn.dataset.unlocked = "1";
-          delete btn.dataset.lockHint;
-          btn.setAttribute("aria-label", `Вернуться в ${CURRENT_HUB_CITY_NAME}`);
-          continue;
-        }
-        const regionId = spot.regionId!;
-        const region = getRegion(regionId);
-        const unlocked = isRegionUnlocked(regionId, state.hero.level, state.unlockedRegions);
-        btn.classList.toggle("is-locked", !unlocked);
-        btn.dataset.unlocked = unlocked ? "1" : "0";
-        const location = getLocation(region);
-        const hint = unlocked
-          ? location
-            ? `${region.description} (${region.locations.length} локации, ilvl ${location.itemLevel}+)`
-            : region.description
-          : lockHint(regionId, state.hero.level);
-        btn.dataset.lockHint = unlocked ? "" : hint;
-        btn.textContent = region.name;
-        btn.setAttribute("aria-label", unlocked ? `${region.name}. ${hint}` : hint);
+        const mapBtn = spotButtons.get(spot.id);
+        if (mapBtn) syncSpotButton(spot, mapBtn, state);
+        const phoneBtn = phoneSpotButtons.get(spot.id);
+        if (phoneBtn) syncSpotButton(spot, phoneBtn, state);
       }
       root.hidden = false;
       scheduleLayout();

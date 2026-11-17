@@ -1,0 +1,324 @@
+/* Телефон (портрет, до 480px): город, карта, окно региона, бой. Десктоп вне media не трогаем. */
+
+.meta-phone-only {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  .meta-phone-only {
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+  }
+
+  .meta-map-only {
+    display: none !important;
+  }
+
+  /* ---- Город ---- */
+  .hub-phone-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    max-height: min(56vh, 480px);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(106, 90, 58, 0.55);
+    background:
+      linear-gradient(180deg, rgba(8, 10, 16, 0.35) 0%, rgba(10, 12, 18, 0.92) 14%, #0c0e12 100%);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+
+  .hub-phone-dock-head {
+    flex: 0 0 auto;
+    padding: 10px 14px 6px;
+    font-size: 1.05rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--theme-corona, #e8d9a8);
+  }
+
+  .hub-phone-loc-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding: 4px 12px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .hub-phone-loc-btn {
+    width: 100%;
+    margin: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    font-size: 0.95rem;
+    text-align: center;
+    background:
+      linear-gradient(
+        180deg,
+        rgba(72, 76, 102, 0.55) 0%,
+        rgba(28, 30, 46, 0.82) 48%,
+        rgba(14, 16, 26, 0.92) 100%
+      ),
+      #12141e;
+  }
+
+  .hub-tools {
+    top: calc(6px + env(safe-area-inset-top));
+    right: 8px;
+    gap: 8px;
+  }
+
+  .hub-clock {
+    font-size: 0.82rem;
+    padding: 6px 10px;
+    min-width: 3.8rem;
+  }
+
+  .hub-round-btn {
+    width: 44px;
+    height: 44px;
+  }
+
+  .hub-hero-stack {
+    left: 8px;
+    bottom: calc(min(56vh, 480px) + 10px);
+    max-width: calc(100vw - 100px);
+  }
+
+  .hub-bag-dock {
+    right: 8px;
+    bottom: calc(min(56vh, 480px) + 10px);
+  }
+
+  .hub-bag-btn {
+    width: 52px;
+    height: 52px;
+  }
+
+  .hub-hero-dock {
+    max-width: min(100%, calc(100vw - 108px));
+  }
+
+  .hub-portrait {
+    width: 72px;
+    height: 72px;
+    flex: 0 0 72px;
+  }
+
+  .hub-name {
+    font-size: 0.92rem;
+  }
+
+  .hub-level-up-btn {
+    font-size: 0.82rem;
+    padding: 7px 10px;
+  }
+
+  /* ---- Карта мира ---- */
+  .wm-phone-dock {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 4;
+    max-height: min(62vh, 540px);
+    padding-bottom: env(safe-area-inset-bottom);
+    border-top: 1px solid rgba(106, 90, 58, 0.55);
+    background:
+      linear-gradient(180deg, rgba(8, 10, 16, 0.3) 0%, rgba(10, 12, 18, 0.94) 12%, #0c0e12 100%);
+    box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+  }
+
+  .wm-phone-dock-head {
+    flex: 0 0 auto;
+    padding: 10px 14px 6px;
+    font-size: 1.02rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--theme-corona, #e8d9a8);
+  }
+
+  .wm-phone-spot-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 4px 10px 12px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wm-phone-spot-btn {
+    width: 100%;
+    margin: 0;
+    min-height: 44px;
+    padding: 10px 14px;
+    text-align: left;
+    font-size: 0.94rem;
+    border-radius: 4px;
+    border: 1px solid rgba(106, 90, 58, 0.55);
+    background: rgba(18, 20, 28, 0.92);
+    color: var(--theme-mist, #e8e2d4);
+    cursor: var(--cur-default);
+  }
+
+  .wm-phone-spot-btn.is-town {
+    font-weight: 800;
+    color: var(--theme-corona, #e8d9a8);
+    border-color: rgba(196, 163, 90, 0.65);
+    background:
+      linear-gradient(180deg, rgba(72, 56, 96, 0.35), rgba(28, 22, 42, 0.92)),
+      #1a1424;
+  }
+
+  .wm-phone-spot-btn.is-locked {
+    opacity: 0.72;
+    cursor: var(--cur-not-allowed);
+    color: #9a9488;
+  }
+
+  .world-map-clock {
+    top: calc(6px + env(safe-area-inset-top));
+    right: 8px;
+    font-size: 0.82rem;
+    padding: 6px 10px;
+  }
+
+  /* ---- Окно региона (локации) ---- */
+  .wm-region-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(4, 5, 12, 0.72);
+  }
+
+  .wm-region-panel {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      14px
+      calc(12px + env(safe-area-inset-bottom));
+    gap: 12px;
+    font-size: 1rem;
+    transform: translateY(12px);
+    opacity: 0;
+  }
+
+  .wm-region-overlay.is-open .wm-region-panel {
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .wm-region-hero {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wm-region-preview {
+    width: 100%;
+    height: min(36vw, 140px);
+    flex: none;
+  }
+
+  .wm-region-title {
+    font-size: 1.28rem;
+  }
+
+  .wm-region-desc {
+    font-size: 0.98rem;
+  }
+
+  .wm-region-locations {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .wm-location-btn {
+    flex: none;
+    width: 100%;
+  }
+
+  .wm-region-enemy-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: flex-start;
+  }
+
+  .wm-region-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    background: linear-gradient(0deg, #0d0e0f 70%, rgba(13, 14, 15, 0));
+  }
+
+  .wm-region-btn {
+    width: 100%;
+    min-height: 44px;
+  }
+
+  .wm-region-threat-tip {
+    max-width: min(88vw, 320px);
+  }
+
+  /* ---- Бой (дополнение к style.css @media) ---- */
+  .hud-combat-bar {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1vh;
+    min-height: 0;
+    padding-top: 0.4vh;
+  }
+
+  .potion-bar {
+    position: static;
+    left: auto;
+    top: auto;
+    transform: none;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    gap: 2.5vw;
+    --potion-size: min(13vw, 52px);
+    width: 92vw;
+    max-width: 92vw;
+    margin: 0 auto;
+  }
+
+  .hud-hint {
+    font-size: 0.88rem;
+    padding: 0 4vw;
+    text-align: center;
+    max-width: 92vw;
+    margin-inline: auto;
+  }
+
+  .ctrl-btn {
+    font-size: 0.9rem;
+  }
+}

@@ -108,7 +108,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   map.setAttribute("aria-label", `Локации ${CURRENT_HUB_CITY_NAME}`);
   const locationAnchors = new Map<HubLocationId, HTMLElement>();
   for (const loc of HUB_LOCATIONS) {
-    const anchor = el("div", "hub-loc");
+    const anchor = el("div", "hub-loc meta-map-only");
     anchor.dataset.loc = loc.id;
     const btn = el("button", "title-btn hub-loc-btn", loc.label);
     btn.type = "button";
@@ -119,6 +119,20 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     map.append(anchor);
   }
   root.append(map);
+
+  const phoneDock = el("nav", "hub-phone-dock meta-phone-only");
+  phoneDock.setAttribute("aria-label", `Здания ${CURRENT_HUB_CITY_NAME}`);
+  phoneDock.append(el("div", "hub-phone-dock-head", CURRENT_HUB_CITY_NAME));
+  const phoneLocGrid = el("div", "hub-phone-loc-grid");
+  for (const loc of HUB_LOCATIONS) {
+    const btn = el("button", "hub-phone-loc-btn title-btn", loc.label);
+    btn.type = "button";
+    btn.setAttribute("aria-label", loc.label);
+    btn.addEventListener("click", () => handlers.onLocation(loc.id));
+    phoneLocGrid.append(btn);
+  }
+  phoneDock.append(phoneLocGrid);
+  root.append(phoneDock);
 
   /* ---- Герой: левый нижний угол ---- */
   const heroDock = el("button", "hub-hero-dock");

@@ -1,4 +1,5 @@
 import "./style.css";
+import "./ui/mobileMeta.css";
 import { Application } from "pixi.js";
 import { preloadBackgrounds } from "./art/backgrounds";
 import { preloadPortraits } from "./art/portraits";
