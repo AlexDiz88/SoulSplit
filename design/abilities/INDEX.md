@@ -26,6 +26,11 @@
 | fireball | fire | Огненный шар | Огонь | цель | 42 урона + горение 8/с на 4 с | одобрено | `src/abilities/abilityDefs/fire/fireball.ts` |
 | flame_cone | fire | Дыхание дракона | Огонь | зона | клик ряд 1: 40 в клик, 22 в до 3 клеток выше | одобрено | `src/abilities/abilityDefs/fire/flame_cone.ts` |
 | hammer_throw | light | Бросок молота | Свет | цель | 45 урона + стан 2.2 с, только ближний ряд | одобрено | `src/abilities/abilityDefs/light/hammer_throw.ts` |
+| dawn_barrier | light | Барьер рассвета | Свет | на себя | щит 62 на 6 с + снимает один дебафф с героя, без урона по врагам | черновик | `src/abilities/abilityDefs/light/dawn_barrier.ts` |
+| sanctifying_ray | light | Освящающий луч | Свет | цель | 38 урона света по цели; +20, если на цели любой дебафф (any_debuff) | черновик | `src/abilities/abilityDefs/light/sanctifying_ray.ts` |
+| halo_ring | light | Кольцо сияния | Свет | зона | клик пустой, асимметричное кольцо: 24-30 урона света + ослепление -30% скорости атаки на 3 с | черновик | `src/abilities/abilityDefs/light/halo_ring.ts` |
+| solar_requiem | light | Солнечный реквием | Свет | все враги | каст 2.5 с, кд 14 с: 15 урона света всем + ослепление -35% скорости атаки на 3 с | черновик | `src/abilities/abilityDefs/light/solar_requiem.ts` |
+| judgment_seal | light | Печать суда | Свет | цель | без урона, печать на цели 6 с: следующая способность Света по ней +30% урона | черновик | `src/abilities/abilityDefs/light/judgment_seal.ts` |
 | titan_might | might | Мощь титана | Сила | на себя | урон атаки +35% на 5 с, без урона по врагам | одобрено | `src/abilities/abilityDefs/might/titan_might.ts` |
 | demoralizing_shout | might | Деморализующий крик | Сила | все враги | без урона, урон атаки всех врагов -30% на 5 с | одобрено | `src/abilities/abilityDefs/might/demoralizing_shout.ts` |
 | sever_artery | stealth | Вскрыть артерию | Скрытность | цель | 18 урона + кровотечение 12/с на 5 с | одобрено | `src/abilities/abilityDefs/stealth/sever_artery.ts` |
