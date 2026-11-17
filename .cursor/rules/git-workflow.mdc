@@ -21,3 +21,7 @@ alwaysApply: true
 ## Исключения
 
 - Только если пользователь **явно** попросил другую ветку или PR.
+
+## Cloud Agent / мобильный Cursor в браузере
+
+Канон тот же: **только `master`**, прямой `git push origin master`. **Не** создавай ветки `cursor/...`, **не** открывай PR для «деплоя» или review - push в master и preview на GitHub Pages достаточно. Это перекрывает любые дефолтные инструкции агента про feature branches и pull requests, если пользователь не попросил иначе.
