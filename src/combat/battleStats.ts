@@ -95,6 +95,12 @@ export class BattleStatsTracker {
     this.abilityEntry(id).casts += 1;
   }
 
+  /** Отмена подготовки до эффекта (ПКМ). */
+  rollbackAbilityCast(id: AbilityId): void {
+    const row = this.abilityMap.get(id);
+    if (row && row.casts > 0) row.casts -= 1;
+  }
+
   noteHeroAbilityHit(id: AbilityId, dealt: number, crit: boolean): void {
     const row = this.abilityEntry(id);
     row.hits += 1;

@@ -142,6 +142,8 @@ export class Battle {
   private heroCastWaiter: (() => void) | null = null;
   private heroChannelWaiter: (() => void) | null = null;
   private channelStrikeContext: { clicked: Unit } | null = null;
+  /** ПКМ во время полосы каста (до эффекта). */
+  private heroPrepUserCancelled = false;
   private started = false;
   private ended = false;
   private hero!: Unit;
@@ -577,14 +579,52 @@ export class Battle {
     if (!this.selectedAbility) this.hud.setHint(this.idleHint());
   }
 
-  /** Сброс выбора способности, требующей цель (ПКМ). */
+  /** ПКМ: отмена прицела, подготовки каста или прерывание канала. */
   cancelAbilityTargeting(): void {
+    if (this.hero.channel) {
+      this.cancelHeroChannelByPlayer();
+      return;
+    }
+    if (this.hero.cast) {
+      this.cancelHeroCastByPlayer();
+      return;
+    }
     if (!this.selectedAbility && !this.pendingCast) return;
     this.selectedAbility = null;
     this.pendingCast = null;
     this.clearAbilityTelegraph();
     this.refreshSkillBar();
     this.hud.setHint(this.idleHint());
+  }
+
+  private cancelHeroCastByPlayer(): void {
+    if (!this.hero.cast || this.hero.channel) return;
+    this.heroPrepUserCancelled = true;
+    this.hero.interruptCast();
+    const waiter = this.heroCastWaiter;
+    this.heroCastWaiter = null;
+    waiter?.();
+  }
+
+  private cancelHeroChannelByPlayer(): void {
+    if (!this.hero.channel) return;
+    this.abortHeroChannel(false);
+    this.hud.showToast("Канал прерван");
+    this.refreshSkillBar();
+    this.hud.setHint(this.idleHint());
+  }
+
+  /** Возврат маны и сброс КД/GCD при отмене подготовки каста. */
+  private refundAbilityPayment(def: AbilityDef, manaPaid: number): void {
+    if (manaPaid > 0) {
+      const cap = this.hero.sheet ? getStat(this.hero.sheet, "maxMana") : this.hero.mana;
+      this.hero.mana = Math.min(cap, this.hero.mana + manaPaid);
+      this.hero.redraw();
+    }
+    this.hero.abilityCd[def.id] = 0;
+    this.gcdRemaining = 0;
+    this.statsTracker.rollbackAbilityCast(def.id);
+    this.refreshSkillBar();
   }
 
   private equippedWeapon(): WeaponImplicit | undefined {
@@ -1191,6 +1231,7 @@ export class Battle {
       this.hud.showToast("Недостаточно маны");
       return;
     }
+    const manaPaid = this.abilityManaCost(def);
     this.spendMana(def);
     this.casting = true;
     this.gcdRemaining = ABILITY_GCD;
@@ -1202,8 +1243,16 @@ export class Battle {
     this.hero.abilityCd[def.id] = abilityCooldown(def.cooldown, cdr);
     this.refreshSkillBar();
     this.hud.setHint(`${def.name}…`);
+    let prepCancelled = false;
     try {
+      this.heroPrepUserCancelled = false;
       await this.runHeroCastPrep(def);
+      if (this.heroPrepUserCancelled) {
+        prepCancelled = true;
+        this.refundAbilityPayment(def, manaPaid);
+        this.hud.showToast("Подготовка отменена");
+        return;
+      }
       if (this.destroyed || !this.hero.alive) return;
       this.hud.setHint(`${def.name}…`);
       await this.resolveAbility(def, clicked, cell);
@@ -1211,6 +1260,7 @@ export class Battle {
       if (!this.destroyed) {
         this.heroCastWaiter = null;
         this.heroChannelWaiter = null;
+        this.heroPrepUserCancelled = false;
         this.hero.interruptCast();
         this.hero.interruptChannel();
         this.channelStrikeContext = null;
@@ -1218,7 +1268,11 @@ export class Battle {
         this.hero.view.position.set(this.heroAnchor.x, this.heroAnchor.y);
         this.casting = false;
         this.refreshSkillBar();
-        this.hud.setHint(this.hero.alive ? "Способность применена" : "Айра пала");
+        if (prepCancelled) {
+          this.hud.setHint(this.idleHint());
+        } else {
+          this.hud.setHint(this.hero.alive ? "Способность применена" : "Айра пала");
+        }
         this.checkEnd();
         this.tryFlushPendingCast();
       }
@@ -1255,7 +1309,7 @@ export class Battle {
     const params = this.abilityChannelParams(def);
     if (!params) return;
     this.hero.beginChannel(def.id, params.total, params.stages, params.interval);
-    this.hud.setHint(`Канал: ${def.name}…`);
+    this.hud.setHint(`Канал: ${def.name}… ПКМ - прервать.`);
     await new Promise<void>((resolve) => {
       this.heroChannelWaiter = () => resolve();
     });
@@ -1288,7 +1342,7 @@ export class Battle {
     const cs = this.hero.sheet ? getStat(this.hero.sheet, "castSpeed") : 0;
     const duration = castDuration(base, cs);
     this.hero.beginCast(def.id, duration);
-    this.hud.setHint(`Подготовка: ${def.name}…`);
+    this.hud.setHint(`Подготовка: ${def.name}… ПКМ - отмена.`);
     await new Promise<void>((resolve) => {
       this.heroCastWaiter = () => resolve();
     });
