@@ -609,7 +609,6 @@ export class Battle {
   private cancelHeroChannelByPlayer(): void {
     if (!this.hero.channel) return;
     this.abortHeroChannel(false);
-    this.hud.showToast("Канал прерван");
     this.refreshSkillBar();
     this.hud.setHint(this.idleHint());
   }
@@ -1250,7 +1249,6 @@ export class Battle {
       if (this.heroPrepUserCancelled) {
         prepCancelled = true;
         this.refundAbilityPayment(def, manaPaid);
-        this.hud.showToast("Подготовка отменена");
         return;
       }
       if (this.destroyed || !this.hero.alive) return;
