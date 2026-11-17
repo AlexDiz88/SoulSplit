@@ -16,6 +16,7 @@ alwaysApply: true
 5. При необходимости: новые `kind` статусов, мета в `combatStatusMeta.ts`, хелперы зоны в `shapes.ts`.
 6. Иконка в `src/art/abilityIcons.ts` (ключ = `AbilityId`).
 7. **Premium VFX** уровня существующих ледяных/огненных (`src/vfx/premium/*Vfx.ts` + метод в `VfxManager`), не голый `ring` / `flashCircle` как финал.
+8. **Аудит тайминга** по скиллу `.cursor/skills/ability-combat/SKILL.md` и канону `design/meta/ABILITY_COMBAT_TIMING.md`: класс мгновенная/каст, канал доставки урона, колбэки VFX, полоса каста, автоатака.
 
 Пока нет `combat` + ветки в бою - способность **не** считается внедрённой, даже если в гримуаре уже "одобрено".
 
