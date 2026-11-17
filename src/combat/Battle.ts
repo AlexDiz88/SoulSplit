@@ -1955,7 +1955,7 @@ export class Battle {
 
   /**
    * Floating text + battleStats для avoidance / попадания.
-   * Уклонение: "Промах" над атакующим. Блок / парир: на защитнике.
+   * Промах по точности - до applyDamage, над атакующим. Уклонение / блок / парирование - на цели.
    */
   private resolveHitFeedback(
     attacker: Unit,
@@ -1971,7 +1971,7 @@ export class Battle {
     },
   ): void {
     if (result.outcome === "evaded") {
-      this.vfx.floatingText(attacker.center.x, attacker.center.y - opts.floatY, "Промах", 0x9aa3a0);
+      this.vfx.floatingText(target.center.x, target.center.y - opts.floatY, "Уклонение", 0x9aa3a0);
       if (attacker.team === "player") {
         if (opts.source === "auto") this.statsTracker.noteHeroAutoDodged();
         else this.statsTracker.noteHeroAbilityDodged();
@@ -1982,7 +1982,7 @@ export class Battle {
     }
 
     if (result.outcome === "parried") {
-      this.vfx.floatingText(target.center.x, target.center.y - opts.floatY, "Парир", 0xc8e0ff);
+      this.vfx.floatingText(target.center.x, target.center.y - opts.floatY, "Парирование", 0xc8e0ff);
       if (target.team === "player") this.statsTracker.noteHeroParried();
       return;
     }
@@ -2060,9 +2060,9 @@ export class Battle {
 
     if (result.outcome === "evaded") {
       this.vfx.floatingText(
-        defender.center.x,
-        defender.center.y - 18,
-        "Промах",
+        originalAttacker.center.x,
+        originalAttacker.center.y - 18,
+        "Уклонение",
         0x9aa3a0,
       );
       return;

@@ -510,15 +510,15 @@ function buildTabs(deps: {
   mobileNav.append(tabPicker);
 
   const tabs: { id: DevPanelTab; label: string; active?: boolean }[] = [
-    { id: "params", label: "Параметры героя", active: true },
+    { id: "grimoire", label: "Гримуар", active: true },
     { id: "aspects", label: "Аспекты" },
-    { id: "grimoire", label: "Гримуар" },
-    { id: "bestiary", label: "Бестиарий" },
     { id: "weapons", label: "Таблица оружия" },
     { id: "bases", label: "Базы предметов" },
     { id: "slots", label: "Правила по слотам" },
     { id: "rarity", label: "Редкость и роллы" },
     { id: "generate", label: "Генерация предметов" },
+    { id: "bestiary", label: "Бестиарий" },
+    { id: "params", label: "Параметры героя" },
   ];
 
   const tabSelect = tabPicker.querySelector("select") as HTMLSelectElement;
@@ -541,8 +541,9 @@ function buildTabs(deps: {
     bar.append(btn);
   }
 
-  const panelParams = el("div", "igen-tab-panel active");
+  const panelParams = el("div", "igen-tab-panel");
   panelParams.dataset.panel = "params";
+  panelParams.hidden = true;
   panelParams.append(buildParamsSection());
   panels.set("params", panelParams);
 
@@ -582,9 +583,8 @@ function buildTabs(deps: {
   panelGenerate.append(deps.generateRoot);
   panels.set("generate", panelGenerate);
 
-  const panelGrimoire = el("div", "igen-tab-panel igen-tab-panel-embed");
+  const panelGrimoire = el("div", "igen-tab-panel igen-tab-panel-embed active");
   panelGrimoire.dataset.panel = "grimoire";
-  panelGrimoire.hidden = true;
   panelGrimoire.append(deps.grimoireMount);
   panels.set("grimoire", panelGrimoire);
 
@@ -594,7 +594,7 @@ function buildTabs(deps: {
   panelBestiary.append(deps.bestiaryMount);
   panels.set("bestiary", panelBestiary);
 
-  let activeTab: DevPanelTab = "params";
+  let activeTab: DevPanelTab = "grimoire";
 
   const setTab = (id: DevPanelTab): void => {
     activeTab = id;
@@ -617,18 +617,20 @@ function buildTabs(deps: {
   tabSelect.addEventListener("change", () => setTab(tabSelect.value as DevPanelTab));
 
   panelsWrap.append(
-    panelParams,
+    panelGrimoire,
     panelAspects,
     panelWeapons,
     panelBases,
     panelSlots,
     panelRarity,
     panelGenerate,
-    panelGrimoire,
     panelBestiary,
+    panelParams,
   );
 
   wrap.append(mobileNav, bar, panelsWrap);
+  setTab("grimoire");
+
   return {
     root: wrap,
     setTab,
