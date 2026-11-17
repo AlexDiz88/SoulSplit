@@ -140,6 +140,8 @@ export class Battle {
 
   private destroyed = false;
   private heroCastWaiter: (() => void) | null = null;
+  private heroChannelWaiter: (() => void) | null = null;
+  private channelStrikeContext: { clicked: Unit } | null = null;
   private started = false;
   private ended = false;
   private hero!: Unit;
@@ -1208,7 +1210,10 @@ export class Battle {
     } finally {
       if (!this.destroyed) {
         this.heroCastWaiter = null;
+        this.heroChannelWaiter = null;
         this.hero.interruptCast();
+        this.hero.interruptChannel();
+        this.channelStrikeContext = null;
         this.hero.setHidden(false);
         this.hero.view.position.set(this.heroAnchor.x, this.heroAnchor.y);
         this.casting = false;
@@ -1222,6 +1227,58 @@ export class Battle {
 
   private abilityPrepCastTime(def: AbilityDef): number {
     return def.effects?.castTime ?? 0;
+  }
+
+  private abilityChannelParams(def: AbilityDef): { stages: number; interval: number; total: number } | null {
+    const stages = def.effects?.channelStages ?? 0;
+    const interval = def.effects?.channelStageInterval ?? 0;
+    if (stages <= 0 || interval <= 0) return null;
+    const cs = this.hero.sheet ? getStat(this.hero.sheet, "castSpeed") : 0;
+    const intervalScaled = castDuration(interval, cs);
+    return { stages, interval: intervalScaled, total: stages * intervalScaled };
+  }
+
+  private finishHeroChannel(): void {
+    const waiter = this.heroChannelWaiter;
+    this.heroChannelWaiter = null;
+    waiter?.();
+  }
+
+  private abortHeroChannel(show = true): void {
+    if (!this.hero.interruptChannel()) return;
+    if (show) this.showCastInterrupted(this.hero);
+    this.finishHeroChannel();
+  }
+
+  /** Канал: полоса истощается, стадии по таймеру боя. */
+  private async runHeroChannel(def: AbilityDef): Promise<void> {
+    const params = this.abilityChannelParams(def);
+    if (!params) return;
+    this.hero.beginChannel(def.id, params.total, params.stages, params.interval);
+    this.hud.setHint(`Канал: ${def.name}…`);
+    await new Promise<void>((resolve) => {
+      this.heroChannelWaiter = () => resolve();
+    });
+    this.hero.clearChannel();
+  }
+
+  private fireChannelStage(def: AbilityDef): void {
+    const from = { x: this.heroAnchor.x, y: this.heroAnchor.y };
+    const caster = this.hero;
+    switch (def.id) {
+      case "arcane_missiles": {
+        const clicked = this.channelStrikeContext?.clicked;
+        if (!clicked?.alive) return;
+        const to = { x: clicked.view.x, y: clicked.view.y };
+        void this.vfx.arcaneMissile(from, to, () => {
+          if (!clicked.alive) return;
+          this.dealAbilityDamage(caster, clicked, def.damage, def);
+        });
+        break;
+      }
+      default:
+        break;
+    }
   }
 
   /** Подготовка героя: полоса каста, пауза автоатаки. После - resolve как у мгновенной. */
@@ -1663,6 +1720,16 @@ export class Battle {
         }
         break;
       }
+      case "arcane_missiles": {
+        if (!clicked?.alive) return;
+        this.channelStrikeContext = { clicked };
+        try {
+          await this.runHeroChannel(def);
+        } finally {
+          this.channelStrikeContext = null;
+        }
+        break;
+      }
       default:
         break;
     }
@@ -1681,6 +1748,10 @@ export class Battle {
 
   /** Срыв подготовки: спец-способность или сдвиг с клетки. Обычный урон не срывает. */
   private interruptUnitCast(u: Unit): void {
+    if (u.team === "player" && u.channel) {
+      this.abortHeroChannel();
+      return;
+    }
     if (!u.interruptCast()) return;
     this.showCastInterrupted(u);
   }
@@ -2449,11 +2520,39 @@ export class Battle {
       }
       if (u.isHardCc()) continue;
 
+      if (u.team === "player" && u.channel) {
+        if (!u.alive || u.isHardCc()) {
+          this.abortHeroChannel();
+        } else {
+          const ch = u.channel;
+          ch.elapsed += combatDt * u.castSpeedMult();
+          const def = ABILITIES[ch.id];
+          while (
+            ch.stagesFired < ch.stages &&
+            ch.elapsed >= (ch.stagesFired + 1) * ch.interval
+          ) {
+            this.fireChannelStage(def);
+            ch.stagesFired += 1;
+          }
+          u.redraw();
+          if (ch.stagesFired >= ch.stages) {
+            this.finishHeroChannel();
+          }
+        }
+        continue;
+      }
+
       if (u.team === "player" && u.cast) {
         if (!u.alive) {
           u.interruptCast();
           const abort = this.heroCastWaiter;
           this.heroCastWaiter = null;
+          abort?.();
+        } else if (u.isHardCc()) {
+          u.interruptCast();
+          const abort = this.heroCastWaiter;
+          this.heroCastWaiter = null;
+          this.showCastInterrupted(u);
           abort?.();
         } else {
           u.cast.elapsed += combatDt * u.castSpeedMult();
@@ -2466,6 +2565,7 @@ export class Battle {
             waiter?.();
           }
         }
+        continue;
       }
 
       if (u.team === "enemy" && u.cast) {
@@ -2488,8 +2588,8 @@ export class Battle {
         if (u.cast) continue;
       }
 
-      const heroPreparingCast = u.team === "player" && u.cast;
-      if (heroPreparingCast) continue;
+      const heroChargingAbility = u.team === "player" && (u.cast || u.channel);
+      if (heroChargingAbility) continue;
 
       const mainWeapon = u.team === "player" ? u.equipment.mainhand?.weapon : true;
       if (mainWeapon) {

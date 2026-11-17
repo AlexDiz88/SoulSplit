@@ -48,7 +48,8 @@ export type AbilityId =
   | "living_bones"
   | "rejuvenation"
   | "root_grasp"
-  | "poison_bush";
+  | "poison_bush"
+  | "arcane_missiles";
 
 /** enemy - нужна живая цель-враг; cell - одна клетка (можно пустая); zone - форма из клеток; all_enemies - мгновенно по всем; passive - не кастуется. */
 export type TargetMode =
@@ -141,6 +142,10 @@ export interface AbilityEffects {
   tornadoStays?: number;
   /** Время подготовки перед эффектом. Пока каст идет, автоатаки юнита стоят. */
   castTime?: number;
+  /** Стадий канала (снаряды, тики). См. channelStageInterval. */
+  channelStages?: number;
+  /** Интервал между стадиями канала, сек (до castSpeed). */
+  channelStageInterval?: number;
   /** Срывает подготовку цели (молчание, контрзаклинание). Обычный урон каст не срывает. */
   interruptsCast?: boolean;
   /** Удержание на клетке (блок перемещения, каст не блокирует). */

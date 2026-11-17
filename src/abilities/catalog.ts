@@ -28,6 +28,8 @@ export interface AbilityCard {
   mana: string;
   /** Пустая строка = мгновенно. */
   castTime: string;
+  /** Пустая строка = нет канала. */
+  channelTime: string;
   application: string;
   zoneLabel: string;
   effect: string;
@@ -91,6 +93,22 @@ function formatCastTime(def: AbilityCatalogDef): string {
   return `${s} с`;
 }
 
+function formatChannelTime(def: AbilityCatalogDef): string {
+  const n = def.channelTime;
+  if (n != null && n > 0) {
+    const s = Number.isInteger(n) ? String(n) : String(n);
+    return `${s} с`;
+  }
+  const stages = def.combat?.effects?.channelStages;
+  const interval = def.combat?.effects?.channelStageInterval;
+  if (stages && interval) {
+    const total = stages * interval;
+    const s = Number.isInteger(total) ? String(total) : String(total);
+    return `${s} с`;
+  }
+  return "";
+}
+
 export function catalogDefToCard(def: AbilityCatalogDef): AbilityCard {
   return {
     id: abilityCatalogKebabId(def.id),
@@ -103,6 +121,7 @@ export function catalogDefToCard(def: AbilityCatalogDef): AbilityCard {
     cooldown: formatCooldown(def),
     mana: formatMana(def),
     castTime: formatCastTime(def),
+    channelTime: formatChannelTime(def),
     application: def.application,
     zoneLabel: def.zoneLabel,
     effect: def.effect,

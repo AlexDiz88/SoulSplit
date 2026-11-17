@@ -51,6 +51,11 @@ export interface AbilityCatalogDef {
    * На время каста автоатака останавливается. В бою дублируется в `combat.effects.castTime`.
    */
   castTime?: number | null;
+  /**
+   * Длительность канала, сек (импульсы внутри). Полоса в бою сливается, не каст.
+   * Стадии и интервал - в `combat.effects.channelStages` / `channelStageInterval`.
+   */
+  channelTime?: number | null;
   damage: number;
   /** Тип применения для игрока: цель, зона, пассив, герой… */
   application: string;

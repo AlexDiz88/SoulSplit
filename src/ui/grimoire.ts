@@ -124,6 +124,7 @@ export function mountGrimoire(mountEl: HTMLElement): GrimoireApi {
       stat("Кулдаун", card.cooldown),
       stat("Мана", card.mana),
       ...(card.castTime ? [stat("Каст", card.castTime)] : []),
+      ...(card.channelTime ? [stat("Канал", card.channelTime)] : []),
       stat("Тип", card.application),
       stat("Эффект", card.effect),
     );

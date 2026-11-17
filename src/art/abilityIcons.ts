@@ -24,6 +24,7 @@ import demoralizingShoutIconUrl from "../../assets/art/skills/demoralizing_shout
 import rejuvenationIconUrl from "../../assets/art/skills/rejuvenation.png";
 import rootGraspIconUrl from "../../assets/art/skills/root_grasp.png";
 import poisonBushIconUrl from "../../assets/art/skills/poison_bush.png";
+import arcaneMissilesIconUrl from "../../assets/art/skills/arcane_missiles.png";
 import type { AbilityId } from "../types";
 
 /** Круглый плейсхолдер пустого слота панели способностей. */
@@ -56,4 +57,5 @@ export const ABILITY_ICON_URLS: Partial<Record<AbilityId, string>> = {
   rejuvenation: rejuvenationIconUrl,
   root_grasp: rootGraspIconUrl,
   poison_bush: poisonBushIconUrl,
+  arcane_missiles: arcaneMissilesIconUrl,
 };

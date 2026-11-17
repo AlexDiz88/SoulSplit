@@ -53,6 +53,15 @@ export interface UnitCast {
   duration: number;
 }
 
+export interface UnitChannel {
+  id: AbilityId;
+  elapsed: number;
+  duration: number;
+  stages: number;
+  stagesFired: number;
+  interval: number;
+}
+
 const CARD = 112;
 const PORTRAIT_PAD = 3;
 const FRAME_RADIUS = 1;
@@ -156,6 +165,8 @@ export class Unit {
   offhandAttackCharge = 0;
   /** Активная подготовка способности. null - не кастует. */
   cast: UnitCast | null = null;
+  /** Поддержание канала (стадии). null - нет канала. */
+  channel: UnitChannel | null = null;
   alive = true;
 
   readonly view = new Container();
@@ -786,7 +797,34 @@ export class Unit {
       }
     }
 
-    if (this.cast) {
+    if (this.channel) {
+      const drain =
+        this.channel.duration > 0
+          ? Math.max(0, 1 - this.channel.elapsed / this.channel.duration)
+          : 0;
+      const chH = 10;
+      const chY = bars.length > 0 ? bars[bars.length - 1]!.y + h + 4 : topY;
+      const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.014);
+      const neon = 0xc45ad4;
+      const neonHot = 0xe8c0ff;
+      this.cdBarGlow
+        .roundRect(x - 2, chY - 2, w + 4, chH + 4, 3)
+        .fill({ color: neon, alpha: 0.14 + 0.1 * pulse });
+      this.cdBarBg.roundRect(x, chY, w, chH, 2).fill({ color: 0x120818, alpha: 0.92 });
+      if (drain > 0) {
+        const fw = Math.max(3, w * drain);
+        this.cdBarFg.roundRect(x, chY, fw, chH, 2).fill({ color: neon, alpha: 0.92 });
+        this.cdBarFg.roundRect(x, chY, fw, Math.max(2, chH * 0.38), 2).fill({
+          color: neonHot,
+          alpha: 0.4 + 0.2 * pulse,
+        });
+      }
+      const name = ABILITIES[this.channel.id]?.name ?? this.channel.id;
+      this.castLabel.text = name;
+      this.castLabel.position.set(x + w / 2, chY + chH / 2);
+      this.castLabel.alpha = 0.88 + 0.12 * pulse;
+      this.castLabel.visible = true;
+    } else if (this.cast) {
       const castFill =
         this.cast.duration > 0 ? Math.min(1, this.cast.elapsed / this.cast.duration) : 1;
       const castH = 10;
@@ -818,9 +856,18 @@ export class Unit {
     return this.cast !== null;
   }
 
+  isChanneling(): boolean {
+    return this.channel !== null;
+  }
+
   beginCast(id: AbilityId, duration: number): void {
     this.cast = { id, elapsed: 0, duration };
     if (this.team === "enemy") this.attackCharge = 0;
+    this.redraw();
+  }
+
+  beginChannel(id: AbilityId, duration: number, stages: number, interval: number): void {
+    this.channel = { id, elapsed: 0, duration, stages, stagesFired: 0, interval };
     this.redraw();
   }
 
@@ -831,10 +878,24 @@ export class Unit {
     this.redraw();
   }
 
+  clearChannel(): void {
+    if (!this.channel) return;
+    this.channel = null;
+    this.redraw();
+  }
+
   /** Срывает подготовку. true - каст был. */
   interruptCast(): boolean {
     if (!this.cast) return false;
     this.cast = null;
+    this.redraw();
+    return true;
+  }
+
+  /** Срыв канала. true - канал был. */
+  interruptChannel(): boolean {
+    if (!this.channel) return false;
+    this.channel = null;
     this.redraw();
     return true;
   }
@@ -1055,7 +1116,7 @@ export class Unit {
       incoming = Math.max(0, raw - blockedAmount);
     }
 
-    const wasCasting = this.cast !== null;
+    const wasCasting = this.cast !== null || this.channel !== null;
     let dmg = Math.round(
       mitigateIncoming(incoming, this.sheet, packet.channel) * this.incomingDamageMult(),
     );
@@ -1081,6 +1142,7 @@ export class Unit {
       this.alive = false;
       this.hp = 0;
       this.cast = null;
+      this.channel = null;
     }
     this.redraw();
     return {

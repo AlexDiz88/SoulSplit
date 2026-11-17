@@ -13,6 +13,7 @@ import { playFrostBreathVfx } from "./premium/FrostBreathVfx";
 import { playShadowStrikeVfx } from "./premium/ShadowStrikeVfx";
 import { playSeverArteryVfx } from "./premium/SeverArteryVfx";
 import { playHammerThrowVfx } from "./premium/HammerThrowVfx";
+import { playArcaneMissileVfx } from "./premium/ArcaneMissileVfx";
 import { playMeleeStrikeVfx } from "./premium/MeleeStrikeVfx";
 
 export class VfxManager {
@@ -116,6 +117,21 @@ export class VfxManager {
     onImpact?: () => void,
   ): Promise<void> {
     await playIceArrowVfx(
+      this.layer,
+      this.tweens,
+      from,
+      to,
+      onImpact,
+      (amp, dur) => this.screenShake(amp, dur),
+    );
+  }
+
+  async arcaneMissile(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    onImpact?: () => void,
+  ): Promise<void> {
+    await playArcaneMissileVfx(
       this.layer,
       this.tweens,
       from,

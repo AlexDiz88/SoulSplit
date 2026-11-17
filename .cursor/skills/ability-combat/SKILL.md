@@ -33,8 +33,9 @@ description: >-
 
 | Условие | Класс | Автоатака героя |
 |---------|--------|------------------|
-| Нет `castTime` / `null` / `0` | **Мгновенная** | Не останавливается (цель; см. техдолг) |
+| Нет `castTime` / `null` / `0` и нет канала | **Мгновенная** | Не останавливается (цель; см. техдолг) |
 | `castTime` > 0 в дефе и `combat.effects.castTime` | **Каст** | Стоит на время подготовки |
+| `channelStages` > 0 в `combat.effects` | **Канал** | Стоит на `channelTime`; полоса **сливается**; стадии по таймеру |
 
 Проверки:
 
@@ -113,6 +114,7 @@ description: >-
 | flame_cone | мгновенная | zone_after_vfx | |
 | frost_breath | мгновенная | zone_after_vfx | ближний ряд |
 | avalanche | каст 2.5 | multi_callback после волны | подготовка в бое, VFX без windup |
+| arcane_missiles | канал 3×1 с | projectile_impact на стадию | стадии в тике боя, срыв на hard CC |
 | titan_might, wind_speed, demoralizing_shout | мгновенная | instant_frame / self_buff_sync | |
 
 При добавлении строки - обнови таблицу в этом файле.

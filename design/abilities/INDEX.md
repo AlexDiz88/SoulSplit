@@ -63,6 +63,7 @@
 | claw_sweep | beast | Когтистый взмах | Дух Зверя | зона | клик: 40 в клике, 26 на двух соседях по горизонтали | черновик | `src/abilities/abilityDefs/beast/claw_sweep.ts` |
 | pack_roar | beast | Рев стаи | Дух Зверя | все враги | 20 физ всем + урон атаки врагов -25% на 4 с | черновик | `src/abilities/abilityDefs/beast/pack_roar.ts` |
 | pounce | beast | Прыжок на добычу | Дух Зверя | цель | 34 физ по цели, 52 если метка добычи зверя | черновик | `src/abilities/abilityDefs/beast/pounce.ts` |
+| arcane_missiles | arcane | Чародейские стрелы | Аркан | цель | канал 3 с: 3 снаряда аркана по 26 урона, раз в 1 с по цели | одобрено | `src/abilities/abilityDefs/arcane/arcane_missiles.ts` |
 | acid_flask | alchemy | Кислотная склянка | Алхимия | цель | 38 кислота + 8/с кислота 4 с | черновик | `src/abilities/abilityDefs/alchemy/acid_flask.ts` |
 | vitality_elixir | alchemy | Эликсир оживления | Алхимия | на себя | регенерация 10/с на 5 с | черновик | `src/abilities/abilityDefs/alchemy/vitality_elixir.ts` |
 | caustic_pool | alchemy | Едкая лужа | Алхимия | зона | лужа на клике: 30 при появлении + 8/с 4 с на клетке | черновик | `src/abilities/abilityDefs/alchemy/caustic_pool.ts` |
