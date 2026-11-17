@@ -86,7 +86,8 @@ export interface StatusEffect {
     | "atk_debuff"
     | "slow"
     | "haste"
-    | "invuln";
+    | "invuln"
+    | "blind";
   remaining: number;
   potency: number;
   /** Способность-источник (для DoT / регена на экране статистики). */

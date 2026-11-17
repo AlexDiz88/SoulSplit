@@ -18,6 +18,9 @@ export interface AttackPacket {
 export type AvoidanceOutcome = "parried" | "evaded" | "blocked" | "none";
 
 /** Доля урона, срезаемая успешным блоком (до phys DR). */
+/** Базовая точность автоатаки, если у оружия нет своего hitChance. */
+export const DEFAULT_WEAPON_HIT_CHANCE = 100;
+
 export const BLOCK_DAMAGE_MITIGATION = 0.5;
 /** Доля среднего урона mainhand в ответке парирования. */
 export const PARRY_RIPOSTE_FRACTION = 0.25;
@@ -49,6 +52,20 @@ export function manaCost(baseCost: number, reductionPct: number): number {
 
 export function rollCrit(sheet: HeroStatSheet, rng: () => number = Math.random): boolean {
   return rng() * 100 < clampChance(getStat(sheet, "critChance"));
+}
+
+/**
+ * Итоговая точность автоатаки: база оружия (или 100) минус штрафы ослепления.
+ * `blindPotency` - доли снижения точности (0.35 = −35 п.п. к базе).
+ */
+export function autoAttackHitChancePct(baseHitChance: number, blindPotencySum: number): number {
+  const base = clampChance(baseHitChance);
+  const penalty = Math.max(0, blindPotencySum) * 100;
+  return clampChance(base - penalty);
+}
+
+export function rollAttackHit(hitChancePct: number, rng: () => number = Math.random): boolean {
+  return rng() * 100 < clampChance(hitChancePct);
 }
 
 export function critMultiplier(sheet: HeroStatSheet): number {

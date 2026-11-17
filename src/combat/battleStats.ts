@@ -17,6 +17,8 @@ export interface AutoAttackBattleStats {
   crits: number;
   /** Удары, от которых враг уклонился. */
   dodged: number;
+  /** Свои автоатаки не попали (ослепление, точность). */
+  missed: number;
 }
 
 /** Сколько врагов каждого вида повержено. */
@@ -68,7 +70,7 @@ export function createEmptyBattleStats(): BattleStats {
     blocks: 0,
     parries: 0,
     parryDamage: 0,
-    autoAttack: { hits: 0, damage: 0, crits: 0, dodged: 0 },
+    autoAttack: { hits: 0, damage: 0, crits: 0, dodged: 0, missed: 0 },
     abilities: [],
     killsByKind: [],
   };
@@ -134,6 +136,10 @@ export class BattleStatsTracker {
   noteHeroAutoDodged(): void {
     this.stats.autoAttack.dodged += 1;
     this.stats.enemyDodges += 1;
+  }
+
+  noteHeroAutoMissed(): void {
+    this.stats.autoAttack.missed += 1;
   }
 
   noteHeroAbilityDodged(): void {

@@ -25,6 +25,7 @@ import {
   critMultiplier,
   manaCost,
   PARRY_RIPOSTE_FRACTION,
+  rollAttackHit,
   rollCrit,
   rollWeaponDamage,
   type AttackPacket,
@@ -2181,6 +2182,12 @@ export class Battle {
     const applyHit = () => {
       if (applied || !attacker.alive || !target.alive || this.destroyed) return;
       applied = true;
+
+      if (!rollAttackHit(attacker.autoAttackHitChance(hand))) {
+        this.vfx.floatingText(attacker.center.x, attacker.center.y - 8, "Промах", 0x9aa3a0);
+        if (attacker.team === "player") this.statsTracker.noteHeroAutoMissed();
+        return;
+      }
 
       let dmg: number;
       let crit = false;

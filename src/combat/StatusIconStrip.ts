@@ -146,7 +146,6 @@ function paintPackage(slot: IconSlot, pkg: StatusDisplayPackage, size: number): 
 function paintOverflow(slot: IconSlot, count: number, size: number): void {
   slot.package = null;
   slot.pendingUrl = null;
-  const half = size / 2;
   const radius = size * 0.5;
   slot.bg.clear().circle(0, 0, radius).fill({ color: 0x1a2018, alpha: 0.95 });
   slot.maskGfx.clear();

@@ -12,6 +12,7 @@ import titanMightIconUrl from "../../assets/art/skills/titan_might.png";
 import demoralizingShoutIconUrl from "../../assets/art/skills/demoralizing_shout.png";
 import windSpeedIconUrl from "../../assets/art/skills/wind_speed.png";
 import shadowStrikeIconUrl from "../../assets/art/skills/shadow_strike.png";
+import haloRingIconUrl from "../../assets/art/skills/halo_ring.png";
 import { ABILITIES, describeAbility } from "../abilities/definitions";
 import { ABILITY_ICON_URLS } from "../art/abilityIcons";
 import type { AbilityId, StatusEffect } from "../types";
@@ -153,6 +154,13 @@ const META: Record<StatusEffect["kind"], CombatStatusMeta> = {
     description: "Блокирует входящий урон.",
     fallbackIconUrl: shadowStrikeIconUrl,
   },
+  blind: {
+    kind: "blind",
+    polarity: "debuff",
+    name: "Ослепление",
+    description: "Снижает точность автоатак.",
+    fallbackIconUrl: haloRingIconUrl,
+  },
 };
 
 export const STATUS_BUFF_FRAME = 0x5a9e5a;
@@ -215,7 +223,7 @@ export function groupStatusesForDisplay(statuses: StatusEffect[]): StatusDisplay
     // Предпочитаем запись с DoT / контролем, иначе первую.
     const representative =
       members.find((m) => m.kind === "poison" || m.kind === "bleed" || m.kind === "burn") ??
-      members.find((m) => m.kind === "freeze" || m.kind === "root" || m.kind === "stun") ??
+      members.find((m) => m.kind === "freeze" || m.kind === "root" || m.kind === "stun" || m.kind === "blind") ??
       members.find((m) => m.kind === "chill" || m.kind === "fragile") ??
       members.find((m) => statusPolarity(m.kind) === "buff") ??
       members[0]!;
@@ -244,6 +252,10 @@ export function statusTooltipTitle(status: StatusEffect): string {
 
 export function statusTooltipDesc(status: StatusEffect): string {
   const time = Math.max(0, Math.ceil(status.remaining));
+  if (status.kind === "blind") {
+    const pct = Math.round(status.potency * 100);
+    return `Точность автоатак снижена на ${pct}%. Осталось ${time} с.`;
+  }
   if (status.sourceAbilityId) {
     const def = ABILITIES[status.sourceAbilityId as AbilityId];
     if (def) return `${describeAbility(def)} Осталось ${time} с.`;

@@ -51,6 +51,11 @@ export interface WeaponImplicit {
   damageMin: number;
   damageMax: number;
   baseCd: number;
+  /**
+   * Базовая точность автоатак этого оружия, % (до ослепления и прочих дебаффов).
+   * Нет поля = 100.
+   */
+  hitChance?: number;
   reach: number;
   range: "melee" | "ranged";
   /** Тир ролла базы урона (F…A5). Старые сейвы могут не иметь. */

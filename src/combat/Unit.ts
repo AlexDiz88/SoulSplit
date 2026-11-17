@@ -29,8 +29,10 @@ import type { EquipSlotId } from "../items/slots";
 import type { HeroStatSheet } from "../stats/sheet";
 import { createBaseHeroSheet, getStat } from "../stats/sheet";
 import {
+  autoAttackHitChancePct,
   autoAttackInterval,
   BLOCK_DAMAGE_MITIGATION,
+  DEFAULT_WEAPON_HIT_CHANCE,
   mitigateIncoming,
   resolveAvoidance,
   type AttackPacket,
@@ -931,6 +933,23 @@ export class Unit {
     const baseCd = this.equipment.mainhand?.weapon?.baseCd ?? this.stats.autoAttackCd;
     if (!this.sheet) return baseCd * this.autoCdMultiplier();
     return autoAttackInterval(baseCd, getStat(this.sheet, "attackSpeed"), this.autoCdMultiplier());
+  }
+
+  /**
+   * Точность автоатаки этим юнитом: база оружия (или 100%) минус ослепление на нём же.
+   * potency у blind = доля снижения (0.3 → минус 30 п.п.).
+   */
+  autoAttackHitChance(hand: "mainhand" | "offhand" = "mainhand"): number {
+    const w =
+      hand === "mainhand"
+        ? this.equipment.mainhand?.weapon
+        : this.equipment.offhand?.weapon;
+    const base = w?.hitChance ?? DEFAULT_WEAPON_HIT_CHANCE;
+    let blindPotency = 0;
+    for (const s of this.statuses) {
+      if (s.kind === "blind") blindPotency += s.potency;
+    }
+    return autoAttackHitChancePct(base, blindPotency);
   }
 
   /** CD автоатаки левой руки (0 если там нет оружия). */
