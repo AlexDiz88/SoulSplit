@@ -1,4 +1,5 @@
 import { createMenuBackgroundImg } from "../art/menuBackground";
+import { isSoundMuted, setSoundMuted } from "../meta/gameSettings";
 import "./hubScreen.css";
 import "./startMenu.css";
 
@@ -41,10 +42,37 @@ export function mountSettingsScreen(handlers: SettingsScreenHandlers): SettingsS
   const face = el("span", "title-brand-face", "Настройки");
   brand.append(glow, face);
 
+  const options = el("div", "settings-options");
+
+  const muteToggle = el("button", "settings-toggle", undefined);
+  muteToggle.type = "button";
+  muteToggle.setAttribute("role", "checkbox");
+  muteToggle.setAttribute("aria-label", "Отключить звук");
+
+  const muteBox = el("span", "settings-toggle-box");
+  muteBox.setAttribute("aria-hidden", "true");
+  muteBox.append(el("span", "settings-toggle-mark"));
+  const muteText = el("span", "settings-toggle-text", "Отключить звук");
+  muteToggle.append(muteBox, muteText);
+
+  function syncMuteToggle(): void {
+    const muted = isSoundMuted();
+    muteToggle.classList.toggle("is-checked", muted);
+    muteToggle.setAttribute("aria-checked", muted ? "true" : "false");
+  }
+
+  muteToggle.addEventListener("click", () => {
+    setSoundMuted(!isSoundMuted());
+    syncMuteToggle();
+  });
+
+  syncMuteToggle();
+  options.append(muteToggle);
+
   const stub = el(
     "p",
     "settings-stub",
-    "Пока доступно только локальное сохранение. Звук, графика и аккаунт появятся позже.",
+    "Сохранение слотов - на локальном устройстве. Графика и аккаунт появятся позже.",
   );
 
   const actions = el("div", "title-actions");
@@ -52,7 +80,7 @@ export function mountSettingsScreen(handlers: SettingsScreenHandlers): SettingsS
   btnBack.type = "button";
   actions.append(btnBack);
 
-  stage.append(brand, stub, actions);
+  stage.append(brand, options, stub, actions);
   root.append(stage);
 
   const hud = document.getElementById("hud");
@@ -63,6 +91,7 @@ export function mountSettingsScreen(handlers: SettingsScreenHandlers): SettingsS
 
   return {
     show() {
+      syncMuteToggle();
       root.hidden = false;
     },
     hide() {

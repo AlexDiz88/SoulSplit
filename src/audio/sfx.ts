@@ -3,6 +3,8 @@
  * Имя без расширения (stem); формат любой из поддерживаемых.
  */
 
+import { isSoundMuted } from "../meta/gameSettings";
+
 type MeleeHitKind = "hero" | "enemy";
 
 const sfxModules = import.meta.glob<{ default: string }>(
@@ -61,6 +63,7 @@ export function unlockAudio(): void {
  * Файлы: assets/audio/sfx/melee_hit_hero.* и melee_hit_enemy.*
  */
 export function playMeleeHit(kind: MeleeHitKind = "hero"): void {
+  if (isSoundMuted()) return;
   const url = resolveSfxUrl(MELEE_STEM[kind]);
   if (!url) {
     if (import.meta.env.DEV) {
