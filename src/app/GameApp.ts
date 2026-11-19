@@ -58,6 +58,7 @@ import type { HubLocationId } from "../ui/hubLocations";
 import { mountHealerScreen } from "../ui/healerScreen";
 import { mountHubScreen } from "../ui/hubScreen";
 import { mountLoadoutPickScreen } from "../ui/loadoutPickScreen";
+import { isHubPhoneUi } from "../art/menuBackground";
 import { mountMerchantScreen } from "../ui/merchantScreen";
 import { mountQuestLogScreen } from "../ui/questLogScreen";
 import { mountQuestTracker } from "../ui/questTracker";
@@ -863,6 +864,7 @@ export class GameApp {
     this.healer.hide();
     this.tavern.hide();
     this.questLog.hide();
+    if (isHubPhoneUi()) this.hud.closeOverlays();
     this.hud.openMarketSide();
     this.merchant.show(state);
   }
@@ -930,6 +932,7 @@ export class GameApp {
     this.merchant.hide();
     // Таверна остаётся под журналом во время отдыха.
     if (!resting) this.tavern.hide();
+    if (isHubPhoneUi()) this.hud.closeOverlays();
     this.questLog.show(state);
   }
 

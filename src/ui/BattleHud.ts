@@ -20,6 +20,7 @@ import {
 } from "../items/potions";
 import type { ItemDef } from "../items/types";
 import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
+import { isHubPhoneUi } from "../art/menuBackground";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
 
@@ -897,6 +898,12 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       stash.setBag(bag);
       character.setMode("gear");
       inventory.setSoloBackdrop(false);
+      if (isHubPhoneUi()) {
+        character.open();
+        stash.open();
+        inventory.open();
+        return;
+      }
       character.open();
       stash.open();
     },
@@ -912,6 +919,11 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setMarketMode(true);
       character.setMode("gear");
       inventory.setSoloBackdrop(false);
+      if (isHubPhoneUi()) {
+        character.close();
+        inventory.open();
+        return;
+      }
       character.open();
     },
 

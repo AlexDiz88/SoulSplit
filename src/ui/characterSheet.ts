@@ -14,6 +14,7 @@ import { isBlockActive, isParryActive } from "../items/equipment";
 import { autoAttackInterval } from "../stats/formulas";
 import { getStat, aspectDamageOf } from "../stats/sheet";
 import { formatStatValue, type StatId } from "../stats/statIds";
+import { isHubPhoneUi } from "../art/menuBackground";
 import {
   createAspectIconHit,
   createAspectNameTip,
@@ -258,6 +259,7 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
   };
 
   dollWrap.addEventListener("pointerover", (ev) => {
+    if (isHubPhoneUi()) return;
     const belt = (ev.target as Element).closest<HTMLElement>(".cs-belt-cell");
     if (belt) {
       showBeltTip(belt);

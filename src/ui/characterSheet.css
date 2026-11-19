@@ -985,4 +985,42 @@
   #hud:has(#character:not([hidden])):has(.inv-bag-overlay:not([hidden]):not(.is-solo)) .cs-window {
     max-height: calc(100dvh - min(44dvh, 360px));
   }
+
+  /* Тайник: компактная полоска экипа сверху, тайник и сумка ниже. */
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-window {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: calc(min(44dvh, 360px) + min(40dvh, 340px) + 8px);
+    width: 100%;
+    max-width: 100%;
+    max-height: min(22dvh, 200px);
+    margin: 0;
+    padding: 8px 10px 10px;
+    overflow: auto;
+    z-index: 53;
+  }
+
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-head {
+    margin-bottom: 4px;
+    min-height: 0;
+  }
+
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-title {
+    font-size: 0.85rem;
+  }
+
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-doll-body {
+    gap: 6px 8px;
+    --slot: 40px;
+  }
+
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-doll-hands {
+    gap: 10px;
+  }
+
+  #hud:has(.stash-stack:not([hidden])) .cs-overlay.cs-mode-gear .cs-belt {
+    display: none;
+  }
 }

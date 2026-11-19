@@ -20,6 +20,7 @@ import {
 } from "../items/potions";
 import { SLOT_LABEL, type EquipSlotId } from "../items/slots";
 import type { ItemDef } from "../items/types";
+import { isHubPhoneUi } from "../art/menuBackground";
 import { sellPrice } from "../meta/economy";
 import { getItemDrag, type ItemDragSource } from "./itemDrag";
 import {
@@ -57,11 +58,8 @@ export interface InventoryWindowApi {
 }
 
 const DRAG_THRESHOLD = 5;
-const PHONE_INV_LONG_PRESS_MS = 480;
-
-function isPhoneInventoryUi(): boolean {
-  return window.matchMedia("(max-width: 520px)").matches;
-}
+const PHONE_INV_LONG_PRESS_MS = 520;
+const PHONE_DRAG_THRESHOLD = 14;
 
 /** Компактная сумка 5×5 - отдельное окно справа внизу, рядом с листом персонажа. */
 export function mountInventoryWindow(): InventoryWindowApi {
@@ -143,7 +141,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   /** После drag не закрывать окно персонажа кликом по оверлею. */
   let suppressClick = false;
   let longPressTimer: ReturnType<typeof window.setTimeout> | null = null;
-  let longPressHandled = false;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -282,7 +279,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
         itemSide: "right",
       }),
     );
-    if (isPhoneInventoryUi()) {
+    if (isHubPhoneUi()) {
       compare.classList.add("inv-compare--phone");
       compare.hidden = false;
       compare.style.removeProperty("left");
@@ -313,7 +310,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const close = (): void => {
     cancelDrag();
     clearLongPressTimer();
-    longPressHandled = false;
     closeDestroyConfirm();
     overlay.hidden = true;
     setSoloBackdrop(false);
@@ -329,7 +325,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const showBagTip = (cell: HTMLElement, clientX: number, clientY: number): void => {
-    if (isPhoneInventoryUi()) return;
+    if (isHubPhoneUi()) return;
     showBagCompareForCell(cell, clientX, clientY);
   };
 
@@ -342,6 +338,32 @@ export function mountInventoryWindow(): InventoryWindowApi {
       onPick();
     });
     itemActionsBtns.append(btn);
+  };
+
+  const openMobileEquipMenu = (slot: EquipSlotId, item: ItemDef): void => {
+    if (!hero) return;
+    const unit = hero;
+    hideCompare();
+    tip.hidden = true;
+    itemActionsTitle.textContent = item.name;
+    itemActionsBtns.replaceChildren();
+    addMobileActionBtn("Снять", () => {
+      if (!canChangeEquipment()) {
+        toast("Экипировку можно менять только вне боя");
+        return;
+      }
+      const result = unit.unequipSlot(slot);
+      if (!result.ok) {
+        if (result.reason === "inventory_full") toast("Инвентарь полон");
+        return;
+      }
+      afterChange();
+    });
+    addMobileActionBtn("Выбросить", () => {
+      openDestroyConfirm({ kind: "equip", slot }, item);
+    }, true);
+    addMobileActionBtn("Отмена", () => closeMobileItemMenu());
+    itemActionsOverlay.hidden = false;
   };
 
   const openMobileItemMenu = (index: number, item: ItemDef): void => {
@@ -386,13 +408,36 @@ export function mountInventoryWindow(): InventoryWindowApi {
     itemActionsOverlay.hidden = false;
   };
 
+  const handlePhoneItemActivate = (target: EventTarget | null): void => {
+    if (!isHubPhoneUi() || suppressClick || itemDrag.isActive() || !hero) return;
+    if (!itemActionsOverlay.hidden) return;
+    if (!compare.hidden) {
+      hideCompare();
+      return;
+    }
+    const hit = resolveFilledSource(target);
+    if (!hit) return;
+    if (hit.source.kind === "inv") {
+      if (overlay.hidden) return;
+      const index = hit.source.index;
+      const item = hero.inventory[index];
+      if (!item) return;
+      openMobileItemMenu(index, item);
+      return;
+    }
+    if (hit.source.kind === "equip") {
+      const characterRoot = document.getElementById("character");
+      if (!characterRoot || characterRoot.hidden) return;
+      openMobileEquipMenu(hit.source.slot, hit.item);
+    }
+  };
+
   const schedulePhoneLongPress = (cell: HTMLElement, clientX: number, clientY: number): void => {
     clearLongPressTimer();
-    if (!isPhoneInventoryUi() || overlay.hidden) return;
+    if (!isHubPhoneUi() || overlay.hidden) return;
     longPressTimer = window.setTimeout(() => {
       longPressTimer = null;
       if (!pending || pending.el !== cell) return;
-      longPressHandled = true;
       closeMobileItemMenu();
       showBagCompareForCell(cell, clientX, clientY);
       pending = null;
@@ -739,12 +784,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   gridHost.addEventListener("pointerover", (ev) => {
-    if (isPhoneInventoryUi()) return;
+    if (isHubPhoneUi()) return;
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-inv]");
     if (cell) showBagTip(cell, ev.clientX, ev.clientY);
   });
   gridHost.addEventListener("pointermove", (ev) => {
-    if (isPhoneInventoryUi()) return;
+    if (isHubPhoneUi()) return;
     if (compare.hidden) return;
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-inv]");
     if (cell) placeBagCompare(cell, ev.clientX, ev.clientY);
@@ -928,12 +973,11 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (ev.button !== 0) return;
     const hit = resolveFilledSource(ev.target);
     if (!hit) return;
-    longPressHandled = false;
     pending = { source: hit.source, item: hit.item, el: hit.el, x: ev.clientX, y: ev.clientY };
     if (
       hit.source.kind === "inv" &&
       hit.el.classList.contains("inv-cell") &&
-      isPhoneInventoryUi()
+      isHubPhoneUi()
     ) {
       schedulePhoneLongPress(hit.el, ev.clientX, ev.clientY);
     }
@@ -957,7 +1001,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (pending && !itemDrag.isActive()) {
       const dx = ev.clientX - pending.x;
       const dy = ev.clientY - pending.y;
-      if (dx * dx + dy * dy < DRAG_THRESHOLD * DRAG_THRESHOLD) return;
+      const dragMin = isHubPhoneUi() ? PHONE_DRAG_THRESHOLD : DRAG_THRESHOLD;
+      if (dx * dx + dy * dy < dragMin * dragMin) return;
       clearLongPressTimer();
       hideTips();
       closeDestroyConfirm();
@@ -975,25 +1020,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   window.addEventListener("pointerup", (ev) => {
     if (pending) {
       clearLongPressTimer();
-      const tap = pending;
       pending = null;
-      if (
-        !longPressHandled &&
-        isPhoneInventoryUi() &&
-        !overlay.hidden &&
-        tap.source.kind === "inv" &&
-        tap.el.dataset.inv !== undefined
-      ) {
-        const index = Number(tap.el.dataset.inv);
-        if (Number.isFinite(index) && hero?.inventory[index]) {
-          openMobileItemMenu(index, hero.inventory[index]!);
-          suppressClick = true;
-          window.setTimeout(() => {
-            suppressClick = false;
-          }, 0);
-        }
-      }
-      longPressHandled = false;
       return;
     }
     if (!itemDrag.isActive()) return;
@@ -1019,16 +1046,30 @@ export function mountInventoryWindow(): InventoryWindowApi {
   });
 
   compare.addEventListener("click", () => {
-    if (isPhoneInventoryUi() && !compare.hidden) hideCompare();
+    if (isHubPhoneUi() && !compare.hidden) hideCompare();
   });
 
   window.addEventListener(
     "click",
     (ev) => {
-      if (!suppressClick) return;
-      ev.preventDefault();
-      ev.stopPropagation();
-      suppressClick = false;
+      if (suppressClick) {
+        ev.preventDefault();
+        ev.stopPropagation();
+        suppressClick = false;
+        return;
+      }
+      if (isHubPhoneUi()) {
+        const inMenu = (ev.target as Element).closest(".inv-item-actions-overlay");
+        if (inMenu) return;
+        const cellHit = (ev.target as Element).closest(
+          ".inv-cell.filled[data-inv], .cs-slot.filled[data-slot], .inv-cell.filled[data-stash]",
+        );
+        if (cellHit) {
+          handlePhoneItemActivate(ev.target);
+          ev.preventDefault();
+          ev.stopPropagation();
+        }
+      }
     },
     true,
   );

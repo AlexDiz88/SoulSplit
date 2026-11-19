@@ -2,6 +2,7 @@ import { STASH_COLS, STASH_SIZE, type InventoryBag } from "../items/inventory";
 import { isPotionItem } from "../items/potions";
 import { SLOT_LABEL } from "../items/slots";
 import type { ItemDef } from "../items/types";
+import { isHubPhoneUi } from "../art/menuBackground";
 import { fillItemTooltip } from "./itemTooltip";
 import "./itemRarity.css";
 import "./stashWindow.css";
@@ -85,6 +86,7 @@ export function mountStashWindow(): StashWindowApi {
   };
 
   gridHost.addEventListener("pointerover", (ev) => {
+    if (isHubPhoneUi()) return;
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell[data-stash]");
     if (cell) showBagTip(cell);
   });

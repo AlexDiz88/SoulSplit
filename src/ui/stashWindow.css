@@ -87,3 +87,59 @@
     padding: 6px 12px;
   }
 }
+
+/* Телефон: тайник сверху, сумка снизу (режим openStash). */
+@media (max-width: 520px) {
+  .stash-stack {
+    position: fixed;
+    left: 0;
+    right: 0;
+    top: calc(8px + env(safe-area-inset-top));
+    transform: none;
+    z-index: 54;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(44dvh, 380px);
+    padding: 0 10px;
+    pointer-events: none;
+    align-items: stretch;
+  }
+
+  .stash-root {
+    pointer-events: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-height: min(40dvh, 340px);
+    padding: 10px 10px 12px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border-radius: 0;
+  }
+
+  .stash-grid-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: auto;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .stash-grid {
+    --slot: 40px;
+    gap: 5px;
+    width: max-content;
+    max-width: 100%;
+    margin: 0 auto;
+  }
+
+  .stash-head {
+    flex: 0 0 auto;
+    padding-right: 0;
+  }
+
+  .stash-hints {
+    display: none;
+  }
+}

@@ -438,6 +438,13 @@
     font-size: 0.82rem;
   }
 
+  .inv-bag-grid .inv-cell.filled,
+  .stash-grid .inv-cell.filled,
+  .cs-doll .cs-slot.filled {
+    touch-action: none;
+  }
+
+  .inv-compare:not([hidden]),
   .inv-compare.inv-compare--phone {
     left: 50% !important;
     right: auto !important;
@@ -462,6 +469,16 @@
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
   }
 
+  .inv-compare:not([hidden]) .item-tip[data-rarity]:not(.item-tip--potion),
+  .inv-compare.inv-compare--phone .item-tip[data-rarity]:not(.item-tip--potion) {
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box;
+  }
+
+  .inv-compare:not([hidden]) .inv-compare-tip,
   .inv-compare.inv-compare--phone .inv-compare-tip {
     --tip-icon: calc(2 * var(--inv-slot, 48px));
     min-width: 0 !important;
@@ -471,8 +488,15 @@
     font-size: 0.82rem;
   }
 
+  .inv-compare:not([hidden]),
+  .inv-compare.inv-compare--phone {
+    z-index: 94;
+  }
+
+  .inv-compare:not([hidden]) .item-tip-name,
   .inv-compare.inv-compare--phone .item-tip-name {
-    font-size: 1rem;
+    font-size: 0.92rem;
+    line-height: 1.2;
   }
 
   .inv-compare.inv-compare--phone .item-tip-icon {
@@ -496,7 +520,7 @@
   .inv-item-actions-overlay {
     position: fixed;
     inset: 0;
-    z-index: 62;
+    z-index: 96;
     display: flex;
     align-items: flex-end;
     justify-content: center;

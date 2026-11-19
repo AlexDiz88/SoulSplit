@@ -74,8 +74,15 @@ export function getTownBackgroundUrl(phase: TownTimePhase): string {
 /** Узкий портрет / телефон: те же брейкпоинты, что у HUD и Кодекса. */
 export const PHONE_UI_MQ = "(max-width: 480px)";
 
+/** Здания хаба, инвентарь, лист персонажа (см. hub-building / окно региона). */
+export const HUB_PHONE_MQ = "(max-width: 520px)";
+
 export function isPhoneUi(): boolean {
   return window.matchMedia(PHONE_UI_MQ).matches;
+}
+
+export function isHubPhoneUi(): boolean {
+  return window.matchMedia(HUB_PHONE_MQ).matches;
 }
 
 /** Картинка фона как отдельный слой (чёще, чем CSS background + градиенты поверх). */
