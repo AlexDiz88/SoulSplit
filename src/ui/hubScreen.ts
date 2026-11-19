@@ -123,6 +123,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const phoneDock = el("nav", "hub-phone-dock meta-phone-only");
   phoneDock.setAttribute("aria-label", `Здания ${CURRENT_HUB_CITY_NAME}`);
   phoneDock.append(el("div", "hub-phone-dock-head", CURRENT_HUB_CITY_NAME));
+  const phoneUtility = el("div", "hub-phone-dock-utility");
   const phoneLocGrid = el("div", "hub-phone-loc-grid");
   for (const loc of HUB_LOCATIONS) {
     const btn = el("button", "hub-phone-loc-btn title-btn", loc.label);
@@ -131,7 +132,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
     btn.addEventListener("click", () => handlers.onLocation(loc.id));
     phoneLocGrid.append(btn);
   }
-  phoneDock.append(phoneLocGrid);
+  phoneDock.append(phoneUtility, phoneLocGrid);
   root.append(phoneDock);
 
   /* ---- Герой: левый нижний угол ---- */
@@ -490,6 +491,53 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
   const resizeObs = new ResizeObserver(() => scheduleLayout());
   resizeObs.observe(root);
 
+  const PHONE_MQ = window.matchMedia("(max-width: 480px)");
+
+  /** Телефон: герой и сумка в нижнем доке, на карте/десктопе - в #hud и .hub-screen. */
+  const syncMobileHubChrome = (): void => {
+    const docked = PHONE_MQ.matches && !root.hidden;
+    if (docked) {
+      if (!phoneUtility.contains(heroStack)) {
+        phoneUtility.append(heroStack, bagDock);
+      }
+      return;
+    }
+    if (heroStack.parentElement !== hud) {
+      hud.append(heroStack);
+    }
+    if (!root.contains(bagDock)) {
+      root.append(bagDock);
+    }
+  };
+
+  let phoneChromeRaf = 0;
+  const syncPhoneDockInset = (): void => {
+    phoneChromeRaf = 0;
+    if (!PHONE_MQ.matches || root.hidden || phoneUtility.contains(heroStack)) {
+      document.documentElement.style.removeProperty("--hub-phone-dock-inset");
+      return;
+    }
+    const top = phoneDock.getBoundingClientRect().top;
+    if (top <= 0) {
+      document.documentElement.style.removeProperty("--hub-phone-dock-inset");
+      return;
+    }
+    const inset = Math.max(0, Math.ceil(window.innerHeight - top));
+    document.documentElement.style.setProperty("--hub-phone-dock-inset", `${inset}px`);
+  };
+
+  const schedulePhoneChromeLayout = (): void => {
+    syncMobileHubChrome();
+    if (phoneChromeRaf) return;
+    phoneChromeRaf = requestAnimationFrame(syncPhoneDockInset);
+  };
+
+  PHONE_MQ.addEventListener("change", schedulePhoneChromeLayout);
+  window.addEventListener("resize", schedulePhoneChromeLayout);
+  window.visualViewport?.addEventListener("resize", schedulePhoneChromeLayout);
+  const phoneDockObs = new ResizeObserver(() => schedulePhoneChromeLayout());
+  phoneDockObs.observe(phoneDock);
+
   const setVital = (
     bar: { fill: HTMLElement; label: HTMLElement },
     current: number,
@@ -545,6 +593,7 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       if (opening) closeMenu();
       root.hidden = false;
       applyHeroDock(state);
+      schedulePhoneChromeLayout();
       scheduleLayout();
     },
     showHeroDock(state) {
@@ -559,14 +608,21 @@ export function mountHubScreen(handlers: HubScreenHandlers): HubScreenApi {
       hideXpTip();
       root.hidden = true;
       heroStack.hidden = true;
+      schedulePhoneChromeLayout();
     },
     isOpen() {
       return !root.hidden;
     },
     destroy() {
       if (layoutRaf) cancelAnimationFrame(layoutRaf);
+      if (phoneChromeRaf) cancelAnimationFrame(phoneChromeRaf);
       portraitObs.disconnect();
       resizeObs.disconnect();
+      phoneDockObs.disconnect();
+      PHONE_MQ.removeEventListener("change", schedulePhoneChromeLayout);
+      window.removeEventListener("resize", schedulePhoneChromeLayout);
+      window.visualViewport?.removeEventListener("resize", schedulePhoneChromeLayout);
+      document.documentElement.style.removeProperty("--hub-phone-dock-inset");
       bgImg.removeEventListener("load", onBgLoad);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("fullscreenchange", onFullscreenChange);
