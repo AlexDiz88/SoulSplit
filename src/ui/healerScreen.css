@@ -351,3 +351,148 @@
   opacity: 0.45;
   cursor: var(--cur-not-allowed);
 }
+
+/* Телефон: лекарь, по образцу окна региона (после десктопных правил этого файла). */
+@media (max-width: 520px) {
+  .healer-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 85;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(4, 5, 12, 0.72);
+  }
+
+  .healer-window {
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .healer-head {
+    flex: 0 0 auto;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      44px 6px 12px;
+    gap: 4px;
+  }
+
+  .healer-title {
+    font-size: 1.22rem;
+    line-height: 1.15;
+    overflow-wrap: anywhere;
+  }
+
+  .healer-subtitle {
+    font-size: 0.82rem;
+    margin: 0;
+  }
+
+  .healer-gold-line {
+    font-size: 1rem;
+    margin-top: 4px;
+  }
+
+  .healer-x {
+    top: calc(8px + env(safe-area-inset-top));
+    right: 8px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .healer-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    padding: 6px 12px calc(10px + env(safe-area-inset-bottom));
+    gap: 12px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .healer-section-title {
+    font-size: 1.05rem;
+    margin: 0 0 8px;
+  }
+
+  .healer-trauma-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    padding: 12px 14px;
+  }
+
+  .healer-trauma-head {
+    flex-wrap: wrap;
+    gap: 6px 10px;
+  }
+
+  .healer-trauma-name {
+    font-size: 1rem;
+    flex: 1 1 100%;
+  }
+
+  .healer-trauma-desc,
+  .healer-trauma-price {
+    font-size: 0.86rem;
+    line-height: 1.35;
+  }
+
+  .healer-heal-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+
+  .healer-buffs {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .healer-buff-card {
+    height: auto;
+    min-height: 0;
+    grid-template-rows: auto auto 1fr auto;
+    padding: 12px 14px;
+    gap: 8px;
+  }
+
+  .healer-buff-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .healer-buff-name {
+    font-size: 0.98rem;
+    flex: 1 1 100%;
+  }
+
+  .healer-buff-desc,
+  .healer-buff-meta {
+    font-size: 0.84rem;
+    line-height: 1.35;
+  }
+
+  .healer-buff-icon {
+    width: 52px;
+    height: 52px;
+  }
+
+  .healer-buy-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    font-size: 1rem;
+  }
+}
