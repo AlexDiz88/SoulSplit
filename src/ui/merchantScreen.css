@@ -576,3 +576,220 @@
     padding: 6px 12px;
   }
 }
+
+/* Телефон: рынок, по образцу окна региона (перекрывает правила 760px). */
+@media (max-width: 520px) {
+  .market-overlay {
+    position: fixed;
+    inset: 0;
+    right: 0;
+    z-index: 88;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(4, 5, 12, 0.72);
+    pointer-events: auto;
+  }
+
+  .market-stage {
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    gap: 0;
+    align-items: stretch;
+    pointer-events: auto;
+  }
+
+  .market-main {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    pointer-events: auto;
+  }
+
+  .market-window {
+    --slot: 52px;
+    --hand: calc(var(--slot) * 1.25);
+    position: relative;
+    box-sizing: border-box;
+    width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .market-head {
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      44px 6px 8px;
+    gap: 8px;
+  }
+
+  .market-title {
+    flex: 1 1 100%;
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    text-align: left;
+  }
+
+  .market-head-actions {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+  }
+
+  .market-gold {
+    font-size: 0.95rem;
+    width: 100%;
+    order: 3;
+  }
+
+  .market-btn {
+    min-height: 36px;
+    font-size: 0.78rem;
+    padding: 0 10px;
+  }
+
+  .market-x {
+    position: absolute;
+    top: calc(8px + env(safe-area-inset-top));
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    z-index: 3;
+  }
+
+  .market-head-actions .market-x {
+    position: absolute;
+    right: 8px;
+    top: calc(8px + env(safe-area-inset-top));
+  }
+
+  .market-tabs {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    padding: 0 10px 8px;
+    border-bottom: 1px solid rgba(106, 90, 58, 0.45);
+  }
+
+  .market-tab {
+    flex: none;
+    min-width: 0;
+    height: auto;
+    min-height: 40px;
+    padding: 6px 6px;
+    font-size: 0.72rem;
+    white-space: normal;
+    line-height: 1.12;
+  }
+
+  .market-body {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+    gap: 10px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    overflow: hidden;
+  }
+
+  .market-portrait {
+    flex: 0 0 auto;
+    max-height: none;
+    align-self: stretch;
+  }
+
+  .market-portrait-img {
+    flex: 0 0 auto;
+    min-height: min(34vw, 120px);
+    height: min(34vw, 120px);
+    max-height: min(34vw, 120px);
+  }
+
+  .market-portrait-meta {
+    min-height: 0;
+    padding: 10px 12px;
+  }
+
+  .market-portrait-name {
+    font-size: 0.88rem;
+  }
+
+  .market-goods {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 0;
+  }
+
+  .market-goods-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .market-offer {
+    gap: 8px;
+    padding: 6px 8px 6px 6px;
+  }
+
+  .market-offer-name {
+    font-size: 0.88rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.2;
+  }
+
+  .market-offer-sub {
+    font-size: 0.7rem;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+  }
+
+  .market-offer-stat,
+  .market-offer-affix {
+    font-size: 0.76rem;
+  }
+
+  .market-offer-price {
+    font-size: 0.88rem;
+  }
+
+  .market-detail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    z-index: 95;
+    width: 100%;
+    max-width: 100%;
+    max-height: min(52dvh, 420px);
+    margin: 0;
+    padding: 12px 14px calc(12px + env(safe-area-inset-bottom));
+    border-radius: 6px 6px 0 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.55);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .market-hints {
+    flex: 0 0 auto;
+    display: none;
+  }
+}
