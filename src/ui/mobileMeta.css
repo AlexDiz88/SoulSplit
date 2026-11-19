@@ -289,21 +289,25 @@
   }
 
   .wm-region-panel {
+    box-sizing: border-box;
     width: 100%;
     max-width: 100%;
     height: 100%;
     max-height: 100dvh;
     margin: 0;
     border-radius: 0;
-    border-left: 0;
-    border-right: 0;
+    border: 0;
     padding:
-      calc(10px + env(safe-area-inset-top))
-      14px
-      calc(12px + env(safe-area-inset-bottom));
-    gap: 12px;
-    font-size: 1rem;
-    transform: translateY(12px);
+      calc(8px + env(safe-area-inset-top))
+      10px
+      calc(6px + env(safe-area-inset-bottom));
+    gap: 8px;
+    font-size: 0.92rem;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    transform: translateY(10px);
     opacity: 0;
   }
 
@@ -312,70 +316,219 @@
     opacity: 1;
   }
 
+  .wm-region-block {
+    padding: 8px 10px;
+    gap: 6px;
+  }
+
+  .wm-region-block-title {
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+  }
+
   .wm-region-hero {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
+    gap: 10px;
   }
 
   .wm-region-preview {
-    width: 100%;
-    height: min(36vw, 140px);
-    flex: none;
+    flex: 0 0 auto;
+    width: min(38vw, 120px);
+    height: 72px;
   }
 
   .wm-region-title {
-    font-size: 1.28rem;
+    font-size: 1.1rem;
+    line-height: 1.2;
   }
 
   .wm-region-desc {
-    font-size: 0.98rem;
+    font-size: 0.86rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 4;
+    overflow: hidden;
   }
 
   .wm-region-locations {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+    width: 100%;
   }
 
   .wm-location-btn {
     flex: none;
     width: 100%;
+    min-height: 40px;
+    padding: 8px 8px;
+    font-size: 0.86rem;
+    gap: 4px;
+  }
+
+  .wm-region-quest-list {
+    font-size: 0.88rem;
+    gap: 4px;
+    max-height: 18dvh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .wm-region-enemies-head {
+    align-items: center;
+    gap: 6px;
+  }
+
+  .wm-region-enemies-head .wm-region-block-title {
+    padding-top: 0;
+  }
+
+  .wm-region-enemies-meta {
+    gap: 8px;
+    margin-top: 0;
+  }
+
+  .wm-region-enemy-levels {
+    font-size: 0.82rem;
+  }
+
+  .wm-region-threat {
+    font-size: 0.86rem;
+  }
+
+  .wm-region-threat-icon {
+    width: 34px;
+    height: 34px;
+    margin: 0;
   }
 
   .wm-region-enemy-row {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 8px;
     justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 2px;
+    margin: 0 -2px;
+  }
+
+  .wm-region-enemy {
+    width: 68px;
+    flex: 0 0 68px;
+    gap: 4px;
+  }
+
+  .wm-region-enemy-portrait,
+  .wm-region-enemy-img {
+    width: 68px;
+    height: 68px;
+  }
+
+  .wm-region-enemy-name {
+    font-size: 0.68rem;
+    line-height: 1.15;
+    text-align: center;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .wm-region-enemy-boss {
+    width: 20px;
+    height: 20px;
+    top: 2px;
+    left: 2px;
+  }
+
+  .wm-region-enemy-boss-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .wm-region-loot-stub {
+    font-size: 0.84rem;
+    margin: 0;
   }
 
   .wm-region-actions {
     position: sticky;
     bottom: 0;
     z-index: 2;
-    flex-direction: column;
+    flex-direction: row;
     gap: 8px;
-    margin-top: 4px;
-    padding-top: 10px;
-    background: linear-gradient(0deg, #0d0e0f 70%, rgba(13, 14, 15, 0));
+    margin-top: 2px;
+    padding: 8px 0 4px;
+    background: linear-gradient(0deg, #0d0e0f 78%, rgba(13, 14, 15, 0));
   }
 
   .wm-region-btn {
-    width: 100%;
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
     min-height: 44px;
+    font-size: 0.92rem;
+    padding: 10px 12px;
   }
 
   .wm-region-threat-tip {
-    max-width: min(88vw, 320px);
+    max-width: min(88vw, 300px);
+    font-size: 0.82rem;
   }
 
-  /* ---- Бой (дополнение к style.css @media) ---- */
+  /* ---- Бой: 2 ряда (зелья слева, 1-5 / Q-T справа) ---- */
+  .hud-top {
+    padding: calc(6px + env(safe-area-inset-top)) 2.5vw 6px;
+    gap: 6px;
+  }
+
+  .menu-btn {
+    width: 40px;
+    height: 40px;
+    flex-shrink: 0;
+  }
+
+  .controls {
+    gap: 5px;
+    flex-wrap: nowrap;
+  }
+
+  .ctrl-btn {
+    min-width: 38px;
+    width: auto;
+    height: 40px;
+    max-height: 44px;
+    padding: 0 10px;
+    font-size: 0.85rem;
+  }
+
+  .hud-bottom {
+    gap: 6px;
+    padding: 6px 2.5vw calc(6px + env(safe-area-inset-bottom));
+    background: linear-gradient(0deg, rgba(8, 12, 8, 0.98) 55%, rgba(8, 12, 8, 0.55), transparent);
+  }
+
   .hud-combat-bar {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1vh;
+    --combat-cell: min(11.2vw, 46px);
+    display: grid;
+    grid-template-columns: var(--combat-cell) var(--combat-cell) repeat(5, minmax(0, 1fr));
+    grid-template-rows: repeat(2, auto);
+    gap: 1.2vw;
+    width: 96vw;
+    max-width: 96vw;
+    margin: 0 auto;
+    align-items: stretch;
     min-height: 0;
-    padding-top: 0.4vh;
+    padding-top: 0;
+  }
+
+  .potion-bar,
+  .skill-bar {
+    display: contents;
   }
 
   .potion-bar {
@@ -383,25 +536,148 @@
     left: auto;
     top: auto;
     transform: none;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    gap: 2.5vw;
-    --potion-size: min(13vw, 52px);
-    width: 92vw;
-    max-width: 92vw;
-    margin: 0 auto;
+    width: auto;
+    max-width: none;
+    margin: 0;
+    gap: 0;
+    --potion-size: var(--combat-cell);
   }
 
-  .hud-hint {
-    font-size: 0.88rem;
-    padding: 0 4vw;
-    text-align: center;
-    max-width: 92vw;
-    margin-inline: auto;
+  #potion-hp {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+    align-self: center;
   }
 
-  .ctrl-btn {
+  #potion-mana {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+
+  .potion-btn {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 1;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .potion-hotkey {
+    display: none;
+  }
+
+  .skill-bar {
+    width: auto;
+    max-width: none;
+    margin: 0;
+    gap: 0;
+  }
+
+  .skill-btn {
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+  }
+
+  .skill-btn:nth-child(1) {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .skill-btn:nth-child(2) {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .skill-btn:nth-child(3) {
+    grid-column: 5;
+    grid-row: 1;
+  }
+
+  .skill-btn:nth-child(4) {
+    grid-column: 6;
+    grid-row: 1;
+  }
+
+  .skill-btn:nth-child(5) {
+    grid-column: 7;
+    grid-row: 1;
+  }
+
+  .skill-btn:nth-child(6) {
+    grid-column: 3;
+    grid-row: 2;
+  }
+
+  .skill-btn:nth-child(7) {
+    grid-column: 4;
+    grid-row: 2;
+  }
+
+  .skill-btn:nth-child(8) {
+    grid-column: 5;
+    grid-row: 2;
+  }
+
+  .skill-btn:nth-child(9) {
+    grid-column: 6;
+    grid-row: 2;
+  }
+
+  .skill-btn:nth-child(10) {
+    grid-column: 7;
+    grid-row: 2;
+  }
+
+  .skill-btn .cd-overlay {
+    font-size: 1.2rem;
+  }
+
+  .skill-btn .glyph {
+    font-size: 1.35rem;
+  }
+
+  .skill-tooltip {
+    min-width: 0;
+    max-width: min(92vw, 340px);
+    padding: 10px 12px;
     font-size: 0.9rem;
+  }
+
+  .global-effects-hud {
+    top: calc(48px + env(safe-area-inset-top));
+    left: 8px;
+    max-width: calc(100vw - 16px);
+    gap: 6px;
+  }
+
+  .global-effect-icon {
+    width: 44px;
+    height: 44px;
+  }
+
+  .quest-side {
+    top: calc(48px + env(safe-area-inset-top));
+    right: 8px;
+    width: min(200px, calc(100vw - 16px));
+    max-height: 26dvh;
+  }
+
+  .quest-tracker {
+    max-height: 26dvh;
+  }
+
+  .battle-banner {
+    width: min(84vw, 280px);
+  }
+
+  .battle-start-btn {
+    min-height: 42px;
+    font-size: 0.95rem;
+  }
+
+  .battle-pause-label {
+    font-size: 0.88rem;
   }
 }
