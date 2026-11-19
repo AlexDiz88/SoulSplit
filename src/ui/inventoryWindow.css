@@ -326,3 +326,115 @@
     bottom: 10px;
   }
 }
+
+/* Телефон: сумка вместе с листом персонажа или solo-fullscreen. */
+@media (max-width: 520px) {
+  #hud {
+    --inv-slot: 48px;
+    --inv-bag-pad-x: 10px;
+    --inv-bag-w: calc(2 * var(--inv-bag-pad-x) + 5 * var(--inv-slot) + 4 * 6px);
+  }
+
+  #hud:has(#character:not([hidden])) .inv-bag-overlay:not(.is-solo):not([hidden]) {
+    position: fixed;
+    inset: 0;
+    z-index: 57;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: stretch;
+    pointer-events: none;
+    background: transparent;
+  }
+
+  #hud:has(#character:not([hidden])) .inv-bag-overlay:not(.is-solo) .inv-bag-root {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    z-index: auto;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    flex: 0 0 auto;
+    max-height: min(44dvh, 360px);
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    overflow: hidden;
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  #hud:has(#character:not([hidden])) .inv-bag-grid-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #hud:has(#character:not([hidden])) .inv-bag-grid {
+    gap: 6px;
+    justify-content: center;
+  }
+
+  .inv-bag-overlay.is-solo {
+    position: fixed;
+    inset: 0;
+    z-index: 56;
+    align-items: stretch;
+    justify-content: stretch;
+    padding: 0;
+    background: rgba(4, 5, 12, 0.72);
+  }
+
+  .inv-bag-overlay.is-solo .inv-bag-root {
+    position: relative;
+    width: 100%;
+    max-width: 100%;
+    height: 100%;
+    max-height: 100dvh;
+    margin: 0;
+    border-radius: 0;
+    border: 0;
+    padding:
+      calc(10px + env(safe-area-inset-top))
+      12px calc(10px + env(safe-area-inset-bottom));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .inv-bag-overlay.is-solo .inv-bag-grid-host {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inv-bag-overlay.is-solo .inv-bag-x {
+    display: block;
+    top: calc(8px + env(safe-area-inset-top));
+    right: 8px;
+    width: 32px;
+    height: 32px;
+  }
+
+  .inv-bag-head {
+    flex: 0 0 auto;
+    padding-right: 36px;
+  }
+
+  .inv-title {
+    font-size: 0.92rem;
+    letter-spacing: 0.1em;
+  }
+
+  .inv-bag-count {
+    font-size: 0.82rem;
+  }
+}

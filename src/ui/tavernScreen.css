@@ -912,8 +912,8 @@
 
   .tavern-room-art-img {
     flex: 0 0 auto;
-    min-height: min(36vw, 128px);
-    height: min(36vw, 128px);
+    min-height: min(72vw, 256px);
+    height: min(72vw, 256px);
     width: 100%;
     object-fit: cover;
     object-position: center top;
