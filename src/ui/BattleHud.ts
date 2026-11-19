@@ -782,8 +782,15 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     setBattleBanner,
 
     setBattleBannerPosition(x: number, y: number) {
+      let top = y;
+      if (window.matchMedia("(max-width: 480px)").matches) {
+        const hudTop = document.querySelector(".hud-top") as HTMLElement | null;
+        const hudBottom =
+          hudTop && !hudTop.hidden ? hudTop.getBoundingClientRect().bottom + 4 : 52;
+        top = Math.max(y, hudBottom);
+      }
       battleBanner.style.left = `${x}px`;
-      battleBanner.style.top = `${y}px`;
+      battleBanner.style.top = `${top}px`;
     },
 
     onStart(handler: () => void) {

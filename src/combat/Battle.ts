@@ -757,7 +757,8 @@ export class Battle {
     const portrait = w <= 520 && h > w;
     const phoneLandscape = h <= 450 && w > h && w <= 960;
     const side = portrait ? 4 : phoneLandscape ? 48 : 120;
-    const topInset = portrait ? 48 : phoneLandscape ? 36 : 78;
+    const topInset = portrait ? 58 : phoneLandscape ? 36 : 78;
+    const portraitBoardShift = portrait ? 26 : 0;
     const bottomInset = portrait
       ? Math.round(Math.min(h * 0.26, 220))
       : phoneLandscape
@@ -766,7 +767,7 @@ export class Battle {
     const pad = portrait || phoneLandscape ? 6 : 28;
     const scale = Math.min(1, (w - side * 2) / (gridW + pad), (h - topInset - bottomInset) / (totalH + 20));
     this.baseBoardX = w / 2;
-    this.baseBoardY = topInset + (h - topInset - bottomInset) / 2;
+    this.baseBoardY = topInset + (h - topInset - bottomInset) / 2 + portraitBoardShift;
     this.board.position.set(this.baseBoardX, this.baseBoardY);
     this.board.scale.set(Math.floor(scale * 100) / 100);
     this.placeAll();
@@ -777,7 +778,11 @@ export class Battle {
   private syncBannerPosition(): void {
     const scale = this.board.scale.x;
     const gridTop = this.baseBoardY + this.gridOrigin.y * scale;
-    this.hud.setBattleBannerPosition(this.baseBoardX, gridTop - 12);
+    const w = this.app.screen.width;
+    const h = this.app.screen.height;
+    const portrait = w <= 520 && h > w;
+    const bannerY = portrait ? gridTop - 6 : gridTop - 12;
+    this.hud.setBattleBannerPosition(this.baseBoardX, bannerY);
   }
 
   private syncBattleBanner(): void {
