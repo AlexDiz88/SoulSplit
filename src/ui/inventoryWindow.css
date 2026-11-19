@@ -1,7 +1,39 @@
 /* Сумка 5×5 - отдельное окно справа внизу. Ячейки = размер слотов персонажа (76px). */
 
-#hud .inv-bag-root {
+#hud .inv-bag-overlay {
   pointer-events: auto;
+}
+
+.inv-bag-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 52;
+}
+
+.inv-bag-overlay[hidden] {
+  display: none !important;
+}
+
+/* С тайником/рынком клики вне сумки уходят в лист персонажа. */
+.inv-bag-overlay:not(.is-solo) {
+  pointer-events: none;
+  background: transparent;
+}
+
+.inv-bag-overlay:not(.is-solo) .inv-bag-root {
+  pointer-events: auto;
+}
+
+.inv-bag-overlay:not(.is-solo) .inv-bag-x {
+  display: none;
+}
+
+.inv-bag-overlay.is-solo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(4, 6, 4, 0.45);
 }
 
 /* Размеры сумки - окно экипа в режиме тайника совпадает по ширине и стыкуется сверху. */
@@ -17,14 +49,14 @@
   --slot-edge: linear-gradient(155deg, #d2b46c, #4a3c24 45%, #8a7044 70%, #e0c27a);
   --slot-bg: radial-gradient(circle at 50% 30%, #2c2e30, #111213 78%);
   --slot-glyph: #c4a874;
-  position: absolute;
-  right: 16px;
-  bottom: 16px;
-  z-index: 51;
+  position: relative;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 12px 14px 14px;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
   color: var(--text);
   border: 1px solid #6a5a3a;
   border-radius: 4px;
@@ -37,15 +69,71 @@
     0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
-.inv-bag-root[hidden] {
-  display: none;
+.inv-bag-overlay:not(.is-solo) .inv-bag-root {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1;
+}
+
+.inv-bag-x {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 3;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #d8b86a;
+  cursor: var(--cur-default);
+  transition:
+    color 0.15s,
+    filter 0.15s;
+}
+
+.inv-bag-x span {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 14px;
+  height: 14px;
+}
+
+.inv-bag-x span::before,
+.inv-bag-x span::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: currentColor;
+  border-radius: 1px;
+}
+
+.inv-bag-x span::before {
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.inv-bag-x span::after {
+  transform: translateY(-50%) rotate(-45deg);
+}
+
+.inv-bag-x:hover {
+  color: #f4dfa2;
+  filter: drop-shadow(0 0 4px rgba(232, 207, 138, 0.45));
 }
 
 .inv-bag-head {
+  position: relative;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 16px;
+  padding-right: 28px;
 }
 
 .inv-title {

@@ -36,6 +36,8 @@ export interface InventoryWindowApi {
   isOpen(): boolean;
   open(): void;
   close(): void;
+  /** Затемнение и клик снаружи - только сумка без листа персонажа. */
+  setSoloBackdrop(active: boolean): void;
   setHero(hero: Unit): void;
   /** Сумка тайника для drag-and-drop; null = тайник закрыт. */
   setStashBag(bag: InventoryBag | null): void;
@@ -59,11 +61,19 @@ const DRAG_THRESHOLD = 5;
 /** Компактная сумка 5×5 - отдельное окно справа внизу, рядом с листом персонажа. */
 export function mountInventoryWindow(): InventoryWindowApi {
   const hud = document.getElementById("hud")!;
+  const overlay = el("div", "inv-bag-overlay");
+  overlay.hidden = true;
+
   const root = el("div", "inv-bag-root");
   root.id = "inventory";
-  root.hidden = true;
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-labelledby", "inv-title");
+  root.setAttribute("aria-modal", "true");
+
+  const closeBtn = el("button", "inv-bag-x");
+  closeBtn.type = "button";
+  closeBtn.setAttribute("aria-label", "Закрыть");
+  closeBtn.innerHTML = '<span aria-hidden="true"></span>';
 
   const head = el("header", "inv-bag-head");
   const title = el("h2", "inv-title", "Инвентарь");
@@ -75,7 +85,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const tip = el("div", "item-tip inv-tip");
   tip.hidden = true;
 
-  root.append(head, gridHost, tip);
+  root.append(closeBtn, head, gridHost, tip);
+  overlay.append(root);
 
   const compare = el("div", "inv-compare");
   compare.hidden = true;
@@ -96,7 +107,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   confirmPanel.append(confirmTitle, confirmText, confirmActions);
   confirm.append(confirmPanel);
 
-  hud.append(root, confirm, compare);
+  hud.append(overlay, confirm, compare);
 
   const itemDrag = getItemDrag();
 
@@ -168,7 +179,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const isInsideItemWindow = (node: Element | null): boolean =>
     !!node?.closest(
-      ".inv-bag-root, .cs-window, .stash-root, .stash-hints, .market-window, .market-detail, .confirm-overlay, .confirm-panel",
+      ".inv-bag-overlay, .inv-bag-root, .cs-window, .stash-root, .stash-hints, .market-window, .market-detail, .confirm-overlay, .confirm-panel",
     );
 
   const resolveFilledSource = (
@@ -179,9 +190,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const invCell = target.closest<HTMLElement>(".inv-cell.filled[data-inv]");
     const stashCell = target.closest<HTMLElement>(".inv-cell.filled[data-stash]");
     if (!equip && !invCell && !stashCell) return null;
-    if (invCell && root.hidden) return null;
+    if (invCell && overlay.hidden) return null;
     if (stashCell && !stashBag) return null;
-    if (equip && root.hidden && !stashBag && !marketMode) return null;
+    if (equip && overlay.hidden && !stashBag && !marketMode) return null;
 
     if (equip) {
       const slot = equip.dataset.slot as EquipSlotId;
@@ -224,15 +235,20 @@ export function mountInventoryWindow(): InventoryWindowApi {
     root.classList.toggle("inv-locked", !canChangeEquipment());
   };
 
+  const setSoloBackdrop = (active: boolean): void => {
+    overlay.classList.toggle("is-solo", active);
+  };
+
   const open = (): void => {
     render();
-    root.hidden = false;
+    overlay.hidden = false;
   };
 
   const close = (): void => {
     cancelDrag();
     closeDestroyConfirm();
-    root.hidden = true;
+    overlay.hidden = true;
+    setSoloBackdrop(false);
     hideTips();
   };
 
@@ -860,6 +876,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
     true,
   );
 
+  closeBtn.addEventListener("click", () => close());
+  overlay.addEventListener("click", (ev) => {
+    if (!overlay.classList.contains("is-solo")) return;
+    if (ev.target !== overlay) return;
+    close();
+  });
+
   btnCancel.addEventListener("click", closeDestroyConfirm);
   btnConfirm.addEventListener("click", () => {
     const req = pendingDestroy;
@@ -886,12 +909,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
   );
 
   return {
-    isOpen: () => !root.hidden,
+    isOpen: () => !overlay.hidden,
     open,
     close,
+    setSoloBackdrop,
     setHero(next) {
       hero = next;
-      if (!root.hidden) render();
+      if (!overlay.hidden) render();
     },
     setStashBag(bag) {
       stashBag = bag;
@@ -901,7 +925,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
     },
     setCanChangeEquipment(fn) {
       canChangeEquipment = fn;
-      if (!root.hidden) render();
+      if (!overlay.hidden) render();
     },
     setOnEquipmentChanged(fn) {
       onEquipmentChanged = fn;

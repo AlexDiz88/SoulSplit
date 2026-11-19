@@ -578,6 +578,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
 
   character.setOnVisibilityChange((open) => {
     if (open) {
+      inventory.setSoloBackdrop(false);
       inventory.open();
       syncLootReturnMode();
     } else {
@@ -853,6 +854,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
       stash.close();
+      inventory.setSoloBackdrop(true);
       inventory.open();
       syncLootReturnMode();
     },
@@ -882,6 +884,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setStashBag(null);
       inventory.setMarketMode(false);
       stash.close();
+      inventory.setSoloBackdrop(true);
       inventory.open();
       syncLootReturnMode();
     },
@@ -893,6 +896,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       inventory.setStashBag(bag);
       stash.setBag(bag);
       character.setMode("gear");
+      inventory.setSoloBackdrop(false);
       character.open();
       stash.open();
     },
@@ -907,6 +911,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       stash.close();
       inventory.setMarketMode(true);
       character.setMode("gear");
+      inventory.setSoloBackdrop(false);
       character.open();
     },
 
