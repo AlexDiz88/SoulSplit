@@ -1,7 +1,13 @@
 /* Сумка 5×5 - отдельное окно справа внизу. Ячейки = размер слотов персонажа (76px). */
 
-#hud .inv-bag-overlay {
+/* Solo: оверлей ловит клики. Компаньон: клики мимо сумки проходят к листу персонажа. */
+#hud .inv-bag-overlay.is-solo {
   pointer-events: auto;
+}
+
+#hud .inv-bag-overlay:not(.is-solo) {
+  pointer-events: none;
+  background: transparent;
 }
 
 .inv-bag-overlay {
@@ -14,18 +20,8 @@
   display: none !important;
 }
 
-/* С тайником/рынком клики вне сумки уходят в лист персонажа. */
-.inv-bag-overlay:not(.is-solo) {
-  pointer-events: none;
-  background: transparent;
-}
-
 .inv-bag-overlay:not(.is-solo) .inv-bag-root {
   pointer-events: auto;
-}
-
-.inv-bag-overlay:not(.is-solo) .inv-bag-x {
-  display: none;
 }
 
 .inv-bag-overlay.is-solo {
@@ -76,13 +72,21 @@
   z-index: 1;
 }
 
+.inv-bag-head-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .inv-bag-x {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  position: relative;
+  top: auto;
+  right: auto;
   z-index: 3;
-  width: 34px;
-  height: 34px;
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
   padding: 0;
   border: 0;
   border-radius: 0;
@@ -98,8 +102,8 @@
   position: absolute;
   inset: 0;
   margin: auto;
-  width: 14px;
-  height: 14px;
+  width: 12px;
+  height: 12px;
 }
 
 .inv-bag-x span::before,
@@ -130,10 +134,10 @@
 .inv-bag-head {
   position: relative;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-right: 28px;
+  padding-right: 0;
 }
 
 .inv-title {
@@ -417,16 +421,13 @@
   }
 
   .inv-bag-overlay.is-solo .inv-bag-x {
-    display: block;
-    top: calc(8px + env(safe-area-inset-top));
-    right: 8px;
-    width: 32px;
-    height: 32px;
+    width: 22px;
+    height: 22px;
   }
 
   .inv-bag-head {
     flex: 0 0 auto;
-    padding-right: 36px;
+    padding-right: 0;
   }
 
   .inv-title {

@@ -434,9 +434,15 @@ export class Battle {
     }
 
     // Нет элемента в DOM - не блокируем (иначе null?.hidden даёт вечный return).
+    // Сумка: id="inventory" на внутреннем root, hidden держит .inv-bag-overlay.
     const overlayOpen = (id: string): boolean => {
       const el = document.getElementById(id);
-      return el != null && !el.hidden;
+      if (el == null) return false;
+      if (id === "inventory") {
+        const gate = el.closest(".inv-bag-overlay") ?? el.parentElement ?? el;
+        return !gate.hidden;
+      }
+      return !el.hidden;
     };
     if (overlayOpen("character")) return;
     if (overlayOpen("inventory")) return;
@@ -2584,15 +2590,19 @@ export class Battle {
           const ch = u.channel;
           ch.elapsed += combatDt * u.castSpeedMult();
           const def = ABILITIES[ch.id];
-          while (
-            ch.stagesFired < ch.stages &&
-            ch.elapsed >= (ch.stagesFired + 1) * ch.interval
-          ) {
+          // Те же доли, что насечки на полосе: 1/N, 2/N, … N/N от duration (3 стадии → 33/66/100).
+          while (ch.stagesFired < ch.stages && ch.duration > 0) {
+            const stageAt = (ch.duration * (ch.stagesFired + 1)) / ch.stages;
+            if (ch.elapsed < stageAt) break;
             this.fireChannelStage(def);
             ch.stagesFired += 1;
           }
           u.redraw();
-          if (ch.stagesFired >= ch.stages) {
+          if (ch.elapsed >= ch.duration) {
+            while (ch.stagesFired < ch.stages) {
+              this.fireChannelStage(def);
+              ch.stagesFired += 1;
+            }
             this.finishHeroChannel();
           }
         }

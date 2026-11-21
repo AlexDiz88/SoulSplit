@@ -19,7 +19,7 @@ import {
   type PotionId,
 } from "../items/potions";
 import type { ItemDef } from "../items/types";
-import { ABILITY_ICON_URLS, EMPTY_SKILL_ICON_URL } from "../art/abilityIcons";
+import { ABILITY_ICON_URLS } from "../art/abilityIcons";
 import { isHubPhoneUi } from "../art/menuBackground";
 import type { Unit } from "../combat/Unit";
 import type { AbilityId } from "../types";
@@ -485,10 +485,10 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
       hotkeyEl.setAttribute("aria-hidden", "true");
 
       if (!id) {
-        btn.className = "skill-btn empty has-art";
+        btn.className = "skill-btn empty";
         btn.disabled = true;
+        btn.style.setProperty("--aspect-color", ASPECT_HEX[unit.aspect]);
         btn.setAttribute("aria-label", `Пустой слот ${hotkey}`);
-        btn.innerHTML = `<img class="skill-icon" src="${EMPTY_SKILL_ICON_URL}" alt="" draggable="false" />`;
         btn.appendChild(hotkeyEl);
         skillBar.appendChild(btn);
         continue;
@@ -577,6 +577,19 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     );
   };
 
+  const closeItemPanels = (): void => {
+    if (character.isOpen()) {
+      character.close();
+      return;
+    }
+    inventory.close();
+    stash.close();
+    inventory.setStashBag(null);
+    inventory.setMarketMode(false);
+    syncLootReturnMode();
+    onPanelsClosed?.();
+  };
+
   character.setOnVisibilityChange((open) => {
     if (open) {
       inventory.setSoloBackdrop(false);
@@ -601,6 +614,8 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
   inventory.setOnStashChanged(() => {
     stash.refresh();
   });
+  inventory.setOnCloseRequest(closeItemPanels);
+  stash.setOnCloseRequest(closeItemPanels);
   itemGenerator = mountItemGenerator(() => prepareOpen("item-generator"));
   itemGenerator.setShowToast(pushToast);
   itemGenerator.setBestiaryTooltips({
@@ -861,9 +876,7 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     },
 
     closeInventory() {
-      if (character.isOpen()) character.close();
-      else inventory.close();
-      syncLootReturnMode();
+      closeItemPanels();
     },
 
     isInventoryOpen() {

@@ -1,5 +1,5 @@
 import { Assets, Container, Graphics, Sprite, Text, Texture } from "pixi.js";
-import { ABILITIES } from "../abilities/definitions";
+import { ABILITIES, ASPECT_COLOR } from "../abilities/definitions";
 import { attackSpeedIncreaseToHasteMult } from "../abilities/attackSpeed";
 import { GRID_SIZE } from "../abilities/shapes";
 import { sharpenPortraitTexture } from "../art/portraits";
@@ -798,15 +798,16 @@ export class Unit {
     }
 
     if (this.channel) {
-      const drain =
-        this.channel.duration > 0
-          ? Math.max(0, 1 - this.channel.elapsed / this.channel.duration)
-          : 0;
+      const ch = this.channel;
+      const progress =
+        ch.duration > 0 ? Math.min(1, Math.max(0, ch.elapsed / ch.duration)) : 1;
+      const drain = 1 - progress;
       const chH = 10;
       const chY = bars.length > 0 ? bars[bars.length - 1]!.y + h + 4 : topY;
       const pulse = 0.55 + 0.45 * Math.sin(performance.now() * 0.014);
-      const neon = 0xc45ad4;
-      const neonHot = 0xe8c0ff;
+      const aspect = ABILITIES[ch.id]?.aspect ?? this.aspect;
+      const neon = ASPECT_COLOR[aspect];
+      const neonHot = 0xffffff;
       this.cdBarGlow
         .roundRect(x - 2, chY - 2, w + 4, chH + 4, 3)
         .fill({ color: neon, alpha: 0.14 + 0.1 * pulse });
@@ -816,10 +817,27 @@ export class Unit {
         this.cdBarFg.roundRect(x, chY, fw, chH, 2).fill({ color: neon, alpha: 0.92 });
         this.cdBarFg.roundRect(x, chY, fw, Math.max(2, chH * 0.38), 2).fill({
           color: neonHot,
-          alpha: 0.4 + 0.2 * pulse,
+          alpha: 0.28 + 0.16 * pulse,
         });
       }
-      const name = ABILITIES[this.channel.id]?.name ?? this.channel.id;
+      // Насечки стадий: на 1/N, 2/N, … N/N прогресса (полоса истощается → метка слева).
+      if (ch.stages > 0) {
+        for (let k = 1; k <= ch.stages; k++) {
+          const stageProgress = k / ch.stages;
+          const mx = x + w * (1 - stageProgress);
+          const fired = ch.stagesFired >= k;
+          this.cdBarFg
+            .rect(mx - 1.5, chY - 2, 3, chH + 4)
+            .fill({ color: 0x000000, alpha: 0.65 });
+          this.cdBarFg
+            .rect(mx - 0.75, chY - 1.5, 1.5, chH + 3)
+            .fill({
+              color: fired ? 0xfff0a8 : 0xf8f4ff,
+              alpha: fired ? 0.98 : 0.72 + 0.1 * pulse,
+            });
+        }
+      }
+      const name = ABILITIES[ch.id]?.name ?? ch.id;
       this.castLabel.text = name;
       this.castLabel.position.set(x + w / 2, chY + chH / 2);
       this.castLabel.alpha = 0.88 + 0.12 * pulse;

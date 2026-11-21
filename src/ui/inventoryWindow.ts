@@ -55,6 +55,8 @@ export interface InventoryWindowApi {
    */
   setOnLootReturn(fn: ((item: ItemDef) => void) | null): void;
   setShowToast(fn: (text: string) => void): void;
+  /** Крестик / запрос закрытия (хаб закрывает персонажа+сумку вместе). */
+  setOnCloseRequest(fn: (() => void) | null): void;
 }
 
 const DRAG_THRESHOLD = 5;
@@ -82,13 +84,15 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const title = el("h2", "inv-title", "Инвентарь");
   title.id = "inv-title";
   const count = el("span", "inv-bag-count", `0 / ${INVENTORY_SIZE}`);
-  head.append(title, count);
+  const headMeta = el("div", "inv-bag-head-meta");
+  headMeta.append(count, closeBtn);
+  head.append(title, headMeta);
 
   const gridHost = el("div", "inv-bag-grid-host");
   const tip = el("div", "item-tip inv-tip");
   tip.hidden = true;
 
-  root.append(closeBtn, head, gridHost, tip);
+  root.append(head, gridHost, tip);
   overlay.append(root);
 
   const compare = el("div", "inv-compare");
@@ -132,6 +136,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   let onMarketSell: ((item: ItemDef, price: number) => void) | null = null;
   let onLootReturn: ((item: ItemDef) => void) | null = null;
   let showToast: ((text: string) => void) | null = null;
+  let onCloseRequest: (() => void) | null = null;
 
   /** Pending pointer: ещё не прошли порог движения. */
   let pending: { source: ItemDragSource; item: ItemDef; el: HTMLElement; x: number; y: number } | null =
@@ -1074,11 +1079,15 @@ export function mountInventoryWindow(): InventoryWindowApi {
     true,
   );
 
-  closeBtn.addEventListener("click", () => close());
+  closeBtn.addEventListener("click", () => {
+    if (onCloseRequest) onCloseRequest();
+    else close();
+  });
   overlay.addEventListener("click", (ev) => {
     if (!overlay.classList.contains("is-solo")) return;
     if (ev.target !== overlay) return;
-    close();
+    if (onCloseRequest) onCloseRequest();
+    else close();
   });
 
   btnCancel.addEventListener("click", closeDestroyConfirm);
@@ -1139,6 +1148,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     },
     setShowToast(fn) {
       showToast = fn;
+    },
+    setOnCloseRequest(fn) {
+      onCloseRequest = fn;
     },
   };
 }

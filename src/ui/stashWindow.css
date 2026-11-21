@@ -43,6 +43,10 @@
     0 16px 40px rgba(0, 0, 0, 0.55);
 }
 
+.stash-head {
+  padding-right: 0;
+}
+
 .stash-grid {
   display: grid;
   grid-template-columns: repeat(var(--stash-cols, 10), var(--slot));

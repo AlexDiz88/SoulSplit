@@ -14,6 +14,8 @@ export interface StashWindowApi {
   close(): void;
   setBag(bag: InventoryBag | null): void;
   refresh(): void;
+  /** Крестик закрывает тайник (+ компаньон-окна через хаб). */
+  setOnCloseRequest(fn: (() => void) | null): void;
 }
 
 /** Окно тайника 10×10 по центру экрана (стиль ячеек как у инвентаря). */
@@ -27,11 +29,18 @@ export function mountStashWindow(): StashWindowApi {
   root.setAttribute("role", "dialog");
   root.setAttribute("aria-labelledby", "stash-title");
 
+  const closeBtn = el("button", "inv-bag-x stash-x");
+  closeBtn.type = "button";
+  closeBtn.setAttribute("aria-label", "Закрыть");
+  closeBtn.innerHTML = '<span aria-hidden="true"></span>';
+
   const head = el("header", "inv-bag-head stash-head");
   const title = el("h2", "inv-title", "Тайник");
   title.id = "stash-title";
   const count = el("span", "inv-bag-count", `0 / ${STASH_SIZE}`);
-  head.append(title, count);
+  const headMeta = el("div", "inv-bag-head-meta");
+  headMeta.append(count, closeBtn);
+  head.append(title, headMeta);
 
   const gridHost = el("div", "stash-grid-host");
   const tip = el("div", "item-tip inv-tip");
@@ -50,6 +59,15 @@ export function mountStashWindow(): StashWindowApi {
   hud.append(stack);
 
   let bag: InventoryBag | null = null;
+  let onCloseRequest: (() => void) | null = null;
+
+  closeBtn.addEventListener("click", () => {
+    if (onCloseRequest) onCloseRequest();
+    else {
+      stack.hidden = true;
+      tip.hidden = true;
+    }
+  });
 
   const render = (): void => {
     tip.hidden = true;
@@ -112,6 +130,9 @@ export function mountStashWindow(): StashWindowApi {
     },
     refresh() {
       if (!stack.hidden) render();
+    },
+    setOnCloseRequest(fn) {
+      onCloseRequest = fn;
     },
   };
 }
