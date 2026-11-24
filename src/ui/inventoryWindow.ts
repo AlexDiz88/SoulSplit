@@ -64,7 +64,7 @@ const PHONE_INV_LONG_PRESS_MS = 520;
 const PHONE_DRAG_THRESHOLD = 14;
 /** Пока ждём long-press на сравнение, палец почти не двигается — порог выше, чем у drag. */
 const PHONE_LONG_PRESS_CANCEL_DRAG = 28;
-const PHONE_DOUBLE_TAP_MS = 320;
+const PHONE_DOUBLE_TAP_MS = 480;
 
 /** Компактная сумка 5×5 - отдельное окно справа внизу, рядом с листом персонажа. */
 export function mountInventoryWindow(): InventoryWindowApi {
@@ -264,6 +264,35 @@ export function mountInventoryWindow(): InventoryWindowApi {
     compare.replaceChildren();
   };
 
+  const mountPhoneComparePanel = (cards: HTMLElement[], invIndex: number, item: ItemDef): void => {
+    const cardsHost = el("div", "inv-compare-phone-cards");
+    cardsHost.append(...cards);
+    const actions = el("div", "inv-compare-phone-actions");
+    const btnEquip = el(
+      "button",
+      "inv-compare-phone-btn inv-compare-phone-btn--primary",
+      isPotionItem(item) ? "На пояс" : "Одеть",
+    );
+    btnEquip.type = "button";
+    btnEquip.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      hideCompare();
+      tryEquipRmb(invIndex);
+    });
+    const btnClose = el("button", "inv-compare-phone-btn", "Закрыть");
+    btnClose.type = "button";
+    btnClose.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      hideCompare();
+    });
+    actions.append(btnEquip, btnClose);
+    compare.replaceChildren(cardsHost, actions);
+    compare.classList.add("inv-compare--phone");
+    compare.hidden = false;
+    compare.style.removeProperty("left");
+    compare.style.removeProperty("top");
+  };
+
   const closeMobileItemMenu = (): void => {
     clearPhoneBagTap();
     itemActionsOverlay.hidden = true;
@@ -294,21 +323,18 @@ export function mountInventoryWindow(): InventoryWindowApi {
     }
     tip.hidden = true;
     const phone = isHubPhoneUi();
-    compare.replaceChildren(
-      ...buildItemCompareCards(item, hero.equipment, {
-        tipClass: phone ? "inv-compare-tip item-tip--phone-compare" : "inv-compare-tip",
-        itemCaption: "В сумке",
-        showItemSellPrice: true,
-        itemSide: "right",
-      }),
-    );
+    const cards = buildItemCompareCards(item, hero.equipment, {
+      tipClass: phone ? "inv-compare-tip item-tip--phone-compare" : "inv-compare-tip",
+      itemCaption: "В сумке",
+      showItemSellPrice: true,
+      itemSide: "right",
+    });
     if (phone) {
-      compare.classList.add("inv-compare--phone");
-      compare.hidden = false;
-      compare.style.removeProperty("left");
-      compare.style.removeProperty("top");
+      mountPhoneComparePanel(cards, index, item);
     } else {
       compare.classList.remove("inv-compare--phone");
+      compare.replaceChildren(...cards);
+      compare.hidden = false;
       placeBagCompare(cell, clientX, clientY);
     }
   };
@@ -431,6 +457,38 @@ export function mountInventoryWindow(): InventoryWindowApi {
     itemActionsOverlay.hidden = false;
   };
 
+  /** Одиночный / двойной тап по ячейке сумки (только телефон, срабатывает на pointerup). */
+  const handlePhoneBagTap = (index: number, item: ItemDef): void => {
+    if (!hero || overlay.hidden) return;
+    if (!itemActionsOverlay.hidden) return;
+    if (!compare.hidden) {
+      hideCompare();
+      return;
+    }
+    const now = performance.now();
+    if (
+      phoneBagTap &&
+      phoneBagTap.index === index &&
+      now - phoneBagTap.at < PHONE_DOUBLE_TAP_MS
+    ) {
+      clearPhoneBagTap();
+      tryEquipRmb(index);
+      return;
+    }
+    clearPhoneBagTap();
+    const tapAt = now;
+    const itemId = item.id;
+    const timer = window.setTimeout(() => {
+      phoneBagTap = null;
+      if (overlay.hidden || !hero) return;
+      if (!itemActionsOverlay.hidden) return;
+      const live = hero.inventory[index];
+      if (!live || live.id !== itemId) return;
+      openMobileItemMenu(index, live);
+    }, PHONE_DOUBLE_TAP_MS);
+    phoneBagTap = { index, at: tapAt, timer };
+  };
+
   const handlePhoneItemActivate = (target: EventTarget | null): void => {
     if (!isHubPhoneUi() || suppressClick || itemDrag.isActive() || !hero) return;
     if (!itemActionsOverlay.hidden) return;
@@ -441,32 +499,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const hit = resolveFilledSource(target);
     if (!hit) return;
     if (hit.source.kind === "inv") {
-      if (overlay.hidden) return;
-      const index = hit.source.index;
-      const item = hero.inventory[index];
-      if (!item) return;
-      const now = performance.now();
-      if (
-        phoneBagTap &&
-        phoneBagTap.index === index &&
-        now - phoneBagTap.at < PHONE_DOUBLE_TAP_MS
-      ) {
-        clearPhoneBagTap();
-        hideCompare();
-        tryEquipRmb(index);
-        return;
-      }
-      clearPhoneBagTap();
-      const tapAt = now;
-      const timer = window.setTimeout(() => {
-        phoneBagTap = null;
-        if (overlay.hidden || !hero) return;
-        if (!itemActionsOverlay.hidden) return;
-        const live = hero.inventory[index];
-        if (!live || live.id !== item.id) return;
-        openMobileItemMenu(index, live);
-      }, PHONE_DOUBLE_TAP_MS);
-      phoneBagTap = { index, at: tapAt, timer };
       return;
     }
     if (hit.source.kind === "equip") {
@@ -1069,9 +1101,22 @@ export function mountInventoryWindow(): InventoryWindowApi {
   });
 
   window.addEventListener("pointerup", (ev) => {
-    if (pending) {
+    if (pending && !itemDrag.isActive()) {
+      const snap = pending;
       clearLongPressTimer();
       pending = null;
+      if (
+        ev.button === 0 &&
+        isHubPhoneUi() &&
+        !overlay.hidden &&
+        snap.source.kind === "inv"
+      ) {
+        handlePhoneBagTap(snap.source.index, snap.item);
+        suppressClick = true;
+        window.setTimeout(() => {
+          suppressClick = false;
+        }, 400);
+      }
       return;
     }
     if (!itemDrag.isActive()) return;
@@ -1096,26 +1141,31 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (ev.target === itemActionsOverlay) closeMobileItemMenu();
   });
 
-  compare.addEventListener("click", () => {
-    if (isHubPhoneUi() && !compare.hidden) hideCompare();
-  });
-
   window.addEventListener(
     "click",
     (ev) => {
       if (suppressClick) {
         ev.preventDefault();
         ev.stopPropagation();
-        suppressClick = false;
         return;
       }
       if (isHubPhoneUi()) {
         const inMenu = (ev.target as Element).closest(".inv-item-actions-overlay");
         if (inMenu) return;
+        const inCompare = (ev.target as Element).closest(".inv-compare.inv-compare--phone");
+        if (inCompare) return;
         const cellHit = (ev.target as Element).closest(
           ".inv-cell.filled[data-inv], .cs-slot.filled[data-slot], .inv-cell.filled[data-stash]",
         );
         if (cellHit) {
+          const invCell =
+            !overlay.hidden &&
+            (cellHit as HTMLElement).matches(".inv-cell.filled[data-inv]");
+          if (invCell) {
+            ev.preventDefault();
+            ev.stopPropagation();
+            return;
+          }
           handlePhoneItemActivate(ev.target);
           ev.preventDefault();
           ev.stopPropagation();

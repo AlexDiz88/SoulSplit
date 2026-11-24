@@ -449,32 +449,78 @@
   .inv-compare.inv-compare--phone {
     left: 50% !important;
     right: auto !important;
-    top: auto !important;
-    bottom: calc(env(safe-area-inset-bottom) + var(--inv-bag-stack-h, 0px) + 6px);
-    transform: translateX(-50%);
+    top: 50% !important;
+    bottom: auto !important;
+    transform: translate(-50%, -50%);
     flex-direction: column;
     align-items: stretch;
-    gap: 4px;
+    gap: 0;
     box-sizing: border-box;
-    width: min(96vw, 400px);
-    max-width: min(96vw, 400px);
-    max-height: min(38dvh, 320px);
-    padding: 6px 7px 7px;
+    width: min(94vw, 420px);
+    max-width: min(94vw, 420px);
+    height: 80dvh;
+    max-height: 80dvh;
+    padding: 0;
+    overflow: hidden;
+    pointer-events: auto;
+    border: 1px solid #6a5a3a;
+    border-radius: 8px;
+    background: rgba(8, 10, 12, 0.98);
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.72);
+    z-index: 98;
+  }
+
+  .inv-compare-phone-cards {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    pointer-events: auto;
-    border: 1px solid #6a5a3a;
-    border-radius: 6px;
-    background: rgba(8, 10, 12, 0.97);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.62);
-    z-index: 94;
   }
 
-  #hud:has(#character:not([hidden])) .inv-compare:not([hidden]),
-  #hud:has(#character:not([hidden])) .inv-compare.inv-compare--phone {
-    bottom: calc(env(safe-area-inset-bottom) + min(44dvh, 360px) + 8px);
-    max-height: min(30dvh, 240px);
+  .inv-compare-phone-cards .item-tip--phone-compare {
+    flex: 1 1 0;
+    min-height: 0;
+    max-height: 40dvh;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .inv-compare-phone-cards .item-tip--phone-compare:only-child {
+    max-height: min(40dvh, 100%);
+  }
+
+  .inv-compare-phone-actions {
+    flex: 0 0 auto;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    border-top: 1px solid rgba(106, 90, 58, 0.55);
+    background: linear-gradient(180deg, #141618, #0a0b0c);
+  }
+
+  .inv-compare-phone-btn {
+    min-height: 44px;
+    margin: 0;
+    padding: 10px 12px;
+    border: 1px solid #6a5a3a;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #2a2c2e, #161718);
+    color: #e8e2d4;
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 800;
+    cursor: var(--cur-default);
+  }
+
+  .inv-compare-phone-btn--primary {
+    border-color: #8a7848;
+    color: #f4e8c8;
+    background: linear-gradient(180deg, #3a3428, #221e16);
   }
 
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion) {
@@ -483,9 +529,9 @@
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    padding: 5px 8px 6px;
+    padding: 8px 10px 9px;
     text-align: left;
-    pointer-events: none;
+    pointer-events: auto;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
@@ -558,9 +604,8 @@
     text-align: left;
   }
 
-  .inv-compare.inv-compare--phone .item-tip--phone-compare + .item-tip--phone-compare {
-    border-top: 1px solid rgba(106, 90, 58, 0.35);
-    padding-top: 5px;
+  .inv-compare-phone-cards .item-tip--phone-compare + .item-tip--phone-compare {
+    border-top: 1px solid rgba(106, 90, 58, 0.45);
   }
 
   .inv-item-actions-overlay {
