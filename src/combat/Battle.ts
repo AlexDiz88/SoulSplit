@@ -440,6 +440,7 @@ export class Battle {
       if (el == null) return false;
       if (id === "inventory") {
         const gate = el.closest(".inv-bag-overlay") ?? el.parentElement ?? el;
+        if (!(gate instanceof HTMLElement)) return false;
         return !gate.hidden;
       }
       return !el.hidden;
