@@ -61,7 +61,7 @@ export interface InventoryWindowApi {
 
 const DRAG_THRESHOLD = 5;
 const PHONE_INV_LONG_PRESS_MS = 520;
-const PHONE_DRAG_THRESHOLD = 14;
+const PHONE_DRAG_THRESHOLD = 22;
 /** Пока ждём long-press на сравнение, палец почти не двигается — порог выше, чем у drag. */
 const PHONE_LONG_PRESS_CANCEL_DRAG = 28;
 const PHONE_DOUBLE_TAP_MS = 480;
@@ -155,6 +155,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
     at: number;
     timer: ReturnType<typeof window.setTimeout>;
   } | null = null;
+  /** Короткий тап по сумке (телефон), пока палец не ушёл в drag. */
+  let phoneInvTouch: { index: number; item: ItemDef } | null = null;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -516,6 +518,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (!pending || pending.el !== cell) return;
       closeMobileItemMenu();
       clearPhoneBagTap();
+      phoneInvTouch = null;
       showBagCompareForCell(cell, clientX, clientY);
       pending = null;
       suppressClick = true;
@@ -549,6 +552,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const cancelDrag = (): void => {
     clearLongPressTimer();
     clearPhoneBagTap();
+    phoneInvTouch = null;
     pending = null;
     itemDrag.cancel();
     clearDropHighlight();
@@ -1056,9 +1060,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (
       hit.source.kind === "inv" &&
       hit.el.classList.contains("inv-cell") &&
-      isHubPhoneUi()
+      isHubPhoneUi() &&
+      !overlay.hidden
     ) {
+      phoneInvTouch = { index: hit.source.index, item: hit.item };
       schedulePhoneLongPress(hit.el, ev.clientX, ev.clientY);
+    } else {
+      phoneInvTouch = null;
     }
   };
 
@@ -1087,6 +1095,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
         : DRAG_THRESHOLD;
       if (dx * dx + dy * dy < dragMin * dragMin) return;
       clearLongPressTimer();
+      phoneInvTouch = null;
       hideTips();
       closeDestroyConfirm();
       itemDrag.begin(pending.item, pending.source, ev.clientX, ev.clientY, pending.el);
@@ -1101,22 +1110,28 @@ export function mountInventoryWindow(): InventoryWindowApi {
   });
 
   window.addEventListener("pointerup", (ev) => {
+    if (
+      ev.button === 0 &&
+      phoneInvTouch &&
+      !itemDrag.isActive() &&
+      isHubPhoneUi() &&
+      !overlay.hidden
+    ) {
+      const touch = phoneInvTouch;
+      phoneInvTouch = null;
+      pending = null;
+      clearLongPressTimer();
+      handlePhoneBagTap(touch.index, touch.item);
+      suppressClick = true;
+      window.setTimeout(() => {
+        suppressClick = false;
+      }, 400);
+      return;
+    }
     if (pending && !itemDrag.isActive()) {
-      const snap = pending;
       clearLongPressTimer();
       pending = null;
-      if (
-        ev.button === 0 &&
-        isHubPhoneUi() &&
-        !overlay.hidden &&
-        snap.source.kind === "inv"
-      ) {
-        handlePhoneBagTap(snap.source.index, snap.item);
-        suppressClick = true;
-        window.setTimeout(() => {
-          suppressClick = false;
-        }, 400);
-      }
+      phoneInvTouch = null;
       return;
     }
     if (!itemDrag.isActive()) return;
