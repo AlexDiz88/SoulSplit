@@ -62,6 +62,9 @@ export interface InventoryWindowApi {
 const DRAG_THRESHOLD = 5;
 const PHONE_INV_LONG_PRESS_MS = 520;
 const PHONE_DRAG_THRESHOLD = 14;
+/** Пока ждём long-press на сравнение, палец почти не двигается — порог выше, чем у drag. */
+const PHONE_LONG_PRESS_CANCEL_DRAG = 28;
+const PHONE_DOUBLE_TAP_MS = 320;
 
 /** Компактная сумка 5×5 - отдельное окно справа внизу, рядом с листом персонажа. */
 export function mountInventoryWindow(): InventoryWindowApi {
@@ -146,6 +149,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
   /** После drag не закрывать окно персонажа кликом по оверлею. */
   let suppressClick = false;
   let longPressTimer: ReturnType<typeof window.setTimeout> | null = null;
+  /** Отложенное меню по одиночному тапу; сбрасывается при double-tap «Одеть». */
+  let phoneBagTap: {
+    index: number;
+    at: number;
+    timer: ReturnType<typeof window.setTimeout>;
+  } | null = null;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -242,6 +251,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
     }
   };
 
+  const clearPhoneBagTap = (): void => {
+    if (phoneBagTap) {
+      window.clearTimeout(phoneBagTap.timer);
+      phoneBagTap = null;
+    }
+  };
+
   const hideCompare = (): void => {
     compare.hidden = true;
     compare.classList.remove("inv-compare--phone");
@@ -249,6 +265,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const closeMobileItemMenu = (): void => {
+    clearPhoneBagTap();
     itemActionsOverlay.hidden = true;
     itemActionsBtns.replaceChildren();
   };
@@ -276,15 +293,16 @@ export function mountInventoryWindow(): InventoryWindowApi {
       return;
     }
     tip.hidden = true;
+    const phone = isHubPhoneUi();
     compare.replaceChildren(
       ...buildItemCompareCards(item, hero.equipment, {
-        tipClass: "inv-compare-tip",
+        tipClass: phone ? "inv-compare-tip item-tip--phone-compare" : "inv-compare-tip",
         itemCaption: "В сумке",
         showItemSellPrice: true,
         itemSide: "right",
       }),
     );
-    if (isHubPhoneUi()) {
+    if (phone) {
       compare.classList.add("inv-compare--phone");
       compare.hidden = false;
       compare.style.removeProperty("left");
@@ -427,7 +445,28 @@ export function mountInventoryWindow(): InventoryWindowApi {
       const index = hit.source.index;
       const item = hero.inventory[index];
       if (!item) return;
-      openMobileItemMenu(index, item);
+      const now = performance.now();
+      if (
+        phoneBagTap &&
+        phoneBagTap.index === index &&
+        now - phoneBagTap.at < PHONE_DOUBLE_TAP_MS
+      ) {
+        clearPhoneBagTap();
+        hideCompare();
+        tryEquipRmb(index);
+        return;
+      }
+      clearPhoneBagTap();
+      const tapAt = now;
+      const timer = window.setTimeout(() => {
+        phoneBagTap = null;
+        if (overlay.hidden || !hero) return;
+        if (!itemActionsOverlay.hidden) return;
+        const live = hero.inventory[index];
+        if (!live || live.id !== item.id) return;
+        openMobileItemMenu(index, live);
+      }, PHONE_DOUBLE_TAP_MS);
+      phoneBagTap = { index, at: tapAt, timer };
       return;
     }
     if (hit.source.kind === "equip") {
@@ -444,6 +483,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       longPressTimer = null;
       if (!pending || pending.el !== cell) return;
       closeMobileItemMenu();
+      clearPhoneBagTap();
       showBagCompareForCell(cell, clientX, clientY);
       pending = null;
       suppressClick = true;
@@ -476,6 +516,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const cancelDrag = (): void => {
     clearLongPressTimer();
+    clearPhoneBagTap();
     pending = null;
     itemDrag.cancel();
     clearDropHighlight();
@@ -807,6 +848,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   /** Без тайника/рынка: ПКМ надевает; в режиме добычи - возвращает в лут. */
   gridHost.addEventListener("contextmenu", (ev) => {
+    if (isHubPhoneUi()) return;
     if (stashBag || marketMode) return;
     ev.preventDefault();
     const cell = (ev.target as Element).closest<HTMLElement>(".inv-cell.filled[data-inv]");
@@ -1006,7 +1048,11 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (pending && !itemDrag.isActive()) {
       const dx = ev.clientX - pending.x;
       const dy = ev.clientY - pending.y;
-      const dragMin = isHubPhoneUi() ? PHONE_DRAG_THRESHOLD : DRAG_THRESHOLD;
+      const dragMin = isHubPhoneUi()
+        ? longPressTimer !== null
+          ? PHONE_LONG_PRESS_CANCEL_DRAG
+          : PHONE_DRAG_THRESHOLD
+        : DRAG_THRESHOLD;
       if (dx * dx + dy * dy < dragMin * dragMin) return;
       clearLongPressTimer();
       hideTips();
