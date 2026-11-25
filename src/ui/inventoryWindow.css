@@ -449,7 +449,7 @@
     left: 50% !important;
     right: auto !important;
     top: auto !important;
-    bottom: calc(210px + env(safe-area-inset-bottom));
+    bottom: calc(292px + env(safe-area-inset-bottom));
     transform: translateX(-50%);
     height: auto;
     max-height: min(48dvh, 400px);
@@ -491,18 +491,47 @@
   .inv-compare-phone-cards {
     flex: 1 1 0;
     min-height: 0;
+    min-width: 0;
     display: flex;
-    flex-direction: column;
-    overflow-x: hidden;
-    overflow-y: auto;
+    flex-direction: row;
+    align-items: stretch;
+    overflow-x: auto;
+    overflow-y: hidden;
     -webkit-overflow-scrolling: touch;
   }
 
-  .inv-compare-phone-cards .item-tip--phone-compare {
+  .inv-compare.inv-compare--peek .inv-compare-phone-cards {
     flex: 0 0 auto;
+    min-height: 0;
+    max-height: min(42dvh, 360px);
+    overflow-x: hidden;
+    overflow-y: hidden;
+  }
+
+  .inv-compare-phone-cards .item-tip--phone-compare {
+    flex: 1 1 50%;
+    min-width: 0;
+    max-width: 50%;
     min-height: 0 !important;
-    max-height: none;
-    overflow: visible;
+    max-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    box-sizing: border-box;
+  }
+
+  .inv-compare-phone-cards .item-tip--phone-compare:only-child {
+    flex: 1 1 100%;
+    max-width: 100%;
+  }
+
+  .inv-compare-phone-cards .item-tip--phone-compare + .item-tip--phone-compare {
+    border-left: 1px solid rgba(106, 90, 58, 0.45);
+  }
+
+  .inv-compare-phone-cards .item-tip--phone-compare:nth-child(n + 3) {
+    flex: 1 1 40%;
+    max-width: 40%;
   }
 
   .inv-compare-phone-actions {
@@ -653,10 +682,6 @@
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-tier-meta {
     font-size: 0.62rem;
-  }
-
-  .inv-compare-phone-cards .item-tip--phone-compare + .item-tip--phone-compare {
-    border-top: 1px solid rgba(106, 90, 58, 0.45);
   }
 
   .inv-item-actions-overlay {

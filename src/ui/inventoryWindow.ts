@@ -252,21 +252,38 @@ export function mountInventoryWindow(): InventoryWindowApi {
     compare.replaceChildren();
   };
 
-  const mountPhoneItemPreviewPanel = (item: ItemDef): void => {
-    const card = el("div", "item-tip inv-compare-tip item-tip--phone-compare");
-    fillItemTooltip(card, item, {
-      caption: "В сумке",
-      showSellPrice: true,
-      showIcon: true,
-    });
+  const mountPhonePeekPanel = (cards: HTMLElement[]): void => {
     const cardsHost = el("div", "inv-compare-phone-cards");
-    cardsHost.append(card);
+    cardsHost.append(...cards);
     compare.replaceChildren(cardsHost);
     compare.classList.add("inv-compare--phone", "inv-compare--peek");
     compare.classList.remove("inv-compare--full");
     compare.hidden = false;
     compare.style.removeProperty("left");
     compare.style.removeProperty("top");
+  };
+
+  const mountPhoneItemPreviewPanel = (item: ItemDef, caption: string, equippedSlot?: EquipSlotId): void => {
+    const card = el("div", "item-tip inv-compare-tip item-tip--phone-compare");
+    fillItemTooltip(card, item, {
+      caption,
+      showSellPrice: true,
+      showIcon: true,
+      equippedSlot,
+    });
+    mountPhonePeekPanel([card]);
+  };
+
+  const mountPhonePeekCompareFromBag = (item: ItemDef): void => {
+    if (!hero) return;
+    const cards = buildItemCompareCards(item, hero.equipment, {
+      tipClass: "inv-compare-tip item-tip--phone-compare",
+      itemCaption: "В сумке",
+      showItemSellPrice: true,
+      showEquippedSellPrice: true,
+      itemSide: "right",
+    });
+    mountPhonePeekPanel(cards);
   };
 
   const mountPhoneComparePanel = (cards: HTMLElement[], invIndex: number, item: ItemDef): void => {
@@ -325,8 +342,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
     const canCompare = compareEquipSlotsFor(item).length > 0;
     if (!canCompare) {
       hideCompare();
-      fillItemTooltip(tip, item);
-      placeTip(cell);
+      if (isHubPhoneUi()) {
+        mountPhoneItemPreviewPanel(item, "В сумке");
+      } else {
+        fillItemTooltip(tip, item);
+        placeTip(cell);
+      }
       return;
     }
     tip.hidden = true;
@@ -401,7 +422,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const openMobileEquipMenu = (slot: EquipSlotId, item: ItemDef): void => {
     if (!hero) return;
     const unit = hero;
-    hideCompare();
+    if (!isHubPhoneUi() || compare.classList.contains("inv-compare--full")) {
+      hideCompare();
+    }
     tip.hidden = true;
     itemActionsTitle.textContent = item.name;
     itemActionsBtns.replaceChildren();
@@ -474,20 +497,18 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (!compare.hidden && compare.classList.contains("inv-compare--full")) return;
     const live = hero.inventory[index];
     if (!live) return;
-    if (compare.classList.contains("inv-compare--peek")) {
-      hideCompare();
+    hideCompare();
+    if (compareEquipSlotsFor(live).length > 0) {
+      mountPhonePeekCompareFromBag(live);
+    } else {
+      mountPhoneItemPreviewPanel(live, "В сумке");
     }
-    mountPhoneItemPreviewPanel(live);
     openMobileItemMenu(index, live);
   };
 
   const handlePhoneItemActivate = (target: EventTarget | null): void => {
     if (!isHubPhoneUi() || suppressClick || itemDrag.isActive() || !hero) return;
-    if (!itemActionsOverlay.hidden) return;
-    if (!compare.hidden) {
-      hideCompare();
-      return;
-    }
+    if (!compare.hidden && compare.classList.contains("inv-compare--full")) return;
     const hit = resolveFilledSource(target);
     if (!hit) return;
     if (hit.source.kind === "inv") {
@@ -496,6 +517,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (hit.source.kind === "equip") {
       const characterRoot = document.getElementById("character");
       if (!characterRoot || characterRoot.hidden) return;
+      hideCompare();
+      mountPhoneItemPreviewPanel(hit.item, "Экипировано", hit.source.slot);
       openMobileEquipMenu(hit.source.slot, hit.item);
     }
   };
