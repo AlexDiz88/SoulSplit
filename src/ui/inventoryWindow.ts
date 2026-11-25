@@ -61,6 +61,8 @@ export interface InventoryWindowApi {
 
 const DRAG_THRESHOLD = 5;
 const PHONE_INV_LONG_PRESS_MS = 520;
+/** После long-press не закрывать compare «хвостовым» кликом при отпускании пальца. */
+const PHONE_SUPPRESS_CLICK_AFTER_LONG_MS = 900;
 const PHONE_DRAG_THRESHOLD = 22;
 /** Пока ждём long-press на сравнение, палец почти не двигается — порог выше, чем у drag. */
 const PHONE_LONG_PRESS_CANCEL_DRAG = 28;
@@ -246,8 +248,25 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const hideCompare = (): void => {
     compare.hidden = true;
-    compare.classList.remove("inv-compare--phone");
+    compare.classList.remove("inv-compare--phone", "inv-compare--peek", "inv-compare--full");
     compare.replaceChildren();
+  };
+
+  const mountPhoneItemPreviewPanel = (item: ItemDef): void => {
+    const card = el("div", "item-tip inv-compare-tip item-tip--phone-compare");
+    fillItemTooltip(card, item, {
+      caption: "В сумке",
+      showSellPrice: true,
+      showIcon: true,
+    });
+    const cardsHost = el("div", "inv-compare-phone-cards");
+    cardsHost.append(card);
+    compare.replaceChildren(cardsHost);
+    compare.classList.add("inv-compare--phone", "inv-compare--peek");
+    compare.classList.remove("inv-compare--full");
+    compare.hidden = false;
+    compare.style.removeProperty("left");
+    compare.style.removeProperty("top");
   };
 
   const mountPhoneComparePanel = (cards: HTMLElement[], invIndex: number, item: ItemDef): void => {
@@ -273,7 +292,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
     });
     actions.append(btnEquip, btnClose);
     compare.replaceChildren(cardsHost, actions);
-    compare.classList.add("inv-compare--phone");
+    compare.classList.add("inv-compare--phone", "inv-compare--full");
+    compare.classList.remove("inv-compare--peek");
     compare.hidden = false;
     compare.style.removeProperty("left");
     compare.style.removeProperty("top");
@@ -282,6 +302,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const closeMobileItemMenu = (): void => {
     itemActionsOverlay.hidden = true;
     itemActionsBtns.replaceChildren();
+    if (isHubPhoneUi() && compare.classList.contains("inv-compare--peek")) {
+      hideCompare();
+    }
   };
 
   const hideTips = (): void => {
@@ -405,7 +428,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (!hero) return;
     const unit = hero;
     const returnLoot = onLootReturn;
-    hideCompare();
+    if (!isHubPhoneUi() || compare.classList.contains("inv-compare--full")) {
+      hideCompare();
+    }
     tip.hidden = true;
     itemActionsTitle.textContent = item.name;
     itemActionsBtns.replaceChildren();
@@ -446,13 +471,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
   /** Тап по ячейке сумки на телефоне - сразу меню действий. */
   const handlePhoneBagTap = (index: number, _item: ItemDef): void => {
     if (!hero || overlay.hidden) return;
-    if (!itemActionsOverlay.hidden) return;
-    if (!compare.hidden) {
-      hideCompare();
-      return;
-    }
+    if (!compare.hidden && compare.classList.contains("inv-compare--full")) return;
     const live = hero.inventory[index];
     if (!live) return;
+    if (compare.classList.contains("inv-compare--peek")) {
+      hideCompare();
+    }
+    mountPhoneItemPreviewPanel(live);
     openMobileItemMenu(index, live);
   };
 
@@ -487,7 +512,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       suppressClick = true;
       window.setTimeout(() => {
         suppressClick = false;
-      }, 400);
+      }, PHONE_SUPPRESS_CLICK_AFTER_LONG_MS);
     }, PHONE_INV_LONG_PRESS_MS);
   };
 

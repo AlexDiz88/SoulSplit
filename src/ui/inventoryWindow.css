@@ -445,8 +445,26 @@
     touch-action: none;
   }
 
-  .inv-compare:not([hidden]),
-  .inv-compare.inv-compare--phone {
+  .inv-compare.inv-compare--peek:not([hidden]) {
+    left: 50% !important;
+    right: auto !important;
+    top: auto !important;
+    bottom: calc(210px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    height: auto;
+    max-height: min(48dvh, 400px);
+    width: min(94vw, 420px);
+    z-index: 97;
+    padding: 0;
+    overflow: hidden;
+    pointer-events: none;
+    border: 1px solid #6a5a3a;
+    border-radius: 8px;
+    background: rgba(8, 10, 12, 0.98);
+    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+  }
+
+  .inv-compare.inv-compare--phone.inv-compare--full:not([hidden]) {
     left: 50% !important;
     right: auto !important;
     top: 50% !important;
