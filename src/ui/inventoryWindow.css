@@ -587,13 +587,17 @@
     text-align: left;
     pointer-events: auto;
     display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1px;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    align-content: flex-start;
+    column-gap: 4px;
+    row-gap: 2px;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-caption {
-    order: 1;
+    flex: 0 0 100%;
+    width: 100%;
     margin: 0 0 1px;
     font-size: 0.58rem;
     font-weight: 800;
@@ -605,8 +609,19 @@
     text-overflow: ellipsis;
   }
 
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
+    flex: 0 0 38px;
+    display: block;
+    width: 38px;
+    height: 38px;
+    margin: 0;
+    flex-shrink: 0;
+    align-self: center;
+  }
+
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
-    order: 2;
+    flex: 1 1 auto;
+    min-width: 0;
     font-size: 0.7rem;
     line-height: 1.1;
     text-align: left;
@@ -616,7 +631,8 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub {
-    order: 3;
+    flex: 0 1 auto;
+    min-width: 0;
     margin: 0;
     font-size: 0.58rem;
     line-height: 1.1;
@@ -627,18 +643,15 @@
     text-overflow: ellipsis;
   }
 
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
-    order: 4;
-    display: block;
-    align-self: center;
-    width: 38px;
-    height: 38px;
-    margin: 3px 0 2px;
-    flex-shrink: 0;
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub::before {
+    content: "·";
+    margin: 0 0.2em;
+    color: #6a6a6a;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule {
-    order: 5;
+    flex: 0 0 100%;
+    width: 100%;
     margin: 2px 0;
     opacity: 0.55;
     flex-shrink: 0;
@@ -646,7 +659,8 @@
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affixes {
-    order: 6;
+    flex: 0 0 100%;
+    width: 100%;
     align-items: flex-start;
     text-align: left;
     width: 100%;
@@ -674,7 +688,8 @@
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-offhand-penalty,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note {
-    order: 6;
+    flex: 0 0 100%;
+    width: 100%;
     margin-top: 2px;
     font-size: clamp(0.48rem, 2.1vw, 0.54rem);
     line-height: 1.12;
@@ -690,7 +705,8 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer {
-    order: 10;
+    flex: 0 0 100%;
+    width: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
