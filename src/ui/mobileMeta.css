@@ -118,24 +118,42 @@
   }
 
   .hub-tools {
+    --hub-tools-size: 40px;
     top: calc(6px + env(safe-area-inset-top));
     right: 8px;
     left: 8px;
-    justify-content: flex-end;
-    flex-wrap: wrap;
+    justify-content: flex-start;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 6px;
     max-width: none;
+    height: var(--hub-tools-size);
   }
 
   .hub-clock {
-    font-size: 0.82rem;
-    padding: 6px 10px;
+    box-sizing: border-box;
+    margin-right: auto;
+    height: var(--hub-tools-size);
     min-width: 3.8rem;
+    padding: 0 10px;
+    display: grid;
+    place-items: center;
+    font-size: 0.82rem;
+    flex: 0 0 auto;
+  }
+
+  .hub-tools .hub-round-btn,
+  .hub-tools .hub-menu-wrap {
+    flex: 0 0 auto;
   }
 
   .hub-round-btn {
-    width: 44px;
-    height: 44px;
+    width: var(--hub-tools-size);
+    height: var(--hub-tools-size);
+  }
+
+  .hub-menu-btn span {
+    width: 16px;
   }
 
   /* Герой на карте мира (в #hud): над нижним доком по фактической высоте. */
@@ -443,27 +461,21 @@
     font-size: 0.9rem;
   }
 
+  /* Второй ряд: под всей полосой часов+кнопок, с зазором. */
   .global-effects-hud {
-    top: calc(48px + env(safe-area-inset-top));
+    top: calc(6px + 40px + 20px + env(safe-area-inset-top));
     left: 8px;
     max-width: calc(100vw - 16px);
     gap: 6px;
   }
 
   .global-effect-icon {
-    width: 44px;
-    height: 44px;
+    width: 40px;
+    height: 40px;
   }
 
   .quest-side {
-    top: calc(48px + env(safe-area-inset-top));
-    right: 8px;
-    width: min(200px, calc(100vw - 16px));
-    max-height: 26dvh;
-  }
-
-  .quest-tracker {
-    max-height: 26dvh;
+    display: none !important;
   }
 
   .battle-banner {

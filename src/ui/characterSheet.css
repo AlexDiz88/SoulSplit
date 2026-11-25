@@ -249,11 +249,13 @@
   gap: 14px;
   width: 100%;
   padding: 0 5px;
+  text-align: center;
 }
 
 .cs-identity-portrait {
   position: relative;
   flex: none;
+  order: -1;
   width: 236px;
   height: 236px;
   padding: 3px;
@@ -281,23 +283,16 @@
   background-clip: content-box, border-box;
 }
 
-.cs-identity-copy {
-  min-width: 0;
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  text-align: center;
-}
-
 .cs-identity-name {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   font-size: 1.35rem;
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   line-height: 1.15;
+  overflow-wrap: anywhere;
   background: linear-gradient(180deg, #f4dfa2, #b08a48);
   -webkit-background-clip: text;
   background-clip: text;
@@ -688,8 +683,11 @@
   }
 
   .cs-body {
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 30%) minmax(0, 70%);
+    grid-template-rows: auto auto;
     align-content: start;
+    align-items: start;
+    gap: 12px 10px;
     overflow: auto;
   }
 
@@ -701,46 +699,45 @@
   }
 
   .cs-identity-host {
-    padding-right: 0;
-    padding-bottom: 10px;
+    grid-column: 1;
+    grid-row: 1;
+    padding: 0;
+    align-self: start;
   }
 
   .cs-identity-host::after {
-    top: auto;
-    bottom: 0;
-    left: 8%;
-    right: 8%;
-    width: auto;
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent 0%,
-      rgba(196, 163, 90, 0.12) 18%,
-      rgba(236, 208, 138, 0.55) 50%,
-      rgba(196, 163, 90, 0.12) 82%,
-      transparent 100%
-    );
+    display: none;
+  }
+
+  .cs-doll-wrap {
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0;
+    align-self: start;
+    place-items: start center;
+  }
+
+  .cs-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
   }
 
   .cs-identity {
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
-    padding: 4px 2px;
+    gap: 8px;
+    padding: 2px 0;
   }
 
   .cs-identity-portrait {
-    width: 72px;
-    height: 72px;
-  }
-
-  .cs-identity-copy {
-    align-items: flex-start;
-    text-align: left;
+    order: 0;
+    width: 96px;
+    height: 96px;
   }
 
   .cs-identity-name {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
+    letter-spacing: 0.06em;
   }
 
   .cs-doll {
@@ -748,11 +745,25 @@
   }
 
   .cs-doll-body {
-    gap: 16px 24px;
+    gap: 12px 14px;
   }
 
   .cs-doll-hands {
-    gap: 20px;
+    gap: 16px;
+  }
+
+  .cs-slot-hand {
+    width: calc(var(--slot) * 1.25);
+    height: calc(var(--slot) * 1.25);
+  }
+
+  .cs-overlay.cs-mode-gear .cs-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cs-overlay.cs-mode-gear .cs-doll-wrap {
+    grid-column: 1;
+    place-items: center;
   }
 }
 
@@ -886,17 +897,21 @@
   .cs-body {
     flex: 1 1 auto;
     min-height: 0;
-    grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(0, 1fr);
-    gap: 10px;
+    grid-template-columns: minmax(0, 30%) minmax(0, 70%);
+    grid-template-rows: auto auto;
+    gap: 8px 8px;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     align-content: start;
+    align-items: start;
   }
 
   .cs-identity-host {
+    grid-column: 1;
+    grid-row: 1;
     padding: 0;
+    align-self: start;
   }
 
   .cs-identity-host::after {
@@ -904,35 +919,47 @@
   }
 
   .cs-identity {
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: 12px;
+    gap: 6px;
     padding: 0;
   }
 
   .cs-identity-portrait {
-    width: 80px;
-    height: 80px;
-  }
-
-  .cs-identity-copy {
-    align-items: flex-start;
-    text-align: left;
+    order: 0;
+    width: min(88px, 100%);
+    height: auto;
+    aspect-ratio: 1;
   }
 
   .cs-identity-name {
-    font-size: 1.05rem;
-    letter-spacing: 0.06em;
+    font-size: 0.95rem;
+    letter-spacing: 0.05em;
     overflow-wrap: anywhere;
   }
 
   .cs-identity-level {
-    font-size: 0.68rem;
-    margin-top: 2px;
+    font-size: 0.62rem;
+    margin-top: 0;
+    padding: 2px 8px;
+    letter-spacing: 0.1em;
   }
 
   .cs-doll-wrap {
-    padding: 4px 0 8px;
+    grid-column: 2;
+    grid-row: 1;
+    padding: 0 0 6px;
+    overflow: visible;
+    align-self: start;
+    place-items: start center;
+  }
+
+  .cs-stats {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    padding: 10px 12px;
+    gap: 10px;
+    margin: 0;
     overflow: visible;
   }
 
@@ -951,6 +978,15 @@
     height: calc(var(--slot) * 1.2);
   }
 
+  .cs-overlay.cs-mode-gear .cs-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cs-overlay.cs-mode-gear .cs-doll-wrap {
+    grid-column: 1;
+    place-items: center;
+  }
+
   .cs-belt {
     flex-wrap: wrap;
     width: 100%;
@@ -964,13 +1000,6 @@
     flex: 1 1 100%;
     text-align: center;
     font-size: 0.68rem;
-  }
-
-  .cs-stats {
-    padding: 10px 12px;
-    gap: 10px;
-    margin: 0;
-    overflow: visible;
   }
 
   .cs-stat {

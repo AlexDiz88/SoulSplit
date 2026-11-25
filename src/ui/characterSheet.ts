@@ -375,6 +375,8 @@ export function mountCharacterSheet(onOpen: () => void): CharacterSheetApi {
 
 function renderIdentity(hero: Unit | null, aspectTip: HTMLElement): HTMLElement {
   const plate = el("div", "cs-identity");
+  plate.append(el("h3", "cs-identity-name", hero?.name ?? "Герой"));
+
   const portrait = el("div", "cs-identity-portrait");
   if (hero?.portraitUrl) {
     const img = document.createElement("img");
@@ -382,19 +384,18 @@ function renderIdentity(hero: Unit | null, aspectTip: HTMLElement): HTMLElement 
     img.alt = hero.name;
     portrait.append(img);
   }
-  const copy = el("div", "cs-identity-copy");
-  copy.append(el("h3", "cs-identity-name", hero?.name ?? "Герой"));
+  plate.append(portrait);
+
   if (hero) {
     const meta = el("div", "cs-identity-meta cs-identity-aspect");
     const hit = createAspectIconHit(hero.aspect, "aspect-icon-md", "cs-aspect-hit aspect-icon-hit");
     wireAspectNameTooltip(hit, hero.aspect, aspectTip);
     meta.append(hit);
-    copy.append(meta);
+    plate.append(meta);
   } else {
-    copy.append(el("div", "cs-identity-meta", "Нет данных"));
+    plate.append(el("div", "cs-identity-meta", "Нет данных"));
   }
-  copy.append(el("div", "cs-identity-level", `Уровень ${hero?.level ?? 1}`));
-  plate.append(portrait, copy);
+  plate.append(el("div", "cs-identity-level", `Уровень ${hero?.level ?? 1}`));
   return plate;
 }
 
