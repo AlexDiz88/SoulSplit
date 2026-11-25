@@ -64,8 +64,6 @@ const PHONE_INV_LONG_PRESS_MS = 520;
 const PHONE_DRAG_THRESHOLD = 22;
 /** Пока ждём long-press на сравнение, палец почти не двигается — порог выше, чем у drag. */
 const PHONE_LONG_PRESS_CANCEL_DRAG = 28;
-const PHONE_DOUBLE_TAP_MS = 480;
-
 /** Компактная сумка 5×5 - отдельное окно справа внизу, рядом с листом персонажа. */
 export function mountInventoryWindow(): InventoryWindowApi {
   const hud = document.getElementById("hud")!;
@@ -149,12 +147,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   /** После drag не закрывать окно персонажа кликом по оверлею. */
   let suppressClick = false;
   let longPressTimer: ReturnType<typeof window.setTimeout> | null = null;
-  /** Отложенное меню по одиночному тапу; сбрасывается при double-tap «Одеть». */
-  let phoneBagTap: {
-    index: number;
-    at: number;
-    timer: ReturnType<typeof window.setTimeout>;
-  } | null = null;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -251,12 +243,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
     }
   };
 
-  const clearPhoneBagTap = (): void => {
-    if (phoneBagTap) {
-      window.clearTimeout(phoneBagTap.timer);
-      phoneBagTap = null;
-    }
-  };
 
   const hideCompare = (): void => {
     compare.hidden = true;
@@ -294,7 +280,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const closeMobileItemMenu = (): void => {
-    clearPhoneBagTap();
     itemActionsOverlay.hidden = true;
     itemActionsBtns.replaceChildren();
   };
@@ -327,6 +312,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       tipClass: phone ? "inv-compare-tip item-tip--phone-compare" : "inv-compare-tip",
       itemCaption: "В сумке",
       showItemSellPrice: true,
+      showEquippedSellPrice: true,
       itemSide: "right",
     });
     if (phone) {
@@ -457,36 +443,17 @@ export function mountInventoryWindow(): InventoryWindowApi {
     itemActionsOverlay.hidden = false;
   };
 
-  /** Одиночный / двойной тап по ячейке сумки (только телефон, срабатывает на pointerup). */
-  const handlePhoneBagTap = (index: number, item: ItemDef): void => {
+  /** Тап по ячейке сумки на телефоне - сразу меню действий. */
+  const handlePhoneBagTap = (index: number, _item: ItemDef): void => {
     if (!hero || overlay.hidden) return;
     if (!itemActionsOverlay.hidden) return;
     if (!compare.hidden) {
       hideCompare();
       return;
     }
-    const now = performance.now();
-    if (
-      phoneBagTap &&
-      phoneBagTap.index === index &&
-      now - phoneBagTap.at < PHONE_DOUBLE_TAP_MS
-    ) {
-      clearPhoneBagTap();
-      tryEquipRmb(index);
-      return;
-    }
-    clearPhoneBagTap();
-    const tapAt = now;
-    const itemId = item.id;
-    const timer = window.setTimeout(() => {
-      phoneBagTap = null;
-      if (overlay.hidden || !hero) return;
-      if (!itemActionsOverlay.hidden) return;
-      const live = hero.inventory[index];
-      if (!live || live.id !== itemId) return;
-      openMobileItemMenu(index, live);
-    }, PHONE_DOUBLE_TAP_MS);
-    phoneBagTap = { index, at: tapAt, timer };
+    const live = hero.inventory[index];
+    if (!live) return;
+    openMobileItemMenu(index, live);
   };
 
   const handlePhoneItemActivate = (target: EventTarget | null): void => {
@@ -515,7 +482,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       longPressTimer = null;
       if (!pending || pending.el !== cell) return;
       closeMobileItemMenu();
-      clearPhoneBagTap();
       showBagCompareForCell(cell, clientX, clientY);
       pending = null;
       suppressClick = true;
@@ -548,7 +514,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const cancelDrag = (): void => {
     clearLongPressTimer();
-    clearPhoneBagTap();
     pending = null;
     itemDrag.cancel();
     clearDropHighlight();
