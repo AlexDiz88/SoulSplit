@@ -521,9 +521,36 @@
     box-sizing: border-box;
   }
 
-  .inv-compare-phone-cards > .item-tip--phone-compare + .item-tip--phone-compare,
+  .inv-compare-phone-cards:not(.inv-compare-phone-cards--triple)
+    > .item-tip--phone-compare
+    + .item-tip--phone-compare,
   .inv-compare-phone-cards > .inv-compare-phone-equip-stack {
     border-left: 1px solid rgba(106, 90, 58, 0.45);
+  }
+
+  /* Два оружия: сумка слева только по высоте нижней карточки экипа. */
+  .inv-compare-phone-cards--triple {
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    height: 100%;
+    min-height: 0;
+  }
+
+  .inv-compare.inv-compare--peek .inv-compare-phone-cards--triple {
+    height: min(40dvh, 320px);
+  }
+
+  .inv-compare-phone-cards--triple > .item-tip--phone-compare {
+    grid-column: 1;
+    grid-row: 2;
+    align-self: stretch;
+    max-height: none;
+  }
+
+  .inv-compare-phone-cards--triple > .inv-compare-phone-equip-stack {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    align-self: stretch;
+    height: 100%;
   }
 
   .inv-compare-phone-equip-stack {
