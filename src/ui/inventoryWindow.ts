@@ -122,9 +122,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const itemActionsOverlay = el("div", "inv-item-actions-overlay");
   itemActionsOverlay.hidden = true;
   const itemActionsPanel = el("div", "inv-item-actions-panel");
-  const itemActionsTitle = el("h3", "inv-item-actions-title");
   const itemActionsBtns = el("div", "inv-item-actions-btns");
-  itemActionsPanel.append(itemActionsTitle, itemActionsBtns);
+  itemActionsPanel.append(itemActionsBtns);
   itemActionsOverlay.append(itemActionsPanel);
   hud.append(itemActionsOverlay);
 
@@ -252,17 +251,10 @@ export function mountInventoryWindow(): InventoryWindowApi {
     compare.replaceChildren();
   };
 
+  /** На телефоне карточки всегда столбиком: экип сверху, предмет из сумки снизу. */
   const layoutPhoneCompareCards = (cards: HTMLElement[]): HTMLElement => {
     const cardsHost = el("div", "inv-compare-phone-cards");
-    if (cards.length === 3) {
-      cardsHost.classList.add("inv-compare-phone-cards--triple");
-      const bagCard = cards[cards.length - 1]!;
-      const equipStack = el("div", "inv-compare-phone-equip-stack");
-      equipStack.append(cards[0]!, cards[1]!);
-      cardsHost.append(bagCard, equipStack);
-    } else {
-      cardsHost.append(...cards);
-    }
+    cardsHost.append(...cards);
     return cardsHost;
   };
 
@@ -437,7 +429,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       hideCompare();
     }
     tip.hidden = true;
-    itemActionsTitle.textContent = item.name;
     itemActionsBtns.replaceChildren();
     addMobileActionBtn("Снять", () => {
       if (!canChangeEquipment()) {
@@ -466,7 +457,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       hideCompare();
     }
     tip.hidden = true;
-    itemActionsTitle.textContent = item.name;
     itemActionsBtns.replaceChildren();
 
     if (returnLoot) {
@@ -487,15 +477,15 @@ export function mountInventoryWindow(): InventoryWindowApi {
       }
     } else {
       addMobileActionBtn(isPotionItem(item) ? "На пояс" : "Одеть", () => tryEquipRmb(index));
-      addMobileActionBtn("Выбросить", () => {
-        openDestroyConfirm({ kind: "inv", index }, item);
-      }, true);
       if (compareEquipSlotsFor(item).length > 0) {
         const cell = gridHost.querySelector<HTMLElement>(`.inv-cell[data-inv="${index}"]`);
         addMobileActionBtn("Сравнить", () => {
           if (cell) showBagCompareForCell(cell, 0, 0);
         });
       }
+      addMobileActionBtn("Выбросить", () => {
+        openDestroyConfirm({ kind: "inv", index }, item);
+      }, true);
     }
 
     addMobileActionBtn("Отмена", () => closeMobileItemMenu());

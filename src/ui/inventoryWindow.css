@@ -446,40 +446,43 @@
   }
 
   .inv-compare.inv-compare--peek:not([hidden]) {
-    left: 1px !important;
-    right: 1px !important;
+    left: 50% !important;
+    right: auto !important;
     top: auto !important;
-    bottom: calc(292px + env(safe-area-inset-bottom));
-    width: auto !important;
-    max-width: none;
-    transform: none;
+    bottom: calc(164px + env(safe-area-inset-bottom));
+    width: 70% !important;
+    max-width: 70vw;
+    transform: translateX(-50%);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
     height: auto;
-    max-height: min(40dvh, 320px);
-    border-radius: 4px;
+    max-height: min(52dvh, 440px);
+    border-radius: 8px;
     z-index: 97;
     padding: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     pointer-events: none;
     border: 1px solid #6a5a3a;
-    border-radius: 8px;
     background: rgba(8, 10, 12, 0.98);
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
   }
 
   .inv-compare.inv-compare--phone.inv-compare--full:not([hidden]) {
-    left: 1px !important;
-    right: 1px !important;
+    left: 50% !important;
+    right: auto !important;
     top: 50% !important;
     bottom: auto !important;
-    width: auto !important;
-    max-width: none;
-    transform: translateY(-50%);
+    width: 70% !important;
+    max-width: 70vw;
+    transform: translate(-50%, -50%);
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     box-sizing: border-box;
-    border-radius: 4px;
-    height: 80dvh;
+    height: auto;
     max-height: 80dvh;
     padding: 0;
     overflow: hidden;
@@ -492,112 +495,58 @@
   }
 
   .inv-compare-phone-cards {
-    flex: 1 1 0;
+    flex: 0 1 auto;
     min-height: 0;
     min-width: 0;
     width: 100%;
     margin: 0;
     padding: 0;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    display: flex;
+    flex-direction: column;
     align-items: stretch;
-    overflow: hidden;
-  }
-
-  .inv-compare-phone-cards:has(> .item-tip--phone-compare:only-child) {
-    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .inv-compare.inv-compare--peek .inv-compare-phone-cards {
     flex: 0 0 auto;
-    min-height: 0;
-    max-height: min(40dvh, 320px);
-  }
-
-  .inv-compare-phone-cards > .item-tip--phone-compare {
-    min-width: 0;
-    width: 100%;
-    max-width: none;
-    min-height: 0 !important;
-    max-height: 100%;
-    overflow-x: hidden;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    box-sizing: border-box;
-  }
-
-  .inv-compare-phone-cards:not(.inv-compare-phone-cards--triple)
-    > .item-tip--phone-compare
-    + .item-tip--phone-compare,
-  .inv-compare-phone-cards > .inv-compare-phone-equip-stack {
-    border-left: 1px solid rgba(106, 90, 58, 0.45);
-  }
-
-  /* Два оружия: сумка слева только по высоте нижней карточки экипа. */
-  .inv-compare-phone-cards--triple {
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    height: 100%;
-    min-height: 0;
-  }
-
-  .inv-compare.inv-compare--peek .inv-compare-phone-cards--triple {
-    height: min(40dvh, 320px);
-  }
-
-  .inv-compare-phone-cards--triple > .item-tip--phone-compare {
-    grid-column: 1;
-    grid-row: 2;
-    align-self: stretch;
+    overflow: visible;
     max-height: none;
   }
 
-  .inv-compare-phone-cards--triple > .inv-compare-phone-equip-stack {
-    grid-column: 2;
-    grid-row: 1 / -1;
-    align-self: stretch;
-    height: 100%;
-  }
-
-  .inv-compare-phone-equip-stack {
+  .inv-compare-phone-cards > .item-tip--phone-compare {
+    flex: 0 0 auto;
     min-width: 0;
     width: 100%;
-    min-height: 0;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
-    overflow: hidden;
-  }
-
-  .inv-compare-phone-equip-stack .item-tip--phone-compare {
-    width: 100%;
     max-width: none;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .inv-compare-phone-equip-stack .item-tip--phone-compare + .item-tip--phone-compare {
-    border-top: 1px solid rgba(106, 90, 58, 0.45);
+    height: auto;
+    min-height: auto !important;
+    overflow: visible;
+    box-sizing: border-box;
   }
 
   .inv-compare-phone-actions {
     flex: 0 0 auto;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px;
-    padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+    gap: 6px;
+    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
     border-top: 1px solid rgba(106, 90, 58, 0.55);
     background: linear-gradient(180deg, #141618, #0a0b0c);
   }
 
   .inv-compare-phone-btn {
-    min-height: 44px;
+    min-height: 38px;
     margin: 0;
-    padding: 10px 12px;
+    padding: 8px 10px;
     border: 1px solid #6a5a3a;
     border-radius: 4px;
     background: linear-gradient(180deg, #2a2c2e, #161718);
     color: #e8e2d4;
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: 800;
     cursor: var(--cur-default);
   }
@@ -610,13 +559,14 @@
 
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion),
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare.empty {
-    --tip-icon: 38px;
+    --tip-icon: 48px;
     min-width: 0 !important;
-    min-height: 0 !important;
+    min-height: auto !important;
+    height: auto !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    padding: 4px 5px 5px;
+    padding: 8px 10px 9px;
     text-align: left;
     pointer-events: auto;
     display: flex;
@@ -624,15 +574,15 @@
     flex-wrap: wrap;
     align-items: center;
     align-content: flex-start;
-    column-gap: 4px;
-    row-gap: 2px;
+    column-gap: 8px;
+    row-gap: 3px;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-caption {
     flex: 0 0 100%;
     width: 100%;
-    margin: 0 0 1px;
-    font-size: 0.58rem;
+    margin: 0 0 3px;
+    font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-align: left;
@@ -643,10 +593,10 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
-    flex: 0 0 38px;
+    flex: 0 0 48px;
     display: block;
-    width: 38px;
-    height: 38px;
+    width: 48px;
+    height: 48px;
     margin: 0;
     flex-shrink: 0;
     align-self: center;
@@ -655,8 +605,8 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: 0.7rem;
-    line-height: 1.1;
+    font-size: 1rem;
+    line-height: 1.2;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -667,8 +617,8 @@
     flex: 0 1 auto;
     min-width: 0;
     margin: 0;
-    font-size: 0.58rem;
-    line-height: 1.1;
+    font-size: 0.8rem;
+    line-height: 1.2;
     text-align: left;
     color: #9a9a9a;
     white-space: nowrap;
@@ -685,7 +635,7 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule {
     flex: 0 0 100%;
     width: 100%;
-    margin: 2px 0;
+    margin: 4px 0;
     opacity: 0.55;
     flex-shrink: 0;
   }
@@ -696,9 +646,8 @@
     width: 100%;
     align-items: flex-start;
     text-align: left;
-    width: 100%;
     min-width: 0;
-    gap: 0;
+    gap: 2px;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-stat,
@@ -706,8 +655,8 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affix,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-dps,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-line {
-    font-size: clamp(0.5rem, 2.25vw, 0.56rem);
-    line-height: 1.14;
+    font-size: clamp(0.84rem, 3.4vw, 0.96rem);
+    line-height: 1.25;
     text-align: left;
     white-space: nowrap;
     overflow: hidden;
@@ -723,9 +672,9 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note {
     flex: 0 0 100%;
     width: 100%;
-    margin-top: 2px;
-    font-size: clamp(0.48rem, 2.1vw, 0.54rem);
-    line-height: 1.12;
+    margin-top: 3px;
+    font-size: clamp(0.78rem, 3.1vw, 0.9rem);
+    line-height: 1.22;
     text-align: left;
     max-width: 100%;
     white-space: nowrap;
@@ -734,7 +683,7 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-tier-meta {
-    font-size: 0.5rem;
+    font-size: 0.78rem;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer {
@@ -745,17 +694,16 @@
     flex-wrap: nowrap;
     align-items: flex-end;
     justify-content: space-between;
-    gap: 4px;
-    width: 100%;
+    gap: 6px;
     margin-top: auto;
-    padding-top: 2px;
+    padding-top: 4px;
     min-width: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-level {
     flex: 1 1 auto;
     min-width: 0;
-    font-size: clamp(0.48rem, 2vw, 0.52rem);
+    font-size: clamp(0.76rem, 3vw, 0.86rem);
     font-weight: 600;
     color: #7a7a7a;
     text-align: left;
@@ -768,7 +716,7 @@
     flex: 0 1 auto;
     min-width: 0;
     margin-left: auto;
-    font-size: clamp(0.48rem, 2vw, 0.52rem);
+    font-size: clamp(0.76rem, 3vw, 0.86rem);
     font-weight: 700;
     text-align: right;
     white-space: nowrap;
@@ -778,17 +726,16 @@
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-coin-icon,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-amount {
-    transform: scale(0.85);
-    transform-origin: right center;
+    transform: none;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-name {
     flex: 1 1 auto;
     min-width: 0;
     margin: 0;
-    font-size: 0.7rem;
+    font-size: 1rem;
     font-weight: 800;
-    line-height: 1.1;
+    line-height: 1.2;
     color: #c8c2b2;
     white-space: nowrap;
     overflow: hidden;
@@ -800,9 +747,9 @@
     flex: 0 1 auto;
     min-width: 0;
     margin: 0;
-    font-size: 0.58rem;
+    font-size: 0.8rem;
     font-weight: 600;
-    line-height: 1.1;
+    line-height: 1.2;
     color: #9a9a9a;
     white-space: nowrap;
     overflow: hidden;
@@ -840,7 +787,7 @@
   .inv-item-actions-panel {
     box-sizing: border-box;
     width: min(94vw, 360px);
-    padding: 14px 14px 12px;
+    padding: 10px;
     border: 1px solid #6a5a3a;
     border-radius: 6px;
     background:
@@ -849,33 +796,23 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
   }
 
-  .inv-item-actions-title {
-    margin: 0 0 10px;
-    font-size: 0.95rem;
-    font-weight: 800;
-    text-align: center;
-    color: #e8d9a8;
-    overflow-wrap: anywhere;
-    line-height: 1.25;
-  }
-
   .inv-item-actions-btns {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
   }
 
   .inv-item-action-btn {
     width: 100%;
-    min-height: 44px;
+    min-height: 46px;
     margin: 0;
-    padding: 10px 14px;
+    padding: 11px 10px;
     border: 1px solid #6a5a3a;
     border-radius: 4px;
     background: linear-gradient(180deg, #2a2c2e, #161718);
     color: #e8e2d4;
     font: inherit;
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 800;
     cursor: var(--cur-default);
   }
