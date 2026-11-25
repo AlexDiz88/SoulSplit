@@ -446,14 +446,16 @@
   }
 
   .inv-compare.inv-compare--peek:not([hidden]) {
-    left: 50% !important;
-    right: auto !important;
+    left: 1px !important;
+    right: 1px !important;
     top: auto !important;
     bottom: calc(292px + env(safe-area-inset-bottom));
-    transform: translateX(-50%);
+    width: auto !important;
+    max-width: none;
+    transform: none;
     height: auto;
     max-height: min(40dvh, 320px);
-    width: min(92vw, 380px);
+    border-radius: 4px;
     z-index: 97;
     padding: 0;
     overflow: hidden;
@@ -465,17 +467,18 @@
   }
 
   .inv-compare.inv-compare--phone.inv-compare--full:not([hidden]) {
-    left: 50% !important;
-    right: auto !important;
+    left: 1px !important;
+    right: 1px !important;
     top: 50% !important;
     bottom: auto !important;
-    transform: translate(-50%, -50%);
+    width: auto !important;
+    max-width: none;
+    transform: translateY(-50%);
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     box-sizing: border-box;
-    width: min(92vw, 380px);
-    max-width: min(92vw, 380px);
+    border-radius: 4px;
     height: 80dvh;
     max-height: 80dvh;
     padding: 0;
@@ -493,6 +496,8 @@
     min-height: 0;
     min-width: 0;
     width: 100%;
+    margin: 0;
+    padding: 0;
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
