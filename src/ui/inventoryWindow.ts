@@ -155,8 +155,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
     at: number;
     timer: ReturnType<typeof window.setTimeout>;
   } | null = null;
-  /** Короткий тап по сумке (телефон), пока палец не ушёл в drag. */
-  let phoneInvTouch: { index: number; item: ItemDef } | null = null;
 
   const toast = (text: string): void => {
     showToast?.(text);
@@ -518,7 +516,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       if (!pending || pending.el !== cell) return;
       closeMobileItemMenu();
       clearPhoneBagTap();
-      phoneInvTouch = null;
       showBagCompareForCell(cell, clientX, clientY);
       pending = null;
       suppressClick = true;
@@ -552,7 +549,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const cancelDrag = (): void => {
     clearLongPressTimer();
     clearPhoneBagTap();
-    phoneInvTouch = null;
     pending = null;
     itemDrag.cancel();
     clearDropHighlight();
@@ -1063,10 +1059,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       isHubPhoneUi() &&
       !overlay.hidden
     ) {
-      phoneInvTouch = { index: hit.source.index, item: hit.item };
       schedulePhoneLongPress(hit.el, ev.clientX, ev.clientY);
-    } else {
-      phoneInvTouch = null;
     }
   };
 
@@ -1095,7 +1088,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
         : DRAG_THRESHOLD;
       if (dx * dx + dy * dy < dragMin * dragMin) return;
       clearLongPressTimer();
-      phoneInvTouch = null;
       hideTips();
       closeDestroyConfirm();
       itemDrag.begin(pending.item, pending.source, ev.clientX, ev.clientY, pending.el);
@@ -1110,28 +1102,9 @@ export function mountInventoryWindow(): InventoryWindowApi {
   });
 
   window.addEventListener("pointerup", (ev) => {
-    if (
-      ev.button === 0 &&
-      phoneInvTouch &&
-      !itemDrag.isActive() &&
-      isHubPhoneUi() &&
-      !overlay.hidden
-    ) {
-      const touch = phoneInvTouch;
-      phoneInvTouch = null;
-      pending = null;
-      clearLongPressTimer();
-      handlePhoneBagTap(touch.index, touch.item);
-      suppressClick = true;
-      window.setTimeout(() => {
-        suppressClick = false;
-      }, 400);
-      return;
-    }
     if (pending && !itemDrag.isActive()) {
       clearLongPressTimer();
       pending = null;
-      phoneInvTouch = null;
       return;
     }
     if (!itemDrag.isActive()) return;
@@ -1176,7 +1149,12 @@ export function mountInventoryWindow(): InventoryWindowApi {
           const invCell =
             !overlay.hidden &&
             (cellHit as HTMLElement).matches(".inv-cell.filled[data-inv]");
-          if (invCell) {
+          if (invCell && hero) {
+            const index = Number((cellHit as HTMLElement).dataset.inv);
+            if (!Number.isFinite(index)) return;
+            const item = hero.inventory[index];
+            if (!item) return;
+            handlePhoneBagTap(index, item);
             ev.preventDefault();
             ev.stopPropagation();
             return;
