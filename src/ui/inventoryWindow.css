@@ -492,25 +492,27 @@
     flex: 1 1 0;
     min-height: 0;
     min-width: 0;
-    display: flex;
-    flex-direction: row;
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     align-items: stretch;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
+    overflow: hidden;
+  }
+
+  .inv-compare-phone-cards:has(> .item-tip--phone-compare:only-child) {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .inv-compare.inv-compare--peek .inv-compare-phone-cards {
     flex: 0 0 auto;
     min-height: 0;
     max-height: min(40dvh, 320px);
-    overflow: hidden;
   }
 
-  .inv-compare-phone-cards .item-tip--phone-compare {
-    flex: 1 1 50%;
+  .inv-compare-phone-cards > .item-tip--phone-compare {
     min-width: 0;
-    max-width: 50%;
+    width: 100%;
+    max-width: none;
     min-height: 0 !important;
     max-height: 100%;
     overflow-x: hidden;
@@ -519,46 +521,29 @@
     box-sizing: border-box;
   }
 
-  .inv-compare-phone-cards .item-tip--phone-compare:only-child {
-    flex: 1 1 100%;
-    max-width: 100%;
-  }
-
-  .inv-compare-phone-cards > .item-tip--phone-compare + .item-tip--phone-compare {
+  .inv-compare-phone-cards > .item-tip--phone-compare + .item-tip--phone-compare,
+  .inv-compare-phone-cards > .inv-compare-phone-equip-stack {
     border-left: 1px solid rgba(106, 90, 58, 0.45);
-  }
-
-  .inv-compare-phone-cards--triple {
-    flex-direction: row;
-    align-items: stretch;
-  }
-
-  .inv-compare-phone-cards--triple > .item-tip--phone-compare {
-    flex: 1 1 50%;
-    max-width: 50%;
-    border-left: none;
   }
 
   .inv-compare-phone-equip-stack {
-    flex: 1 1 50%;
-    max-width: 50%;
     min-width: 0;
+    width: 100%;
     min-height: 0;
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid rgba(106, 90, 58, 0.45);
+    display: grid;
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    overflow: hidden;
   }
 
   .inv-compare-phone-equip-stack .item-tip--phone-compare {
-    flex: 1 1 50%;
-    max-width: 100%;
+    width: 100%;
+    max-width: none;
     min-height: 0;
     overflow-y: auto;
   }
 
   .inv-compare-phone-equip-stack .item-tip--phone-compare + .item-tip--phone-compare {
     border-top: 1px solid rgba(106, 90, 58, 0.45);
-    border-left: none;
   }
 
   .inv-compare-phone-actions {
@@ -592,110 +577,81 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion) {
-    --tip-icon: 44px;
+    --tip-icon: 38px;
     min-width: 0 !important;
     min-height: 0 !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box;
-    padding: 5px 6px 6px;
+    padding: 4px 5px 5px;
     text-align: left;
     pointer-events: auto;
-    display: grid;
-    grid-template-columns: 44px minmax(0, 1fr);
-    column-gap: 6px;
-    row-gap: 1px;
-    align-content: start;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1px;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-caption {
-    grid-column: 1 / -1;
-    margin: 0 0 2px;
-    font-size: 0.65rem;
+    order: 1;
+    margin: 0 0 1px;
+    font-size: 0.58rem;
     font-weight: 800;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     text-align: left;
     color: #9a8a62;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
+    order: 2;
+    font-size: 0.7rem;
+    line-height: 1.1;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub {
+    order: 3;
+    margin: 0;
+    font-size: 0.58rem;
+    line-height: 1.1;
+    text-align: left;
+    color: #9a9a9a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
+    order: 4;
     display: block;
-    grid-column: 1;
-    grid-row: 2;
-    width: 44px;
-    height: 44px;
-    margin: 0;
-    align-self: start;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
-    grid-column: 2;
-    grid-row: 2;
-    align-self: end;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub {
-    grid-column: 2;
-    grid-row: 3;
-    margin-top: 0;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule,
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base,
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affixes,
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note,
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-offhand-penalty {
-    grid-column: 1 / -1;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer {
-    grid-column: 1 / -1;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    justify-content: space-between;
-    gap: 4px 10px;
-    width: 100%;
-    margin-top: 4px;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-level {
-    flex: 1 1 auto;
-    font-size: 0.62rem;
-    font-weight: 600;
-    color: #7a7a7a;
-    text-align: left;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell {
-    flex: 0 0 auto;
-    margin-left: auto;
-    font-size: 0.62rem;
-    font-weight: 700;
-    text-align: right;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
-    font-size: 0.76rem;
-    line-height: 1.15;
-    text-align: left;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub {
-    font-size: 0.66rem;
-    text-align: left;
+    align-self: center;
+    width: 38px;
+    height: 38px;
+    margin: 3px 0 2px;
+    flex-shrink: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule {
-    margin: 3px 0;
-    opacity: 0.65;
+    order: 5;
+    margin: 2px 0;
+    opacity: 0.55;
+    flex-shrink: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affixes {
+    order: 6;
     align-items: flex-start;
     text-align: left;
+    width: 100%;
+    min-width: 0;
+    gap: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-stat,
@@ -703,27 +659,78 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affix,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-dps,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-line {
-    font-size: 0.64rem;
-    line-height: 1.22;
+    font-size: clamp(0.5rem, 2.25vw, 0.56rem);
+    line-height: 1.14;
     text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-dps {
     margin: 0;
-    font-size: 0.68rem;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-offhand-penalty,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note {
-    margin-top: 3px;
-    font-size: 0.68rem;
-    line-height: 1.25;
+    order: 6;
+    margin-top: 2px;
+    font-size: clamp(0.48rem, 2.1vw, 0.54rem);
+    line-height: 1.12;
     text-align: left;
-    max-width: none;
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-tier-meta {
-    font-size: 0.62rem;
+    font-size: 0.5rem;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer {
+    order: 10;
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 4px;
+    width: 100%;
+    margin-top: auto;
+    padding-top: 2px;
+    min-width: 0;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-level {
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: clamp(0.48rem, 2vw, 0.52rem);
+    font-weight: 600;
+    color: #7a7a7a;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin-left: auto;
+    font-size: clamp(0.48rem, 2vw, 0.52rem);
+    font-weight: 700;
+    text-align: right;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-coin-icon,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-amount {
+    transform: scale(0.85);
+    transform-origin: right center;
   }
 
   .inv-item-actions-overlay {
