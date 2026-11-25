@@ -111,20 +111,18 @@
 }
 
 .tavern-gold {
-  margin-top: 12px;
-  min-height: 1.45em;
-  font-size: 1.25rem;
+  margin-top: 6px;
+  font-size: 1.15rem;
   font-weight: 700;
-  line-height: 1.45;
+  line-height: 1.25;
   color: #e8c76a;
 }
 
 .tavern-clock {
-  margin-top: 4px;
-  min-height: 1.3em;
-  font-size: 1rem;
+  margin-top: 2px;
+  font-size: 0.92rem;
   font-weight: 600;
-  line-height: 1.3;
+  line-height: 1.25;
   color: rgba(200, 190, 160, 0.8);
 }
 
@@ -133,7 +131,7 @@
   flex-wrap: nowrap;
   gap: 8px;
   flex-shrink: 0;
-  padding: 8px 28px 14px;
+  padding: 6px 28px 12px;
   border-bottom: 1px solid rgba(106, 90, 58, 0.55);
 }
 
@@ -824,10 +822,12 @@
 
   .tavern-head {
     flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     padding:
-      calc(10px + env(safe-area-inset-top))
-      44px 6px 12px;
-    gap: 4px;
+      calc(8px + env(safe-area-inset-top))
+      44px 2px 12px;
   }
 
   .tavern-title {
@@ -841,9 +841,16 @@
     margin: 0;
   }
 
-  .tavern-gold-line {
-    font-size: 1rem;
-    margin-top: 4px;
+  .tavern-gold {
+    margin-top: 0;
+    font-size: 0.9rem;
+    line-height: 1.2;
+  }
+
+  .tavern-clock {
+    margin-top: 0;
+    font-size: 0.75rem;
+    line-height: 1.2;
   }
 
   .tavern-x {
@@ -858,7 +865,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 6px;
-    padding: 6px 10px;
+    padding: 4px 10px 8px;
     background: rgba(8, 8, 12, 0.5);
   }
 
@@ -1075,39 +1082,26 @@
     font-size: 0.9rem;
   }
 
+  /* 10 слотов как одна сетка 5×2 по центру (primary + secondary через contents). */
   .tavern-skill-bands {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
-  }
-
-  .tavern-skill-slots {
-    width: 100%;
-    justify-items: center;
-  }
-
-  .tavern-skill-slots-primary {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(5, 46px);
     justify-content: center;
+    align-items: start;
     gap: 8px;
-    grid-template-columns: unset;
   }
 
+  .tavern-skill-slots-primary,
   .tavern-skill-slots-secondary {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 8px;
+    display: contents;
+    grid-template-columns: unset;
     padding-left: 0;
     border-left: 0;
-    grid-template-columns: unset;
   }
 
   .tavern-skill-slot {
     width: 46px;
     height: 46px;
-    flex: 0 0 46px;
   }
 
   .tavern-loadout-actions .tavern-action-btn {
