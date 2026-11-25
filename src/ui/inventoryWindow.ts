@@ -252,10 +252,22 @@ export function mountInventoryWindow(): InventoryWindowApi {
     compare.replaceChildren();
   };
 
-  const mountPhonePeekPanel = (cards: HTMLElement[]): void => {
+  const layoutPhoneCompareCards = (cards: HTMLElement[]): HTMLElement => {
     const cardsHost = el("div", "inv-compare-phone-cards");
-    cardsHost.append(...cards);
-    compare.replaceChildren(cardsHost);
+    if (cards.length === 3) {
+      cardsHost.classList.add("inv-compare-phone-cards--triple");
+      const bagCard = cards[cards.length - 1]!;
+      const equipStack = el("div", "inv-compare-phone-equip-stack");
+      equipStack.append(cards[0]!, cards[1]!);
+      cardsHost.append(bagCard, equipStack);
+    } else {
+      cardsHost.append(...cards);
+    }
+    return cardsHost;
+  };
+
+  const mountPhonePeekPanel = (cards: HTMLElement[]): void => {
+    compare.replaceChildren(layoutPhoneCompareCards(cards));
     compare.classList.add("inv-compare--phone", "inv-compare--peek");
     compare.classList.remove("inv-compare--full");
     compare.hidden = false;
@@ -287,8 +299,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const mountPhoneComparePanel = (cards: HTMLElement[], invIndex: number, item: ItemDef): void => {
-    const cardsHost = el("div", "inv-compare-phone-cards");
-    cardsHost.append(...cards);
+    const cardsHost = layoutPhoneCompareCards(cards);
     const actions = el("div", "inv-compare-phone-actions");
     const btnEquip = el(
       "button",
