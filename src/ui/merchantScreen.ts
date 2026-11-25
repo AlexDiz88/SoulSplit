@@ -128,11 +128,16 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   const headActions = el("div", "market-head-actions");
   const goldLine = el("div", "market-gold");
   goldLine.append(document.createTextNode("Золото: "), goldAmountNode(0));
+  /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
+  const btnRefreshHead = el("button", "market-btn", "Обновить ассортимент") as HTMLButtonElement;
+  btnRefreshHead.type = "button";
+  btnRefreshHead.hidden = !import.meta.env.DEV;
+  btnRefreshHead.setAttribute("aria-label", "Debug: обновить ассортимент");
   const closeBtn = el("button", "market-x");
   closeBtn.type = "button";
   closeBtn.setAttribute("aria-label", "Закрыть");
   closeBtn.innerHTML = '<span aria-hidden="true"></span>';
-  headActions.append(goldLine, closeBtn);
+  headActions.append(goldLine, btnRefreshHead, closeBtn);
   head.append(title, headActions);
 
   const tabs = el("div", "market-tabs");
@@ -159,19 +164,19 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   portraitImg.decoding = "async";
   const portraitMeta = el("div", "market-portrait-meta");
   const portraitName = el("h3", "market-portrait-name");
-  /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
-  const btnRefresh = el("button", "market-portrait-refresh") as HTMLButtonElement;
-  btnRefresh.type = "button";
-  btnRefresh.hidden = !import.meta.env.DEV;
-  btnRefresh.setAttribute("aria-label", "Обновить ассортимент");
-  btnRefresh.innerHTML =
+  /** Компактная иконка только для телефона (на десктопе - текстовая кнопка в шапке). */
+  const btnRefreshIcon = el("button", "market-portrait-refresh") as HTMLButtonElement;
+  btnRefreshIcon.type = "button";
+  btnRefreshIcon.hidden = true;
+  btnRefreshIcon.setAttribute("aria-label", "Обновить ассортимент");
+  btnRefreshIcon.innerHTML =
     '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
     '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
     'd="M20.5 12a8.5 8.5 0 1 1-2.48-6.02"/>' +
     '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
     'd="M20.5 4.5v5h-5"/>' +
     "</svg>";
-  portraitMeta.append(portraitName, btnRefresh);
+  portraitMeta.append(portraitName, btnRefreshIcon);
   portrait.append(portraitImg, portraitMeta);
 
   const goods = el("div", "market-goods");
@@ -458,8 +463,15 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     for (const [mid, btn] of tabBtns) {
       btn.classList.toggle("active", mid === next);
     }
-    btnRefresh.hidden = !import.meta.env.DEV || next === "buyback";
+    syncRefreshButtons(next);
     portrait.classList.toggle("market-portrait-buyback", next === "buyback");
+  }
+
+  function syncRefreshButtons(tab: MarketTabId = activeTab): void {
+    const allowed = Boolean(import.meta.env.DEV) && tab !== "buyback";
+    const phone = isHubPhoneUi();
+    btnRefreshHead.hidden = !allowed || phone;
+    btnRefreshIcon.hidden = !allowed || !phone;
   }
 
   function renderPortrait(): void {
@@ -623,14 +635,16 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     });
   }
 
-  btnRefresh.addEventListener("click", () => {
+  const onRefreshStock = (): void => {
     if (!stateRef || activeTab === "buyback") return;
     clearDetail();
     refreshMarketStock(stateRef);
     handlers.showToast("Ассортимент обновлён");
     handlers.onChanged();
     render();
-  });
+  };
+  btnRefreshHead.addEventListener("click", onRefreshStock);
+  btnRefreshIcon.addEventListener("click", onRefreshStock);
 
   closeBtn.addEventListener("click", () => close());
 
@@ -661,6 +675,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       } else {
         setActiveTab(activeTab);
       }
+      syncRefreshButtons();
       root.hidden = false;
       render();
     },

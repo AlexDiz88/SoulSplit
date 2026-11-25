@@ -539,13 +539,26 @@ export function createBattleHud(onSelectAbility: (id: AbilityId) => void): Battl
     sideMenu.hidden = true;
     menuBtn.setAttribute("aria-expanded", "false");
   };
+  const TOAST_HOLD_MS = 1700;
+  const TOAST_FADE_MS = 320;
+  let toastHidePhase = 0;
+
   const pushToast = (text: string): void => {
-    toast.hidden = false;
-    toast.textContent = text;
     window.clearTimeout(toastTimer);
+    window.clearTimeout(toastHidePhase);
+    toast.textContent = text;
+    toast.hidden = false;
+    toast.classList.remove("toast--show");
+    // Перезапуск fade-in при повторном вызове подряд.
+    void toast.offsetWidth;
+    toast.classList.add("toast--show");
     toastTimer = window.setTimeout(() => {
-      toast.hidden = true;
-    }, 1400);
+      toast.classList.remove("toast--show");
+      toastHidePhase = window.setTimeout(() => {
+        toast.hidden = true;
+        toast.textContent = "";
+      }, TOAST_FADE_MS);
+    }, TOAST_HOLD_MS);
   };
 
   type PanelId = "character" | "item-generator";

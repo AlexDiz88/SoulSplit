@@ -103,6 +103,28 @@
   color: #e8d7a2;
 }
 
+.market-btn {
+  height: 34px;
+  padding: 0 14px;
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #2a2c2e, #161718);
+  color: #e8e2d4;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: var(--cur-default);
+}
+
+.market-btn:hover {
+  border-color: #a08850;
+  color: #f4dfa2;
+}
+
+.market-btn[hidden] {
+  display: none;
+}
+
 .market-x {
   width: 34px;
   height: 34px;
@@ -229,7 +251,7 @@
   align-items: center;
   justify-content: center;
   min-height: calc(1.05rem + 40px);
-  padding: 20px 44px;
+  padding: 20px 12px;
   text-align: center;
   border-top: 1px solid rgba(106, 90, 58, 0.65);
   background: #121314;
@@ -244,37 +266,13 @@
   color: #f4dfa2;
 }
 
+/* Иконка реролла - только телефон; на десктопе текстовая .market-btn в шапке. */
 .market-portrait-refresh {
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  box-sizing: border-box;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  display: grid;
-  place-items: center;
-  border: 1px solid #6a5a3a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #2a2c2e, #161718);
-  color: #e8c76a;
-  cursor: var(--cur-default);
+  display: none;
 }
 
 .market-portrait-refresh[hidden] {
   display: none;
-}
-
-.market-portrait-refresh:hover {
-  border-color: #a08850;
-  color: #f4dfa2;
-}
-
-.market-portrait-refresh svg {
-  width: 18px;
-  height: 18px;
-  display: block;
 }
 
 .market-goods {
@@ -673,6 +671,10 @@
     box-sizing: border-box;
   }
 
+  .market-btn {
+    display: none !important;
+  }
+
   .market-x {
     position: absolute;
     top: calc(8px + env(safe-area-inset-top));
@@ -732,6 +734,7 @@
   }
 
   .market-portrait-meta {
+    position: relative;
     min-height: 0;
     padding: 10px 42px;
   }
@@ -741,14 +744,36 @@
   }
 
   .market-portrait-refresh {
+    position: absolute;
     right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    box-sizing: border-box;
     width: 36px;
     height: 36px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    border: 1px solid #6a5a3a;
+    border-radius: 4px;
+    background: linear-gradient(180deg, #2a2c2e, #161718);
+    color: #e8c76a;
+    cursor: var(--cur-default);
+  }
+
+  .market-portrait-refresh[hidden] {
+    display: none;
+  }
+
+  .market-portrait-refresh:hover {
+    border-color: #a08850;
+    color: #f4dfa2;
   }
 
   .market-portrait-refresh svg {
     width: 18px;
     height: 18px;
+    display: block;
   }
 
   .market-goods {
