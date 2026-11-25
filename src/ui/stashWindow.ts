@@ -2,11 +2,17 @@ import { STASH_COLS, STASH_SIZE, type InventoryBag } from "../items/inventory";
 import { isPotionItem } from "../items/potions";
 import { SLOT_LABEL } from "../items/slots";
 import type { ItemDef } from "../items/types";
-import { isHubPhoneUi } from "../art/menuBackground";
+import { HUB_PHONE_MQ, isHubPhoneUi } from "../art/menuBackground";
 import { fillItemTooltip } from "./itemTooltip";
 import "./itemRarity.css";
 import "./stashWindow.css";
 import "./inventoryWindow.css";
+
+/** На телефоне: 5×5 ячеек, 4 страницы = те же 100 слотов. */
+const STASH_PHONE_COLS = 5;
+const STASH_PHONE_ROWS = 5;
+const STASH_PHONE_PAGE_SIZE = STASH_PHONE_COLS * STASH_PHONE_ROWS;
+const STASH_PHONE_PAGES = Math.ceil(STASH_SIZE / STASH_PHONE_PAGE_SIZE);
 
 export interface StashWindowApi {
   isOpen(): boolean;
@@ -46,6 +52,21 @@ export function mountStashWindow(): StashWindowApi {
   const tip = el("div", "item-tip inv-tip");
   tip.hidden = true;
 
+  const pager = el("div", "stash-pager");
+  pager.hidden = true;
+  pager.setAttribute("role", "tablist");
+  pager.setAttribute("aria-label", "Страницы тайника");
+  const pageBtns: HTMLButtonElement[] = [];
+  for (let p = 0; p < STASH_PHONE_PAGES; p++) {
+    const btn = el("button", "stash-page-btn") as HTMLButtonElement;
+    btn.type = "button";
+    btn.textContent = String(p + 1);
+    btn.setAttribute("aria-label", `Страница ${p + 1}`);
+    btn.dataset.page = String(p);
+    pageBtns.push(btn);
+    pager.append(btn);
+  }
+
   const hints = el("div", "stash-hints");
   const hint = el("div", "stash-hint");
   hint.append(
@@ -54,12 +75,36 @@ export function mountStashWindow(): StashWindowApi {
   );
   hints.append(hint);
 
-  root.append(head, gridHost, tip);
+  root.append(head, gridHost, pager, tip);
   stack.append(root, hints);
   hud.append(stack);
 
   let bag: InventoryBag | null = null;
   let onCloseRequest: (() => void) | null = null;
+  let page = 0;
+
+  const setPage = (next: number): void => {
+    const clamped = Math.max(0, Math.min(STASH_PHONE_PAGES - 1, next));
+    if (clamped === page && !stack.hidden) {
+      syncPager();
+      return;
+    }
+    page = clamped;
+    if (!stack.hidden) render();
+  };
+
+  const syncPager = (): void => {
+    const phone = isHubPhoneUi();
+    pager.hidden = !phone;
+    root.classList.toggle("stash-phone", phone);
+    for (const btn of pageBtns) {
+      const p = Number(btn.dataset.page);
+      const active = phone && p === page;
+      btn.classList.toggle("is-active", active);
+      btn.setAttribute("aria-selected", active ? "true" : "false");
+      btn.tabIndex = active ? 0 : -1;
+    }
+  };
 
   closeBtn.addEventListener("click", () => {
     if (onCloseRequest) onCloseRequest();
@@ -69,11 +114,31 @@ export function mountStashWindow(): StashWindowApi {
     }
   });
 
+  pager.addEventListener("click", (ev) => {
+    const btn = (ev.target as Element).closest<HTMLButtonElement>(".stash-page-btn");
+    if (!btn || !pager.contains(btn)) return;
+    const next = Number(btn.dataset.page);
+    if (!Number.isFinite(next)) return;
+    setPage(next);
+  });
+
+  const phoneMq = window.matchMedia(HUB_PHONE_MQ);
+  const onPhoneMq = (): void => {
+    if (stack.hidden) return;
+    if (!isHubPhoneUi()) page = 0;
+    render();
+  };
+  phoneMq.addEventListener("change", onPhoneMq);
+
   const render = (): void => {
     tip.hidden = true;
     const filled = bag ? bag.filter(Boolean).length : 0;
     count.textContent = `${filled} / ${STASH_SIZE}`;
-    gridHost.replaceChildren(renderGrid(bag));
+    if (isHubPhoneUi()) {
+      page = Math.max(0, Math.min(STASH_PHONE_PAGES - 1, page));
+    }
+    syncPager();
+    gridHost.replaceChildren(renderGrid(bag, isHubPhoneUi() ? page : null));
   };
 
   const placeTip = (anchor: HTMLElement): void => {
@@ -137,10 +202,22 @@ export function mountStashWindow(): StashWindowApi {
   };
 }
 
-function renderGrid(bag: InventoryBag | null): HTMLElement {
+/** page = null → весь тайник 10×10; иначе страница 5×5 на телефоне. */
+function renderGrid(bag: InventoryBag | null, page: number | null): HTMLElement {
   const grid = el("div", "stash-grid");
-  grid.style.setProperty("--stash-cols", String(STASH_COLS));
-  for (let i = 0; i < STASH_SIZE; i++) {
+  if (page === null) {
+    grid.style.setProperty("--stash-cols", String(STASH_COLS));
+    for (let i = 0; i < STASH_SIZE; i++) {
+      grid.append(stashCell(i, bag?.[i] ?? null));
+    }
+    return grid;
+  }
+
+  grid.classList.add("stash-grid--phone");
+  grid.style.setProperty("--stash-cols", String(STASH_PHONE_COLS));
+  const start = page * STASH_PHONE_PAGE_SIZE;
+  const end = Math.min(STASH_SIZE, start + STASH_PHONE_PAGE_SIZE);
+  for (let i = start; i < end; i++) {
     grid.append(stashCell(i, bag?.[i] ?? null));
   }
   return grid;
