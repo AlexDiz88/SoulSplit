@@ -576,7 +576,8 @@
     background: linear-gradient(180deg, #3a3428, #221e16);
   }
 
-  .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion) {
+  .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion),
+  .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare.empty {
     --tip-icon: 38px;
     min-width: 0 !important;
     min-height: 0 !important;
@@ -747,6 +748,45 @@
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-amount {
     transform: scale(0.85);
     transform-origin: right center;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.7rem;
+    font-weight: 800;
+    line-height: 1.1;
+    color: #c8c2b2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-meta {
+    flex: 0 1 auto;
+    min-width: 0;
+    margin: 0;
+    font-size: 0.58rem;
+    font-weight: 600;
+    line-height: 1.1;
+    color: #9a9a9a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    text-align: left;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-meta::before {
+    content: "·";
+    margin: 0 0.2em;
+    color: #6a6a6a;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon--empty-slot .item-tip-icon-face {
+    background: rgba(255, 255, 255, 0.04);
+    box-shadow: inset 0 0 0 1px rgba(106, 90, 58, 0.45);
   }
 
   .inv-item-actions-overlay {

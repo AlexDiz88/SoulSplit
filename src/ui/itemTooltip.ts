@@ -247,7 +247,18 @@ export function fillEmptyItemTooltip(host: HTMLElement, slot: EquipSlotId, capti
   host.replaceChildren();
   delete host.dataset.rarity;
   host.classList.add("empty");
+  const phoneCompare = host.classList.contains("item-tip--phone-compare");
   if (caption) host.append(el("div", "item-tip-caption", caption));
+  if (phoneCompare) {
+    const icon = el("div", "item-tip-icon item-tip-icon--empty-slot");
+    icon.append(el("div", "item-tip-icon-face"));
+    host.append(
+      icon,
+      el("div", "item-tip-empty-name", SLOT_LABEL[slot]),
+      el("div", "item-tip-empty-meta", "Пусто"),
+    );
+    return;
+  }
   host.append(
     el("div", "item-tip-empty-name", SLOT_LABEL[slot]),
     el("div", "item-tip-empty-meta", "Пусто"),
