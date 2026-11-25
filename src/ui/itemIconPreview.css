@@ -125,15 +125,15 @@
 }
 
 .iip-cell-name {
-  flex: 0 0 var(--iip-label-h);
+  flex: 0 0 auto;
   max-width: 100%;
-  height: var(--iip-label-h);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-height: var(--iip-label-h);
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: var(--muted);
   font-size: 0.58rem;
-  line-height: var(--iip-label-h);
+  line-height: 1.15;
   text-align: center;
 }
 

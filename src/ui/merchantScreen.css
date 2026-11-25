@@ -103,24 +103,6 @@
   color: #e8d7a2;
 }
 
-.market-btn {
-  height: 34px;
-  padding: 0 14px;
-  border: 1px solid #6a5a3a;
-  border-radius: 4px;
-  background: linear-gradient(180deg, #2a2c2e, #161718);
-  color: #e8e2d4;
-  font: inherit;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: var(--cur-default);
-}
-
-.market-btn:hover {
-  border-color: #a08850;
-  color: #f4dfa2;
-}
-
 .market-x {
   width: 34px;
   height: 34px;
@@ -241,12 +223,13 @@
 }
 
 .market-portrait-meta {
+  position: relative;
   flex: 0 0 auto;
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: calc(1.05rem + 40px);
-  padding: 20px 12px;
+  padding: 20px 44px;
   text-align: center;
   border-top: 1px solid rgba(106, 90, 58, 0.65);
   background: #121314;
@@ -259,6 +242,39 @@
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #f4dfa2;
+}
+
+.market-portrait-refresh {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  box-sizing: border-box;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #6a5a3a;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #2a2c2e, #161718);
+  color: #e8c76a;
+  cursor: var(--cur-default);
+}
+
+.market-portrait-refresh[hidden] {
+  display: none;
+}
+
+.market-portrait-refresh:hover {
+  border-color: #a08850;
+  color: #f4dfa2;
+}
+
+.market-portrait-refresh svg {
+  width: 18px;
+  height: 18px;
+  display: block;
 }
 
 .market-goods {
@@ -379,18 +395,18 @@
   font-size: 0.92rem;
   font-weight: 700;
   color: var(--rar-c);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 .market-offer-sub {
   margin: 0;
   font-size: 0.72rem;
   color: #9a9488;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 .market-offer-stats {
@@ -631,7 +647,7 @@
     flex-wrap: wrap;
     padding:
       calc(10px + env(safe-area-inset-top))
-      44px 6px 8px;
+      44px 6px 12px;
     gap: 8px;
   }
 
@@ -653,12 +669,8 @@
     font-size: 0.95rem;
     width: 100%;
     order: 3;
-  }
-
-  .market-btn {
-    min-height: 36px;
-    font-size: 0.78rem;
-    padding: 0 10px;
+    padding-left: 4px;
+    box-sizing: border-box;
   }
 
   .market-x {
@@ -721,11 +733,22 @@
 
   .market-portrait-meta {
     min-height: 0;
-    padding: 10px 12px;
+    padding: 10px 42px;
   }
 
   .market-portrait-name {
     font-size: 0.88rem;
+  }
+
+  .market-portrait-refresh {
+    right: 6px;
+    width: 36px;
+    height: 36px;
+  }
+
+  .market-portrait-refresh svg {
+    width: 18px;
+    height: 18px;
   }
 
   .market-goods {

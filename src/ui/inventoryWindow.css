@@ -445,7 +445,7 @@
     touch-action: none;
   }
 
-  /* Peek внутри оверлея действий: прижат к кнопкам, без отдельного fixed offset. */
+  /* Peek внутри оверлея: только раскладка, без общей рамки - карточки сами по себе. */
   .inv-item-actions-peek.inv-compare.inv-compare--peek:not([hidden]) {
     position: relative;
     left: auto !important;
@@ -462,16 +462,16 @@
     height: auto;
     max-height: calc(100dvh - 160px - env(safe-area-inset-bottom));
     margin: 0 auto;
-    border-radius: 8px;
+    border-radius: 0;
     z-index: 1;
     padding: 0;
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     pointer-events: none;
-    border: 1px solid #6a5a3a;
-    background: rgba(8, 10, 12, 0.98);
-    box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
+    border: 0;
+    background: transparent;
+    box-shadow: none;
   }
 
   .inv-compare-phone-cards {
@@ -488,6 +488,8 @@
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
+    border: 0;
+    background: transparent;
   }
 
   .inv-compare.inv-compare--peek .inv-compare-phone-cards {
@@ -509,7 +511,7 @@
 
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion),
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare.empty {
-    --tip-icon: 48px;
+    --tip-icon: 54px;
     min-width: 0 !important;
     min-height: auto !important;
     height: auto !important;
@@ -517,86 +519,98 @@
     max-width: 100% !important;
     box-sizing: border-box;
     padding: 8px 10px 9px;
+    border-radius: 6px;
     text-align: left;
     pointer-events: auto;
-    display: flex;
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    align-content: flex-start;
+    display: grid;
+    grid-template-columns: 54px minmax(0, 1fr);
     column-gap: 8px;
-    row-gap: 3px;
+    row-gap: 2px;
+    align-items: center;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare.empty {
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-caption {
-    flex: 0 0 100%;
+    grid-column: 1 / -1;
     width: 100%;
-    margin: 0 0 3px;
+    margin: 0 0 2px;
     font-size: 0.8rem;
     font-weight: 800;
     letter-spacing: 0.06em;
     text-align: left;
     color: #9a8a62;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon {
-    flex: 0 0 48px;
+    grid-column: 1;
+    grid-row: 2 / 4;
     display: block;
-    width: 48px;
-    height: 48px;
+    width: 54px;
+    height: 54px;
     margin: 0;
-    flex-shrink: 0;
     align-self: center;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-name {
-    flex: 1 1 auto;
+    grid-column: 2;
+    grid-row: 2;
     min-width: 0;
     font-size: 1rem;
     line-height: 1.2;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub {
-    flex: 0 1 auto;
+    grid-column: 2;
+    grid-row: 3;
     min-width: 0;
     margin: 0;
     font-size: 0.8rem;
     line-height: 1.2;
     text-align: left;
     color: #9a9a9a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sub::before {
-    content: "·";
-    margin: 0 0.2em;
-    color: #6a6a6a;
+    content: none;
+  }
+
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affixes,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-stat,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-stat,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base-line,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note,
+  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-offhand-penalty {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-rule {
-    flex: 0 0 100%;
-    width: 100%;
     margin: 4px 0;
     opacity: 0.55;
-    flex-shrink: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-base,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-affixes {
-    flex: 0 0 100%;
-    width: 100%;
     align-items: flex-start;
     text-align: left;
-    min-width: 0;
     gap: 2px;
   }
 
@@ -608,9 +622,9 @@
     font-size: clamp(0.84rem, 3.4vw, 0.96rem);
     line-height: 1.25;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
     max-width: 100%;
   }
 
@@ -620,16 +634,13 @@
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-offhand-penalty,
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-note {
-    flex: 0 0 100%;
-    width: 100%;
     margin-top: 3px;
     font-size: clamp(0.78rem, 3.1vw, 0.9rem);
     line-height: 1.22;
     text-align: left;
-    max-width: 100%;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-tier-meta {
@@ -637,8 +648,6 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-footer {
-    flex: 0 0 100%;
-    width: 100%;
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
@@ -647,7 +656,6 @@
     gap: 6px;
     margin-top: auto;
     padding-top: 4px;
-    min-width: 0;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-level {
@@ -657,9 +665,9 @@
     font-weight: 600;
     color: #7a7a7a;
     text-align: left;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell {
@@ -669,9 +677,8 @@
     font-size: clamp(0.76rem, 3vw, 0.86rem);
     font-weight: 700;
     text-align: right;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-sell .gold-coin-icon,
@@ -680,42 +687,35 @@
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-name {
-    flex: 1 1 auto;
+    grid-column: 1 / -1;
     min-width: 0;
     margin: 0;
     font-size: 1rem;
     font-weight: 800;
     line-height: 1.2;
     color: #c8c2b2;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
     text-align: left;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-meta {
-    flex: 0 1 auto;
+    grid-column: 1 / -1;
     min-width: 0;
     margin: 0;
     font-size: 0.8rem;
     font-weight: 600;
     line-height: 1.2;
     color: #9a9a9a;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: break-word;
     text-align: left;
   }
 
   .inv-compare.inv-compare--phone .item-tip--phone-compare.empty .item-tip-empty-meta::before {
-    content: "·";
-    margin: 0 0.2em;
-    color: #6a6a6a;
-  }
-
-  .inv-compare.inv-compare--phone .item-tip--phone-compare .item-tip-icon--empty-slot .item-tip-icon-face {
-    background: rgba(255, 255, 255, 0.04);
-    box-shadow: inset 0 0 0 1px rgba(106, 90, 58, 0.45);
+    content: none;
   }
 
   .inv-item-actions-overlay {

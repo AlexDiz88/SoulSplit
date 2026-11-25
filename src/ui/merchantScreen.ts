@@ -128,16 +128,11 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   const headActions = el("div", "market-head-actions");
   const goldLine = el("div", "market-gold");
   goldLine.append(document.createTextNode("Золото: "), goldAmountNode(0));
-  /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
-  const btnRefresh = el("button", "market-btn", "Обновить ассортимент");
-  btnRefresh.type = "button";
-  btnRefresh.hidden = !import.meta.env.DEV;
-  btnRefresh.setAttribute("aria-label", "Debug: обновить ассортимент");
   const closeBtn = el("button", "market-x");
   closeBtn.type = "button";
   closeBtn.setAttribute("aria-label", "Закрыть");
   closeBtn.innerHTML = '<span aria-hidden="true"></span>';
-  headActions.append(goldLine, btnRefresh, closeBtn);
+  headActions.append(goldLine, closeBtn);
   head.append(title, headActions);
 
   const tabs = el("div", "market-tabs");
@@ -164,7 +159,19 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   portraitImg.decoding = "async";
   const portraitMeta = el("div", "market-portrait-meta");
   const portraitName = el("h3", "market-portrait-name");
-  portraitMeta.append(portraitName);
+  /** Debug-заглушка: ручной реролл (в релизе скрыта; нормальный путь - новый игровой день). */
+  const btnRefresh = el("button", "market-portrait-refresh") as HTMLButtonElement;
+  btnRefresh.type = "button";
+  btnRefresh.hidden = !import.meta.env.DEV;
+  btnRefresh.setAttribute("aria-label", "Обновить ассортимент");
+  btnRefresh.innerHTML =
+    '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M20.5 12a8.5 8.5 0 1 1-2.48-6.02"/>' +
+    '<path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" ' +
+    'd="M20.5 4.5v5h-5"/>' +
+    "</svg>";
+  portraitMeta.append(portraitName, btnRefresh);
   portrait.append(portraitImg, portraitMeta);
 
   const goods = el("div", "market-goods");
@@ -279,12 +286,14 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     showDetail(offer);
   }
 
-  function showCompare(item: ItemDef, clientX: number, clientY: number): void {
+  function showCompare(offer: MarketOffer, clientX: number, clientY: number): void {
     if (!stateRef || isHubPhoneUi()) return;
     compare.replaceChildren(
-      ...buildItemCompareCards(item, stateRef.hero.equipment, {
+      ...buildItemCompareCards(offer.item, stateRef.hero.equipment, {
         tipClass: "market-tip",
         itemCaption: "В продаже",
+        itemPriceLabel: offerPriceLabel(),
+        itemPriceAmount: offer.price,
       }),
     );
     positionItemCompare(compare, clientX, clientY);
@@ -294,13 +303,20 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     return activeTab === "buyback" ? "Выкупить" : "Купить";
   }
 
-  function buildPhoneOfferCards(item: ItemDef): HTMLElement[] {
+  function offerPriceLabel(): string {
+    return activeTab === "buyback" ? "Выкуп:" : "Цена:";
+  }
+
+  function buildPhoneOfferCards(offer: MarketOffer): HTMLElement[] {
     if (!stateRef) return [];
+    const { item, price } = offer;
     if (compareEquipSlotsFor(item).length === 0) {
       const card = el("div", "item-tip inv-compare-tip item-tip--phone-compare");
       fillItemTooltip(card, item, {
         caption: "В продаже",
         showIcon: true,
+        priceLabel: offerPriceLabel(),
+        priceAmount: price,
       });
       return [card];
     }
@@ -308,6 +324,8 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       tipClass: "inv-compare-tip item-tip--phone-compare",
       itemCaption: "В продаже",
       itemSide: "right",
+      itemPriceLabel: offerPriceLabel(),
+      itemPriceAmount: price,
     });
   }
 
@@ -337,7 +355,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     root.classList.remove("has-detail");
     selectedItemId = offer.item.id;
 
-    mountPhonePeekPanel(buildPhoneOfferCards(offer.item));
+    mountPhonePeekPanel(buildPhoneOfferCards(offer));
 
     itemActionsBtns.replaceChildren();
     addPhoneActionBtn(buyLabel(), () => tryBuy(buyIndex, pinned));
@@ -540,7 +558,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
       btn.addEventListener("pointerenter", (ev) => {
         if (!stateRef || isHubPhoneUi()) return;
-        showCompare(item, ev.clientX, ev.clientY);
+        showCompare(offer, ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointermove", (ev) => {
         if (isHubPhoneUi() || compare.hidden) return;

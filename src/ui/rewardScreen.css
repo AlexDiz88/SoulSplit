@@ -463,9 +463,9 @@
   font-size: 0.98rem;
   font-weight: 700;
   color: #ece6d8;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow: visible;
+  overflow-wrap: anywhere;
 }
 
 .reward-row-sub {

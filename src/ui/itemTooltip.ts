@@ -250,12 +250,9 @@ export function fillEmptyItemTooltip(host: HTMLElement, slot: EquipSlotId, capti
   const phoneCompare = host.classList.contains("item-tip--phone-compare");
   if (caption) host.append(el("div", "item-tip-caption", caption));
   if (phoneCompare) {
-    const icon = el("div", "item-tip-icon item-tip-icon--empty-slot");
-    icon.append(el("div", "item-tip-icon-face"));
     host.append(
-      icon,
-      el("div", "item-tip-empty-name", SLOT_LABEL[slot]),
-      el("div", "item-tip-empty-meta", "Пусто"),
+      el("div", "item-tip-empty-name", "Пусто"),
+      el("div", "item-tip-empty-meta", SLOT_LABEL[slot]),
     );
     return;
   }
@@ -333,6 +330,9 @@ export interface ItemCompareCardOptions {
   equippedCaption?: string;
   showItemSellPrice?: boolean;
   showEquippedSellPrice?: boolean;
+  /** Цена покупки/выкупа на карточке предмета (рынок). */
+  itemPriceLabel?: string;
+  itemPriceAmount?: number;
   /**
    * Где карточка наведённого предмета: left (рынок/добыча) или right (сумка справа внизу).
    * Экипированные слоты занимают оставшуюся сторону.
@@ -355,6 +355,8 @@ export function buildItemCompareCards(
     showIcon: true,
     caption: options.itemCaption,
     showSellPrice: options.showItemSellPrice ?? false,
+    priceLabel: options.itemPriceLabel,
+    priceAmount: options.itemPriceAmount,
   });
 
   const equippedCards: HTMLElement[] = [];

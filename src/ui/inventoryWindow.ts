@@ -442,10 +442,10 @@ export function mountInventoryWindow(): InventoryWindowApi {
     } else if (marketMode) {
       addMobileActionBtn("Продать", () => sellInventoryCell(index));
       if (!isPotionItem(item)) {
-        addMobileActionBtn("Одеть", () => tryEquipRmb(index));
+        addMobileActionBtn("Надеть", () => tryEquipRmb(index));
       }
     } else {
-      addMobileActionBtn(isPotionItem(item) ? "На пояс" : "Одеть", () => tryEquipRmb(index));
+      addMobileActionBtn(isPotionItem(item) ? "На пояс" : "Надеть", () => tryEquipRmb(index));
       addMobileActionBtn("Выбросить", () => {
         openDestroyConfirm({ kind: "inv", index }, item);
       }, true);
@@ -875,7 +875,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   /**
    * Тайник: ПКМ перекладывает, Ctrl+ПКМ надевает / снимает в тайник.
-   * Рынок: ПКМ продажа / снять; Ctrl+ПКМ одеть / быстрая продажа с экипа;
+   * Рынок: ПКМ продажа / снять; Ctrl+ПКМ надеть / быстрая продажа с экипа;
    * кольца: Ctrl+ПКМ = левый (ring1), Shift+ПКМ = правый (ring2).
    */
   window.addEventListener(
