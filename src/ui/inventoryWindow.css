@@ -445,21 +445,25 @@
     touch-action: none;
   }
 
-  .inv-compare.inv-compare--peek:not([hidden]) {
-    left: 50% !important;
+  /* Peek внутри оверлея действий: прижат к кнопкам, без отдельного fixed offset. */
+  .inv-item-actions-peek.inv-compare.inv-compare--peek:not([hidden]) {
+    position: relative;
+    left: auto !important;
     right: auto !important;
     top: auto !important;
-    bottom: calc(164px + env(safe-area-inset-bottom));
-    width: 70% !important;
+    bottom: auto !important;
+    width: 70%;
     max-width: 70vw;
-    transform: translateX(-50%);
+    transform: none;
+    flex: 0 1 auto;
     flex-direction: column;
     align-items: stretch;
     gap: 0;
     height: auto;
-    max-height: min(52dvh, 440px);
+    max-height: calc(100dvh - 160px - env(safe-area-inset-bottom));
+    margin: 0 auto;
     border-radius: 8px;
-    z-index: 97;
+    z-index: 1;
     padding: 0;
     overflow-x: hidden;
     overflow-y: auto;
@@ -468,30 +472,6 @@
     border: 1px solid #6a5a3a;
     background: rgba(8, 10, 12, 0.98);
     box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65);
-  }
-
-  .inv-compare.inv-compare--phone.inv-compare--full:not([hidden]) {
-    left: 50% !important;
-    right: auto !important;
-    top: 50% !important;
-    bottom: auto !important;
-    width: 70% !important;
-    max-width: 70vw;
-    transform: translate(-50%, -50%);
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    box-sizing: border-box;
-    height: auto;
-    max-height: 80dvh;
-    padding: 0;
-    overflow: hidden;
-    pointer-events: auto;
-    border: 1px solid #6a5a3a;
-    border-radius: 8px;
-    background: rgba(8, 10, 12, 0.98);
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.72);
-    z-index: 98;
   }
 
   .inv-compare-phone-cards {
@@ -525,36 +505,6 @@
     min-height: auto !important;
     overflow: visible;
     box-sizing: border-box;
-  }
-
-  .inv-compare-phone-actions {
-    flex: 0 0 auto;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
-    padding: 8px 8px calc(8px + env(safe-area-inset-bottom));
-    border-top: 1px solid rgba(106, 90, 58, 0.55);
-    background: linear-gradient(180deg, #141618, #0a0b0c);
-  }
-
-  .inv-compare-phone-btn {
-    min-height: 38px;
-    margin: 0;
-    padding: 8px 10px;
-    border: 1px solid #6a5a3a;
-    border-radius: 4px;
-    background: linear-gradient(180deg, #2a2c2e, #161718);
-    color: #e8e2d4;
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 800;
-    cursor: var(--cur-default);
-  }
-
-  .inv-compare-phone-btn--primary {
-    border-color: #8a7848;
-    color: #f4e8c8;
-    background: linear-gradient(180deg, #3a3428, #221e16);
   }
 
   .inv-compare.inv-compare--phone .item-tip.item-tip--phone-compare[data-rarity]:not(.item-tip--potion),
@@ -773,10 +723,14 @@
     inset: 0;
     z-index: 96;
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
     padding: 12px 10px calc(12px + env(safe-area-inset-bottom));
-    background: rgba(4, 5, 12, 0.55);
+    background: rgba(4, 5, 12, 0.72);
+    -webkit-backdrop-filter: blur(5px);
+    backdrop-filter: blur(5px);
     pointer-events: auto;
   }
 
@@ -786,6 +740,7 @@
 
   .inv-item-actions-panel {
     box-sizing: border-box;
+    flex: 0 0 auto;
     width: min(94vw, 360px);
     padding: 10px;
     border: 1px solid #6a5a3a;
@@ -796,10 +751,14 @@
     box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
   }
 
+  .inv-item-actions-panel:not(:has(.inv-item-action-btn)) {
+    display: none;
+  }
+
   .inv-item-actions-btns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .inv-item-action-btn {

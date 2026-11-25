@@ -1,4 +1,4 @@
-import { resolveMerchantPortraitUrl } from "../art/menuBackground";
+import { isHubPhoneUi, resolveMerchantPortraitUrl } from "../art/menuBackground";
 import { rolledAffixParts } from "../items/affixCatalog";
 import { rolledItemBaseParts } from "../items/baseCatalog";
 import { itemDisplayName } from "../items/generate";
@@ -26,12 +26,14 @@ import { phaseFromHour } from "../meta/worldTime";
 import { goldAmountNode } from "./goldIcon";
 import {
   buildItemCompareCards,
+  compareEquipSlotsFor,
   fillItemTooltip,
   formatWeaponDps,
   itemSlotLabel,
   positionItemCompare,
 } from "./itemTooltip";
 import "./itemRarity.css";
+import "./inventoryWindow.css";
 import "./merchantScreen.css";
 
 export interface MerchantScreenApi {
@@ -175,6 +177,16 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   const compare = el("div", "market-compare");
   compare.hidden = true;
 
+  const itemActionsOverlay = el("div", "inv-item-actions-overlay");
+  itemActionsOverlay.hidden = true;
+  /** Peek-сравнение на телефоне - в оверлее над кнопками, как в инвентаре. */
+  const phonePeekHost = el("div", "inv-compare inv-compare--phone inv-compare--peek inv-item-actions-peek");
+  phonePeekHost.hidden = true;
+  const itemActionsPanel = el("div", "inv-item-actions-panel");
+  const itemActionsBtns = el("div", "inv-item-actions-btns");
+  itemActionsPanel.append(itemActionsBtns);
+  itemActionsOverlay.append(phonePeekHost, itemActionsPanel);
+
   const main = el("div", "market-main");
   const detail = el("aside", "market-detail item-tip");
   detail.hidden = true;
@@ -196,7 +208,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   stage.append(main, hints);
   // Вне .market-window: иначе overflow:hidden режет тултип, и он уезжает влево поверх товаров.
-  root.append(stage, compare);
+  root.append(stage, compare, itemActionsOverlay);
 
   const hud = document.getElementById("hud");
   if (!hud) throw new Error("#hud not found");
@@ -212,14 +224,27 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     compare.replaceChildren();
   }
 
+  function hidePhonePeek(): void {
+    phonePeekHost.hidden = true;
+    phonePeekHost.replaceChildren();
+  }
+
+  function closePhoneItemMenu(): void {
+    itemActionsOverlay.hidden = true;
+    itemActionsBtns.replaceChildren();
+    hidePhonePeek();
+  }
+
   function clearDetail(): void {
     selectedItemId = null;
     detail.hidden = true;
     detail.replaceChildren();
     root.classList.remove("has-detail");
+    closePhoneItemMenu();
   }
 
   function showDetail(offer: MarketOffer): void {
+    if (isHubPhoneUi()) return;
     selectedItemId = offer.item.id;
     const item = offer.item;
     detail.hidden = false;
@@ -236,6 +261,12 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   }
 
   function restoreDetailSelection(offers: MarketOffer[]): void {
+    if (isHubPhoneUi()) {
+      if (selectedItemId && !offers.some((o) => o.item.id === selectedItemId)) {
+        clearDetail();
+      }
+      return;
+    }
     if (!selectedItemId) {
       clearDetail();
       return;
@@ -249,7 +280,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
   }
 
   function showCompare(item: ItemDef, clientX: number, clientY: number): void {
-    if (!stateRef) return;
+    if (!stateRef || isHubPhoneUi()) return;
     compare.replaceChildren(
       ...buildItemCompareCards(item, stateRef.hero.equipment, {
         tipClass: "market-tip",
@@ -257,6 +288,61 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       }),
     );
     positionItemCompare(compare, clientX, clientY);
+  }
+
+  function buyLabel(): string {
+    return activeTab === "buyback" ? "Выкупить" : "Купить";
+  }
+
+  function buildPhoneOfferCards(item: ItemDef): HTMLElement[] {
+    if (!stateRef) return [];
+    if (compareEquipSlotsFor(item).length === 0) {
+      const card = el("div", "item-tip inv-compare-tip item-tip--phone-compare");
+      fillItemTooltip(card, item, {
+        caption: "В продаже",
+        showIcon: true,
+      });
+      return [card];
+    }
+    return buildItemCompareCards(item, stateRef.hero.equipment, {
+      tipClass: "inv-compare-tip item-tip--phone-compare",
+      itemCaption: "В продаже",
+      itemSide: "right",
+    });
+  }
+
+  function mountPhonePeekPanel(cards: HTMLElement[]): void {
+    const cardsHost = el("div", "inv-compare-phone-cards");
+    cardsHost.append(...cards);
+    phonePeekHost.replaceChildren(cardsHost);
+    phonePeekHost.hidden = false;
+  }
+
+  function addPhoneActionBtn(label: string, onPick: () => void, danger = false): void {
+    const btn = el("button", danger ? "inv-item-action-btn is-danger" : "inv-item-action-btn");
+    btn.type = "button";
+    btn.textContent = label;
+    btn.addEventListener("click", () => {
+      closePhoneItemMenu();
+      onPick();
+    });
+    itemActionsBtns.append(btn);
+  }
+
+  function openPhoneOfferInspect(offer: MarketOffer, buyIndex: number, pinned: boolean): void {
+    if (!stateRef) return;
+    hideCompare();
+    detail.hidden = true;
+    detail.replaceChildren();
+    root.classList.remove("has-detail");
+    selectedItemId = offer.item.id;
+
+    mountPhonePeekPanel(buildPhoneOfferCards(offer.item));
+
+    itemActionsBtns.replaceChildren();
+    addPhoneActionBtn(buyLabel(), () => tryBuy(buyIndex, pinned));
+    addPhoneActionBtn("Отмена", () => clearDetail());
+    itemActionsOverlay.hidden = false;
   }
 
   function currentOffers(): MarketOffer[] {
@@ -286,6 +372,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
         return;
       }
       stateRef.hero.gold -= current.price;
+      clearDetail();
       handlers.showToast(`Куплено: ${POTION_LABEL[current.item.potionId]}`);
       handlers.onChanged();
       render();
@@ -314,9 +401,9 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
     const name = isPotionItem(current.item)
       ? POTION_LABEL[current.item.potionId]
       : itemDisplayName(current.item);
-    if (selectedItemId === current.item.id) clearDetail();
     stateRef.hero.gold -= current.price;
     list.splice(index, 1);
+    clearDetail();
     handlers.showToast(activeTab === "buyback" ? `Выкуплено: ${name}` : `Куплено: ${name}`);
     handlers.onChanged();
     render();
@@ -449,15 +536,18 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
       btn.append(iconWrap, info);
 
+      const buyIndex = isPinned ? visualIndex : stockIndex;
+
       btn.addEventListener("pointerenter", (ev) => {
-        if (!stateRef) return;
+        if (!stateRef || isHubPhoneUi()) return;
         showCompare(item, ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointermove", (ev) => {
-        if (compare.hidden) return;
+        if (isHubPhoneUi() || compare.hidden) return;
         positionItemCompare(compare, ev.clientX, ev.clientY);
       });
       btn.addEventListener("pointerleave", (ev) => {
+        if (isHubPhoneUi()) return;
         const next = ev.relatedTarget;
         if (next instanceof Node && compare.contains(next)) return;
         hideCompare();
@@ -467,6 +557,15 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
         if (ev.button !== 0) return;
         for (const child of goodsGrid.querySelectorAll(".market-offer.selected")) {
           child.classList.remove("selected");
+        }
+        if (isHubPhoneUi()) {
+          if (selectedItemId === item.id && !itemActionsOverlay.hidden) {
+            clearDetail();
+            return;
+          }
+          openPhoneOfferInspect(offer, buyIndex, isPinned);
+          btn.classList.add("selected");
+          return;
         }
         if (selectedItemId === item.id && !detail.hidden) {
           clearDetail();
@@ -479,7 +578,7 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
       btn.addEventListener("contextmenu", (ev) => {
         ev.preventDefault();
         ev.stopPropagation();
-        tryBuy(isPinned ? visualIndex : stockIndex, isPinned);
+        tryBuy(buyIndex, isPinned);
       });
 
       goodsGrid.append(btn);
@@ -517,10 +616,18 @@ export function mountMerchantScreen(handlers: MerchantScreenHandlers): MerchantS
 
   closeBtn.addEventListener("click", () => close());
 
+  itemActionsOverlay.addEventListener("click", (ev) => {
+    if (ev.target === itemActionsOverlay) clearDetail();
+  });
+
   window.addEventListener("keydown", (ev) => {
     if (root.hidden) return;
     if (ev.code !== "Escape" || ev.repeat) return;
     ev.preventDefault();
+    if (!itemActionsOverlay.hidden) {
+      clearDetail();
+      return;
+    }
     close();
   });
 

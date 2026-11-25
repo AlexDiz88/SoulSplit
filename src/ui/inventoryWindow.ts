@@ -121,10 +121,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const itemActionsOverlay = el("div", "inv-item-actions-overlay");
   itemActionsOverlay.hidden = true;
+  /** Peek-сравнение на телефоне живёт в оверлее над кнопками. */
+  const phonePeekHost = el("div", "inv-compare inv-compare--phone inv-compare--peek inv-item-actions-peek");
+  phonePeekHost.hidden = true;
   const itemActionsPanel = el("div", "inv-item-actions-panel");
   const itemActionsBtns = el("div", "inv-item-actions-btns");
   itemActionsPanel.append(itemActionsBtns);
-  itemActionsOverlay.append(itemActionsPanel);
+  itemActionsOverlay.append(phonePeekHost, itemActionsPanel);
   hud.append(itemActionsOverlay);
 
   const itemDrag = getItemDrag();
@@ -247,8 +250,13 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const hideCompare = (): void => {
     compare.hidden = true;
-    compare.classList.remove("inv-compare--phone", "inv-compare--peek", "inv-compare--full");
+    compare.classList.remove("inv-compare--phone", "inv-compare--peek");
     compare.replaceChildren();
+  };
+
+  const hidePhonePeek = (): void => {
+    phonePeekHost.hidden = true;
+    phonePeekHost.replaceChildren();
   };
 
   /** На телефоне карточки всегда столбиком: экип сверху, предмет из сумки снизу. */
@@ -259,12 +267,8 @@ export function mountInventoryWindow(): InventoryWindowApi {
   };
 
   const mountPhonePeekPanel = (cards: HTMLElement[]): void => {
-    compare.replaceChildren(layoutPhoneCompareCards(cards));
-    compare.classList.add("inv-compare--phone", "inv-compare--peek");
-    compare.classList.remove("inv-compare--full");
-    compare.hidden = false;
-    compare.style.removeProperty("left");
-    compare.style.removeProperty("top");
+    phonePeekHost.replaceChildren(layoutPhoneCompareCards(cards));
+    phonePeekHost.hidden = false;
   };
 
   const mountPhoneItemPreviewPanel = (item: ItemDef, caption: string, equippedSlot?: EquipSlotId): void => {
@@ -290,46 +294,16 @@ export function mountInventoryWindow(): InventoryWindowApi {
     mountPhonePeekPanel(cards);
   };
 
-  const mountPhoneComparePanel = (cards: HTMLElement[], invIndex: number, item: ItemDef): void => {
-    const cardsHost = layoutPhoneCompareCards(cards);
-    const actions = el("div", "inv-compare-phone-actions");
-    const btnEquip = el(
-      "button",
-      "inv-compare-phone-btn inv-compare-phone-btn--primary",
-      isPotionItem(item) ? "На пояс" : "Одеть",
-    );
-    btnEquip.type = "button";
-    btnEquip.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      hideCompare();
-      tryEquipRmb(invIndex);
-    });
-    const btnClose = el("button", "inv-compare-phone-btn", "Закрыть");
-    btnClose.type = "button";
-    btnClose.addEventListener("click", (ev) => {
-      ev.stopPropagation();
-      hideCompare();
-    });
-    actions.append(btnEquip, btnClose);
-    compare.replaceChildren(cardsHost, actions);
-    compare.classList.add("inv-compare--phone", "inv-compare--full");
-    compare.classList.remove("inv-compare--peek");
-    compare.hidden = false;
-    compare.style.removeProperty("left");
-    compare.style.removeProperty("top");
-  };
-
   const closeMobileItemMenu = (): void => {
     itemActionsOverlay.hidden = true;
     itemActionsBtns.replaceChildren();
-    if (isHubPhoneUi() && compare.classList.contains("inv-compare--peek")) {
-      hideCompare();
-    }
+    hidePhonePeek();
   };
 
   const hideTips = (): void => {
     tip.hidden = true;
     hideCompare();
+    hidePhonePeek();
     closeMobileItemMenu();
   };
 
@@ -347,6 +321,7 @@ export function mountInventoryWindow(): InventoryWindowApi {
       hideCompare();
       if (isHubPhoneUi()) {
         mountPhoneItemPreviewPanel(item, "В сумке");
+        itemActionsOverlay.hidden = false;
       } else {
         fillItemTooltip(tip, item);
         placeTip(cell);
@@ -354,22 +329,22 @@ export function mountInventoryWindow(): InventoryWindowApi {
       return;
     }
     tip.hidden = true;
-    const phone = isHubPhoneUi();
+    if (isHubPhoneUi()) {
+      mountPhonePeekCompareFromBag(item);
+      itemActionsOverlay.hidden = false;
+      return;
+    }
     const cards = buildItemCompareCards(item, hero.equipment, {
-      tipClass: phone ? "inv-compare-tip item-tip--phone-compare" : "inv-compare-tip",
+      tipClass: "inv-compare-tip",
       itemCaption: "В сумке",
       showItemSellPrice: true,
       showEquippedSellPrice: true,
       itemSide: "right",
     });
-    if (phone) {
-      mountPhoneComparePanel(cards, index, item);
-    } else {
-      compare.classList.remove("inv-compare--phone");
-      compare.replaceChildren(...cards);
-      compare.hidden = false;
-      placeBagCompare(cell, clientX, clientY);
-    }
+    compare.classList.remove("inv-compare--phone");
+    compare.replaceChildren(...cards);
+    compare.hidden = false;
+    placeBagCompare(cell, clientX, clientY);
   };
 
   const render = (): void => {
@@ -425,9 +400,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   const openMobileEquipMenu = (slot: EquipSlotId, item: ItemDef): void => {
     if (!hero) return;
     const unit = hero;
-    if (!isHubPhoneUi() || compare.classList.contains("inv-compare--full")) {
-      hideCompare();
-    }
     tip.hidden = true;
     itemActionsBtns.replaceChildren();
     addMobileActionBtn("Снять", () => {
@@ -453,9 +425,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
     if (!hero) return;
     const unit = hero;
     const returnLoot = onLootReturn;
-    if (!isHubPhoneUi() || compare.classList.contains("inv-compare--full")) {
-      hideCompare();
-    }
     tip.hidden = true;
     itemActionsBtns.replaceChildren();
 
@@ -477,12 +446,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
       }
     } else {
       addMobileActionBtn(isPotionItem(item) ? "На пояс" : "Одеть", () => tryEquipRmb(index));
-      if (compareEquipSlotsFor(item).length > 0) {
-        const cell = gridHost.querySelector<HTMLElement>(`.inv-cell[data-inv="${index}"]`);
-        addMobileActionBtn("Сравнить", () => {
-          if (cell) showBagCompareForCell(cell, 0, 0);
-        });
-      }
       addMobileActionBtn("Выбросить", () => {
         openDestroyConfirm({ kind: "inv", index }, item);
       }, true);
@@ -495,7 +458,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
   /** Тап по ячейке сумки на телефоне - сразу меню действий. */
   const handlePhoneBagTap = (index: number, _item: ItemDef): void => {
     if (!hero || overlay.hidden) return;
-    if (!compare.hidden && compare.classList.contains("inv-compare--full")) return;
     const live = hero.inventory[index];
     if (!live) return;
     hideCompare();
@@ -509,7 +471,6 @@ export function mountInventoryWindow(): InventoryWindowApi {
 
   const handlePhoneItemActivate = (target: EventTarget | null): void => {
     if (!isHubPhoneUi() || suppressClick || itemDrag.isActive() || !hero) return;
-    if (!compare.hidden && compare.classList.contains("inv-compare--full")) return;
     const hit = resolveFilledSource(target);
     if (!hit) return;
     if (hit.source.kind === "inv") {
