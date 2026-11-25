@@ -1011,8 +1011,11 @@
     font-size: 0.68rem;
   }
 
+  /* Компаньон-сумка снизу: персонаж занимает всю оставшуюся высоту без зазора. */
   #hud:has(#character:not([hidden])):has(.inv-bag-overlay:not([hidden]):not(.is-solo)) .cs-window {
-    max-height: calc(100dvh - min(44dvh, 360px));
+    flex: 0 0 auto;
+    height: calc(100dvh - var(--inv-bag-mobile-h, min(44dvh, 360px)));
+    max-height: calc(100dvh - var(--inv-bag-mobile-h, min(44dvh, 360px)));
   }
 
   /* Тайник: компактная полоска экипа сверху, тайник и сумка ниже. */

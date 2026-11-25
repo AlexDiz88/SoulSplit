@@ -337,6 +337,14 @@
     --inv-slot: 48px;
     --inv-bag-pad-x: 10px;
     --inv-bag-w: calc(2 * var(--inv-bag-pad-x) + 5 * var(--inv-slot) + 4 * 6px);
+    /* Высота компаньон-сумки: паддинги + шапка (кнопка 18px) + gap + сетка 5×5 + safe-area. */
+    --inv-bag-mobile-h: min(
+      44dvh,
+      calc(
+        1px + 8px + 18px + 8px + (5 * var(--inv-slot) + 4 * 6px) + 8px +
+          env(safe-area-inset-bottom, 0px)
+      )
+    );
   }
 
   #hud:has(#character:not([hidden])) .inv-bag-overlay:not(.is-solo):not([hidden]) {
@@ -364,8 +372,9 @@
     border-left: 0;
     border-right: 0;
     border-bottom: 0;
-    flex: 0 0 auto;
-    max-height: min(44dvh, 360px);
+    flex: 0 0 var(--inv-bag-mobile-h);
+    height: var(--inv-bag-mobile-h);
+    max-height: var(--inv-bag-mobile-h);
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
     overflow: hidden;
     pointer-events: auto;
