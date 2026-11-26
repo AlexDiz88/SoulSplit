@@ -69,6 +69,11 @@
 | caustic_pool | alchemy | Едкая лужа | Алхимия | зона | лужа на клике: 30 при появлении + 8/с 4 с на клетке | черновик | `src/abilities/abilityDefs/alchemy/caustic_pool.ts` |
 | corrosive_mist | alchemy | Коррозионный туман | Алхимия | все враги | 22 кислота всем + урон атаки врагов -20% на 4 с | черновик | `src/abilities/abilityDefs/alchemy/corrosive_mist.ts` |
 | catalyst | alchemy | Катализ | Алхимия | цель | 24 кислота; при любом DoT (any_dot) +22 и переплавка в кислоту 8/с | черновик | `src/abilities/abilityDefs/alchemy/catalyst.ts` |
+| granite_shell | earth | Гранитная оболочка | Земля | на себя | щит 60 на 6 с + входящий урон героя -25% на 6 с, без урона | черновик | `src/abilities/abilityDefs/earth/granite_shell.ts` |
+| stone_spike | earth | Каменный шип | Земля | цель | 42 урона земли + скорость атаки цели -30% на 4 с | черновик | `src/abilities/abilityDefs/earth/stone_spike.ts` |
+| fault_line | earth | Линия разлома | Земля | зона | клик + диагональный клин 38/28/28 + рыхлость 5 с: Земля +25% по цели на клетке | черновик | `src/abilities/abilityDefs/earth/fault_line.ts` |
+| quake_heart | earth | Сердце толчка | Земля | все враги | каст 2.5 с, кд 14 с: 15 урона земли всем + оглушение 1.4 с | черновик | `src/abilities/abilityDefs/earth/quake_heart.ts` |
+| fissure_charge | earth | Заряженная трещина | Земля | зона | клик пустой, ореол 6 клеток: задержка 1.5 с, 7/с земли 4 с + скорость атаки -20% | черновик | `src/abilities/abilityDefs/earth/fissure_charge.ts` |
 | bone_servant | necromancy | Костяной слуга | Некромантия | на себя | призыв костяного прислужника в слот слева/справа от героя, кд 14 с, до 2 слотов | черновик | `src/abilities/abilityDefs/necromancy/bone_servant.ts` |
 | life_siphon | necromancy | Вытягивание жизни | Некромантия | цель | канал 2.5 с: 5×8 смерти каждые 0.5 с + лечение героя 50% за тик | черновик | `src/abilities/abilityDefs/necromancy/life_siphon.ts` |
 | grave_dust | necromancy | Погребальная пыль | Некромантия | зона | клик пустой, шахматный узор: разложение 8/с на 4 с на четырёх клетках вокруг | черновик | `src/abilities/abilityDefs/necromancy/grave_dust.ts` |
