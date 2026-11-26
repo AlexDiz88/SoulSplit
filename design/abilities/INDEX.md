@@ -70,7 +70,7 @@
 | corrosive_mist | alchemy | Коррозионный туман | Алхимия | все враги | 22 кислота всем + урон атаки врагов -20% на 4 с | черновик | `src/abilities/abilityDefs/alchemy/corrosive_mist.ts` |
 | catalyst | alchemy | Катализ | Алхимия | цель | 24 кислота; при любом DoT (any_dot) +22 и переплавка в кислоту 8/с | черновик | `src/abilities/abilityDefs/alchemy/catalyst.ts` |
 | bone_servant | necromancy | Костяной слуга | Некромантия | на себя | призыв костяного прислужника в слот слева/справа от героя, кд 14 с, до 2 слотов | черновик | `src/abilities/abilityDefs/necromancy/bone_servant.ts` |
-| life_siphon | necromancy | Вытягивание жизни | Некромантия | цель | каст 1.5 с: 40 урона смерти + лечение героя на 50% нанесённого | черновик | `src/abilities/abilityDefs/necromancy/life_siphon.ts` |
+| life_siphon | necromancy | Вытягивание жизни | Некромантия | цель | канал 2.5 с: 5×8 смерти каждые 0.5 с + лечение героя 50% за тик | черновик | `src/abilities/abilityDefs/necromancy/life_siphon.ts` |
 | grave_dust | necromancy | Погребальная пыль | Некромантия | зона | клик пустой, шахматный узор: разложение 8/с на 4 с на четырёх клетках вокруг | черновик | `src/abilities/abilityDefs/necromancy/grave_dust.ts` |
 | grave_whisper | necromancy | Шёпот могилы | Некромантия | все враги | каст 2.5 с, кд 14 с: 14 урона смерти всем + урон атаки всех врагов -30% на 4 с | черновик | `src/abilities/abilityDefs/necromancy/grave_whisper.ts` |
 | devour_minion | necromancy | Пожирание слуги | Некромантия | на себя | поглощает вашего прислужника: лечение 45 + щит 40 на 5 с, без урона врагам | черновик | `src/abilities/abilityDefs/necromancy/devour_minion.ts` |
