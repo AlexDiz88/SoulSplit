@@ -79,3 +79,8 @@
 | grave_dust | necromancy | Погребальная пыль | Некромантия | зона | клик пустой, шахматный узор: разложение 8/с на 4 с на четырёх клетках вокруг | черновик | `src/abilities/abilityDefs/necromancy/grave_dust.ts` |
 | grave_whisper | necromancy | Шёпот могилы | Некромантия | все враги | каст 2.5 с, кд 14 с: 14 урона смерти всем + урон атаки всех врагов -30% на 4 с | черновик | `src/abilities/abilityDefs/necromancy/grave_whisper.ts` |
 | devour_minion | necromancy | Пожирание слуги | Некромантия | на себя | поглощает вашего прислужника: лечение 45 + щит 40 на 5 с, без урона врагам | черновик | `src/abilities/abilityDefs/necromancy/devour_minion.ts` |
+| blood_tithe | blood | Дань крови | Кровь | на себя | жертва 12% текущего HP: урон Крови +25% и вампиризм 20% на 6 с | черновик | `src/abilities/abilityDefs/blood/blood_tithe.ts` |
+| open_vein | blood | Вскрытие жилы | Кровь | цель | 36 урона крови + кровотечение 10/с на 5 с | черновик | `src/abilities/abilityDefs/blood/open_vein.ts` |
+| crimson_spray | blood | Багровый веер | Кровь | зона | клик + клин к герою 38/26/26 + кровотечение 8/с 3 с | черновик | `src/abilities/abilityDefs/blood/crimson_spray.ts` |
+| blood_pulse | blood | Пульс крови | Кровь | все враги | каст 2.5 с, кд 14 с: 13 урона крови всем + кровотечение 6/с 3 с | черновик | `src/abilities/abilityDefs/blood/blood_pulse.ts` |
+| scarlet_reap | blood | Жатва алого | Кровь | цель | каст 1.8 с, жертва 8% HP: 52 крови; при кровотечении +50% урона и лечение 30 | черновик | `src/abilities/abilityDefs/blood/scarlet_reap.ts` |
